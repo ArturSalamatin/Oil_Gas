@@ -1,0 +1,25 @@
+# Бинарные файлы — PDF, Word, DjVu
+*.pdf
+*.djvu
+*.doc
+*.docx
+*.pptx
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

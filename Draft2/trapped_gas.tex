@@ -1,0 +1,149 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\geometry{left=25mm, right=25mm, top=20mm, bottom=20mm}
+
+\title{Безнапорная фильтрация с запертой газовой шапкой}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Постановка задачи}
+
+Рассматривается пласт, ограниченный:
+\begin{itemize}[nosep]
+  \item снизу~--- непроницаемой подошвой (водоупором),
+  \item сверху~--- непроницаемой кровлей.
+\end{itemize}
+Между ними находится жидкость (снизу) и газовая шапка (сверху), разделённые свободной поверхностью $z = h(x, t)$. Газ \emph{заперт}: он не может уйти через кровлю, его масса фиксирована.
+
+В классической безнапорной фильтрации на свободной поверхности принимается условие $p\big|_{z=h} = p_{\mathrm{atm}} = \mathrm{const}$. В рассматриваемой задаче давление газа является неизвестной, связанной с положением свободной поверхности.
+
+\section{Давление в газовой шапке}
+
+Пусть газ идеальный, процесс изотермический (закон Бойля--Мариотта):
+\begin{equation}\label{eq:boyle}
+  p_g(t)\, V_g(t) = p_g(0)\, V_g(0) = C = \mathrm{const}.
+\end{equation}
+Объём газовой шапки определяется конфигурацией свободной поверхности:
+\begin{equation}\label{eq:Vg}
+  V_g(t) = \int_\Omega \bigl[H(x) - h(x,t)\bigr]\, m(x)\, dx,
+\end{equation}
+где $H(x)$~--- отметка кровли, $m(x)$~--- пористость, $\Omega$~--- область пласта в плане. Отсюда:
+\begin{equation}\label{eq:pg}
+  \boxed{p_g(t) = \frac{C}{\displaystyle\int_\Omega \bigl[H(x) - h(x,t)\bigr]\, m(x)\, dx}.}
+\end{equation}
+
+Это \emph{нелокальное} (интегральное) соотношение: давление газа в каждый момент времени зависит от \emph{всей} конфигурации свободной поверхности $h(x,t)$ по пласту.
+
+\subsection*{Замечание}
+Давление газа $p_g(t)$ одинаково во всех точках газовой шапки~--- газ перераспределяет давление практически мгновенно, поскольку вязкость и плотность газа малы по сравнению с жидкостью. Поэтому $\nabla p_g = 0$.
+
+\section{Граничное условие на свободной поверхности}
+
+Вместо $p = p_{\mathrm{atm}}$ на свободной границе $z = h(x,t)$ имеем:
+\begin{equation}\label{eq:bc_free}
+  p\big|_{z=h(x,t)} = p_g(t),
+\end{equation}
+где $p_g(t)$ определяется из~\eqref{eq:pg}.
+
+\section{Уравнение для жидкости (приближение Дюпюи)}
+
+В гидравлическом приближении давление гидростатично по вертикали:
+\begin{equation}\label{eq:hydrostatic}
+  p(x, z, t) = p_g(t) + \rho g \bigl[h(x,t) - z\bigr].
+\end{equation}
+Подставляя в закон Дарси и интегрируя по вертикали от подошвы $z=0$ до свободной поверхности $z=h$, получаем:
+\begin{equation}\label{eq:bous_full}
+  m \frac{\partial h}{\partial t}
+  = \nabla \cdot \left[\frac{k h}{\mu}\, \nabla \bigl(p_g(t) + \rho g\, h\bigr)\right] + Q.
+\end{equation}
+Поскольку $p_g(t)$ не зависит от пространственных координат ($\nabla p_g = 0$), уравнение упрощается:
+\begin{equation}\label{eq:bous}
+  \boxed{m \frac{\partial h}{\partial t}
+  = \nabla \cdot \left[\frac{k \rho g}{\mu}\, h\, \nabla h\right] + Q.}
+\end{equation}
+
+Это \emph{то же самое} уравнение Буссинеска, что и в классическом случае. Однако принципиальное отличие состоит в замыкающем соотношении~\eqref{eq:pg} и в модификации граничных условий.
+
+\section{Отличие от классической задачи}
+
+\subsection{Граничные условия с переменным давлением газа}
+
+Если на границе области (скважина, контур питания) задано давление $p_{\mathrm{ext}}$, то напор жидкости у границы:
+\begin{equation}\label{eq:h_boundary}
+  h\big|_{\partial\Omega} = \frac{p_{\mathrm{ext}} - p_g(t)}{\rho g}.
+\end{equation}
+Даже при постоянном $p_{\mathrm{ext}}$ эффективный напор $h$ на границе \emph{изменяется во времени} вместе с $p_g(t)$.
+
+\subsection{Газовая пружина}
+
+Запертый газ действует как пружина:
+\begin{itemize}[nosep]
+  \item подъём $h$ $\to$ уменьшение $V_g$ $\to$ рост $p_g$ $\to$ торможение притока жидкости;
+  \item опускание $h$ $\to$ увеличение $V_g$ $\to$ падение $p_g$ $\to$ торможение оттока жидкости.
+\end{itemize}
+Это создаёт \emph{отрицательную обратную связь}, стабилизирующую систему.
+
+\subsection{Нелокальность}
+
+Откачка жидкости в одной точке пласта изменяет $p_g(t)$, что мгновенно влияет на граничные условия \emph{всюду}. Задача является интегро-дифференциальной.
+
+\subsection{Предельное сжатие}
+
+При $h \to H$ всюду $V_g \to 0$ и $p_g \to \infty$. Физически это означает, что газ не позволяет жидкости полностью заполнить пласт.
+
+\section{Полная постановка задачи}
+
+\begin{equation}\label{eq:full}
+  \begin{cases}
+    \displaystyle m \frac{\partial h}{\partial t}
+    = \nabla \cdot \left[\frac{k \rho g}{\mu}\, h\, \nabla h\right] + Q,
+    & x \in \Omega, \quad t > 0, \\[12pt]
+    \displaystyle p_g(t) = \frac{C}{\displaystyle\int_\Omega \bigl[H(x) - h(x,t)\bigr]\, m(x)\, dx},
+    \\[12pt]
+    h\big|_{\partial\Omega} = \dfrac{p_{\mathrm{ext}} - p_g(t)}{\rho g}
+    \quad \text{или} \quad
+    \left.\dfrac{\partial h}{\partial n}\right|_{\partial\Omega} = \text{задан},
+    \\[12pt]
+    h(x, 0) = h_0(x).
+  \end{cases}
+\end{equation}
+
+\section{Обобщения}
+
+\subsection{Адиабатический газ}
+Если процесс адиабатический, закон Бойля--Мариотта~\eqref{eq:boyle} заменяется на:
+\begin{equation}
+  p_g(t)\, V_g^\gamma(t) = p_g(0)\, V_g^\gamma(0),
+\end{equation}
+где $\gamma$~--- показатель адиабаты. Тогда:
+\begin{equation}
+  p_g(t) = p_g(0) \left(\frac{V_g(0)}{V_g(t)}\right)^\gamma.
+\end{equation}
+Нелинейность задачи усиливается ($\gamma > 1$).
+
+\subsection{Учёт капиллярного давления}
+Если на границе жидкость--газ существенно капиллярное давление $p_c$, условие~\eqref{eq:bc_free} модифицируется:
+\begin{equation}
+  p\big|_{z=h} = p_g(t) - p_c,
+\end{equation}
+и гидростатическое распределение~\eqref{eq:hydrostatic} сдвигается на $p_c$.
+
+\section{Замечания для численной реализации}
+
+\begin{enumerate}[nosep]
+  \item На каждом временном шаге необходимо пересчитывать $p_g$ по текущему $h(x,t)$~--- это интеграл по всей области, вычислительно дёшево.
+  \item Нелинейность усилена: и уравнение Буссинеска нелинейно, и $p_g(h)$ нелинейна. Может потребоваться итерационная схема (Пикара или Ньютона) на каждом временном шаге.
+  \item Связь $p_g$ с $h$ делает задачу \emph{жёсткой} при малых $V_g$ (газ сильно сжат), что может потребовать адаптации шага по времени.
+\end{enumerate}
+
+\end{document}

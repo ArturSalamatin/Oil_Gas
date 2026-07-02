@@ -1,0 +1,542 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage[left=25mm,right=25mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{enumitem}
+
+\title{Функции псевдодавления и псевдовремени\\
+для многофазной неизотермической фильтрации}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Введение}\label{sec:intro}
+%=============================================================================
+
+Задача: выяснить, можно ли обобщить формализм псевдодавления
+и псевдовремени на случай \emph{неизотермической} двухфазной
+фильтрации (нефть~+~свободный газ) в рамках модели Black~Oil.
+
+Классическая цепочка обобщений:
+\begin{enumerate}[nosep]
+  \item Al-Hussainy, Ramey, Crawford (1966): псевдодавление $m(p)$
+        для однофазного реального газа --- линеаризация
+        пространственного оператора;
+  \item Agarwal (1979): псевдовремя $t_a(t)$ --- линеаризация
+        временного оператора;
+  \item Краснов (б/г): многофазное псевдодавление $m^k(p)$ и
+        псевдовремя $t_{ao}(t)$ для изотермической системы Black~Oil;
+  \item \textbf{Данный документ}: попытка распространить подход на
+        систему с уравнением энергии.
+\end{enumerate}
+
+%=============================================================================
+\section{Однофазный реальный газ (Al-Hussainy \& Agarwal)}\label{sec:single}
+%=============================================================================
+
+\subsection{Исходное уравнение}\label{ssec:single_eq}
+
+Изотермическая фильтрация реального газа в пористой среде.
+Уравнение неразрывности + закон Дарси:
+\begin{equation}\label{eq:gas_cont}
+  \frac{\partial}{\partial t}\bigl(\phi\rho_g\bigr)
+  + \mathrm{div}\bigl(\rho_g\,\vec{u}_g\bigr) = 0,
+  \qquad
+  \vec{u}_g = -\frac{k}{\mu_g(p)}\nabla p.
+\end{equation}
+Плотность газа $\rho_g = pM/(Z(p)RT)$. Пористость~$\phi$ считаем
+постоянной (сжимаемость породы мала по сравнению со сжимаемостью газа).
+Поскольку рассматривается изотермическая фильтрация однокомпонентного
+газа, молярная масса~$M$ и температура~$T$ --- константы. При подстановке
+$\rho_g$ в уравнение неразрывности множитель $M/(RT)$ сокращается
+в обеих частях, и уравнение принимает вид:
+\begin{equation}\label{eq:gas_pde}
+  \frac{\partial}{\partial t}\left(\frac{p}{Z}\right)
+  = \mathrm{div}\left(\frac{kp}{\mu_g Z}\,\nabla p\right).
+\end{equation}
+Уравнение нелинейно: коэффициент $p/(\mu_g Z)$ зависит от давления.
+
+\subsection{Замена переменной: псевдодавление}\label{ssec:pseudo_p}
+
+Введём функцию псевдодавления (Al-Hussainy et al., 1966):
+\begin{equation}\label{eq:mdef_gas}
+  \boxed{m(p) = 2\int_{p_{\mathrm{ref}}}^{p}
+         \frac{p'\,dp'}{\mu_g(p')\,Z(p')}.}
+\end{equation}
+Дифференциал:
+\begin{equation}\label{eq:dm_gas}
+  dm = \frac{2p}{\mu_g Z}\,dp,
+  \qquad \nabla m = \frac{2p}{\mu_g Z}\,\nabla p.
+\end{equation}
+
+\paragraph{Пространственный оператор.}
+Правая часть~\eqref{eq:gas_pde}:
+\begin{equation}\label{eq:rhs_gas}
+  \mathrm{div}\left(\frac{kp}{\mu_g Z}\,\nabla p\right)
+  = \mathrm{div}\left(\frac{k}{2}\,\nabla m\right)
+  = \frac{k}{2}\,\nabla^2 m,
+\end{equation}
+где последнее равенство --- при постоянной $k$. Нелинейность
+\emph{полностью} поглощена заменой переменной.
+
+\paragraph{Временной оператор.}
+Левая часть~\eqref{eq:gas_pde}:
+\begin{equation}\label{eq:lhs_gas}
+  \frac{\partial}{\partial t}\left(\frac{p}{Z}\right)
+  = \frac{1}{Z}\frac{\partial p}{\partial t}
+  - \frac{p}{Z^2}\frac{\partial Z}{\partial p}\frac{\partial p}{\partial t}
+  = \frac{p}{Z}\left(\frac{1}{p} - \frac{1}{Z}\frac{dZ}{dp}\right)
+    \frac{\partial p}{\partial t}.
+\end{equation}
+Сжимаемость газа:
+\begin{equation}\label{eq:cg}
+  c_g = \frac{1}{\rho_g}\frac{d\rho_g}{dp}
+  = \frac{Z}{p}\,\frac{d}{dp}\!\left(\frac{p}{Z}\right)
+  = \frac{1}{p} - \frac{1}{Z}\frac{dZ}{dp}.
+\end{equation}
+Отсюда:
+\begin{equation}\label{eq:lhs_gas2}
+  \frac{\partial}{\partial t}\left(\frac{p}{Z}\right)
+  = \frac{p\,c_g}{Z}\,\frac{\partial p}{\partial t}
+  = \frac{c_g}{2}\,\frac{\mu_g Z}{1}\cdot
+    \frac{2p}{\mu_g Z}\,\frac{\partial p}{\partial t}
+  = \frac{\mu_g\,c_g}{2}\,\frac{\partial m}{\partial t}.
+\end{equation}
+Собирая:
+\begin{equation}\label{eq:gas_quasi}
+  \boxed{\phi\,\mu_g(p)\,c_g(p)\,\frac{\partial m}{\partial t}
+  = k\,\nabla^2 m.}
+\end{equation}
+Пространственный оператор линеен, но коэффициент при $\partial m/\partial t$
+зависит от давления через $\mu_g(p)\,c_g(p)$. Уравнение
+\emph{квази}линейное.
+
+\subsection{Замена переменной: псевдовремя}\label{ssec:pseudo_t}
+
+Для устранения остаточной нелинейности Agarwal~(1979) ввёл псевдовремя:
+\begin{equation}\label{eq:ta_def}
+  \boxed{t_a = \int_0^t
+    \frac{\mu_i\,c_{gi}}{\mu_g\bigl(p(\tau)\bigr)\,
+          c_g\bigl(p(\tau)\bigr)}\,d\tau,}
+\end{equation}
+где $\mu_i$, $c_{gi}$ --- значения при начальном давлении.
+Тогда $\partial m/\partial t = (\mu_i c_{gi})/(\mu_g c_g)\,
+\partial m/\partial t_a$, и уравнение~\eqref{eq:gas_quasi} принимает
+\emph{линейный} вид:
+\begin{equation}\label{eq:gas_linear}
+  \boxed{\phi\,\mu_i\,c_{gi}\,\frac{\partial m}{\partial t_a}
+  = k\,\nabla^2 m.}
+\end{equation}
+
+\paragraph{Замечание.}
+Строгость линеаризации --- иллюзия: в определении $t_a$ нужно знать
+$p(\tau)$ в каждой точке пространства, т.\,е. решение задачи,
+которую мы пытаемся получить. На практике используют осреднённое
+давление $\bar{p}(t)$ из материального баланса, что корректно для
+однородного пласта. Для задачи с пространственно неоднородным
+профилем (как ПЗП) это приближение ухудшается.
+
+%=============================================================================
+\section{Многофазный изотермический случай (Краснов)}\label{sec:multi}
+%=============================================================================
+
+Переходим к системе Black~Oil: нефть (индекс~$o$) + свободный газ
+(индекс~$g$) + вода (индекс~$w$). Капиллярное давление
+пренебрежимо мало: $p_o = p_g = p_w \equiv p$.
+
+\subsection{Уравнения неразрывности}\label{ssec:multi_cont}
+
+\paragraph{Нефтяной компонент.}
+Нефтяной компонент присутствует в двух фазах: в нефти (основная
+масса) и в газе (нефтесодержание $R_v$). Масса нефтяного компонента
+в единице объёма пористой среды:
+\begin{equation}\label{eq:oil_mass}
+  \phi\left(\rho_o(p)\,S_o + \rho_{osc}\,R_v\,\frac{S_g}{B_g}\right).
+\end{equation}
+Здесь $R_v(p)$ --- нефтесодержание газа (объём нефти при стандартных
+условиях на объём газа при стандартных условиях), $\rho_{osc}$ ---
+плотность нефти при стандартных условиях.
+
+Поток нефтяного компонента через границу элементарного объёма:
+\begin{equation}\label{eq:oil_flux}
+  \rho_o\,\vec{u}_o + \rho_{osc}\,R_v\,\frac{\vec{u}_g}{B_g}.
+\end{equation}
+Первый член --- поток нефти в жидкой фазе. Второй --- поток нефти,
+растворённой в газе: скорость газа $\vec{u}_g$ переводим в
+поверхностные условия делением на $B_g$, умножаем на $R_v$ и на
+$\rho_{osc}$.
+
+Уравнение неразрывности (Краснов, ур.~0.9):
+\begin{equation}\label{eq:oil_cont}
+  \frac{\partial}{\partial t}\left(\phi\rho_o S_o
+  + \rho_{osc}R_v\frac{\phi S_g}{B_g}\right)
+  + \mathrm{div}\left(\rho_o\vec{u}_o
+  + \rho_{osc}R_v\frac{\vec{u}_g}{B_g}\right) = 0.
+\end{equation}
+
+Используя $\rho(p) = \rho_{sc}/B(p)$ для каждой фазы, получим
+(Краснов, ур.~0.11):
+\begin{equation}\label{eq:oil_cont2}
+  \frac{\partial}{\partial t}\left(\frac{\phi S_o}{B_o}
+  + R_v\,\frac{\phi S_g}{B_g}\right)
+  + \mathrm{div}\left(\frac{\vec{u}_o}{B_o}
+  + R_v\,\frac{\vec{u}_g}{B_g}\right) = 0.
+\end{equation}
+
+\paragraph{Закон Дарси.}
+\begin{equation}\label{eq:darcy}
+  \vec{u}_o = -\frac{k\,k_{ro}(S_o)}{\mu_o(p)}\,\nabla p,
+  \qquad
+  \vec{u}_g = -\frac{k\,k_{rg}(S_g)}{\mu_g(p)}\,\nabla p.
+\end{equation}
+
+Подставляя в~\eqref{eq:oil_cont2}:
+\begin{equation}\label{eq:oil_pde}
+  \frac{\partial}{\partial t}\left(\frac{\phi S_o}{B_o}
+  + R_v\,\frac{\phi S_g}{B_g}\right)
+  - \mathrm{div}\left[k\left(\frac{k_{ro}}{B_o\mu_o}
+  + R_v\,\frac{k_{rg}}{B_g\mu_g}\right)\nabla p\right] = 0.
+\end{equation}
+Это уравнение~(0.12) Краснова.
+
+\subsection{Многофазное псевдодавление}\label{ssec:multi_mp}
+
+По аналогии с однофазным случаем, введём функцию псевдодавления
+для нефтяного компонента (Краснов, ур.~0.13):
+\begin{equation}\label{eq:mo_def}
+  \boxed{m_o(p) = \mu_{oi}\,B_{oi}\int_{p_{\mathrm{ref}}}^{p}
+  \left(\frac{k_{ro}(S_o)}{B_o(p')\,\mu_o(p')}
+  + R_v(p')\,\frac{k_{rg}(S_g)}{B_g(p')\,\mu_g(p')}\right)dp'.}
+\end{equation}
+
+Нормировочный множитель $\mu_{oi}B_{oi}$ обеспечивает размерность
+давления и $m_o(p_i) \approx p_i$ при начальных условиях.
+
+\paragraph{Отличие от однофазного случая.}
+Подынтегральное выражение зависит не только от давления,
+но и от насыщенностей $S_o$, $S_g = 1-S_o-S_w$.
+Для вычисления интеграла нужна связь $S_o(p)$ ---
+\textbf{замыкающее соотношение}, которого нет в общем случае.
+
+Дифференциал:
+\begin{equation}\label{eq:dmo}
+  \nabla m_o = \mu_{oi}B_{oi}
+  \left(\frac{k_{ro}}{B_o\mu_o}
+  + R_v\frac{k_{rg}}{B_g\mu_g}\right)\nabla p.
+\end{equation}
+
+Пространственный оператор в~\eqref{eq:oil_pde}:
+\begin{equation}\label{eq:rhs_multi}
+  \mathrm{div}\left[k\left(\frac{k_{ro}}{B_o\mu_o}
+  + R_v\frac{k_{rg}}{B_g\mu_g}\right)\nabla p\right]
+  = \mathrm{div}\left(\frac{k}{\mu_{oi}B_{oi}}\nabla m_o\right)
+  = \frac{1}{\mu_{oi}B_{oi}}\,\mathrm{div}(k\nabla m_o),
+\end{equation}
+при постоянной $k$ (или $k=k(x,y,z)$, но не $k(p)$).
+
+\subsection{Временной оператор и общая сжимаемость}\label{ssec:multi_ct}
+
+Раскроем временную производную в~\eqref{eq:oil_pde}. Обозначим:
+\begin{equation}\label{eq:A_def}
+  A(S_o, S_g, p) = \frac{\partial}{\partial p}\left[\phi\left(
+  \frac{S_o}{B_o} + R_v\frac{S_g}{B_g}\right)\right]
+  + \frac{\partial}{\partial S}\left[\phi\left(
+  \frac{S_o}{B_o} + R_v\frac{S_g}{B_g}\right)\right]
+  \frac{dS}{dp},
+\end{equation}
+так что:
+\begin{equation}\label{eq:time_A}
+  \frac{\partial}{\partial t}\left(\frac{\phi S_o}{B_o}
+  + R_v\frac{\phi S_g}{B_g}\right)
+  = A(S_o, S_g, p)\,\frac{\partial p}{\partial t}.
+\end{equation}
+Это уравнение~(0.19)--(0.20) Краснова.
+
+\paragraph{Подробное раскрытие~$A$.}
+Используем определения сжимаемостей фаз (Краснов, ур.~0.18):
+\begin{equation}\label{eq:compress}
+  C_o = -\frac{1}{B_o}\frac{dB_o}{dp} = -\frac{B_o'}{B_o},
+  \qquad
+  C_g = -\frac{B_g'}{B_g},
+  \qquad
+  C_\phi = \frac{1}{\phi}\frac{d\phi}{dp}.
+\end{equation}
+Раскрывая~\eqref{eq:A_def} по слагаемым (здесь опускаем
+сжимаемость породы $C_\phi$ --- она мала по сравнению с
+сжимаемостью флюида в условиях разгазирования):
+
+\begin{align}
+  \frac{\partial}{\partial p}\left(\frac{S_o}{B_o}\right)
+  &= -\frac{S_o B_o'}{B_o^2} = \frac{S_o C_o}{B_o},
+  \label{eq:dSoBo_dp} \\
+  \frac{\partial}{\partial p}\left(R_v\frac{S_g}{B_g}\right)
+  &= R_v'\frac{S_g}{B_g} + R_v\frac{S_g C_g}{B_g},
+  \label{eq:dRvSgBg_dp} \\
+  \frac{\partial}{\partial S_o}\left(\frac{S_o}{B_o}
+  + R_v\frac{S_g}{B_g}\right)
+  &= \frac{1}{B_o} - \frac{R_v}{B_g}
+  \qquad (\text{т.\,к. } S_g = 1 - S_o - S_w).
+  \label{eq:dSoBo_dS}
+\end{align}
+
+Собирая:
+\begin{equation}\label{eq:A_full}
+  A = \phi\left[\frac{S_o C_o}{B_o}
+  + R_v'\frac{S_g}{B_g} + R_v\frac{S_g C_g}{B_g}
+  + \left(\frac{1}{B_o} - \frac{R_v}{B_g}\right)\frac{dS_o}{dp}
+  \right].
+\end{equation}
+
+\paragraph{Общая сжимаемость двухфазной системы.}
+На малых временах (или при медленном изменении насыщенности)
+связь $dS_o/dp$ определяется из баланса (Краснов, ур.~0.77):
+\begin{equation}\label{eq:dSdp_small}
+  \frac{dS_o}{dp} = S_o\frac{B_o'}{B_o}
+  + \frac{\lambda_o}{\lambda_t}\,C_t,
+\end{equation}
+где
+\begin{equation}\label{eq:Ct}
+  \boxed{C_t = S_o\,C_o + S_g\,C_g + S_o\,R_s'\,\frac{B_g}{B_o}}
+\end{equation}
+--- общая сжимаемость системы (Краснов, ур.~0.80--0.81),
+\begin{equation}\label{eq:lambda}
+  \lambda_o = \frac{k_{ro}}{\mu_o},
+  \qquad
+  \lambda_g = \frac{k_{rg}}{\mu_g},
+  \qquad
+  \lambda_t = \lambda_o + \lambda_g.
+\end{equation}
+
+Член $C_{R_s} = S_o R_s' B_g/B_o$ в~\eqref{eq:Ct} отражает
+\emph{фазовый переход}: при снижении давления газ выделяется из
+нефти ($R_s' > 0$), что эквивалентно аномально высокой сжимаемости.
+Отношение $B_g/B_o$ учитывает разницу плотностей газа в свободном
+и растворённом состояниях.
+
+\subsection{Линеаризованное уравнение}\label{ssec:multi_lin}
+
+Подставляя~\eqref{eq:time_A} и~\eqref{eq:rhs_multi}
+в~\eqref{eq:oil_pde}:
+\begin{equation}\label{eq:oil_Am}
+  \mu_{oi}B_{oi}\,A\,\frac{\partial p}{\partial t}
+  = \mathrm{div}(k\nabla m_o).
+\end{equation}
+
+Из определения $m_o$:
+\begin{equation}\label{eq:dmodt}
+  \frac{\partial m_o}{\partial t}
+  = \mu_{oi}B_{oi}\left(\frac{k_{ro}}{B_o\mu_o}
+  + R_v\frac{k_{rg}}{B_g\mu_g}\right)\frac{\partial p}{\partial t}.
+\end{equation}
+
+Обозначим подвижность нефтяного компонента:
+\begin{equation}\label{eq:alpha_o}
+  \alpha_o(S_o, p) = \frac{k_{ro}}{B_o\mu_o}
+  + R_v\frac{k_{rg}}{B_g\mu_g}.
+\end{equation}
+
+Тогда $\partial m_o/\partial t = \mu_{oi}B_{oi}\,\alpha_o\,
+\partial p/\partial t$, и из~\eqref{eq:oil_Am}:
+\begin{equation}\label{eq:oil_nonlin}
+  \frac{A}{\alpha_o}\,\frac{\partial m_o}{\partial t}
+  = \mathrm{div}(k\nabla m_o).
+\end{equation}
+
+Это уравнение~(0.21) Краснова. Отношение $A/\alpha_o$ ---
+обобщённый коэффициент сжимаемости-к-подвижности двухфазной системы,
+аналог $\phi\mu_g c_g/k$ в однофазном случае.
+
+\subsection{Многофазное псевдовремя}\label{ssec:multi_pt}
+
+По аналогии с Agarwal, вводим псевдовремя (Краснов, ур.~0.22):
+\begin{equation}\label{eq:tao_def}
+  \boxed{t_{ao} = \mu_{oi}\,C_{ti}\,\phi\int_0^t
+  \frac{\alpha_o(\tau)}{A(\tau)}\,d\tau,}
+\end{equation}
+где $C_{ti}$ --- начальная общая сжимаемость. Тогда:
+\begin{equation}\label{eq:oil_linear}
+  \boxed{\mu_{oi}\,C_{ti}\,\phi\,
+  \frac{\partial m_o}{\partial t_{ao}}
+  = \mathrm{div}(k\nabla m_o).}
+\end{equation}
+Уравнение \emph{формально} линейное --- аналог~\eqref{eq:gas_linear}.
+
+\paragraph{Оговорка.}
+Линейность формальна по тем же причинам, что и в однофазном случае:
+$t_{ao}$ зависит от решения (через $S_o(t)$ и $p(t)$). Кроме того,
+$m_o$ определено через неизвестную связь $S_o(p)$. Подход работает
+при наличии замыкающего соотношения (GOR~=~const, малые времена
+и т.\,д.).
+
+
+%=============================================================================
+\section{Неизотермическое обобщение}\label{sec:noniso}
+%=============================================================================
+
+\subsection{Постановка вопроса}\label{ssec:question}
+
+В задаче ПЗП температура --- неизвестная, определяемая балансом
+энергии. PVT-свойства зависят от двух переменных: $p$ и $T$.
+В частности, $R_s = R_s(p,T)$, $B_o = B_o(p,T)$, $\mu_o = \mu_o(p,T)$.
+
+Вопрос: можно ли ввести функции $m_o(p,T)$ и $t_{ao}(t)$ так, чтобы
+система уравнений (фильтрация + энергия) допускала хотя бы частичную
+линеаризацию?
+
+\subsection{Уравнение фильтрации при $T \neq \mathrm{const}$}
+\label{ssec:filt_T}
+
+Уравнение~\eqref{eq:oil_pde} сохраняет структуру, но все
+PVT-свойства теперь зависят от $(p,T)$:
+\begin{equation}\label{eq:oil_pde_T}
+  \frac{\partial}{\partial t}\left(\frac{\phi S_o}{B_o(p,T)}
+  + R_v(p,T)\frac{\phi S_g}{B_g(p,T)}\right)
+  - \mathrm{div}\left[k\left(\frac{k_{ro}}{B_o\mu_o}
+  + R_v\frac{k_{rg}}{B_g\mu_g}\right)\nabla p\right] = 0.
+\end{equation}
+
+Попытка ввести псевдодавление:
+\begin{equation}\label{eq:mo_T}
+  m_o(p,T) = \mu_{oi}B_{oi}\int_{p_{\mathrm{ref}}}^{p}
+  \left(\frac{k_{ro}}{B_o(p',T)\mu_o(p',T)}
+  + R_v(p',T)\frac{k_{rg}}{B_g(p',T)\mu_g(p',T)}\right)dp'.
+\end{equation}
+
+\paragraph{Проблема 1: $m_o$ --- функция двух переменных.}
+В изотермическом случае $m_o = m_o(p)$ --- скалярная функция одной
+переменной, и $\nabla m_o = m_o'(p)\nabla p$. В неизотермическом
+случае:
+\begin{equation}\label{eq:grad_mo_T}
+  \nabla m_o = \frac{\partial m_o}{\partial p}\,\nabla p
+  + \frac{\partial m_o}{\partial T}\,\nabla T.
+\end{equation}
+Пространственный оператор $\mathrm{div}(k\nabla m_o)$ содержит
+$\nabla T$, что \emph{связывает} уравнение фильтрации с уравнением
+энергии уже на уровне пространственного оператора.
+
+\paragraph{Проблема 2: верхний предел интеграла.}
+В~\eqref{eq:mo_T} интегрирование ведётся по $p'$ при фиксированном
+$T$. Но температура в пласте неоднородна: в разных точках
+интеграл вычисляется при разных $T$. Таким образом, $m_o$ ---
+нелокальная характеристика: её значение в точке $(r,t)$ зависит
+от температуры \emph{в этой же точке}.
+
+\subsection{Уравнение энергии}\label{ssec:energy}
+
+Уравнение баланса энергии многофазной системы в пористой среде
+(см.\ Draft4/two\_phase\_energy.tex):
+\begin{multline}\label{eq:energy}
+  \frac{\partial}{\partial t}\bigl[
+  \phi(\rho_o c_{p,o} S_o + \rho_g c_{p,g} S_g)T
+  + (1-\phi)(\rho c_p)_s T\bigr] \\
+  + \mathrm{div}\bigl[(\rho_o c_{p,o}\vec{u}_o
+  + \rho_g c_{p,g}\vec{u}_g)\,T\bigr]
+  = \mathrm{div}(\lambda_{\mathrm{eff}}\nabla T)
+  + Q_{\mathrm{JT}} + Q_{\mathrm{deg}},
+\end{multline}
+где $Q_{\mathrm{JT}}$ --- нагрев/охлаждение Джоуля--Томсона,
+$Q_{\mathrm{deg}}$ --- скрытая теплота разгазирования.
+
+Это уравнение не содержит $m_o$ и не упрощается введением
+псевдодавления.
+
+\subsection{Анализ возможности линеаризации}\label{ssec:analysis}
+
+Рассмотрим, что мешает обобщению:
+
+\begin{enumerate}[label=(\alph*)]
+  \item \textbf{Смешанный градиент.}
+        Из~\eqref{eq:grad_mo_T}: $\mathrm{div}(k\nabla m_o)$
+        содержит и $\nabla p$, и $\nabla T$. Замена $p \to m_o$
+        не развязывает систему --- она вносит $\nabla T$
+        в уравнение фильтрации.
+
+  \item \textbf{Температура в подынтегральном выражении.}
+        Даже если рассматривать $m_o$ при \emph{локальной}
+        температуре, функция $m_o(p,T(r,t))$ зависит от
+        пространственно-временного поля $T(r,t)$.
+
+  \item \textbf{Уравнение энергии остаётся нелинейным.}
+        Введение $m_o$ не упрощает~\eqref{eq:energy}:
+        источники $Q_{\mathrm{JT}}$ и $Q_{\mathrm{deg}}$
+        зависят от $\partial p/\partial t$, $\nabla p$,
+        $\partial S/\partial t$ --- все эти величины
+        не выражаются через $m_o$ без дополнительных допущений.
+
+  \item \textbf{Насыщенность зависит от двух переменных.}
+        В изотермическом случае $S = S(p)$ при фиксированном GOR.
+        При $T \neq \mathrm{const}$: $R_s = R_s(p,T)$, и
+        $S = S(p,T)$ --- замыкание через GOR~=~const даёт
+        неявную зависимость $S(p,T)$ вместо $S(p)$.
+\end{enumerate}
+
+\subsection{Предварительный вывод}\label{ssec:conclusion}
+
+Полная линеаризация системы фильтрация~+ энергия через
+псевдодавление \textbf{невозможна}: замена переменной $p \to m_o$
+не развязывает уравнения и вносит дополнительную нелинейность через
+$\nabla T$.
+
+Однако возможны \emph{частичные} упрощения:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Слабая неизотермичность.}
+        Если $\Delta T / T_0 \ll 1$ (типично $\Delta T \sim 1$--$5$~К
+        при $T_0 \sim 350$~К), то зависимость PVT-свойств от $T$
+        можно линеаризовать:
+        $B_o(p,T) \approx B_o(p,T_0)(1 + \alpha_B\,\delta T)$.
+        В этом приближении $\partial m_o/\partial T \sim O(\delta T)$
+        и член $(\partial m_o/\partial T)\nabla T$ в~\eqref{eq:grad_mo_T}
+        является поправкой второго порядка.
+
+  \item \textbf{Разделение масштабов.}
+        Если тепловой фронт много шире гидродинамического
+        ($\lambda_{\mathrm{eff}} \gg \phi\rho c_p u$),
+        температура --- медленная переменная. Тогда на каждом
+        временном шаге можно считать $T(r)$ известной и строить
+        $m_o(p; T(r))$ как в изотермическом случае, но
+        с <<замороженной>> температурой.
+
+  \item \textbf{Псевдодавление при фиксированной температуре.}
+        Определить $m_o(p) = m_o(p; T(r,t))$ при локальной
+        температуре. Тогда пространственный оператор линеаризуется
+        с точностью до $O(\nabla T)$-поправки, а уравнение энергии
+        решается отдельно.
+\end{enumerate}
+
+Эти варианты требуют оценки масштабов --- какие члены велики
+в условиях ПЗП. Это предмет следующего раздела.
+
+
+%=============================================================================
+\section{Оценка масштабов для условий ПЗП}\label{sec:scales}
+%=============================================================================
+
+\textit{(Раздел будет дополнен.)}
+
+
+%=============================================================================
+\section*{Список литературы}
+%=============================================================================
+
+\begin{enumerate}[label={[\arabic*]}, nosep]
+  \item Al-Hussainy R., Ramey H.J.\,Jr., Crawford P.B.
+        The Flow of Real Gases Through Porous Media.
+        \textit{J.~Pet.~Tech.}, 1966, \textbf{18}(5), 624--636.
+        SPE~1243-A-PA.
+  \item Agarwal R.G. <<Real Gas Pseudo-Time>> --- A New Function
+        for Pressure Buildup Analysis of MHF Gas Wells.
+        SPE~8279, 1979.
+  \item Краснов~В.А. (предп.). Текущий (flowing) материальный
+        баланс для многофазной фильтрации. Внутренний методический
+        документ, б/г.
+\end{enumerate}
+
+\end{document}

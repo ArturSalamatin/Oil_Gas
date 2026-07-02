@@ -1,0 +1,1143 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage[left=25mm,right=25mm,top=20mm,bottom=20mm]{geometry}
+\usepackage{enumitem}
+
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\pp}{\partial}
+\newcommand{\ext}{\mathrm{ext}}
+\newcommand{\eff}{\mathrm{eff}}
+\newcommand{\st}{\text{ст}}
+\newcommand{\sat}{\mathrm{sat}}
+
+\title{Метод интегральных соотношений (моментов)\\
+для задачи двухфазной фильтрации Black~Oil\\
+с балансом энергии в радиальной геометрии}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Введение и мотивация}\label{sec:intro}
+%=============================================================================
+
+Полная система уравнений двухфазной фильтрации Black~Oil с балансом
+энергии выведена в~\cite{draft4}. Система состоит из трёх PDE
+на $p(r,t)$, $T(r,t)$, $S_g(r,t)$ в области $r\in[r_w, R_\ext]$,
+$t \geqslant 0$.
+
+Стратегия приближённого решения: метод интегральных соотношений
+(моментов) Баренблатта~\cite{barenblatt1954} применяется ко
+\emph{всем трём уравнениям}. PDE сводятся к системе ODE для
+параметров профилей $p(r,t)$, $S_g(r,t)$ и $T(r,t)$.
+Температурное поле входит в уравнения давления и
+насыщенности через PVT-свойства $R_s(p,T)$, $B_o(p,T)$,
+$\mu_o(p,T)$ и т.\,д., а также через
+$C_T\,\pp T/\pp t$ и $\beta_o^\sat\,\pp T/\pp t$,
+поэтому <<последовательное>> решение
+(сначала гидродинамика, потом температура) приводит
+к неконтролируемым ошибкам.
+
+
+%=============================================================================
+\section{Исходные уравнения}\label{sec:equations}
+%=============================================================================
+
+Система состоит из трёх уравнений на три неизвестных
+$p(r,t)$, $T(r,t)$, $S_g(r,t)$. Все PVT-свойства зависят
+от $p$ и $T$: $R_s(p,T)$, $B_o(p,T)$, $B_g(p,T)$,
+$\mu_\alpha(p,T)$ и т.\,д.
+
+\subsection{Уравнение давления}
+
+Из~\cite{draft4}, уравнение~(pressure):
+\begin{equation}\label{eq:p_eq}
+  \boxed{
+    C_p\,\frac{\pp p}{\pp t}
+    + C_T\,\frac{\pp T}{\pp t}
+    + \mathcal{D} = 0,
+  }
+\end{equation}
+где:
+
+\paragraph{Подвижности фаз:}
+\begin{equation}\label{eq:mobility}
+  \lambda_\alpha = \frac{k\,k_{r\alpha}(S_g)}{\mu_\alpha(p,T)},
+  \qquad \alpha \in \{o, g\}.
+\end{equation}
+
+\paragraph{Суммарная приведённая подвижность:}
+\begin{equation}\label{eq:Lambda}
+  \Lambda(p,T,S_g) = \frac{\lambda_o + \lambda_g}{B_g}
+  = \frac{k}{B_g(p,T)}\!\left(
+      \frac{k_{ro}(S_g)}{\mu_o(p,T)}
+      + \frac{k_{rg}(S_g)}{\mu_g(p,T)}
+    \right).
+\end{equation}
+
+\paragraph{Коэффициент ёмкости при $\pp p/\pp t$:}
+\begin{equation}\label{eq:Cp}
+  C_p = \phi\!\left[
+    S_o\,(c_r + c_o^\sat)\!\left(\frac{1}{B_g} - \frac{R_s}{B_o}\right)
+    + \xi_o\!\left(\frac{\pp R_s}{\pp p}
+      + R_s\,(c_r + c_o^\sat)\right)
+    + \frac{S_g}{B_g}\,(c_g + c_r)
+  \right],
+\end{equation}
+где $\xi_o = S_o/B_o$, $S_o = 1 - S_g$, а <<полная>> сжимаемость
+нефтяной фазы вдоль кривой насыщения:
+\begin{equation}\label{eq:co_sat}
+  c_o^\sat = c_o
+    - \frac{1}{B_o}\frac{\pp B_o}{\pp R_s}\bigg|_{p,T}
+      \frac{\pp R_s}{\pp p}\bigg|_T,
+  \qquad
+  c_o = -\frac{1}{B_o}\frac{\pp B_o}{\pp p}\bigg|_{T,\,R_s}.
+\end{equation}
+
+\paragraph{Коэффициент при $\pp T/\pp t$:}
+\begin{equation}\label{eq:CT}
+  C_T = \phi\!\left[
+    -S_o\,\beta_o^\sat\!\left(\frac{1}{B_g} - \frac{R_s}{B_o}\right)
+    + \xi_o\!\left(\frac{\pp R_s}{\pp T}
+      - R_s\,\beta_o^\sat\right)
+    - \frac{S_g}{B_g}\,\beta_g
+  \right],
+\end{equation}
+где
+\begin{equation}\label{eq:beta_o_sat}
+  \beta_o^\sat = \beta_o
+    + \frac{1}{B_o}\frac{\pp B_o}{\pp R_s}\bigg|_{p,T}
+      \frac{\pp R_s}{\pp T}\bigg|_p,
+  \qquad
+  \beta_o = \frac{1}{B_o}\frac{\pp B_o}{\pp T}\bigg|_{p,\,R_s}.
+\end{equation}
+
+\paragraph{Пространственный оператор:}
+\begin{equation}\label{eq:D_operator}
+  \mathcal{D} = -\frac{1}{r}\,\frac{\pp}{\pp r}\!\left(
+      r\,\Lambda\,\frac{\pp p}{\pp r}
+    \right)
+    - \frac{\lambda_o}{B_o}\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+    \right)\frac{\pp p}{\pp r}.
+\end{equation}
+
+\paragraph{Замечание.}
+Знак при $\mathcal{D}$ в~\eqref{eq:p_eq}: $C_p\,\dot{p} + C_T\,\dot{T}
++ \mathcal{D} = 0$, т.\,е.\ $\mathcal{D}$ включает все
+пространственные члены, перенесённые в левую часть.
+В дивергентном слагаемом стоит минус, поскольку отток жидкости
+($\mathcal{D} > 0$) снижает давление ($\dot{p} < 0$).
+
+
+\subsection{Уравнение насыщенности}
+
+Из~\cite{draft4}, уравнение~(Sg\_ode):
+\begin{equation}\label{eq:Sg_eq}
+  \boxed{
+    \frac{\pp S_g}{\pp t}
+    = S_o\,(c_r + c_o^\sat)\,\frac{\pp p}{\pp t}
+      - S_o\,\beta_o^\sat\,\frac{\pp T}{\pp t}
+      + \frac{B_o}{\phi}\,\frac{1}{r}\,\frac{\pp}{\pp r}\!
+        \left(r\,\frac{u_o}{B_o}\right).
+  }
+\end{equation}
+Подставляя $u_o = -\lambda_o\,\pp p/\pp r$:
+\begin{equation}\label{eq:Sg_eq2}
+  \frac{\pp S_g}{\pp t}
+  = S_o\,(c_r + c_o^\sat)\,\frac{\pp p}{\pp t}
+    - S_o\,\beta_o^\sat\,\frac{\pp T}{\pp t}
+    - \frac{B_o}{\phi}\,\frac{1}{r}\,\frac{\pp}{\pp r}\!
+      \left(\frac{r\,\lambda_o}{B_o}\,\frac{\pp p}{\pp r}\right).
+\end{equation}
+
+Член $-S_o\,\beta_o^\sat\,\pp T/\pp t$ описывает влияние
+температуры на насыщенность: при охлаждении ($\pp T/\pp t < 0$)
+растворимость газа растёт ($\pp R_s/\pp T < 0$ для типичных нефтей),
+газ частично растворяется, и $S_g$ снижается. Знак зависит
+от конкурирующих вкладов в $\beta_o^\sat$.
+
+
+\subsection{Уравнение энергии}
+
+Из~\cite{draft4}, уравнение~(energy\_final):
+\begin{equation}\label{eq:energy}
+  \boxed{
+    (\rho c_p)_\eff\,\frac{\pp T}{\pp t}
+    + (\rho c_p u)_\mathrm{conv}\,\frac{\pp T}{\pp r}
+    = \frac{1}{r}\,\frac{\pp}{\pp r}\!\left(
+        r\,\lambda_\eff\,\frac{\pp T}{\pp r}
+      \right)
+    + Q_\mathrm{JT} + Q_\mathrm{ad} + Q_\mathrm{deg},
+  }
+\end{equation}
+где:
+
+\paragraph{Эффективная теплоёмкость:}
+\begin{equation}\label{eq:rhocp_eff}
+  (\rho c_p)_\eff
+  = (1-\phi)\,(\rho c_p)_s
+    + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}).
+\end{equation}
+
+\paragraph{Конвективный коэффициент:}
+\begin{equation}\label{eq:rhocp_conv}
+  (\rho c_p u)_\mathrm{conv}
+  = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g.
+\end{equation}
+
+\paragraph{Эффект Джоуля--Томсона:}
+\begin{equation}\label{eq:QJT}
+  Q_\mathrm{JT} = -\sum_\alpha u_\alpha\,(1 - \alpha_\alpha T)\,
+    \frac{\pp p}{\pp r},
+\end{equation}
+где $\alpha_\alpha$ --- коэффициент теплового расширения
+фазы~$\alpha$ при фиксированном составе.
+
+\paragraph{Адиабатический эффект:}
+\begin{equation}\label{eq:Qad}
+  Q_\mathrm{ad} = \phi\!\left[
+    T\sum_\alpha S_\alpha\,\alpha_\alpha
+    + c_r\!\left(p + (\rho c_p)_s\,T\right)
+  \right]\frac{\pp p}{\pp t}.
+\end{equation}
+
+\paragraph{Теплота дегазации:}
+\begin{equation}\label{eq:Qdeg}
+  Q_\mathrm{deg} = -L(p,T)\,\dot{m},
+\end{equation}
+где $L(p,T)$ --- удельная теплота дегазации, а массовый темп
+выделения газа:
+\begin{equation}\label{eq:mdot}
+  \dot{m} = -\rho_g^\st\!\left[
+    \phi\,\xi_o\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp t}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp t}
+    \right)
+    + \frac{u_o}{B_o}\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+    \right)
+  \right].
+\end{equation}
+
+\paragraph{Замечание.}
+$Q_\mathrm{deg}$ содержит $\pp T/\pp t$ и $\pp T/\pp r$
+через~\eqref{eq:mdot}. При подстановке в~\eqref{eq:energy}
+они перегруппировываются с коэффициентами при $\pp T/\pp t$
+и $\pp T/\pp r$:
+\begin{equation}\label{eq:rhocp_eff_mod}
+  (\rho c_p)_\eff^* = (\rho c_p)_\eff
+    - L\,\rho_g^\st\,\phi\,\xi_o\,\frac{\pp R_s}{\pp T},
+\end{equation}
+\begin{equation}\label{eq:rhocp_conv_mod}
+  (\rho c_p u)_\mathrm{conv}^* = (\rho c_p u)_\mathrm{conv}
+    - L\,\rho_g^\st\,\frac{u_o}{B_o}\,\frac{\pp R_s}{\pp T}.
+\end{equation}
+Аналогично, часть $Q_\mathrm{deg}$, содержащая $\pp p/\pp t$
+и $\pp p/\pp r$, поглощается в модифицированные
+$Q_\mathrm{ad}^*$ и $Q_\mathrm{JT}^*$.
+Перегруппированное уравнение энергии:
+\begin{equation}\label{eq:energy_regrouped}
+  (\rho c_p)_\eff^*\,\frac{\pp T}{\pp t}
+  + (\rho c_p u)_\mathrm{conv}^*\,\frac{\pp T}{\pp r}
+  = \frac{1}{r}\,\frac{\pp}{\pp r}\!\left(
+      r\,\lambda_\eff\,\frac{\pp T}{\pp r}
+    \right)
+  + Q_\mathrm{JT}^* + Q_\mathrm{ad}^*,
+\end{equation}
+Явно:
+\begin{equation}\label{eq:QJT_star}
+  Q_\mathrm{JT}^*
+  = Q_\mathrm{JT}
+    + L\,\rho_g^\st\,\frac{u_o}{B_o}\,
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r},
+\end{equation}
+\begin{equation}\label{eq:Qad_star}
+  Q_\mathrm{ad}^*
+  = Q_\mathrm{ad}
+    + L\,\rho_g^\st\,\phi\,\xi_o\,
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp t}.
+\end{equation}
+Таким образом, $Q_\mathrm{JT}^*$ и $Q_\mathrm{ad}^*$ зависят
+только от $p$, $T$, $S_g$ и производных давления (не от $\pp T$).
+
+
+\subsection{Граничные и начальные условия}
+
+\begin{equation}\label{eq:bc_p}
+  p(r_w, t) = p_{wf}(t), \qquad
+  p(R_\ext, t) = p_0.
+\end{equation}
+\begin{equation}\label{eq:bc_T}
+  T(R_\ext, t) = T_0, \qquad
+  \frac{\pp T}{\pp r}\bigg|_{r = r_w} = 0.
+\end{equation}
+\begin{equation}\label{eq:ic}
+  p(r, 0) = p_0, \qquad T(r, 0) = T_0, \qquad S_g(r, 0) = 0.
+\end{equation}
+
+При $t = 0$ давление и температура однородны, газ полностью
+растворён ($p_0 > p_b(T_0)$). При снижении $p_{wf} < p_b$
+вблизи скважины возникает зона разгазирования
+$r \in [r_w, r_b(t)]$, где $p < p_b(T)$.
+
+
+%=============================================================================
+\section{Определение интегральных моментов}\label{sec:moments_def}
+%=============================================================================
+
+\subsection{Зона разгазирования}
+
+Радиус зоны разгазирования $r_b(t)$ определяется из:
+\begin{equation}\label{eq:rb}
+  p(r_b(t), t) = p_b(T(r_b(t), t)).
+\end{equation}
+При $r > r_b(t)$: $p > p_b(T)$, $S_g = 0$, фильтрация однофазная.
+
+\subsection{Моменты давления}
+
+\begin{equation}\label{eq:Mn}
+  M_n(t) = \int_{r_w}^{R_\ext} r^{2n+1}\,p(r,t)\,\dd r,
+  \qquad n = 0, 1, 2, \ldots
+\end{equation}
+
+\paragraph{Нулевой момент ($n = 0$):}
+\begin{equation}\label{eq:M0}
+  M_0(t) = \int_{r_w}^{R_\ext} r\,p(r,t)\,\dd r.
+\end{equation}
+
+\paragraph{Первый момент ($n = 1$):}
+\begin{equation}\label{eq:M1}
+  M_1(t) = \int_{r_w}^{R_\ext} r^3\,p(r,t)\,\dd r.
+\end{equation}
+
+\subsection{Момент насыщенности}
+
+Газонасыщенность имеет компактный носитель $[r_w, r_b(t)]$:
+\begin{equation}\label{eq:Sn}
+  \mathcal{S}_n(t) = \int_{r_w}^{r_b(t)} r^{2n+1}\,S_g(r,t)\,\dd r.
+\end{equation}
+
+$\mathcal{S}_0$ пропорционален объёму свободного газа
+в зоне разгазирования.
+
+\subsection{Момент температуры}
+
+Температурное поле определено на всей области $[r_w, R_\ext]$.
+Нулевой момент:
+\begin{equation}\label{eq:Tn}
+  \mathcal{T}_0(t) = \int_{r_w}^{R_\ext} r\,T(r,t)\,\dd r.
+\end{equation}
+
+Физический смысл: $2\pi h\,\mathcal{T}_0$ пропорционален
+полной тепловой энергии (отклонению от $T_0$) в пласте.
+
+
+%=============================================================================
+\section{Интегральные соотношения}\label{sec:integral_rel}
+%=============================================================================
+
+\subsection{Нулевой момент уравнения давления}
+
+Умножим~\eqref{eq:p_eq} на $r$ и проинтегрируем по $r$
+от $r_w$ до $R_\ext$. Используя $\mathcal{D}$
+из~\eqref{eq:D_operator}:
+\begin{multline}\label{eq:moment0}
+  \boxed{
+    \int_{r_w}^{R_\ext} r\,C_p\,\frac{\pp p}{\pp t}\,\dd r
+    + \int_{r_w}^{R_\ext} r\,C_T\,\frac{\pp T}{\pp t}\,\dd r
+  } \\
+  \boxed{
+    = \left[r\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+    + \int_{r_w}^{R_\ext}
+      r\,\frac{\lambda_o}{B_o}\!\left(
+        \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+        + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+      \right)\frac{\pp p}{\pp r}\,\dd r.
+  }
+\end{multline}
+
+По сравнению с изотермическим случаем появились:
+\begin{itemize}[nosep]
+  \item член $\int r\,C_T\,(\pp T/\pp t)\,\dd r$ в левой части;
+  \item конвективный перенос газа за счёт градиента температуры
+        $(\pp R_s/\pp T)\,(\pp T/\pp r)\,(\pp p/\pp r)$ в квадратичном
+        интеграле.
+\end{itemize}
+
+\paragraph{Вычисление квадратичного интеграла.}
+В зоне разгазирования координаты $\eta$ и $\zeta$
+связаны линейно: $\zeta = 1 - (L_b/L_0)\,\eta$.
+Поэтому произведение $(\pp p/\pp r)\,(\pp T/\pp r)$
+при замороженных PVT-свойствах выражается через степенные
+функции $\eta$:
+\[
+  \frac{\pp T}{\pp r}\,\frac{\pp p}{\pp r}
+  = \frac{2\sigma\,\Delta T_w\,\Delta p_1\,\gamma}
+    {r^2\,L_0\,L_b}\,
+    \zeta^{\sigma-1}(1-\zeta^\sigma)\,\eta^{\gamma-1},
+\]
+где $\zeta(\eta) = 1-(L_b/L_0)\eta$.
+При $L_b \ll L_0$ (типично: $L_b/L_0 \sim 0{,}01$--$0{,}1$)
+$\zeta \approx 1$ в зоне разгазирования, и
+интеграл упрощается.
+В однофазной зоне ($\eta$ не определена, но $S_g = 0$)
+вклад $\pp R_s/\pp p = 0$ при $p > p_b^*$, и
+квадратичный интеграл обнуляется.
+
+\subsection{Первый момент уравнения давления}
+
+Умножим~\eqref{eq:p_eq} на $r^3$ и проинтегрируем:
+\begin{multline}\label{eq:moment1}
+  \int_{r_w}^{R_\ext} r^3\,C_p\,\frac{\pp p}{\pp t}\,\dd r
+  + \int_{r_w}^{R_\ext} r^3\,C_T\,\frac{\pp T}{\pp t}\,\dd r \\
+  = \left[r^3\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+    - 2\int_{r_w}^{R_\ext} r^2\,\Lambda\,\frac{\pp p}{\pp r}\,\dd r
+  + \int_{r_w}^{R_\ext}
+    r^3\,\frac{\lambda_o}{B_o}\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+    \right)\frac{\pp p}{\pp r}\,\dd r.
+\end{multline}
+
+\subsection{Нулевой момент уравнения насыщенности}
+
+Умножим~\eqref{eq:Sg_eq2} на $r$ и проинтегрируем от $r_w$ до $r_b$:
+\begin{multline}\label{eq:Sg_moment0}
+  \frac{\dd\mathcal{S}_0}{\dd t}
+  = \int_{r_w}^{r_b} r\,S_o\,(c_r+c_o^\sat)\,
+      \frac{\pp p}{\pp t}\,\dd r
+    - \int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
+      \frac{\pp T}{\pp t}\,\dd r \\
+  - \frac{B_o}{\phi}\!\left[
+      \frac{r\,\lambda_o}{B_o}\,\frac{\pp p}{\pp r}
+    \right]_{r_w}^{r_b}.
+\end{multline}
+
+Член с $\dot{r}_b$ обращается в нуль ($S_g(r_b,t) = 0$,
+правило Лейбница). Граничные потоки:
+\begin{equation}\label{eq:Sg_flux}
+  \left[\frac{r\,\lambda_o}{B_o}\,\frac{\pp p}{\pp r}\right]_{r_w}^{r_b}
+  = \frac{r_b\,\lambda_o(r_b)}{B_o(p_b,T_b)}\,p'_b
+    - \frac{r_w\,\lambda_o(r_w)}{B_o(p_{wf},T_w)}\,p'_w,
+\end{equation}
+где $T_b = T(r_b,t)$, $T_w = T(r_w,t)$.
+
+По сравнению с изотермическим случаем появился
+интеграл $-\int r\,S_o\,\beta_o^\sat\,(\pp T/\pp t)\,\dd r$.
+
+
+\subsection{Нулевой момент уравнения энергии}
+
+Умножим~\eqref{eq:energy_regrouped} на $r$ и проинтегрируем
+от $r_w$ до $R_\ext$:
+\begin{multline}\label{eq:T_moment0}
+  \int_{r_w}^{R_\ext} r\,(\rho c_p)_\eff^*\,
+    \frac{\pp T}{\pp t}\,\dd r
+  + \int_{r_w}^{R_\ext} r\,(\rho c_p u)_\mathrm{conv}^*\,
+    \frac{\pp T}{\pp r}\,\dd r \\
+  = \left[r\,\lambda_\eff\,\frac{\pp T}{\pp r}
+    \right]_{r_w}^{R_\ext}
+  + \int_{r_w}^{R_\ext} r\,(Q_\mathrm{JT}^* + Q_\mathrm{ad}^*)\,\dd r.
+\end{multline}
+
+Дивергентная часть вычисляется точно:
+\begin{equation}\label{eq:T_flux}
+  \left[r\,\lambda_\eff\,\frac{\pp T}{\pp r}
+    \right]_{r_w}^{R_\ext}
+  = R_\ext\,\lambda_\eff\,T'_\ext
+    - \underbrace{r_w\,\lambda_\eff\,T'_w}_{= 0},
+\end{equation}
+поскольку граничное условие~\eqref{eq:bc_T} даёт $T'_w = 0$.
+
+
+%=============================================================================
+\section{Параметризация профилей}\label{sec:profiles}
+%=============================================================================
+
+\subsection{Структура области}
+
+Область $[r_w, R_\ext]$ делится на две зоны:
+\begin{itemize}[nosep]
+  \item \textbf{Зона разгазирования} $r \in [r_w, r_b(t)]$:
+        $p < p_b(T)$, $S_g > 0$, двухфазная фильтрация.
+  \item \textbf{Однофазная зона} $r \in [r_b(t), R_\ext]$:
+        $p \geqslant p_b(T)$, $S_g = 0$, однофазная фильтрация нефти.
+\end{itemize}
+
+\subsection{Профиль давления}
+
+\paragraph{Однофазная зона ($r_b \leqslant r \leqslant R_\ext$).}
+Квазистационарный логарифмический профиль:
+\begin{equation}\label{eq:p_outer}
+  p(r,t) = p_b^* + (p_0 - p_b^*)\,
+    \frac{\ln(r/r_b)}{\ln(R_\ext/r_b)},
+  \qquad r_b \leqslant r \leqslant R_\ext.
+\end{equation}
+
+\paragraph{Зона разгазирования ($r_w \leqslant r \leqslant r_b$).}
+Степенной профиль:
+\begin{equation}\label{eq:p_inner}
+  p(r,t) = p_{wf} + (p_b^* - p_{wf})\,\Phi\!\left(
+    \frac{\ln(r/r_w)}{\ln(r_b/r_w)}
+  \right),
+\end{equation}
+\begin{equation}\label{eq:Phi}
+  \Phi(\eta) = \eta^\gamma, \qquad
+  \eta = \frac{\ln(r/r_w)}{\ln(r_b/r_w)},
+  \qquad \gamma > 0.
+\end{equation}
+
+\paragraph{Непрерывность потока на $r = r_b$.}
+При $S_g(r_b) = 0$ подвижности совпадают.
+Обозначим $p_b^* = p_b(T(r_b))$ --- давление насыщения
+при температуре на фронте разгазирования.
+Тогда $\Delta p_1 = p_b^* - p_{wf}$,
+$\Delta p_2 = p_0 - p_b^*$, и
+\begin{equation}\label{eq:gamma_constraint}
+  \gamma = \frac{\Delta p_2\,L_b}{\Delta p_1\,L_e}.
+\end{equation}
+Величина $p_b^* = p_b(T(r_b))$ зависит от $\Delta T_w$
+через профиль~\eqref{eq:T_profile}:
+\begin{equation}\label{eq:pb_star}
+  p_b^* = p_b\!\left(T_0 - \Delta T_w\,\Psi(\zeta_b)\right),
+  \qquad
+  \zeta_b = \frac{\ln(R_\ext/r_b)}{L_0} = \frac{L_e}{L_0}.
+\end{equation}
+При $\Delta T_w = 0$ (начальная стадия):
+$p_b^* = p_b(T_0)$ --- фиксированное значение.
+
+Производные давления:
+\begin{equation}\label{eq:dp_inner}
+  \frac{\pp p}{\pp r}\bigg|_\text{inner}
+  = \frac{\Delta p_1\,\gamma}{r\,L_b}\,\eta^{\gamma-1},
+\end{equation}
+\begin{equation}\label{eq:dp_outer}
+  \frac{\pp p}{\pp r}\bigg|_\text{outer}
+  = \frac{\Delta p_2}{r\,L_e}.
+\end{equation}
+
+\paragraph{Обозначения.}
+$L_b = \ln(r_b/r_w)$, $L_e = \ln(R_\ext/r_b)$,
+$\Delta p_1 = p_b^* - p_{wf}$, $\Delta p_2 = p_0 - p_b^*$
+(здесь и далее $p_b^* = p_b(T(r_b))$, см.~\eqref{eq:pb_star}).
+
+
+\subsection{Профиль насыщенности}
+
+Газонасыщенность имеет компактный носитель $[r_w, r_b(t)]$:
+\begin{equation}\label{eq:Sg_profile}
+  S_g(r,t) = S_{g,w}(t)\!\left[
+    1 - \left(\frac{\ln(r/r_w)}{\ln(r_b/r_w)}\right)^{\!\beta}
+  \right],
+  \qquad r_w \leqslant r \leqslant r_b,
+\end{equation}
+$S_g(r_w) = S_{g,w}$, $S_g(r_b) = 0$, $\beta > 0$.
+
+
+\subsection{Профиль температуры}\label{ssec:T_profile}
+
+Температурное поле определено на $[r_w, R_\ext]$ и удовлетворяет:
+\begin{itemize}[nosep]
+  \item $T(R_\ext, t) = T_0$ (контур питания);
+  \item $T'(r_w, t) = 0$ (адиабатическая стенка).
+\end{itemize}
+
+Профиль параметризуем функцией формы
+с амплитудным параметром $\Delta T_w(t) = T_0 - T_w(t)$,
+где $T_w(t) = T(r_w, t)$ --- температура на забое:
+\begin{equation}\label{eq:T_profile}
+  T(r,t) = T_0 - \Delta T_w(t)\,\Psi(\zeta),
+  \qquad
+  \zeta = \frac{\ln(R_\ext/r)}{\ln(R_\ext/r_w)} = \frac{\ln(R_\ext/r)}{L_0}.
+\end{equation}
+
+Функция формы $\Psi(\zeta)$ должна удовлетворять:
+$\Psi(0) = 0$ (контур питания),
+$\Psi(1) = 1$ (забой),
+$\Psi'(1) = 0$ (адиабатическая стенка: $\pp T/\pp r|_{r_w} = 0$).
+
+Простейший профиль с этими свойствами:
+\begin{equation}\label{eq:Psi}
+  \boxed{
+    \Psi(\zeta) = \zeta^\sigma(2 - \zeta^\sigma),
+    \qquad \sigma > 0.
+  }
+\end{equation}
+
+Проверка:
+\begin{itemize}[nosep]
+  \item $\Psi(0) = 0$. \checkmark
+  \item $\Psi(1) = 1\cdot(2-1) = 1$. \checkmark
+  \item $\Psi'(\zeta) = 2\sigma\zeta^{\sigma-1}(1 - \zeta^\sigma)$,
+        поэтому $\Psi'(1) = 2\sigma\cdot 1\cdot 0 = 0$. \checkmark
+\end{itemize}
+
+Производная температуры:
+\begin{equation}\label{eq:dT_dr}
+  \frac{\pp T}{\pp r}
+  = \frac{\Delta T_w}{r\,L_0}\,\Psi'(\zeta)
+  = \frac{2\sigma\,\Delta T_w}{r\,L_0}\,
+    \zeta^{\sigma-1}(1-\zeta^\sigma).
+\end{equation}
+При $r = r_w$ ($\zeta = 1$): $\pp T/\pp r = 0$. \checkmark
+Максимум $|\pp T/\pp r|$ достигается внутри области.
+
+\paragraph{Интегралы.}
+Моменты профиля выражаются через:
+\begin{equation}\label{eq:IPsi}
+  J^{(m)} = \int_0^1 \zeta^m\,(2 - \zeta^\sigma)\,\dd\zeta
+  = \frac{2}{m+1} - \frac{1}{m+\sigma+1}.
+\end{equation}
+
+\paragraph{Выбор $\sigma$.}
+При преобладании конвекции ($\mathrm{Pe} \gg 1$)
+нефтяной поток подводит невозмущённую
+температуру $T_0$ от контура, а охлаждение
+генерируется локально (JT-эффект, дегазация).
+Возмущение $\Delta T$ концентрируется
+вблизи $r_w$. При $\sigma = 1$: $\Psi = \zeta(2-\zeta) = 1-(1-\zeta)^2$ ---
+параболический профиль, основное изменение
+вблизи забоя. При $\sigma > 1$ профиль
+ещё сильнее локализован у $r_w$.
+
+$\sigma$ можно зафиксировать ($\sigma = 1$) или определять
+из первого момента уравнения энергии (добавив четвёртое ODE).
+Начинаем с фиксированного $\sigma = 1$.
+
+
+%=============================================================================
+\section{Система ODE}\label{sec:ode}
+%=============================================================================
+
+\subsection{Свободные параметры}
+
+Профили содержат зависящие от времени параметры:
+\begin{center}
+\begin{tabular}{cl}
+  $r_b(t)$       & радиус зоны разгазирования, \\
+  $\gamma(t)$    & показатель формы давления
+                    ($\gamma = \gamma(r_b)$
+                    из~\eqref{eq:gamma_constraint}), \\
+  $S_{g,w}(t)$   & газонасыщенность на забое, \\
+  $\Delta T_w(t)$ & отклонение температуры на забое от $T_0$.
+\end{tabular}
+\end{center}
+
+Показатели формы $\beta$ и $\sigma$ фиксированы.
+$\gamma$ --- не независимый: $\gamma = \gamma(r_b)$.
+Остаются \textbf{три свободных параметра}:
+$r_b(t)$, $S_{g,w}(t)$, $\Delta T_w(t)$.
+
+\subsection{Уравнения для параметров}
+
+Подставляя профили~\eqref{eq:p_outer}--\eqref{eq:T_profile}
+в три интегральных соотношения~\eqref{eq:moment0},
+\eqref{eq:Sg_moment0}, \eqref{eq:T_moment0},
+получаем систему трёх ODE:
+
+\paragraph{1. Из нулевого момента давления~\eqref{eq:moment0}:}
+\begin{equation}\label{eq:ode1}
+  \mathcal{A}_{11}\,\dot{r}_b
+  + \mathcal{A}_{12}\,\dot{S}_{g,w}
+  + \mathcal{A}_{13}\,\dot{\Delta T}_w
+  = \mathcal{F}_1.
+\end{equation}
+
+\paragraph{2. Из нулевого момента насыщенности~\eqref{eq:Sg_moment0}:}
+\begin{equation}\label{eq:ode2}
+  \mathcal{A}_{21}\,\dot{r}_b
+  + \mathcal{A}_{22}\,\dot{S}_{g,w}
+  + \mathcal{A}_{23}\,\dot{\Delta T}_w
+  = \mathcal{F}_2.
+\end{equation}
+
+\paragraph{3. Из нулевого момента энергии~\eqref{eq:T_moment0}:}
+\begin{equation}\label{eq:ode3}
+  \mathcal{A}_{31}\,\dot{r}_b
+  + \mathcal{A}_{32}\,\dot{S}_{g,w}
+  + \mathcal{A}_{33}\,\dot{\Delta T}_w
+  = \mathcal{F}_3.
+\end{equation}
+
+Матричная форма:
+\begin{equation}\label{eq:ode_system}
+  \boxed{
+    \begin{pmatrix}
+      \mathcal{A}_{11} & \mathcal{A}_{12} & \mathcal{A}_{13} \\
+      \mathcal{A}_{21} & \mathcal{A}_{22} & \mathcal{A}_{23} \\
+      \mathcal{A}_{31} & \mathcal{A}_{32} & \mathcal{A}_{33}
+    \end{pmatrix}
+    \begin{pmatrix}
+      \dot{r}_b \\ \dot{S}_{g,w} \\ \dot{\Delta T}_w
+    \end{pmatrix}
+    =
+    \begin{pmatrix}
+      \mathcal{F}_1 \\ \mathcal{F}_2 \\ \mathcal{F}_3
+    \end{pmatrix}.
+  }
+\end{equation}
+
+\subsection{Структура коэффициентов}
+
+Коэффициенты $\mathcal{A}_{ij}$ и $\mathcal{F}_i$ вычисляются
+подстановкой профилей~\eqref{eq:p_outer}--\eqref{eq:T_profile}
+в интегралы и дифференцированием по параметрам.
+
+\paragraph{Связь параметров с производными профилей.}
+Профили $p(r,t)$ и $T(r,t)$ зависят от $t$ через
+$r_b(t)$, $\Delta T_w(t)$ (и $p_{wf}(t)$, задаваемое).
+Поэтому $\pp p/\pp t$ и $\pp T/\pp t$ выражаются
+через $\dot{r}_b$ и $\dot{\Delta T}_w$:
+\begin{equation}\label{eq:dp_dt}
+  \frac{\pp p}{\pp t}
+  = \frac{\pp p}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp p}{\pp p_{wf}}\,\dot{p}_{wf},
+\end{equation}
+\begin{equation}\label{eq:dT_dt}
+  \frac{\pp T}{\pp t}
+  = \frac{\pp T}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp T}{\pp \Delta T_w}\,\dot{\Delta T}_w.
+\end{equation}
+Профиль $S_g$ зависит от $r_b$ и $S_{g,w}$, поэтому
+$\pp S_g/\pp t$ содержит $\dot{r}_b$ и $\dot{S}_{g,w}$.
+
+Подставляя~\eqref{eq:dp_dt}--\eqref{eq:dT_dt}
+в~\eqref{eq:moment0}--\eqref{eq:T_moment0}, собираем
+коэффициенты при $\dot{r}_b$, $\dot{S}_{g,w}$,
+$\dot{\Delta T}_w$ --- это элементы матрицы
+$\mathcal{A}_{ij}$. Члены, не содержащие производных
+по времени, образуют правую часть $\mathcal{F}_i$.
+
+\paragraph{Температурный вклад в уравнение давления.}
+Элемент $\mathcal{A}_{13}$ содержит:
+\[
+  \mathcal{A}_{13} \sim \int_{r_w}^{R_\ext} r\,C_T\,
+    \frac{\pp T}{\pp \Delta T_w}\,\dd r.
+\]
+Из~\eqref{eq:T_profile}: $\pp T/\pp \Delta T_w = -\Psi(\zeta)$.
+При $C_T < 0$ (типичный случай: $\pp R_s/\pp T < 0$)
+этот вклад положителен: охлаждение увеличивает
+давление насыщения и <<тормозит>> расширение зоны разгазирования.
+
+\paragraph{Температурный вклад в уравнение насыщенности.}
+Элемент $\mathcal{A}_{23}$ содержит:
+\[
+  \mathcal{A}_{23} \sim -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
+    \frac{\pp T}{\pp \Delta T_w}\,\dd r.
+\]
+
+
+\subsection{Явный вид коэффициентов}
+
+\paragraph{Двухзонное замораживание PVT-свойств.}
+Для вычисления интегралов PVT-свойства замораживаются
+раздельно в каждой зоне:
+\begin{itemize}[nosep]
+  \item \textbf{Зона разгазирования} ($r_w \leqslant r \leqslant r_b$):
+        \[
+          \bar{p}_1 = \frac{p_{wf} + p_b^*}{2}, \qquad
+          \bar{T}_1 = T_0 - \Delta T_w\,\bar{\Psi}_1,
+          \qquad
+          \bar{S}_{g,1} = \frac{S_{g,w}}{2},
+        \]
+        где
+        \[
+          \bar{\Psi}_1
+          = \frac{1}{L_b}\int_{\zeta_b}^{1}\Psi(\zeta)\,\dd\zeta.
+        \]
+        При $L_b \ll L_0$ ($\zeta_b \to 1$):
+        $\bar{\Psi}_1 \to 1$, т.\,е.\ $\bar{T}_1 \approx T_0 - \Delta T_w$
+        (вся зона разгазирования лежит вблизи забоя).
+  \item \textbf{Однофазная зона} ($r_b \leqslant r \leqslant R_\ext$):
+        \[
+          \bar{p}_2 = \frac{p_b^* + p_0}{2}, \qquad
+          \bar{T}_2 \approx T_0, \qquad
+          S_g = 0.
+        \]
+\end{itemize}
+
+Для компактности введём обозначения:
+\begin{align}
+  I_\Phi^{(n)} &= \int_0^1 \eta^{n\gamma}\,\dd\eta
+    = \frac{1}{n\gamma + 1}, \label{eq:IPhi} \\
+  I_S^{(n)} &= \int_0^1 (1-\eta^\beta)\,\eta^{n\gamma}\,\dd\eta
+    = I_\Phi^{(n)} - \frac{1}{n\gamma + \beta + 1}.
+    \label{eq:IS}
+\end{align}
+Интегралы профиля температуры $J^{(m)}$
+определены в~\eqref{eq:IPsi}.
+
+\paragraph{Расщепление матрицы.}
+Профили $p(r)$ и $T(r)$ не зависят от $S_{g,w}$
+(давление определяется через $r_b$, $p_{wf}$;
+температура --- через $r_b$, $\Delta T_w$).
+Поэтому $\pp p/\pp t$ и $\pp T/\pp t$ не содержат
+$\dot{S}_{g,w}$, и
+\begin{equation}\label{eq:matrix_structure}
+  \mathcal{A}_{12} = 0, \qquad \mathcal{A}_{32} = 0.
+\end{equation}
+Матрица системы~\eqref{eq:ode_system} имеет вид:
+\[
+  \begin{pmatrix}
+    \mathcal{A}_{11} & 0 & \mathcal{A}_{13} \\
+    \mathcal{A}_{21} & \mathcal{A}_{22} & \mathcal{A}_{23} \\
+    \mathcal{A}_{31} & 0 & \mathcal{A}_{33}
+  \end{pmatrix}.
+\]
+Из первого и третьего уравнений определяются $\dot{r}_b$
+и $\dot{\Delta T}_w$ (подсистема $2\times 2$), после чего
+из второго уравнения находится $\dot{S}_{g,w}$.
+
+\paragraph{Замечание.}
+Расщепление касается только производных $\dot{S}_{g,w}$.
+Величина $S_{g,w}$ входит в коэффициенты $\mathcal{A}_{ij}$
+и $\mathcal{F}_i$ через PVT-свойства (оцениваемые
+при замороженных значениях $\bar{S}_g$), поэтому
+система остаётся связанной.
+
+Явные формулы для всех $\mathcal{A}_{ij}$ и $\mathcal{F}_i$
+через эти интегралы приводятся при конкретной реализации
+(вычислительная записка).
+
+
+%=============================================================================
+\section{Начальная стадия: автомодельная асимптотика при $t \to 0$}
+\label{sec:initial_stage}
+%=============================================================================
+
+При $t = 0$ давление скачком снижается до $p_{wf} < p_b$.
+Формально $r_b(0) = r_w$, $S_{g,w}(0) = 0$, $\Delta T_w(0) = 0$.
+При $t = 0^+$ $S_{g,w}$ скачком принимает конечное
+значение, но $L_b = 0$, $\gamma = 0$, и матрица
+системы~\eqref{eq:ode_system} вырождается.
+
+\subsection{Физическая картина}
+
+При $t < 0$ давление $p = p_0 > p_b$, температура $T = T_0$:
+газ растворён, фильтрация однофазная.
+При $t = 0$ мгновенно $p(r_w) = p_{wf} < p_b$.
+
+На малых временах $t \ll r_w^2/\chi_0$ задача описывается
+однофазной диффузией давления. Температура практически
+не меняется: характерное время теплового отклика
+$\tau_T \sim r_w^2/a$ ($a = \lambda_\eff/(\rho c_p)_\eff$
+--- температуропроводность), и при типичных параметрах
+$a \sim 10^{-7}$~м$^2$/с, $r_w = 0{,}1$~м:
+$\tau_T \sim 10^5$~с, т.\,е.\
+$\tau_T/\tau_\mathrm{rel} \sim 10^7$.
+
+Таким образом, на стадии зарождения зоны разгазирования
+температурное поле <<заморожено>>: $T \approx T_0$,
+$\Delta T_w \approx 0$. Начальные условия для $r_b$
+и $S_{g,w}$ определяются из изотермической задачи.
+
+\subsection{Локальная задача диффузии}
+
+При $\delta = r_b - r_w \ll r_w$:
+\begin{equation}\label{eq:diffusion}
+  \frac{\pp p}{\pp t} = \chi_0\,\frac{\pp^2 p}{\pp \xi^2},
+  \qquad
+  \chi_0 = \frac{\Lambda_0}{C_p^{(0)}},
+  \qquad
+  \xi = r - r_w,
+\end{equation}
+где $\Lambda_0 = k/(B_g\,\mu_o)$ при $S_g = 0$,
+$C_p^{(0)}$ --- коэффициент~\eqref{eq:Cp}
+при $S_g = 0$, $T = T_0$.
+Член $C_T\,\dot{T}$ в~\eqref{eq:p_eq} обнуляется не потому,
+что $C_T = 0$, а потому, что на этой стадии $\dot{T} \approx 0$
+($\tau_T \gg \tau_\mathrm{rel}$).
+
+Решение:
+\begin{equation}\label{eq:p_erfc}
+  p(\xi, t) = p_{wf} + (p_0 - p_{wf})\,
+    \operatorname{erf}\!\left(\frac{\xi}{2\sqrt{\chi_0\,t}}\right).
+\end{equation}
+
+\subsection{Скорость роста границы разгазирования}
+
+Условие $p(r_b) = p_b$ даёт:
+\begin{equation}\label{eq:delta_sqrt}
+  \boxed{
+    \delta(t) = r_b(t) - r_w = 2\,\alpha_*\,\sqrt{\chi_0\,t},
+    \qquad
+    \alpha_* = \operatorname{erf}^{-1}\!\left(
+      \frac{p_b - p_{wf}}{p_0 - p_{wf}}
+    \right).
+  }
+\end{equation}
+
+В отличие от задачи Стефана, $r_b$ --- кинематически
+определённая изобара на гладком erfc-профиле.
+
+\subsection{Асимптотика параметров профилей}
+
+При $\delta \ll r_w$:
+\begin{equation}\label{eq:Lb_asymp}
+  L_b \approx \frac{\delta}{r_w},
+  \qquad
+  L_e \to L_0 = \ln\!\frac{R_\ext}{r_w}.
+\end{equation}
+\begin{equation}\label{eq:gamma_asymp}
+  \gamma(t)
+  \approx \frac{\Delta p_2}{\Delta p_1\,L_0}\,
+    \frac{2\,\alpha_*\sqrt{\chi_0\,t}}{r_w} \to 0.
+\end{equation}
+
+\subsection{Начальная газонасыщенность}
+
+Квазиравновесие (flash):
+\begin{equation}\label{eq:Sgw_equil}
+  \boxed{
+    S_{g,w}^{\mathrm{eq}}
+    = \frac{[R_s(p_b, T_0) - R_s(p_{wf}, T_0)]\,
+      B_g(p_{wf}, T_0)}{B_o(p_{wf}, T_0)}.
+  }
+\end{equation}
+
+$S_{g,w}^{\mathrm{eq}}$ устанавливается при $t = 0^+$
+(локальное равновесие Black~Oil, $T = T_0$).
+Формула~\eqref{eq:Sgw_equil} --- линеаризация при $S_g \ll 1$;
+точное выражение содержит $B_o + \Delta R_s\,B_g$
+в знаменателе вместо~$B_o$.
+Конвективный перенос газа потоком нефти
+при $S_g < S_{g,\mathrm{cr}}$ снижает $S_{g,w}$,
+делая~\eqref{eq:Sgw_equil} верхней оценкой.
+
+\subsection{Начальная температура}
+
+При $t = t_\varepsilon$: $\Delta T_w(t_\varepsilon) \approx 0$.
+Температура ещё не успела измениться.
+
+Первое ненулевое приближение: охлаждение определяется
+балансом эффекта Джоуля--Томсона и теплоты дегазации.
+Интегрируя~\eqref{eq:energy} по малому объёму
+$r_w < r < r_w + \delta$ при $T'_w = 0$:
+\begin{equation}\label{eq:dTw_init}
+  (\rho c_p)_\eff\,\frac{\dd T_w}{\dd t}\bigg|_{t=0^+}
+  \approx Q_\mathrm{JT}(r_w) + Q_\mathrm{ad}(r_w) + Q_\mathrm{deg}(r_w).
+\end{equation}
+Оба источника конечны при $t = 0^+$ (давление и его
+градиент определены из erfc-решения), поэтому
+$\Delta T_w(t_\varepsilon) = O(t_\varepsilon) \approx 0$
+при $t_\varepsilon \sim 10^{-6}\text{--}10^{-4}$~с.
+
+\subsection{Сводка: начальные данные для ODE-системы}
+
+Для запуска интегрирования системы~\eqref{eq:ode_system}
+при $t = t_\varepsilon > 0$:
+\begin{equation}\label{eq:ic_regularized}
+  \boxed{
+    r_b(t_\varepsilon) = r_w + 2\,\alpha_*\sqrt{\chi_0\,t_\varepsilon},
+    \quad
+    S_{g,w}(t_\varepsilon) = S_{g,w}^{\mathrm{eq}},
+    \quad
+    \Delta T_w(t_\varepsilon) = 0.
+  }
+\end{equation}
+
+$t_\varepsilon$ выбирается из условия $\delta/r_w \sim 10^{-2}\text{--}10^{-1}$,
+что при $\chi_0 \sim 0{,}5$~м$^2$/с, $\alpha_* \approx 0{,}5$,
+$r_w = 0{,}1$~м даёт $t_\varepsilon \sim 10^{-6}\text{--}10^{-4}$~с.
+На этих временах $\Delta T_w \approx 0$: тепловой отклик пренебрежимо мал.
+
+
+%=============================================================================
+\section{Обсуждение}\label{sec:discussion}
+%=============================================================================
+
+\subsection{Преимущества подхода}
+
+\begin{enumerate}[nosep]
+  \item Три PDE редуцированы к системе трёх ODE ---
+        вычислительная стоимость на порядки ниже.
+  \item Подвижная граница $r_b(t)$ --- естественный параметр.
+  \item Температурное поле включено в систему: обратная связь
+        $T \to R_s(p,T)$ учитывается автоматически на каждом
+        временном шаге.
+  \item Интегральные характеристики (дебит, объём газа,
+        средняя температура) воспроизводятся по построению.
+\end{enumerate}
+
+\subsection{Сложность решения ODE-системы}
+
+Формально система~\eqref{eq:ode_system} состоит из трёх ODE,
+что на порядки дешевле исходных PDE. Однако реальная сложность
+определяется не размерностью, а структурой правых частей:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Вычисление коэффициентов.}
+        На каждом временном шаге необходимо вычислить 9 элементов
+        матрицы $\mathcal{A}_{ij}$ (из которых 2 нулевых)
+        и 3~компоненты $\mathcal{F}_i$. Каждый элемент ---
+        линейная комбинация интегралов $I_\Phi^{(n)}$,
+        $I_\Psi^{(n)}$, $I_S^{(n)}$, которые при замораживании
+        PVT-свойств вычисляются аналитически.
+        Стоимость одного шага --- $O(1)$.
+
+  \item \textbf{Конвективный интеграл в уравнении энергии.}
+        Подставляя $u_\alpha = -\lambda_\alpha\,\pp p/\pp r$
+        и~\eqref{eq:dT_dr}:
+        \[
+          \int_{r_w}^{R_\ext} r\,(\rho c_p u)_\mathrm{conv}^*\,
+            \frac{\pp T}{\pp r}\,\dd r
+          = -\int_{r_w}^{R_\ext}
+            \frac{(\rho c_p \lambda)_\mathrm{conv}^*}{r}\,
+            \frac{\pp p}{\pp r}\,
+            \Psi'(\zeta)\,\frac{\Delta T_w}{L_0}\,\dd r,
+        \]
+        где $(\rho c_p \lambda)_\mathrm{conv}^*
+        = \sum_\alpha \rho_\alpha c_{p,\alpha}\,\lambda_\alpha
+          - L\,\rho_g^\st\,(\lambda_o/B_o)\,\pp R_s/\pp T$.
+        При замораживании коэффициентов и подстановке
+        $\pp p/\pp r$ из~\eqref{eq:dp_inner}--\eqref{eq:dp_outer}
+        интеграл сводится к комбинации $I_\Phi^{(n)}$
+        и $J^{(m)}$ через связь $\zeta(\eta)$.
+
+  \item \textbf{Квадратичный член в уравнении давления.}
+        Интеграл $\int r\,(\lambda_o/B_o)\,\nabla R_s\cdot\nabla p\,
+        |\nabla p|\,\dd r$ содержит $(\pp p/\pp r)^2$ и
+        $(\pp T/\pp r)\,(\pp p/\pp r)$. Второе слагаемое ---
+        произведение производных \emph{разных} профилей,
+        определённых в \emph{разных} координатах
+        ($\eta$ для $p$, $\zeta$ для $T$), что не сводится
+        к стандартным $I$-интегралам.
+
+  \item \textbf{Жёсткость.}
+        Система потенциально жёсткая: масштаб $\dot{r}_b$
+        определяется гидродинамикой ($\chi_0 \sim 0{,}5$~м$^2$/с),
+        а $\dot{\Delta T}_w$ --- температуропроводностью
+        ($a \sim 10^{-7}$~м$^2$/с). Отношение масштабов
+        $\chi_0/a \sim 10^6$--$10^7$, что типично
+        для жёстких систем.
+        Конвективный перенос ($\mathrm{Pe} \gg 1$) смягчает
+        жёсткость: эффективная температуропроводность
+        $a_\eff \sim uL \sim 10^{-4}$~м$^2$/с
+        ($u \sim 10^{-3}$~м/с, $L \sim r_w$), что
+        снижает отношение до $\chi_0/a_\eff \sim 10^3$--$10^4$.
+        Система остаётся жёсткой; необходим неявный
+        интегратор (BDF порядка 2--5).
+
+  \item \textbf{Расщепление.}
+        Структура~\eqref{eq:matrix_structure} позволяет
+        решать подсистему $2\times 2$ на $(r_b, \Delta T_w)$
+        и скалярное уравнение на $S_{g,w}$ последовательно,
+        что упрощает обращение матрицы.
+\end{enumerate}
+
+\paragraph{Обезразмеривание.}
+Элементы $\mathcal{A}_{11}$ масштабируются как $C_p$~[Па$^{-1}$],
+а $\mathcal{A}_{33}$ --- как $(\rho c_p)_\eff^*$~[Дж/(м$^3$\,К)].
+Без обезразмеривания обусловленность матрицы $\sim 10^{15}$.
+Рекомендуется ввести характерные масштабы
+$[p] = p_0 - p_{wf}$, $[T] = 10$~К, $[r] = r_w$, $[t] = r_w^2/\chi_0$
+и перейти к безразмерным переменным $\tilde{r}_b$,
+$\tilde{\Delta T}_w$, $\tilde{S}_{g,w}$.
+
+\paragraph{Итого.}
+При замораживании PVT-свойств система~\eqref{eq:ode_system}
+допускает решение BDF-методом.
+Основная вычислительная стоимость --- не в решении ODE,
+а в вычислении PVT-свойств при обновлении средних $\bar{p}$,
+$\bar{T}$, $\bar{S}_g$. Если PVT заданы корреляциями (Стендинг
+и т.\,п.), стоимость одного шага $\sim 10^2$ операций.
+
+
+\subsection{Ограничения и открытые вопросы}
+
+\paragraph{Решённые вопросы.}
+\begin{itemize}[nosep]
+  \item Профиль температуры~\eqref{eq:Psi} удовлетворяет
+        $\Psi'(1) = 0$, что обеспечивает $T'(r_w) = 0$
+        (адиабатическое ГУ на забое).
+  \item Зависимость $p_b(T)$ учтена через
+        $p_b^* = p_b\bigl(T(r_b)\bigr)$
+        в профиле давления и ограничении~\eqref{eq:gamma_constraint}.
+  \item Двухзонное замораживание PVT-свойств
+        (раздельные средние для зон разгазирования и однофазной)
+        снижает ошибку по сравнению с единым средним.
+  \item Смешанный интеграл $\int r\,(\pp T/\pp r)\,(\pp p/\pp r)\,\dd r$
+        вычисляется аналитически благодаря линейной связи
+        $\zeta = 1 - (L_b/L_0)\eta$.
+  \item Модифицированные источники $Q_\mathrm{JT}^*$,
+        $Q_\mathrm{ad}^*$ выписаны
+        явно~\eqref{eq:QJT_star}--\eqref{eq:Qad_star}.
+  \item Конвективный интеграл в уравнении энергии
+        выражен через замороженные коэффициенты
+        и стандартные $I$-интегралы.
+\end{itemize}
+
+\paragraph{Открытые вопросы.}
+\begin{enumerate}[nosep]
+  \item \textbf{Квадратичный член $(\pp p/\pp r)^2$.}
+        Интеграл $\int r\,(\lambda_o/B_o)\,(\pp R_s/\pp p)\,
+        (\pp p/\pp r)^2\,\dd r$ не сводится к граничным потокам
+        и требует замораживания $\lambda_o/B_o$ при среднем давлении.
+        Его вклад может быть оценён a~posteriori.
+
+  \item \textbf{Перегруппировка $Q_\mathrm{deg}$.}
+        Перегруппированные коэффициенты~\eqref{eq:rhocp_eff_mod},
+        \eqref{eq:rhocp_conv_mod} зависят от $p$, $T$, $S_g$,
+        что усложняет замораживание. При двухзонной оценке
+        эффект смягчается, но строгая оценка погрешности открыта.
+
+  \item \textbf{Выбор $\beta$, $\sigma$.}
+        Показатели формы профилей можно зафиксировать или определить
+        из старших моментов. Чувствительность подлежит исследованию.
+
+  \item \textbf{Верификация.}
+        Сопоставление с численным решением полной PDE-системы
+        (метод конечных разностей или OPM Flow)
+        необходимо для оценки реальной точности метода моментов.
+\end{enumerate}
+
+
+%=============================================================================
+\section*{Литература}
+%=============================================================================
+
+\begin{thebibliography}{9}
+
+\bibitem{draft4}
+  Двухфазная фильтрация нефти с газом в радиальной геометрии.
+  Полная система уравнений с балансом энергии.
+  --- Draft4/two\_phase\_energy.tex (рабочий документ).
+
+\bibitem{barenblatt1954}
+  Баренблатт~Г.\,И. О некоторых приближённых методах в теории
+  одномерной неустановившейся фильтрации жидкости при упругом
+  режиме~// Изв. АН СССР, ОТН. --- 1954. --- №\,9. --- С.\,35--49.
+
+\bibitem{BER1984}
+  Баренблатт~Г.\,И., Ентов~В.\,М., Рыжик~В.\,М.
+  Движение жидкостей и газов в природных пластах. ---
+  М.: Недра, 1984. --- 211~с.
+
+\bibitem{mirz2004}
+  Мирзаджанзаде~А.\,Х., Хасанов~М.\,М., Бахтизин~Р.\,Н.
+  Моделирование процессов нефтегазодобычи. ---
+  М.--Ижевск: Институт компьютерных исследований, 2004. ---
+  С.\,212--218 (§\,3.7).
+
+\bibitem{pirverdyan1961}
+  Пирвердян~А.\,М. Об одном способе оценок приближённых решений
+  уравнений нестационарной фильтрации нефти и газа~//
+  ПММ. --- 1961. --- Т.\,25, вып.\,4.
+
+\bibitem{entov1965}
+  Ентов~В.\,М. Теоремы сравнения для уравнений нестационарной
+  фильтрации~// ПММ. --- 1965. --- Т.\,29, вып.\,11.
+
+\end{thebibliography}
+
+\end{document}

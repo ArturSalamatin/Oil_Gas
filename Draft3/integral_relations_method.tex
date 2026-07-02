@@ -1,0 +1,696 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{left=25mm, right=25mm, top=20mm, bottom=20mm}
+
+\title{Метод интегральных соотношений Баренблатта\\
+для задачи двухфазной фильтрации\\
+в модели Black Oil}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%=============================================================
+\section{Постановка задачи}
+%=============================================================
+
+Рассматривается одномерная изотермическая фильтрация нефти с растворённым газом
+в пористой среде. Основные допущения:
+\begin{itemize}
+  \item две фазы: нефть~(o) и газ~(g); воды нет;
+  \item начальное давление $p_0 > p_b$ (выше давления насыщения);
+  \item пористая среда недеформируема, пористость $\phi = \mathrm{const}$;
+  \item гравитационные эффекты не учитываются;
+  \item термодинамическое равновесие между фазами (мгновенный массообмен).
+\end{itemize}
+
+По мере снижения давления ниже~$p_b$ газ выделяется из нефти
+в свободную фазу. Скорость фильтрации каждой фазы определяется
+обобщённым законом Дарси с относительными фазовыми проницаемостями.
+
+%=============================================================
+\section{Определяющие соотношения модели Black Oil}
+%=============================================================
+
+\subsection{Насыщенности}
+
+\begin{equation}\label{eq:saturation}
+  S_o + S_g = 1.
+\end{equation}
+
+\subsection{PVT-свойства}
+
+Модель Black Oil задаёт следующие зависимости от давления~$p$:
+\begin{itemize}
+  \item $B_o(p)$ --- объёмный коэффициент нефти (пластовый объём / стандартный объём);
+  \item $B_g(p)$ --- объёмный коэффициент газа;
+  \item $R_s(p)$ --- газосодержание нефти (объём растворённого газа при стандартных
+        условиях на единицу стандартного объёма нефти);
+  \item $\mu_o(p)$, $\mu_g(p)$ --- вязкости нефти и газа.
+\end{itemize}
+
+При $p \ge p_b$ газосодержание постоянно: $R_s = R_s(p_b) \equiv R_{si}$,
+свободного газа нет ($S_g = 0$).
+
+\subsection{Законы сохранения массы}
+
+\textbf{Нефтяной компонент:}
+\begin{equation}\label{eq:oil_conservation}
+  \frac{\partial}{\partial t}\left(\phi\,\frac{S_o}{B_o}\right)
+  + \frac{\partial}{\partial x}\left(\frac{u_o}{B_o}\right) = 0.
+\end{equation}
+
+\textbf{Газовый компонент} (свободный газ + газ, растворённый в нефти):
+\begin{equation}\label{eq:gas_conservation}
+  \frac{\partial}{\partial t}\left(\phi\left(\frac{S_g}{B_g}
+  + \frac{R_s\,S_o}{B_o}\right)\right)
+  + \frac{\partial}{\partial x}\left(\frac{u_g}{B_g}
+  + \frac{R_s\,u_o}{B_o}\right) = 0.
+\end{equation}
+
+\subsection{Закон Дарси}
+
+\begin{equation}\label{eq:darcy_oil}
+  u_o = -\frac{k\,k_{ro}(S_g)}{\mu_o(p)}\,\frac{\partial p}{\partial x},
+\end{equation}
+
+\begin{equation}\label{eq:darcy_gas}
+  u_g = -\frac{k\,k_{rg}(S_g)}{\mu_g(p)}\,\frac{\partial p}{\partial x},
+\end{equation}
+где $k$ --- абсолютная проницаемость, $k_{ro}(S_g)$ и $k_{rg}(S_g)$ ---
+относительные фазовые проницаемости.
+
+\subsection{Суммарная скорость и дробный поток}
+
+Суммарная скорость фильтрации:
+\begin{equation}\label{eq:total_velocity}
+  u = u_o + u_g = -k\,\lambda_t(S_g,\,p)\,\frac{\partial p}{\partial x},
+\end{equation}
+где суммарная подвижность:
+\begin{equation}\label{eq:total_mobility}
+  \lambda_t = \frac{k_{ro}}{\mu_o} + \frac{k_{rg}}{\mu_g}.
+\end{equation}
+
+Дробный поток нефти:
+\begin{equation}\label{eq:fractional_flow}
+  f_o = \frac{\lambda_o}{\lambda_t}
+  = \frac{k_{ro}/\mu_o}{k_{ro}/\mu_o + k_{rg}/\mu_g}.
+\end{equation}
+
+%=============================================================
+\section{Структура решения: две зоны}
+%=============================================================
+
+По мере снижения давления на забое ниже~$p_b$ возникают две
+характерные области (рис.~\ref{fig:zones}):
+
+\begin{description}
+  \item[Зона~I] ($0 \le x \le x_f(t)$): давление $p < p_b$, двухфазная
+    фильтрация, газонасыщенность $S_g > 0$.
+  \item[Зона~II] ($x_f(t) < x < x_e(t)$): давление $p \ge p_b$, однофазная
+    фильтрация нефти, $S_g = 0$.
+\end{description}
+
+За пределами фронта возмущения ($x > x_e(t)$) пласт не возмущён: $p = p_0$.
+
+На \textbf{фронте насыщения} $x = x_f(t)$:
+\begin{equation}\label{eq:front_conditions}
+  p\big|_{x=x_f} = p_b, \qquad S_g\big|_{x=x_f} = 0.
+\end{equation}
+
+Схематически:
+\[
+  \underbrace{\text{Забой}
+  \;\xrightarrow{\;S_g > 0,\; p < p_b\;}}_{\text{Зона I}}
+  \; x_f(t) \;
+  \underbrace{\xrightarrow{\;S_g = 0,\; p \ge p_b\;}}_{\text{Зона II}}
+  \; x_e(t) \;
+  \xrightarrow{\;p = p_0\;}
+  \text{Невозмущённый пласт}
+\]
+
+\begin{figure}[h]
+  \centering
+  \setlength{\unitlength}{1mm}
+  \begin{picture}(120,40)
+    \put(0,5){\vector(1,0){120}}
+    \put(122,4){$x$}
+    \put(0,5){\vector(0,1){35}}
+    \put(-5,42){$p, S_g$}
+    % pressure profile
+    \qbezier(0,15)(20,22)(50,30)
+    \qbezier(50,30)(70,35)(90,37)
+    \put(90,37){\line(1,0){25}}
+    % saturation profile
+    \qbezier(0,25)(15,18)(35,10)
+    \qbezier(35,10)(45,7)(50,5)
+    % labels
+    \put(50,1){\line(0,1){4}}
+    \put(47,-2){$x_f$}
+    \put(90,1){\line(0,1){4}}
+    \put(87,-2){$x_e$}
+    \put(5,11){$p(x)$}
+    \put(5,27){$S_g(x)$}
+    \put(115,36){$p_0$}
+    \put(52,29){$p_b$}
+  \end{picture}
+  \caption{Схема распределения давления и газонасыщенности.}
+  \label{fig:zones}
+\end{figure}
+
+%=============================================================
+\section{Метод интегральных соотношений}
+%=============================================================
+
+\subsection{Идея метода}
+
+Следуя Баренблатту, вместо решения системы уравнений в частных
+производных~\eqref{eq:oil_conservation}--\eqref{eq:gas_conservation}
+мы:
+\begin{enumerate}
+  \item интегрируем уравнения сохранения по пространственной переменной
+        в пределах каждой зоны;
+  \item аппроксимируем профили давления и насыщенности функциями
+        заданной формы с неизвестными параметрами;
+  \item подставляем аппроксимации в интегральные соотношения и получаем
+        систему ОДУ для параметров.
+\end{enumerate}
+
+\subsection{Интегрирование уравнения сохранения нефти (Зона~I)}
+
+Интегрируем~\eqref{eq:oil_conservation} по~$x$ от~$0$ до~$x_f(t)$:
+\begin{equation}\label{eq:oil_integral_raw}
+  \int_0^{x_f} \frac{\partial}{\partial t}
+  \left(\phi\,\frac{S_o}{B_o}\right) dx
+  + \left.\frac{u_o}{B_o}\right|_0^{x_f} = 0.
+\end{equation}
+
+Применяя формулу Лейбница к первому слагаемому:
+\begin{equation}\label{eq:leibniz}
+  \int_0^{x_f}\frac{\partial}{\partial t}(\cdot)\,dx
+  = \frac{d}{dt}\int_0^{x_f}(\cdot)\,dx
+  - (\cdot)\big|_{x=x_f}\,\dot{x}_f,
+\end{equation}
+получаем с учётом $S_o(x_f) = 1$, $p(x_f) = p_b$:
+\begin{equation}\label{eq:oil_integral}
+  \boxed{
+  \frac{d}{dt}\int_0^{x_f} \phi\,\frac{1 - S_g}{B_o(p)}\,dx
+  = \frac{\phi}{B_o(p_b)}\,\dot{x}_f
+  - \frac{u_o(x_f)}{B_o(p_b)}
+  + \frac{u_o(0)}{B_o(p_{wf})}.
+  }
+\end{equation}
+
+\subsection{Интегрирование уравнения сохранения газа (Зона~I)}
+
+Аналогично интегрируем~\eqref{eq:gas_conservation}:
+\begin{equation}\label{eq:gas_integral}
+  \boxed{
+  \frac{d}{dt}\int_0^{x_f} \phi\left(\frac{S_g}{B_g}
+  + \frac{R_s(1-S_g)}{B_o}\right)dx
+  = \phi\,\frac{R_s(p_b)}{B_o(p_b)}\,\dot{x}_f
+  - \left.\left(\frac{u_g}{B_g}+\frac{R_s\,u_o}{B_o}\right)\right|_0^{x_f}.
+  }
+\end{equation}
+
+На фронте $x = x_f$ свободного газа нет ($S_g = 0$, $k_{rg} = 0$), поэтому
+$u_g(x_f) = 0$, и правая часть упрощается.
+
+%=============================================================
+\section{Аппроксимация профилей}
+%=============================================================
+
+Введём автомодельную переменную:
+\begin{equation}\label{eq:xi}
+  \xi = \frac{x}{x_f(t)}, \qquad 0 \le \xi \le 1.
+\end{equation}
+
+\subsection{Профиль давления в Зоне~I}
+
+\begin{equation}\label{eq:pressure_profile}
+  p(\xi, t) = p_b - \Delta p(t)\,(1-\xi)^n,
+\end{equation}
+где $\Delta p(t) = p_b - p_{wf}(t)$ --- депрессия на забое,
+$n > 0$ --- показатель формы.
+
+Граничные условия:
+\[
+  p(0,t) = p_b - \Delta p = p_{wf}(t), \qquad p(1,t) = p_b.
+\]
+
+Градиент давления:
+\begin{equation}\label{eq:dp_dx}
+  \frac{\partial p}{\partial x}
+  = \frac{n\,\Delta p}{x_f}\,(1-\xi)^{n-1}.
+\end{equation}
+
+\subsection{Профиль газонасыщенности в Зоне~I}
+
+\begin{equation}\label{eq:saturation_profile}
+  S_g(\xi, t) = S_{g,\max}(t)\,(1-\xi)^m,
+\end{equation}
+где $S_{g,\max}(t)$ --- максимальная газонасыщенность (на забое, $\xi=0$),
+$m > 0$ --- показатель формы.
+
+Граничные условия:
+\[
+  S_g(0,t) = S_{g,\max}(t), \qquad S_g(1,t) = 0.
+\]
+
+\subsection{Вычисление интегралов}
+
+Благодаря степенной форме профилей интегралы вычисляются аналитически.
+
+\textbf{Интеграл газонасыщенности:}
+\begin{equation}\label{eq:Sg_integral}
+  \int_0^{x_f} S_g\,dx
+  = S_{g,\max}\,x_f \int_0^1 (1-\xi)^m\,d\xi
+  = \frac{S_{g,\max}\,x_f}{m+1}.
+\end{equation}
+
+\textbf{Интеграл нефтенасыщенности:}
+\begin{equation}\label{eq:So_integral}
+  \int_0^{x_f}(1-S_g)\,dx
+  = x_f\left(1 - \frac{S_{g,\max}}{m+1}\right).
+\end{equation}
+
+Для более точного вычисления интегралов, содержащих PVT-свойства,
+линеаризуем их вблизи~$p_b$:
+\begin{equation}\label{eq:Bo_linearize}
+  \frac{1}{B_o(p)} \approx \frac{1}{B_o(p_b)}
+  \left(1 + c_o\,(p_b - p)\right),
+\end{equation}
+где $c_o = -\frac{1}{B_o}\frac{dB_o}{dp}\big|_{p_b}$ ---
+сжимаемость нефти (с учётом выделения газа).
+
+Тогда:
+\begin{equation}\label{eq:oil_volume_integral}
+  \int_0^{x_f}\frac{1-S_g}{B_o}\,dx
+  \approx \frac{x_f}{B_o(p_b)}\left[
+    1 - \frac{S_{g,\max}}{m+1}
+    + c_o\,\Delta p\left(\frac{1}{n+1}
+    - \frac{S_{g,\max}}{m+n+1}\right)
+  \right].
+\end{equation}
+
+\subsection{Профиль давления в Зоне~II}
+
+В однофазной области ($x_f < x < x_e$) вводим переменную:
+\begin{equation}\label{eq:eta}
+  \eta = \frac{x - x_f(t)}{x_e(t) - x_f(t)}, \qquad 0 \le \eta \le 1,
+\end{equation}
+и аппроксимируем:
+\begin{equation}\label{eq:pressure_zone2}
+  p(\eta,t) = p_b + (p_0 - p_b)\,\eta^{n_2},
+\end{equation}
+так что $p = p_b$ при $\eta = 0$ (внутренняя граница)
+и $p = p_0$ при $\eta = 1$ (фронт возмущения).
+
+Интегральное соотношение для Зоны~II получается интегрированием
+уравнения пьезопроводности:
+\begin{equation}\label{eq:zone2_integral}
+  \frac{d}{dt}\int_{x_f}^{x_e}\phi\,c_t\,(p - p_0)\,dx
+  = \left.\frac{k}{\mu_o\,B_o}\frac{\partial p}{\partial x}
+  \right|_{x_f}
+  - \left.\frac{k}{\mu_o\,B_o}\frac{\partial p}{\partial x}
+  \right|_{x_e},
+\end{equation}
+где последний член обращается в нуль, если на фронте возмущения
+$\partial p/\partial x = 0$.
+
+%=============================================================
+\section{Замкнутая система ОДУ}
+%=============================================================
+
+После подстановки аппроксимаций в интегральные
+соотношения~\eqref{eq:oil_integral}--\eqref{eq:gas_integral}
+и~\eqref{eq:zone2_integral} получаем систему обыкновенных
+дифференциальных уравнений для четырёх неизвестных функций времени:
+
+\begin{equation}\label{eq:unknowns}
+  x_f(t), \quad x_e(t), \quad \Delta p(t), \quad S_{g,\max}(t).
+\end{equation}
+
+\subsection{Уравнение из сохранения нефти}
+
+Обозначим для краткости:
+\[
+  \mathcal{I}_o = \frac{\phi\,x_f}{B_o(p_b)}
+  \left[1 - \frac{S_{g,\max}}{m+1}
+  + c_o\,\Delta p\left(\frac{1}{n+1}
+  - \frac{S_{g,\max}}{m+n+1}\right)\right].
+\]
+
+Тогда~\eqref{eq:oil_integral} принимает вид:
+\begin{equation}\label{eq:ode_oil}
+  \frac{d\mathcal{I}_o}{dt}
+  = \frac{\phi}{B_o(p_b)}\,\dot{x}_f
+  + \frac{k}{\mu_o(p_b)\,B_o(p_b)}\,
+  \frac{n\,\Delta p}{x_f}\,k_{ro}(0)
+  - \frac{k}{\mu_o(p_{wf})\,B_o(p_{wf})}\,
+  \frac{n\,\Delta p}{x_f}\,k_{ro}(S_{g,\max}).
+\end{equation}
+
+Здесь использовано~\eqref{eq:dp_dx} для вычисления скоростей на границах.
+На фронте ($\xi=1$): $k_{ro}(S_g=0) = k_{ro}(0) \equiv 1$.
+На забое ($\xi=0$): $k_{ro}(S_{g,\max})$.
+
+\subsection{Уравнение из сохранения газа}
+
+Аналогично, определив:
+\[
+  \mathcal{I}_g = \phi\,x_f\left[
+    \frac{S_{g,\max}}{(m+1)\,B_g^*}
+    + \frac{R_s^*}{B_o^*}\left(1 - \frac{S_{g,\max}}{m+1}\right)
+  \right],
+\]
+где звёздочкой обозначены средневзвешенные по зоне значения PVT-свойств,
+получаем из~\eqref{eq:gas_integral}:
+\begin{equation}\label{eq:ode_gas}
+  \frac{d\mathcal{I}_g}{dt}
+  = \frac{\phi\,R_s(p_b)}{B_o(p_b)}\,\dot{x}_f
+  - \frac{R_s(p_b)}{B_o(p_b)}\,u_o(x_f)
+  + \frac{1}{B_g(p_{wf})}\,u_g(0)
+  + \frac{R_s(p_{wf})}{B_o(p_{wf})}\,u_o(0).
+\end{equation}
+
+\subsection{Уравнение для Зоны~II}
+
+Из~\eqref{eq:zone2_integral}:
+\begin{equation}\label{eq:ode_zone2}
+  \frac{d}{dt}\left[
+    \frac{\phi\,c_t\,(p_0 - p_b)\,(x_e - x_f)}{n_2 + 1}
+  \right]
+  = \frac{k}{\mu_o\,B_o}\,
+  \frac{n_2\,(p_0 - p_b)}{x_e - x_f}.
+\end{equation}
+
+\subsection{Условие сшивки потоков}
+
+Четвёртое уравнение --- непрерывность суммарного потока на фронте~$x_f$:
+\begin{equation}\label{eq:flux_matching}
+  u\big|_{x_f^-} = u\big|_{x_f^+},
+\end{equation}
+что связывает градиенты давления по обе стороны фронта:
+\begin{equation}\label{eq:gradient_matching}
+  \frac{k\,\lambda_t(0,\,p_b)}{1}\cdot\frac{n\,\Delta p}{x_f}
+  = \frac{k}{\mu_o(p_b)\,B_o(p_b)}\cdot
+  \frac{n_2\,(p_0 - p_b)}{x_e - x_f}.
+\end{equation}
+
+Здесь слева: двухфазная подвижность при $S_g=0$ на фронте,
+справа: однофазная подвижность в Зоне~II.
+
+\subsection{Граничное условие}
+
+Система замыкается заданием условия на забое. Например:
+\begin{itemize}
+  \item постоянный дебит нефти:
+    $\displaystyle q_o = -\frac{k\,k_{ro}(S_{g,\max})}{\mu_o(p_{wf})}\,
+    \frac{n\,\Delta p}{x_f}\bigg|_{x=0} = \mathrm{const}$;
+  \item постоянное забойное давление: $p_{wf} = \mathrm{const}$,
+    т.\,е. $\Delta p = p_b - p_{wf} = \mathrm{const}$.
+\end{itemize}
+
+%=============================================================
+\section{Решение системы ОДУ}
+%=============================================================
+
+Итоговая система~\eqref{eq:ode_oil}--\eqref{eq:gradient_matching}
+с граничным условием представляет собой начальную задачу для
+вектора $\{x_f,\, x_e,\, \Delta p,\, S_{g,\max}\}$.
+
+Начальные условия соответствуют моменту, когда забойное давление
+достигает~$p_b$:
+\[
+  x_f(0) = 0, \quad x_e(0) = x_e^{(0)}, \quad
+  \Delta p(0) = 0, \quad S_{g,\max}(0) = 0.
+\]
+
+Система решается численно методом Рунге--Кутты (например, RK4).
+
+\subsection{Результаты решения}
+
+Решение даёт:
+\begin{enumerate}
+  \item \textbf{Динамику фронта двухфазной зоны} $x_f(t)$ ---
+    скорость продвижения области с выделившимся газом.
+  \item \textbf{Эволюцию газонасыщенности} $S_{g,\max}(t)$ ---
+    накопление свободного газа в призабойной зоне.
+  \item \textbf{Динамику давления} $\Delta p(t)$ и $p_{wf}(t)$ ---
+    изменение забойного давления и депрессии.
+  \item \textbf{Газовый фактор} --- отношение дебитов газа и нефти
+    на забое, определяемое через дробный поток.
+\end{enumerate}
+
+%=============================================================
+\section{Радиальная геометрия}
+%=============================================================
+
+Для радиальной постановки (скважина радиуса~$r_w$) все уравнения
+переписываются в цилиндрических координатах. Уравнение сохранения
+нефти:
+\begin{equation}\label{eq:oil_radial}
+  \frac{\partial}{\partial t}\left(\phi\,\frac{S_o}{B_o}\right)
+  + \frac{1}{r}\frac{\partial}{\partial r}
+  \left(r\,\frac{u_o}{B_o}\right) = 0,
+\end{equation}
+а интегрирование ведётся по~$r$ от~$r_w$ до~$r_f(t)$:
+\begin{equation}\label{eq:oil_integral_radial}
+  \frac{d}{dt}\int_{r_w}^{r_f}
+  \phi\,\frac{1-S_g}{B_o}\,r\,dr
+  = \frac{\phi\,r_f}{B_o(p_b)}\,\dot{r}_f
+  - \frac{r_f\,u_o(r_f)}{B_o(p_b)}
+  + \frac{r_w\,u_o(r_w)}{B_o(p_{wf})}.
+\end{equation}
+
+Аппроксимация профилей в этом случае строится через переменную:
+\begin{equation}
+  \xi = \frac{\ln(r/r_w)}{\ln(r_f/r_w)}, \qquad 0 \le \xi \le 1,
+\end{equation}
+что учитывает логарифмический характер распределения давления
+вблизи скважины.
+
+%=============================================================
+\section{Определение показателей формы методом моментов}
+%=============================================================
+
+В предыдущих разделах показатели формы $n$, $m$ (и $n_2$) были
+свободными параметрами. Метод моментов позволяет определить их
+из дополнительных интегральных соотношений, так что они становятся
+частью решения.
+
+\subsection{Идея метода}
+
+Исходное уравнение в частных производных содержит бесконечное
+количество информации о профиле решения. Интегрирование
+$\int_0^{x_f}(\cdot)\,dx$ извлекает лишь \emph{нулевой момент} ---
+суммарное количество вещества в зоне. Умножая уравнение на степени
+координаты перед интегрированием, получаем \emph{моменты высших
+порядков}, которые несут информацию о \emph{форме} профиля.
+
+Каждый дополнительный момент даёт одно дополнительное уравнение,
+позволяющее найти один дополнительный параметр.
+
+\subsection{Первый момент уравнения сохранения нефти}
+
+Умножим~\eqref{eq:oil_conservation} на~$x$ и проинтегрируем
+по~$x$ от~$0$ до~$x_f$:
+\begin{equation}\label{eq:first_moment_oil}
+  \int_0^{x_f} x\,\frac{\partial}{\partial t}
+  \left(\phi\,\frac{S_o}{B_o}\right)dx
+  + \int_0^{x_f} x\,\frac{\partial}{\partial x}
+  \left(\frac{u_o}{B_o}\right)dx = 0.
+\end{equation}
+
+Первый интеграл преобразуем по формуле Лейбница:
+\begin{equation}\label{eq:first_moment_leibniz}
+  \int_0^{x_f} x\,\frac{\partial}{\partial t}
+  \left(\phi\,\frac{S_o}{B_o}\right)dx
+  = \frac{d}{dt}\int_0^{x_f} x\,\phi\,\frac{S_o}{B_o}\,dx
+  - x_f\,\frac{\phi}{B_o(p_b)}\,\dot{x}_f.
+\end{equation}
+
+Второй интеграл берём по частям:
+\begin{equation}\label{eq:first_moment_parts}
+  \int_0^{x_f} x\,\frac{\partial}{\partial x}
+  \left(\frac{u_o}{B_o}\right)dx
+  = \left.x\,\frac{u_o}{B_o}\right|_0^{x_f}
+  - \int_0^{x_f}\frac{u_o}{B_o}\,dx
+  = x_f\,\frac{u_o(x_f)}{B_o(p_b)}
+  - \int_0^{x_f}\frac{u_o}{B_o}\,dx.
+\end{equation}
+
+Объединяя, получаем \textbf{первый момент}:
+\begin{equation}\label{eq:moment1_oil}
+  \boxed{
+  \frac{d}{dt}\int_0^{x_f} x\,\phi\,\frac{1-S_g}{B_o}\,dx
+  = x_f\left(\frac{\phi}{B_o(p_b)}\,\dot{x}_f
+  - \frac{u_o(x_f)}{B_o(p_b)}\right)
+  + \int_0^{x_f}\frac{u_o}{B_o}\,dx.
+  }
+\end{equation}
+
+\subsection{Вычисление моментных интегралов}
+
+Подставляя аппроксимации~\eqref{eq:pressure_profile}
+и~\eqref{eq:saturation_profile}, получаем (в ведущем порядке
+по~$c_o\,\Delta p$):
+
+\textbf{Первый момент нефтенасыщенности:}
+\begin{equation}\label{eq:x_So_integral}
+  \int_0^{x_f} x\,(1-S_g)\,dx
+  = x_f^2\int_0^1 \xi\,(1 - S_{g,\max}(1-\xi)^m)\,d\xi
+  = x_f^2\left[\frac{1}{2}
+  - S_{g,\max}\left(\frac{1}{m+1} - \frac{1}{m+2}\right)\right].
+\end{equation}
+
+Упрощая:
+\begin{equation}\label{eq:x_So_integral_simple}
+  \int_0^{x_f} x\,(1-S_g)\,dx
+  = x_f^2\left[\frac{1}{2}
+  - \frac{S_{g,\max}}{(m+1)(m+2)}\right].
+\end{equation}
+
+\textbf{Интеграл потока нефти:}
+\begin{equation}\label{eq:uo_Bo_integral}
+  \int_0^{x_f}\frac{u_o}{B_o}\,dx
+  = -\frac{k\,n\,\Delta p}{x_f}
+  \int_0^1 \frac{k_{ro}(S_g(\xi))}
+  {\mu_o(p(\xi))\,B_o(p(\xi))}\,(1-\xi)^{n-1}\,d\xi.
+\end{equation}
+
+Этот интеграл в общем случае вычисляется численно (квадратурой),
+но при малых~$S_g$ допускает линеаризацию:
+\begin{equation}\label{eq:kro_linearize}
+  k_{ro}(S_g) \approx 1 - \alpha\,S_g,
+  \qquad \alpha = -k_{ro}'(0),
+\end{equation}
+что позволяет выразить его аналитически через бета-функции.
+
+\subsection{Первый момент уравнения сохранения газа}
+
+Аналогично умножаем~\eqref{eq:gas_conservation} на~$x$
+и интегрируем:
+\begin{equation}\label{eq:moment1_gas}
+  \boxed{
+  \frac{d}{dt}\int_0^{x_f} x\,\phi
+  \left(\frac{S_g}{B_g}+\frac{R_s(1-S_g)}{B_o}\right)dx
+  = x_f\left(\frac{\phi\,R_s(p_b)}{B_o(p_b)}\,\dot{x}_f
+  - \frac{R_s(p_b)\,u_o(x_f)}{B_o(p_b)}\right)
+  + \int_0^{x_f}\left(\frac{u_g}{B_g}
+  + \frac{R_s\,u_o}{B_o}\right)dx.
+  }
+\end{equation}
+
+\subsection{Расширенная система ОДУ}
+
+С учётом моментных соотношений~\eqref{eq:moment1_oil}
+и~\eqref{eq:moment1_gas} система неизвестных расширяется:
+\begin{equation}\label{eq:unknowns_extended}
+  x_f(t), \quad x_e(t), \quad \Delta p(t), \quad
+  S_{g,\max}(t), \quad n(t), \quad m(t).
+\end{equation}
+
+Теперь имеем шесть уравнений для шести неизвестных:
+\begin{enumerate}
+  \item нулевой момент сохранения нефти~\eqref{eq:oil_integral}
+        $\longrightarrow$ связывает $x_f$, $\Delta p$, $S_{g,\max}$;
+  \item нулевой момент сохранения газа~\eqref{eq:gas_integral}
+        $\longrightarrow$ связывает $x_f$, $\Delta p$, $S_{g,\max}$;
+  \item интегральное соотношение для Зоны~II~\eqref{eq:zone2_integral}
+        $\longrightarrow$ определяет $x_e$;
+  \item сшивка потоков~\eqref{eq:flux_matching}
+        $\longrightarrow$ алгебраическая связь;
+  \item первый момент сохранения нефти~\eqref{eq:moment1_oil}
+        $\longrightarrow$ определяет $n(t)$;
+  \item первый момент сохранения газа~\eqref{eq:moment1_gas}
+        $\longrightarrow$ определяет $m(t)$.
+\end{enumerate}
+
+Таким образом, показатели формы~$n(t)$ и~$m(t)$ эволюционируют
+вместе с остальными параметрами и \textbf{перестают быть
+адаптационными}.
+
+\subsection{Метод коллокации как альтернатива}
+
+Вместо моментных соотношений можно потребовать, чтобы аппроксимация
+точно удовлетворяла исходному PDE в выделенной точке --- например,
+на забое ($\xi = 0$). Подставляя
+\eqref{eq:pressure_profile}--\eqref{eq:saturation_profile}
+в~\eqref{eq:oil_conservation} при $x = 0$:
+\begin{equation}\label{eq:collocation_oil}
+  \phi\,\frac{\partial}{\partial t}
+  \left(\frac{1-S_{g,\max}}{B_o(p_{wf})}\right)
+  = \frac{k}{x_f^2}\,\frac{\partial}{\partial\xi}
+  \left.\left(
+    \frac{k_{ro}(S_g)}{\mu_o(p)\,B_o(p)}\,
+    \frac{n\,\Delta p}{1}\,(1-\xi)^{n-1}
+  \right)\right|_{\xi=0}.
+\end{equation}
+
+Правая часть после дифференцирования содержит $n$, $m$ и известные
+функции PVT-свойств, что даёт алгебраическое соотношение для
+показателей формы. Аналогичная подстановка в уравнение для газа
+при~$\xi = 0$ даёт второе соотношение.
+
+\subsection{Сравнение подходов}
+
+\begin{center}
+\begin{tabular}{lcc}
+  \hline
+  & \textbf{Метод моментов} & \textbf{Коллокация} \\
+  \hline
+  Тип уравнений для $n$, $m$ & ОДУ & алгебраические \\
+  Физический смысл & глобальный (форма профиля) & локальный (точка $x=0$) \\
+  Точность вдали от забоя & выше & ниже \\
+  Вычислительная сложность & выше (доп.\ интегралы) & ниже \\
+  \hline
+\end{tabular}
+\end{center}
+
+На практике часто комбинируют оба подхода: первый момент определяет
+один показатель, коллокация --- другой. Это позволяет сбалансировать
+точность и трудоёмкость.
+
+\subsection{Замечание о сходимости}
+
+При увеличении числа моментов (нулевой, первый, второй, \ldots)
+приближённое решение систематически сходится к точному. Формально
+это следует из полноты системы степенных функций и теоремы Вейерштрасса:
+любой непрерывный профиль может быть аппроксимирован полиномом
+с произвольной точностью.
+
+Однако уже два момента (нулевой + первый) обычно дают погрешность
+порядка нескольких процентов, что достаточно для инженерных оценок.
+Дальнейшее увеличение порядка требует усложнения аппроксимации
+(добавление членов с различными показателями) и редко оправдано.
+
+%=============================================================
+\section{Заключение}
+%=============================================================
+
+Метод интегральных соотношений Баренблатта позволяет свести задачу
+двухфазной фильтрации в модели Black Oil к системе обыкновенных
+дифференциальных уравнений. Основные преимущества:
+\begin{itemize}
+  \item физически прозрачная структура решения с явным отслеживанием
+        фронта двухфазной зоны;
+  \item возможность аналитического вычисления интегралов благодаря
+        степенной аппроксимации профилей;
+  \item правильное воспроизведение качественных закономерностей:
+        рост газонасыщенности, увеличение газового фактора,
+        конечная скорость распространения фронта;
+  \item вычислительная простота --- решение системы ОДУ вместо PDE.
+\end{itemize}
+
+Показатели формы $n$, $m$ могут быть определены из сравнения
+с численным решением полной задачи или из дополнительных
+интегральных соотношений (метод моментов).
+
+\end{document}

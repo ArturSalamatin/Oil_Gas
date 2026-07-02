@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Масса выделившегося газа — модель Black Oil</title>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+  <style>
+    :root {
+      --bg: #fdfdfd;
+      --fg: #222;
+      --accent: #1a5276;
+      --border: #ccc;
+      --highlight: #eaf2f8;
+      --formula-bg: #f7f9fb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem 4rem;
+      line-height: 1.7;
+    }
+    h1 {
+      font-size: 1.6rem;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: .4rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-top: 2rem;
+      margin-bottom: .8rem;
+    }
+    p { margin-bottom: .9rem; }
+    .formula-block {
+      background: var(--formula-bg);
+      border-left: 4px solid var(--accent);
+      padding: 1rem 1.4rem;
+      margin: 1.2rem 0;
+      overflow-x: auto;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 1rem 0 1.2rem;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: .5rem .8rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--highlight);
+      font-weight: 600;
+    }
+    ol, ul {
+      margin: .6rem 0 1rem 1.6rem;
+    }
+    li { margin-bottom: .5rem; }
+    .note {
+      background: #fef9e7;
+      border-left: 4px solid #f39c12;
+      padding: .8rem 1.2rem;
+      margin: 1rem 0;
+    }
+    .example {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      padding: 1rem 1.4rem;
+      margin: 1.2rem 0;
+    }
+    .example h3 {
+      font-size: 1rem;
+      color: #1e8449;
+      margin-bottom: .6rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Расчёт массы выделившегося газа в модели Black Oil</h1>
+
+<p>
+  В модели Black Oil ключевую роль играет параметр
+  <strong>газосодержание</strong> (solution gas–oil ratio) — $R_s(P)$,
+  который показывает, сколько газа растворено в нефти при давлении $P$.
+</p>
+
+<h2>1. Определение $R_s$ через массы, объёмы и плотности</h2>
+
+<p>
+  Газосодержание $R_s$ — это объём растворённого газа (приведённый к стандартным
+  условиям), приходящийся на единицу объёма нефти (также в стандартных условиях):
+</p>
+
+<div class="formula-block">
+  $$R_s = \frac{V_{g,sc}^{\text{раств}}}{V_{o,sc}}$$
+</div>
+
+<p>Выразим через <strong>массы и плотности</strong>. Масса растворённого газа:</p>
+
+<div class="formula-block">
+  $$m_g^{\text{раств}} = V_{g,sc}^{\text{раств}}\;\rho_{g,sc}$$
+</div>
+
+<p>Масса нефти (дегазированной, в стандартных условиях):</p>
+
+<div class="formula-block">
+  $$m_o = V_{o,sc}\;\rho_{o,sc}$$
+</div>
+
+<p>Отсюда объёмы:</p>
+
+<div class="formula-block">
+  $$V_{g,sc}^{\text{раств}} = \frac{m_g^{\text{раств}}}{\rho_{g,sc}}, \qquad
+    V_{o,sc} = \frac{m_o}{\rho_{o,sc}}$$
+</div>
+
+<p>Подставляя в определение $R_s$:</p>
+
+<div class="formula-block">
+  $$\boxed{\;
+    R_s = \frac{m_g^{\text{раств}}}{m_o}\;\frac{\rho_{o,sc}}{\rho_{g,sc}}
+  \;}$$
+</div>
+
+<p>
+  Таким образом, $R_s$ связывает <em>массовое соотношение</em> газ/нефть
+  с <em>отношением плотностей</em> нефти и газа в стандартных условиях.
+</p>
+
+<p>Обратное выражение — масса растворённого газа через $R_s$:</p>
+
+<div class="formula-block">
+  $$m_g^{\text{раств}} = R_s\;V_{o,sc}\;\rho_{g,sc}
+    = R_s\;\frac{m_o}{\rho_{o,sc}}\;\rho_{g,sc}$$
+</div>
+
+<table>
+  <thead>
+    <tr><th>Величина</th><th>Смысл</th><th>Единицы</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$R_s$</td>
+      <td>газосодержание (solution GOR)</td>
+      <td>м³(газ, ст.) / м³(нефть, ст.)</td>
+    </tr>
+    <tr>
+      <td>$m_g^{\text{раств}}$</td>
+      <td>масса газа, растворённого в нефти</td>
+      <td>кг</td>
+    </tr>
+    <tr>
+      <td>$m_o$</td>
+      <td>масса дегазированной нефти</td>
+      <td>кг</td>
+    </tr>
+    <tr>
+      <td>$\rho_{g,sc}$</td>
+      <td>плотность газа в ст. условиях</td>
+      <td>кг/м³</td>
+    </tr>
+    <tr>
+      <td>$\rho_{o,sc}$</td>
+      <td>плотность дегазированной нефти в ст. условиях</td>
+      <td>кг/м³</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Основная формула</h2>
+
+<p>
+  Масса газа, выделившегося при снижении давления от $P_1$ до $P_2$
+  (оба ниже давления насыщения $P_b$):
+</p>
+
+<div class="formula-block">
+  $$m_{\text{gas}} = V_{o,sc}\;\rho_{g,sc}\;\bigl[R_s(P_1) - R_s(P_2)\bigr]$$
+</div>
+
+<table>
+  <thead>
+    <tr><th>Величина</th><th>Смысл</th><th>Единицы</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$V_{o,sc}$</td>
+      <td>объём нефти в стандартных условиях</td>
+      <td>м³ (ст.)</td>
+    </tr>
+    <tr>
+      <td>$R_s(P)$</td>
+      <td>газосодержание при давлении $P$</td>
+      <td>м³(газ, ст.) / м³(нефть, ст.)</td>
+    </tr>
+    <tr>
+      <td>$\rho_{g,sc}$</td>
+      <td>плотность газа в стандартных условиях</td>
+      <td>кг/м³</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Пошаговый вывод</h2>
+
+<p>Если известен объём нефти в <em>пластовых</em> условиях $V_o(P_1)$:</p>
+
+<ol>
+  <li>
+    <strong>Пересчёт в стандартные условия</strong> через объёмный
+    коэффициент нефти (formation volume factor):
+    <div class="formula-block">
+      $$V_{o,sc} = \frac{V_o(P_1)}{B_o(P_1)}$$
+    </div>
+  </li>
+  <li>
+    <strong>Объём выделившегося газа</strong> (приведённый к ст. условиям):
+    <div class="formula-block">
+      $$V_{g,sc} = V_{o,sc}\;\Delta R_s
+        = \frac{V_o(P_1)}{B_o(P_1)}\;\bigl[R_s(P_1) - R_s(P_2)\bigr]$$
+    </div>
+  </li>
+  <li>
+    <strong>Масса выделившегося газа:</strong>
+    <div class="formula-block">
+      $$m_{\text{gas}} = V_{g,sc}\;\rho_{g,sc}$$
+    </div>
+    <p>
+      Плотность газа в стандартных условиях можно выразить через
+      относительную плотность $\gamma_g$:
+    </p>
+    <div class="formula-block">
+      $$\rho_{g,sc} = \gamma_g\;\rho_{\text{air},sc}
+        \approx \gamma_g \times 1{,}225\;\text{кг/м}^3$$
+    </div>
+  </li>
+</ol>
+
+<h2>4. Важные замечания</h2>
+
+<ul>
+  <li>
+    Если $P_1 > P_b$ (давление выше давления насыщения), весь газ
+    растворён: $R_s(P_1) = R_{s,\max}$. Выделение газа начинается
+    только при $P < P_b$.
+  </li>
+  <li>
+    В модели Black Oil газ описывается двумя «состояниями»:
+    <strong>растворённый</strong> (учтён через $R_s$) и
+    <strong>свободный</strong>. Формула выше даёт именно тот газ,
+    который перешёл из растворённого состояния в свободное.
+  </li>
+  <li>
+    Если при $P_1$ в системе уже был свободный газ, его расширение
+    при снижении давления учитывается отдельно через объёмный
+    коэффициент газа $B_g(P)$:
+    <div class="formula-block">
+      $$V_{\text{free gas}}(P_2)
+        = V_{\text{free gas},sc}\;B_g(P_2)$$
+    </div>
+  </li>
+</ul>
+
+<h2>5. Итоговая сводная формула</h2>
+
+<div class="formula-block">
+  $$\boxed{\;
+    m_{\text{gas}} =
+      \frac{V_o(P_1)}{B_o(P_1)}
+      \;\bigl[R_s(P_1) - R_s(P_2)\bigr]
+      \;\gamma_g\;\rho_{\text{air},sc}
+  \;}$$
+</div>
+
+<div class="example">
+  <h3>Пример расчёта</h3>
+  <p>
+    Дано: $V_{o,sc} = 100$ м³, &ensp;
+    $R_s(P_1) = 80$ м³/м³, &ensp;
+    $R_s(P_2) = 50$ м³/м³, &ensp;
+    $\gamma_g = 0{,}7$.
+  </p>
+  <div class="formula-block">
+    $$V_{g,sc} = 100 \times (80 - 50) = 3000\;\text{м}^3\;(\text{ст.})$$
+  </div>
+  <div class="formula-block">
+    $$m_{\text{gas}} = 3000 \times 0{,}7 \times 1{,}225
+      = 2572{,}5\;\text{кг} \approx 2{,}57\;\text{т}$$
+  </div>
+</div>
+
+<div class="note">
+  <strong>Примечание.</strong>
+  Все PVT-свойства ($R_s$, $B_o$, $B_g$) в модели Black Oil зависят
+  только от давления (и, в расширенных вариантах, от температуры).
+  Их обычно задают таблично или через корреляции (Standing, Vasquez–Beggs,
+  Glaso и др.).
+</div>
+
+</body>
+</html>

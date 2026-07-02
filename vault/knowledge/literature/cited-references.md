@@ -17,7 +17,7 @@ date: 2026-07-02
 | Aronofsky, Jenkins 1954 | Нестационарный радиальный поток газа, жидкостная аналогия | [[Aronofsky Jenkins 1954 — нестационарный радиальный поток газа]] |
 | Ayan, Lee 1988 | Buildup при многофазном потоке, критика Perrine–Martin | [[Ayan Lee 1988 — buildup при многофазном потоке]] |
 | Behmanesh, Hamdi, Clarkson 2015 | Двухфазный поток в tight oil HF | [[Behmanesh Hamdi Clarkson 2015 — двухфазный поток в tight oil HF]] |
-| Boe, Skjaeveland, Whitson 1989 | Двухфазный анализ КПД | [[Boe 1989 — двухфазный анализ КПД]] |
+| Blasingame, Lee 1986 | Variable-rate PSS для газа | [[Blasingame Lee 1986 — variable-rate reservoir limits testing]] |
 | Bourdet 2002 | Монография ГДИС, radial composite, derivative | [[Bourdet 2002 — монография ГДИС]] |
 | Bostic, Agarwal, Carter 1979 | Анализ промысловых данных MHF gas well | [[Bostic Agarwal Carter 1979 — MHF gas well]] |
 | Brown, Ozkan, Raghavan, Kazemi 2011 | PTA для HF в нетрадиционных коллекторах | [[Brown Ozkan Raghavan Kazemi 2011 — PTA для HF в нетрадиционных коллекторах]] |
@@ -27,6 +27,7 @@ date: 2026-07-02
 | Corbett, Hamdi, Gurav 2012 | Ramp-эффект в layered reservoirs | [[Corbett Hamdi Gurav 2012 — ramp-эффект в layered reservoirs]] |
 | Cinco-Ley, Samaniego, Dominguez 1978 | Трещина конечной проводимости, type curves | [[Cinco-Ley Samaniego 1978 — трещина конечной проводимости]] |
 | Dykstra 1961 | Build-up для газоконденсата, низкая проницаемость | [[Dykstra 1961 — build-up для газоконденсата]] |
+| Fetkovich 1973 | Изохронные испытания, многофазное псевдодавление $p_p$ | [[Fetkovich 1973 — изохронные испытания нефтяных скважин]] |
 | Fevang, Whitson 1996 | Трёхзонная модель газоконденсатного пласта | [[Fevang Whitson 1996 — газоконденсат трёхзонная модель]] |
 | Fussell 1973 | Прогноз продуктивности газоконденсатной скважины | [[Fussell 1973 — прогноз продуктивности газоконденсатной скважины]] |
 | Fraim, Wattenbarger 1987 | Decline curve для газа с normalized time | [[Fraim Wattenbarger 1987 — decline curve для газа с normalized time]] |
@@ -36,6 +37,7 @@ date: 2026-07-02
 | Gringarten et al. 2000 | PTA газоконденсата с rate-dependent ОФП | [[Gringarten 2000 — PTA газоконденсата с rate-dependent ОФП]] |
 | He 1997 | Sensitivity coefficients для обратных задач ГДИС | [[He 1997 — sensitivity coefficients для обратных задач ГДИС]] |
 | Gringarten, Ramey, Raghavan 1974 | Типовые кривые для вертикальной трещины бесконечной проводимости | [[Gringarten Ramey Raghavan 1974 — типовые кривые для вертикальной трещины]] |
+| Levine, Prats 1961 | Продуктивность при solution gas drive, интегрирование через GOR | [[Levine Prats 1961 — продуктивность при газонапорном режиме]] |
 | Лейбензон 1953 | Подземная гидравлика, трансформация Лейбензона | [[Leibenzon 1953 — подземная гидравлика]] |
 | Полубаринова-Кочина 1962 | Движение грунтовых вод, нелинейная диффузия | [[Polubarinova-Kochina 1962 — движение грунтовых вод]] |
 | Jones, Raghavan 1988 | Двухфазное псевдодавление для газоконденсата | [[Jones Raghavan 1988 — двухфазное псевдодавление для газоконденсата]] |
@@ -48,13 +50,14 @@ date: 2026-07-02
 | Perrine 1956 | PTA при многофазном потоке, суммарная подвижность | [[Perrine 1956 — PTA при многофазном потоке]] |
 | Raghavan et al 1999 | PTA для газоконденсатных скважин | [[Raghavan 1999 — PTA газоконденсат]] |
 | Raghavan ~1979 | Влияние $t_p$ на type curve analysis | [[Raghavan — влияние tp на type curve]] |
-| Raghavan 1989 | ГДИС при газонапорном режиме | [[Raghavan 1989 — ГДИС при газонапорном режиме]] |
+| Raghavan 1976 | Псевдодавление для solution gas drive (→ расширенная) | [[Raghavan 1976 — псевдодавление для solution gas drive]] |
 | Scott 1979 | Трещины в tight gas, точечные функции $(\mu c_t)(t)$ | [[Scott 1979 — трещины в tight gas]] |
 | Shahamat, Clarkson 2016 | Многоскважинный FMB | [[Shahamat Clarkson 2016 — многоскважинный FMB]] |
 | Tabatabaie, Pooladi-Darvish 2017 | Многофазный линейный поток в tight oil | [[Tabatabaie Pooladi-Darvish 2017 — многофазный линейный поток в tight oil]] |
 | Uzun, Kurtoglu, Kazemi 2016 | RTA при многофазном потоке, Bakken | [[Uzun Kurtoglu Kazemi 2016 — RTA при многофазном потоке]] |
 | Vogel 1968 | IPR для газонапорного режима | [[Vogel 1968 — IPR для газонапорного режима]] |
 | Баренблатт 1982 | Автомодельность и промежуточная асимптотика | [[Баренблатт 1982 — автомодельность и промежуточная асимптотика]] |
+| Muskat 1945 | Дифференциальный материальный баланс gas drive | [[Muskat 1945 — дифференциальный материальный баланс gas drive]] |
 | Muskat 1949 | Теория потенциометрических моделей | [[Muskat 1949 — теория потенциометрических моделей]] |
 | O'Dell, Miller 1966 | Двухзонная модель газоконденсата | [[O'Dell Miller 1966 — двухзонная модель газоконденсата]] |
 | Oliver 1990 | Kernel function для оценки проницаемости из PTA | [[Oliver 1990 — kernel function для оценки проницаемости из PTA]] |
@@ -64,4 +67,5 @@ date: 2026-07-02
 | Roussennac 2001 | Чувствительность двухфазной $m(p)$ к ОФП | [[Roussennac 2001 — чувствительность двухфазной m(p) к ОФП]] |
 | Stewart 2011 | Учебник ГДИС, steady-state для $m(p)$ | [[Stewart 2011 — учебник ГДИС]] |
 | Xu, Lee 1999 | Однофазная аналогия для газоконденсата | [[Xu Lee 1999 — однофазная аналогия для газоконденсата]] |
+| Weller 1966 | Двухфазный поток в газонапорном режиме | [[Weller 1966 — двухфазный поток в газонапорном режиме]] |
 | Хасанов, Мукминов, Бачин 2010 | Приток при разгазировании | [[Хасанов 2010 — приток при разгазировании]] |

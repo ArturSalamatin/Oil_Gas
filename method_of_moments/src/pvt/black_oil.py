@@ -6,7 +6,8 @@ from . import correlations as cor
 class BlackOilFluid:
     """PVT-свойства флюида Black Oil. Ур. §2 moments_method.tex."""
 
-    def __init__(self, pvt_config: dict, p_b: float, T_0: float):
+    def __init__(self, pvt_config: dict, p_b: float, T_0: float,
+                 relperm_config: dict | None = None):
         self.rho_o_st = pvt_config["rho_o_st"]
         self.rho_g_st = pvt_config["rho_g_st"]
         self.p_b = p_b
@@ -15,6 +16,47 @@ class BlackOilFluid:
         self._cp_o = pvt_config.get("cp_o", 2000.0)
         self._cp_g = pvt_config.get("cp_g", 1000.0)
         self._L_degas = pvt_config.get("L_degas", 300e3)
+
+        relperm_config = relperm_config or {}
+        self._S_or = relperm_config.get("S_or", 0.2)
+        self._S_gc = relperm_config.get("S_gc", 0.05)
+        self._n_o = relperm_config.get("n_o", 2.0)
+        self._n_g = relperm_config.get("n_g", 2.0)
+        self._kro_max = relperm_config.get("k_ro_max", 1.0)
+        self._krg_max = relperm_config.get("k_rg_max", 0.8)
+        self._S_norm = 1.0 - self._S_or - self._S_gc
+
+    # ─── Относительные фазовые проницаемости (Кори) ───────────────
+    def _S_star(self, Sg: float) -> float:
+        """Нормализованная газонасыщенность."""
+        return max(0.0, min(1.0, (Sg - self._S_gc) / self._S_norm))
+
+    def kro(self, Sg: float) -> float:
+        """Относительная проницаемость нефти (Кори)."""
+        return self._kro_max * (1.0 - self._S_star(Sg)) ** self._n_o
+
+    def krg(self, Sg: float) -> float:
+        """Относительная проницаемость газа (Кори)."""
+        return self._krg_max * self._S_star(Sg) ** self._n_g
+
+    # ─── Подвижности и суммарная подвижность ───────────────────────
+    def mobility_o(self, p: float, T: float, Sg: float, k: float) -> float:
+        """λ_o = k·kro/μo. Ур. (eq:mobility) moments_method.tex."""
+        return k * self.kro(Sg) / self.mu_o(p, T)
+
+    def mobility_g(self, p: float, T: float, Sg: float, k: float) -> float:
+        """λ_g = k·krg/μg. Ур. (eq:mobility) moments_method.tex."""
+        return k * self.krg(Sg) / self.mu_g(p, T)
+
+    def Lambda(self, p: float, T: float, Sg: float, k: float) -> float:
+        """Λ = (λ_o + λ_g)/Bg. Ур. (eq:Lambda) moments_method.tex."""
+        return (self.mobility_o(p, T, Sg, k)
+                + self.mobility_g(p, T, Sg, k)) / self.Bg(p, T)
+
+    def mobility_o_over_Bo(self, p: float, T: float, Sg: float,
+                           k: float) -> float:
+        """λ_o/B_o — вспомогательная, §5 moments_method.tex."""
+        return self.mobility_o(p, T, Sg, k) / self.Bo(p, T)
 
     # ─── Базовые PVT ───────────────────────────────────────────────
     def _effective_Rs(self, p, T):

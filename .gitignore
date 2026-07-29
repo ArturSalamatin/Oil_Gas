@@ -33,6 +33,7 @@ build/
 htmlcov/
 
 # Results (воспроизводимы, не хранить в git)
+method_of_moments/results*
 method_of_moments/results/*.csv
 method_of_moments/results/*.png
 

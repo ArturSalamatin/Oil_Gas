@@ -24,12 +24,14 @@
 Перед написанием заметки сверься с релевантными заметками `vault/knowledge/science/`. Карта:
 
 ```
-- Модели охлаждения ПЗП        → vault/knowledge/science/ (модели М.1–М.6)
-- Двухфазная фильтрация         → Draft4/two_phase_energy.tex (система PDE)
-- Метод моментов Баренблатта    → Draft4/moments_method.tex, vault/ref_moments_method.md
-- Модель GORM                   → Refs/GORM/, Draft/cooling_models.tex
-- PVT-свойства Black Oil        → CLAUDE.md (нотация), Draft4/two_phase_energy.tex
-- Температурные эффекты          → CLAUDE.md (нотация: JT, дегазация, энтальпия)
+- Псевдодавление, линеаризация   → vault/knowledge/science/интегральная нормировка нелинейных коэффициентов.md
+- Двухфазная фильтрация          → method_of_moments/two_phase_energy.tex (система PDE)
+- Метод моментов Баренблатта     → method_of_moments/moments_method.tex
+- Модели охлаждения ПЗП (М.1–М.6) → simplefied_approaches/cooling_models.tex
+- Модель GORM                    → Refs/GORM/, simplefied_approaches/cooling_models.tex
+- PVT-свойства Black Oil         → CLAUDE.md (нотация), method_of_moments/two_phase_energy.tex
+- Температурные эффекты           → CLAUDE.md (нотация: JT, дегазация, энтальпия)
+- Расширенные обзоры литературы   → vault/knowledge/literature/index-literature.md
 ```
 
 Ключевые ориентиры проекта:
@@ -97,8 +99,8 @@ status: расширенная
 
 Проверь **три источника** заметок:
 1. `vault/knowledge/literature/` — основная папка.
-2. `vault/` (корень) — legacy-заметки (`ref_spe202436.md`, `ref_moments_method.md` и другие).
-3. Draft-файлы (`Draft*//*.tex`) — Grep по `\cite{автор_год}`, чтобы найти, какие Draft ссылаются на разбираемую работу.
+2. `vault/` (корень) — legacy-заметки `ref_*.md` (если остались).
+3. LaTeX-документы (`simplefied_approaches/`, `method_of_moments/`, `method_of_moments_isotermal/`, `GORM_2/`) — Grep по `\cite{автор_год}`, чтобы найти, какие документы ссылаются на разбираемую работу.
 
 Действия:
 - **«Ссылается на»** новой заметки: добавь wiki-ссылки на все заметки vault, соответствующие цитируемым работам.
@@ -169,4 +171,4 @@ source: контекст цитирования
 - Конкретные формулы, номера уравнений, таблиц, рисунков из статьи.
 - Расхождения в нотации с проектом (см. CLAUDE.md, секция «Обозначения и нотация») — отметить.
 - Не хвалить — указывать на ограничения.
-- Связь с моделями М.1–М.6 из Draft/cooling_models.tex — указывать, если релевантно.
+- Связь с моделями М.1–М.6 из simplefied_approaches/cooling_models.tex — указывать, если релевантно.

@@ -21,12 +21,12 @@ date: 2026-07-02
 ### Решения
 - `vault/knowledge/decisions/` — выбор подходов с обоснованием
 
-### Рабочие документы (Draft)
-- `Draft/cooling_models.tex` — иерархия моделей М.1–М.6
-- `Draft2/trapped_gas.tex` — безнапорная фильтрация с запертым газом
-- `Draft3/integral_relations_method.tex` — метод интегральных соотношений Баренблатта
-- `Draft4/two_phase_energy.tex` — двухфазная фильтрация + энергия (текущая рабочая постановка)
-- `Draft4/moments_method.tex` — метод моментов (PDE → ODE)
+### Рабочие документы
+- `simplefied_approaches/cooling_models.tex` — иерархия моделей М.1–М.6
+- `GORM_2/trapped_gas.tex` — безнапорная фильтрация с запертым газом
+- `method_of_moments_isotermal/integral_relations_method.tex` — метод интегральных соотношений Баренблатта
+- `method_of_moments/two_phase_energy.tex` — двухфазная фильтрация + энергия (текущая рабочая постановка)
+- `method_of_moments/moments_method.tex` — метод моментов (PDE → ODE)
 
 ### Существующие заметки vault
 - [[ref_spe202436]] — Samuel & Muggeridge 2020, POD-RBF NIROM

@@ -18,6 +18,8 @@
 
 Проверь `vault/knowledge/literature/` — нет ли заметки на эту книгу (по автору в имени файла).
 
+**Если краткая заметка уже есть** — перезапиши расширенной версией (формат книги), обнови `status`, перенеси из `cited-references.md` в `index-literature.md`.
+
 ### 3. Создай заметку
 
 Имя файла: `vault/knowledge/literature/Автор Год — название книги.md`
@@ -85,8 +87,8 @@ type: книга
 
 Проверь **три источника** заметок:
 1. `vault/knowledge/literature/` — основная папка.
-2. `vault/` (корень) — legacy-заметки.
-3. Draft-файлы — Grep по `\cite{}` для связей с LaTeX-документами.
+2. `vault/` (корень) — legacy-заметки `ref_*.md` (если остались).
+3. LaTeX-документы (`simplefied_approaches/`, `method_of_moments/`, `method_of_moments_isotermal/`, `GORM_2/`) — Grep по `\cite{}` для связей.
 
 Действия:
 - **«Ссылается на»**: wiki-ссылки на заметки цитируемых работ.

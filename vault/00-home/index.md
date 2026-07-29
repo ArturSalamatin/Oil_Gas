@@ -28,7 +28,10 @@ date: 2026-07-02
 - `method_of_moments/two_phase_energy.tex` — двухфазная фильтрация + энергия (текущая рабочая постановка)
 - `method_of_moments/moments_method.tex` — метод моментов (PDE → ODE)
 
-### Существующие заметки vault
+### Научные заметки (science)
+- [[интегральная нормировка нелинейных коэффициентов]] — псевдодавление, псевдовремя, метод моментов
+
+### Legacy-заметки (vault root)
 - [[ref_spe202436]] — Samuel & Muggeridge 2020, POD-RBF NIROM
 - [[ref_moments_method]] — метод моментов Баренблатта для Black Oil
 

@@ -243,7 +243,7 @@ git diff --stat main..HEAD
 
 **Ветка:** `<branch>`
 **План:** `vault/plans/<файл>`
-**Коммит:** (будет после коммита пользователем)
+**Коммиты:** `git log --oneline main..HEAD`
 
 ### Изменения
 - <файл 1>: <что изменено>
@@ -288,8 +288,8 @@ gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-
 - <ID>: <краткое описание>
 
 Следующие шаги:
-- Проверь изменения: `git diff`
-- Коммит (если всё ок): пользователь коммитит сам
+- Проверь изменения: `git log --oneline main..HEAD`, `git diff --stat main..HEAD`
+- Push: пользователь пушит сам
 - Merge: `git checkout main && git merge --no-ff <branch>`
 ```
 
@@ -313,6 +313,6 @@ gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-
 ## Следующий шаг
 
 После завершения — предложи:
-1. `git diff` — для просмотра изменений
-2. Коммит (пользователь решает сам)
+1. `git log --oneline main..HEAD` и `git diff --stat main..HEAD` — для обзора
+2. Push (пользователь пушит сам)
 3. Если есть новые проблемы — `/issue <описание>`

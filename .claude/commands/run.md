@@ -10,7 +10,7 @@
 
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-python src/main.py $ARGUMENTS
+.venv\Scripts\python src/main.py $ARGUMENTS
 ```
 
 Если `method_of_moments/src/main.py` не существует или не готов — сообщи, какие FEAT нужно реализовать.
@@ -31,7 +31,7 @@ python src/main.py $ARGUMENTS
 3. **Sg(r)** при тех же t — профиль газонасыщенности.
 4. **T(r)** при тех же t — профиль температуры.
 
-Сохрани в `results/`.
+Сохрани в `method_of_moments/results/`.
 
 ### 4. Физическая проверка
 

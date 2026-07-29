@@ -4,6 +4,8 @@
 
 Результат: реализованный план — код, тесты, обновлённый vault, комментарий к GitHub issue.
 
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`.
+
 ---
 
 ## Фаза 1: Подготовка

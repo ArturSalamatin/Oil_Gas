@@ -4,6 +4,8 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && python -m pytest tests/ -v`.
+
 ---
 
 ## Фаза 1: Сбор контекста
@@ -50,7 +52,7 @@ ls vault/plans/<id-lowercase>*
 2. **Нотация:** проверь таблицы символов в CLAUDE.md (5 таблиц: геометрия, давление, газ, нефть, тепло)
 3. **Иерархия моделей:** прочитай `simplefied_approaches/cooling_models.tex` — к какой модели М.N относится фича?
 4. **Ссылки:** vault/knowledge/science/ — связанные научные заметки
-5. **Литература:** vault/literature/ — обзоры статей по теме
+5. **Литература:** vault/knowledge/literature/ — обзоры статей по теме
 
 ### 1.6. Исследовать код
 
@@ -71,7 +73,7 @@ ls vault/plans/<id-lowercase>*
 
 | Формула | Уравнение в tex | Python-функция | Модуль | Тест |
 |---|---|---|---|---|
-| ... | `\eqref{eq:...}` | `func_name()` | `src/module.py` | `test_func()` |
+| ... | `\eqref{eq:...}` | `func_name()` | `method_of_moments/src/module.py` | `test_func()` |
 
 Проверь:
 - Все ли формулы из tex учтены?
@@ -189,7 +191,7 @@ ls vault/plans/<id-lowercase>*
 Ссылки: [[vault-заметка]], `moments_method.tex` `\eqref{eq:...}`.
 
 **Что сделать:**
-1. В файле `src/X.py`: создать функцию `Y(args) -> result`
+1. В файле `method_of_moments/src/X.py`: создать функцию `Y(args) -> result`
 2. Docstring: ссылка на `\eqref{eq:...}`, входы/выходы, единицы измерения
 3. ...
 
@@ -217,7 +219,7 @@ ls vault/plans/<id-lowercase>*
 
 ```
 **Тест:** <test_function_name>
-**Файл:** tests/<файл>.py (существующий / новый)
+**Файл:** method_of_moments/tests/<файл>.py (существующий / новый)
 **Сценарий:** <что проверяем — на уровне физики/математики>
 **Setup:** <параметры: p, T, Sg, rb, rw, ...>
 **Ожидание:** <конкретные числа/неравенства с единицами измерения>

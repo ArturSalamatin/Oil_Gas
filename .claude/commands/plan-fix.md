@@ -4,6 +4,8 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && python -m pytest tests/ -v`.
+
 ---
 
 ## Фаза 1: Сбор контекста
@@ -134,7 +136,7 @@ ls vault/plans/<id-lowercase>*
 Ссылки: [[vault-заметка]], `moments_method.tex` `\eqref{}`.
 
 **Что сделать:**
-1. В файле `src/X.py`, функция `Y()`, строка ~N: действие
+1. В файле `method_of_moments/src/X.py`, функция `Y()`, строка ~N: действие
 2. ...
 
 **Изменения:**
@@ -156,7 +158,7 @@ ls vault/plans/<id-lowercase>*
 
 ```
 **Тест:** <test_function_name>
-**Файл:** tests/<файл>.py (существующий / новый)
+**Файл:** method_of_moments/tests/<файл>.py (существующий / новый)
 **Сценарий:** <что проверяем — на уровне физики>
 **Setup:** <параметры, ГУ>
 **Ожидание:** <числа, неравенства, свойства>

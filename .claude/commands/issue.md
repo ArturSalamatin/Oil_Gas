@@ -94,10 +94,27 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 
 **VAL:**
 1. **Эталон** — подготовить/импортировать эталонное решение
-2. **Сценарий** — создать тест-кейс, задать параметры из `configs/`
+2. **Сценарий** — создать тест-кейс, задать параметры из `method_of_moments/configs/`
 3. **Сравнение** — прогнать, собрать метрики, визуализировать
 
-### 8. Определить labels
+### 8. Сгенерировать имя ветки
+
+Формат: `<prefix>/<id-lowercase>/<slug>`
+- `BUG-*` → prefix `fix` (например `fix/bug-001/pvt-negative-viscosity`)
+- `DEBT-*` → prefix `refactor` (например `refactor/debt-001/split-pvt-module`)
+- `FEAT-*` → prefix `feat` (например `feat/feat-001/standing-pvt`)
+- `VAL-*` → prefix `val` (например `val/val-001/dupuit-steady-state`)
+
+Правила для slug:
+- 2–5 слов через дефис, латиница, lowercase
+- Отражает суть задачи, не ID
+- Без артиклей и предлогов
+
+Проверь, что ветка не существует: `git branch --list "<имя>"`.
+
+Запомни имя — оно будет записано в body issue, комментарий и vault.
+
+### 9. Определить labels
 
 Автоматическое определение labels по содержимому записи:
 
@@ -111,7 +128,7 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 | Статус содержит 🟡 (обход есть) | добавить `workaround` |
 | Поле **Блокирует** непустое | добавить `blocking` |
 
-### 9. Создать GitHub issue
+### 10. Создать GitHub issue
 
 **В dry-run режиме:** вывести preview (title, labels, имя ветки, первые 20 строк body) и остановиться. Не создавать issue, не менять vault.
 
@@ -143,6 +160,9 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 ## План решения
 (этапы: минимальный фикс → архитектура → верификация)
 
+## Ветка
+`<имя ветки из шага 8>`
+
 ## Связанные issues
 (Related: #N)
 
@@ -169,6 +189,9 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 
 ## План решения
 (этапы: baseline → инкрементальные изменения → верификация)
+
+## Ветка
+`<имя ветки из шага 8>`
 
 ## Связанные issues
 (Related: #N)
@@ -200,6 +223,9 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 ## План реализации
 (этапы: проектирование → ядро → тесты → интеграция → верификация)
 
+## Ветка
+`<имя ветки из шага 8>`
+
 ## Связанные issues
 (Related: #N)
 
@@ -216,7 +242,7 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 (аналитика / конечные разности / OPM Flow — формулы, ссылки)
 
 ## Сценарий
-(параметры из configs/, ГУ, время моделирования)
+(параметры из method_of_moments/configs/, ГУ, время моделирования)
 
 ## Метрики сравнения
 (что измеряем, tolerance)
@@ -226,6 +252,9 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 
 ## План валидации
 (этапы: эталон → сценарий → прогон → сравнение → визуализация)
+
+## Ветка
+`<имя ветки из шага 8>`
 
 ## Связанные issues
 (Related: #N)
@@ -243,7 +272,7 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
   --assignee "@me"
 ```
 
-### 10. Добавить комментарий к issue
+### 11. Добавить комментарий к issue
 
 Сразу после создания issue добавь комментарий с краткой сводкой — фиксация контекста на момент открытия:
 
@@ -252,7 +281,7 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 ### Контекст при открытии
 
 - **Обнаружено:** <дата>
-- **Ветка:** `<текущая ветка>`
+- **Ветка:** `<имя ветки из шага 8>`
 - **Коммит:** `<короткий SHA>`
 - **Корневая причина:** <одно предложение>
 - **Рекомендуемый вариант:** <номер варианта из анализа>
@@ -263,7 +292,7 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 ```
 ### Контекст при открытии
 
-- **Ветка:** `<текущая ветка>`
+- **Ветка:** `<имя ветки из шага 8>`
 - **Коммит:** `<короткий SHA>`
 - **Мотивация:** <одно предложение>
 - **Затронутые модули:** <список>
@@ -274,11 +303,11 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 ```
 ### Контекст при открытии
 
-- **Ветка:** `<текущая ветка>`
+- **Ветка:** `<имя ветки из шага 8>`
 - **Коммит:** `<короткий SHA>`
 - **Фаза roadmap:** FEAT-NNN (+ зависимости)
 - **Формулы:** <список \eqref{} из moments_method.tex>
-- **Модуль:** `src/<module>.py`
+- **Модуль:** `method_of_moments/src/<module>.py`
 - **Оценка сложности:** <простой / средний / сложный>
 ```
 
@@ -286,7 +315,7 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 ```
 ### Контекст при открытии
 
-- **Ветка:** `<текущая ветка>`
+- **Ветка:** `<имя ветки из шага 8>`
 - **Коммит:** `<короткий SHA>`
 - **Эталон:** <тип: аналитика / численный / OPM Flow>
 - **Tolerance:** <значение>
@@ -298,7 +327,7 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-file>
 ```
 
-### 11. Обратная связь в vault
+### 12. Обратная связь в vault
 
 После успешного создания issue:
 
@@ -306,36 +335,15 @@ gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file <path-to
    - BUG/DEBT → `известные баги и технический долг.md`
    - FEAT → `планируемые фичи.md`
    - VAL → `валидационные кейсы.md`
-2. Если есть подробная заметка в `knowledge/` — добавь в неё строку `**GitHub issue:** [#<номер>](https://github.com/ArturSalamatin/Oil_Gas/issues/<номер>)`
-
-### 12. Предложить ветку
-
-После создания issue предложи пользователю создать рабочую ветку:
-
-```
-Создать ветку fix/bug-001/краткий-slug для работы над этим issue?
-```
-
-Формат имени ветки: `<prefix>/<id-lowercase>/<slug>`
-- `BUG-*` → prefix `fix` (например `fix/bug-001/pvt-negative-viscosity`)
-- `DEBT-*` → prefix `refactor` (например `refactor/debt-001/split-pvt-module`)
-- `FEAT-*` → prefix `feat` (например `feat/feat-001/standing-pvt`)
-- `VAL-*` → prefix `val` (например `val/val-001/dupuit-steady-state`)
-
-Правила для slug:
-- 2–5 слов через дефис, латиница, lowercase
-- Отражает суть проблемы, не ID
-- Без артиклей и предлогов
-
-**Не создавай ветку** — это делает `/implement`. Здесь только фиксируешь имя.
-
-После подтверждения пользователем — добавь поле `- **Ветка:** <имя ветки>` к секции в соответствующем реестре (рядом с **GitHub:**). Это позволит `/plan-*` и `/implement` найти ветку без обращения к GitHub.
+2. Добавь поле `- **Ветка:** <имя ветки из шага 8>` к той же секции в реестре (рядом с **GitHub:**). Это позволит `/plan-*` и `/implement` найти ветку без обращения к GitHub.
+3. Если есть подробная заметка в `knowledge/` — добавь в неё строку `**GitHub issue:** [#<номер>](https://github.com/ArturSalamatin/Oil_Gas/issues/<номер>)`
 
 ### 13. Сообщить результат
 
 Выведи:
 - URL созданного issue
 - Присвоенные labels
+- Имя ветки (из шага 8)
 - Краткую сводку по типу:
   - BUG: корневая причина, рекомендуемый вариант решения, количество этапов
   - DEBT: текущее состояние, целевое, количество этапов
@@ -405,7 +413,7 @@ gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file <path-to
 
 ### 5. Создать GitHub issue
 
-Аналогично шагам 7–13 режима existing (для BUG/DEBT/FEAT дополнительно шаг 6).
+Аналогично шагам 7–13 режима existing (включая шаг 8 — генерация ветки; для BUG/DEBT/FEAT дополнительно шаг 6).
 
 ---
 

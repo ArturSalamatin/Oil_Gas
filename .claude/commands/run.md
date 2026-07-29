@@ -2,7 +2,7 @@
 
 Пользователь указал конфиг или параметры: `$ARGUMENTS`
 
-Если `$ARGUMENTS` пуст — использовать `configs/baseline.json`.
+Если `$ARGUMENTS` пуст — использовать `method_of_moments/configs/baseline.json`.
 
 ## Инструкции
 
@@ -13,7 +13,7 @@ cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
 python src/main.py $ARGUMENTS
 ```
 
-Если `src/main.py` не существует или не готов — сообщи, какие FEAT нужно реализовать.
+Если `method_of_moments/src/main.py` не существует или не готов — сообщи, какие FEAT нужно реализовать.
 
 ### 2. Проверь результат
 

@@ -1,0 +1,140 @@
+"""Класс BlackOilFluid — единый интерфейс PVT Black Oil."""
+
+from . import correlations as cor
+
+
+class BlackOilFluid:
+    """PVT-свойства флюида Black Oil. Ур. §2 moments_method.tex."""
+
+    def __init__(self, pvt_config: dict, p_b: float, T_0: float):
+        self.rho_o_st = pvt_config["rho_o_st"]
+        self.rho_g_st = pvt_config["rho_g_st"]
+        self.p_b = p_b
+        self.T_0 = T_0
+        self.Rs_total = cor.Rs(p_b, T_0, self.rho_o_st, self.rho_g_st)
+        self._cp_o = pvt_config.get("cp_o", 2000.0)
+        self._cp_g = pvt_config.get("cp_g", 1000.0)
+        self._L_degas = pvt_config.get("L_degas", 300e3)
+
+    # ─── Базовые PVT ───────────────────────────────────────────────
+    def _effective_Rs(self, p, T):
+        """Rs с учётом насыщения: min(Rs(p,T), Rs_total)."""
+        return min(cor.Rs(p, T, self.rho_o_st, self.rho_g_st), self.Rs_total)
+
+    def _is_saturated(self, p, T):
+        pb_val = self.pb(T)
+        return p < pb_val
+
+    def Rs(self, p, T):
+        """Газосодержание [м³ст/м³ст]."""
+        return self._effective_Rs(p, T)
+
+    def Bo(self, p, T):
+        """Объёмный коэффициент нефти."""
+        return cor.Bo(p, T, self._effective_Rs(p, T),
+                      self.rho_o_st, self.rho_g_st)
+
+    def Bg(self, p, T):
+        """Объёмный коэффициент газа."""
+        return cor.Bg(p, T)
+
+    def mu_o(self, p, T):
+        """Вязкость нефти [Па·с]."""
+        return cor.mu_o(T, self._effective_Rs(p, T), self.rho_o_st)
+
+    def mu_g(self, p, T):
+        """Вязкость газа [Па·с]."""
+        return cor.mu_g(p, T, self.rho_g_st)
+
+    def pb(self, T):
+        """Давление насыщения [Па]."""
+        return cor.pb(self.Rs_total, T, self.rho_o_st, self.rho_g_st)
+
+    # ─── Производные Rs ─────────────────────────────────────────────
+    def dRs_dp(self, p, T):
+        """∂Rs/∂p [м³ст/(м³ст·Па)]."""
+        if not self._is_saturated(p, T):
+            return 0.0
+        return cor.dRs_dp(p, T, self.rho_o_st, self.rho_g_st)
+
+    def dRs_dT(self, p, T):
+        """∂Rs/∂T [м³ст/(м³ст·К)]."""
+        if not self._is_saturated(p, T):
+            return 0.0
+        return cor.dRs_dT(p, T, self.rho_o_st, self.rho_g_st)
+
+    # ─── Плотности ──────────────────────────────────────────────────
+    def rho_o(self, p, T):
+        """Плотность нефти [кг/м³]. Ур. (eq:rho_o) moments_method.tex."""
+        Rs_val = self._effective_Rs(p, T)
+        Bo_val = cor.Bo(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        return (self.rho_o_st + Rs_val * self.rho_g_st) / Bo_val
+
+    def rho_g(self, p, T):
+        """Плотность газа [кг/м³]."""
+        return self.rho_g_st / cor.Bg(p, T)
+
+    # ─── Сжимаемости при фикс. составе (eq:co_cg) ──────────────────
+    def co(self, p, T):
+        """co = −(1/Bo)·∂Bo/∂p|_{T,Rs}. Ур. (eq:co_cg) two_phase_energy.tex."""
+        return 0.0  # Standing: Bo не зависит от p при фикс. Rs
+
+    def cg(self, p, T):
+        """cg = −(1/Bg)·∂Bg/∂p|_T = 1/p. Ур. (eq:co_cg) two_phase_energy.tex."""
+        return 1.0 / p
+
+    # ─── Температурные коэфф. расширения (eq:beta_o_g) ──────────────
+    def beta_o(self, p, T):
+        """βo = (1/Bo)·∂Bo/∂T|_{p,Rs}. Ур. (eq:beta_o_g) two_phase_energy.tex."""
+        Rs_val = self._effective_Rs(p, T)
+        Bo_val = cor.Bo(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        dBo_dT = cor.dBo_dT_fixed_Rs(p, T, Rs_val,
+                                      self.rho_o_st, self.rho_g_st)
+        return dBo_dT / Bo_val
+
+    def beta_g(self, p, T):
+        """βg = (1/Bg)·∂Bg/∂T|_p = 1/T. Ур. (eq:beta_o_g) two_phase_energy.tex."""
+        return 1.0 / T
+
+    # ─── Полные коэфф. вдоль кривой насыщения ───────────────────────
+    def co_sat(self, p, T):
+        """co_sat = co − (1/Bo)·∂Bo/∂Rs·∂Rs/∂p. Ур. (eq:co_sat) two_phase_energy.tex."""
+        Rs_val = self._effective_Rs(p, T)
+        Bo_val = cor.Bo(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        dBo_dRs = cor.dBo_dRs(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        dRs_dp = self.dRs_dp(p, T)
+        return self.co(p, T) - dBo_dRs / Bo_val * dRs_dp
+
+    def beta_o_sat(self, p, T):
+        """βo_sat = βo + (1/Bo)·∂Bo/∂Rs·∂Rs/∂T. Ур. (eq:beta_o_sat) two_phase_energy.tex."""
+        Rs_val = self._effective_Rs(p, T)
+        Bo_val = cor.Bo(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        dBo_dRs = cor.dBo_dRs(p, T, Rs_val, self.rho_o_st, self.rho_g_st)
+        dRs_dT = self.dRs_dT(p, T)
+        return self.beta_o(p, T) + dBo_dRs / Bo_val * dRs_dT
+
+    # ─── Коэфф. теплового расширения (eq:thermal_expansion) ─────────
+    def alpha_o(self, p, T):
+        """αo = −(1/ρo)·∂ρo/∂T|_{p,Rs} = βo. Ур. (eq:thermal_expansion) two_phase_energy.tex."""
+        return self.beta_o(p, T)
+
+    def alpha_g(self, p, T):
+        """αg = −(1/ρg)·∂ρg/∂T|_p = 1/T. Ур. (eq:thermal_expansion) two_phase_energy.tex."""
+        return 1.0 / T
+
+    # ─── Вспомогательные ────────────────────────────────────────────
+    def xi_o(self, p, T, Sg):
+        """ξo = (1−Sg)/Bo. Ур. (eq:xi_o) two_phase_energy.tex."""
+        return (1.0 - Sg) / self.Bo(p, T)
+
+    def cp_o(self, p, T):
+        """Удельная теплоёмкость нефти [Дж/(кг·К)]."""
+        return self._cp_o
+
+    def cp_g(self, p, T):
+        """Удельная теплоёмкость газа [Дж/(кг·К)]."""
+        return self._cp_g
+
+    def L(self, p, T):
+        """Теплота дегазации [Дж/кг]. Ур. (eq:L_def) two_phase_energy.tex."""
+        return self._L_degas

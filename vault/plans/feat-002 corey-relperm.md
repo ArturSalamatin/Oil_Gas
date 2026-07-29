@@ -7,7 +7,7 @@ issue: FEAT-002
 github: 2
 branch: feat/feat-002/corey-relperm
 model_level: null
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-29
   found: 0

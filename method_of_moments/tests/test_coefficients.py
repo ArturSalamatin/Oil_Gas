@@ -10,9 +10,12 @@ from src.pvt.black_oil import BlackOilFluid
 from src.coefficients import (
     frozen_pvt_zone1, frozen_pvt_zone2,
     dp_drb_numerical, dp_dpwf_numerical,
+    oil_A11, oil_A13, oil_F1,
+    OdeState,
 )
 from src.profiles.pressure import PressureProfile
 from src.profiles.temperature import TemperatureProfile
+from src.profiles.saturation import SaturationProfile
 
 
 # ─── Фикстуры ─────────────────────────────────────────────────────
@@ -195,3 +198,89 @@ class TestDpDpwf:
         r_test = math.sqrt(r_b * R_EXT)
         val = dp_dpwf_numerical(p_profile, r_test, r_b, fluid, t_profile, dT_w)
         assert abs(val) < 0.01, f"∂p/∂p_wf в зоне 2 ≈ 0, получено {val:.6e}"
+
+
+# ─── Фикстуры для A11/A13/F1 ──────────────────────────────────────
+
+BETA = 2.0
+
+
+@pytest.fixture
+def s_profile():
+    return SaturationProfile(R_W, BETA)
+
+
+def _make_state(r_b=5.0, Sg_w=0.1, dT_w=2.0, p_wf=P_WF):
+    return OdeState(r_b=r_b, Sg_w=Sg_w, dT_w=dT_w, p_wf=p_wf)
+
+
+# ─── Тесты A₁₂ = 0 ────────────────────────────────────────────────
+
+class TestA12Zero:
+    def test_no_oil_A12_in_api(self):
+        """A₁₂ = 0: давление не зависит от Sg_w, функция не реализуется."""
+        import src.coefficients as coeff
+        assert not hasattr(coeff, "oil_A12"), (
+            "oil_A12 не должна существовать: A₁₂ = 0 по конструкции"
+        )
+
+
+# ─── Тесты A₁₁ ────────────────────────────────────────────────────
+
+class TestA11:
+    def test_A11_sign(self, fluid, rock, p_profile, t_profile):
+        """A₁₁ < 0: Cp > 0 и ∂p/∂r_b < 0."""
+        state = _make_state()
+        val = oil_A11(fluid, rock, p_profile, t_profile, state)
+        assert val < 0, f"A₁₁ должен быть < 0, получено {val:.6e}"
+
+    def test_A11_dimension(self, fluid, rock, p_profile, t_profile):
+        """A₁₁ [м] — конечное отрицательное число."""
+        state = _make_state()
+        val = oil_A11(fluid, rock, p_profile, t_profile, state)
+        assert val < 0
+        assert abs(val) > 1e-20, f"A₁₁ слишком мал: {val:.6e}"
+        assert abs(val) < 1e10, f"A₁₁ слишком велик: {val:.6e}"
+
+
+# ─── Тесты A₁₃ ────────────────────────────────────────────────────
+
+class TestA13:
+    def test_A13_sign(self, fluid, rock, p_profile, t_profile):
+        """A₁₃ > 0: CT < 0 и Ψ > 0 ⟹ −CT·Ψ > 0."""
+        state = _make_state()
+        val = oil_A13(fluid, rock, p_profile, t_profile, state)
+        assert val > 0, f"A₁₃ должен быть > 0, получено {val:.6e}"
+
+    def test_A13_isothermal(self, fluid, rock, p_profile, t_profile):
+        """A₁₃ > 0 даже при ΔTw = 0 (Ψ не зависит от ΔTw)."""
+        state = _make_state(dT_w=0.0)
+        val = oil_A13(fluid, rock, p_profile, t_profile, state)
+        assert val > 0, f"A₁₃(ΔTw=0) должен быть > 0, получено {val:.6e}"
+
+
+# ─── Тесты F₁ ─────────────────────────────────────────────────────
+
+class TestF1:
+    def test_F1_sign(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₁ < 0: отток на забое доминирует над притоком на контуре."""
+        state = _make_state()
+        val = oil_F1(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val < 0, f"F₁ должен быть < 0, получено {val:.6e}"
+
+    def test_F1_isothermal(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₁ при ΔTw = 0: dT/dr = 0 ⟹ температурные члены Q_quad обнуляются."""
+        state = _make_state(dT_w=0.0)
+        val = oil_F1(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val < 0, f"F₁(ΔTw=0) должен быть < 0, получено {val:.6e}"
+
+    def test_single_phase_limit(self, fluid, rock, p_profile, t_profile, s_profile):
+        """При r_b → r_w зона 1 вырождается; A₁₁ и F₁ определяются зоной 2."""
+        r_b_small = R_W * 1.01
+        state = _make_state(r_b=r_b_small, Sg_w=0.0, dT_w=0.0)
+        a11 = oil_A11(fluid, rock, p_profile, t_profile, state)
+        a13 = oil_A13(fluid, rock, p_profile, t_profile, state)
+        f1 = oil_F1(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(a11), f"A₁₁ не конечен при r_b→r_w: {a11}"
+        assert math.isfinite(a13), f"A₁₃ не конечен при r_b→r_w: {a13}"
+        assert math.isfinite(f1), f"F₁ не конечен при r_b→r_w: {f1}"

@@ -164,6 +164,41 @@ class BlackOilFluid:
         """αg = −(1/ρg)·∂ρg/∂T|_p = 1/T. Ур. (eq:thermal_expansion) two_phase_energy.tex."""
         return 1.0 / T
 
+    # ─── Коэффициенты ёмкости (eq:Cp, eq:CT) ────────────────────────
+    def Cp(self, p, T, Sg, phi, cr):
+        """Коэффициент ёмкости C_p. Ур. (eq:Cp) moments_method.tex."""
+        So = 1.0 - Sg
+        Bo_val = self.Bo(p, T)
+        Bg_val = self.Bg(p, T)
+        Rs_val = self.Rs(p, T)
+        co_sat_val = self.co_sat(p, T)
+        cg_val = self.cg(p, T)
+        dRs_dp_val = self.dRs_dp(p, T)
+        xi_o_val = So / Bo_val
+        inv_Bg_minus_Rs_over_Bo = 1.0 / Bg_val - Rs_val / Bo_val
+        return phi * (
+            So * (cr + co_sat_val) * inv_Bg_minus_Rs_over_Bo
+            + xi_o_val * (dRs_dp_val + Rs_val * (cr + co_sat_val))
+            + Sg / Bg_val * (cg_val + cr)
+        )
+
+    def CT(self, p, T, Sg, phi):
+        """Температурный коэффициент C_T. Ур. (eq:CT) moments_method.tex."""
+        So = 1.0 - Sg
+        Bo_val = self.Bo(p, T)
+        Bg_val = self.Bg(p, T)
+        Rs_val = self.Rs(p, T)
+        beta_o_sat_val = self.beta_o_sat(p, T)
+        beta_g_val = self.beta_g(p, T)
+        dRs_dT_val = self.dRs_dT(p, T)
+        xi_o_val = So / Bo_val
+        inv_Bg_minus_Rs_over_Bo = 1.0 / Bg_val - Rs_val / Bo_val
+        return phi * (
+            -So * beta_o_sat_val * inv_Bg_minus_Rs_over_Bo
+            + xi_o_val * (dRs_dT_val - Rs_val * beta_o_sat_val)
+            - Sg / Bg_val * beta_g_val
+        )
+
     # ─── Вспомогательные ────────────────────────────────────────────
     def xi_o(self, p, T, Sg):
         """ξo = (1−Sg)/Bo. Ур. (eq:xi_o) two_phase_energy.tex."""

@@ -212,6 +212,10 @@ cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
 
 `pyproject.toml` в `method_of_moments/`. Установка: `pip install -e ".[dev]"`.
 
+### math vs numpy
+
+Всегда `numpy`, никогда `math`. Весь код работает с массивами (`solve_ivp`, PVT-корреляции на сетке), `numpy` покрывает и скаляры, и массивы. Использовать `np.log`, `np.exp`, `np.sqrt` и т.д. Если в коде или плане встречается `math.*` — заменять на `np.*`.
+
 ### Связь формула → код
 
 Каждая функция в `src/` содержит в docstring ссылку на уравнение из `.tex`:

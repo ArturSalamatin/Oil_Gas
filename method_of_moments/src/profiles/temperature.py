@@ -2,6 +2,11 @@
 
 import math
 
+try:
+    from ..integrals import J as _J_integral
+except ImportError:
+    from integrals import J as _J_integral
+
 
 class TemperatureProfile:
     r"""Профиль T(r) с функцией формы Ψ(ζ), \eqref{eq:T_profile}, \eqref{eq:Psi}."""
@@ -49,4 +54,4 @@ class TemperatureProfile:
 
     def J(self, m: int) -> float:
         r"""Интеграл J^{(m)} = 2/(m+1) − 1/(m+σ+1), \eqref{eq:IPsi}."""
-        return 2.0 / (m + 1) - 1.0 / (m + self.sigma + 1)
+        return _J_integral(m, self.sigma)

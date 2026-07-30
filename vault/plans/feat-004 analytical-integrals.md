@@ -6,7 +6,7 @@ date: 2026-07-30
 issue: FEAT-004
 github: 4
 branch: feat/feat-004/analytical-integrals
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-07-30
   found: 0

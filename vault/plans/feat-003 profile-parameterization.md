@@ -7,7 +7,7 @@ issue: FEAT-003
 github: 3
 branch: feat/feat-003/profile-parameterization
 model_level: М.6
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-07-30
   found: 7

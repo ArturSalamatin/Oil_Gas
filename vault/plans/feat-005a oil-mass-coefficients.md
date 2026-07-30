@@ -7,7 +7,7 @@ issue: FEAT-005a
 github: 5
 branch: feat/feat-005a/oil-mass-coefficients
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-30
   found: 0

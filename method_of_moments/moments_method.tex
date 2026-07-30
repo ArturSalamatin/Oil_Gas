@@ -700,9 +700,13 @@ $r_b(t)$, $\Delta T_w(t)$ (и $p_{wf}(t)$, задаваемое).
 через $\dot{r}_b$ и $\dot{\Delta T}_w$:
 \begin{equation}\label{eq:dp_dt}
   \frac{\pp p}{\pp t}
-  = \frac{\pp p}{\pp r_b}\,\dot{r}_b
+  \approx \frac{\pp p}{\pp r_b}\,\dot{r}_b
     + \frac{\pp p}{\pp p_{wf}}\,\dot{p}_{wf},
 \end{equation}
+где опущен член
+$(\pp p/\pp\Delta T_w)\,\dot{\Delta T}_w$,
+пренебрежимо малый по сравнению с температурным
+вкладом $C_T$ (обоснование в~\S\ref{sssec:profile_derivatives}).
 \begin{equation}\label{eq:dT_dt}
   \frac{\pp T}{\pp t}
   = \frac{\pp T}{\pp r_b}\,\dot{r}_b
@@ -726,8 +730,9 @@ $\mathcal{A}_{ij}$. Члены, не содержащие производных
 \]
 Из~\eqref{eq:T_profile}: $\pp T/\pp \Delta T_w = -\Psi(\zeta)$.
 При $C_T < 0$ (типичный случай: $\pp R_s/\pp T < 0$)
-этот вклад положителен: охлаждение увеличивает
-давление насыщения и <<тормозит>> расширение зоны разгазирования.
+и $\Psi > 0$: вклад положителен ($\mathcal{A}_{13} > 0$).
+Влияние на динамику $r_b$ определяется из полной
+системы~\eqref{eq:ode_system}.
 
 \paragraph{Температурный вклад в уравнение насыщенности.}
 Элемент $\mathcal{A}_{23}$ содержит:
@@ -805,9 +810,260 @@ $\dot{S}_{g,w}$, и
 при замороженных значениях $\bar{S}_g$), поэтому
 система остаётся связанной.
 
-Явные формулы для всех $\mathcal{A}_{ij}$ и $\mathcal{F}_i$
-через эти интегралы приводятся при конкретной реализации
-(вычислительная записка).
+Ниже приводятся явные формулы для первой строки матрицы
+($\mathcal{A}_{11}$, $\mathcal{A}_{13}$, $\mathcal{F}_1$)
+--- уравнение сохранения массы нефти.%
+\footnote{FEAT-005a: коэффициенты уравнения массы нефти.}
+
+\subsubsection{Производные профилей по параметрам}
+\label{sssec:profile_derivatives}
+
+Для вычисления $\mathcal{A}_{ij}$ необходимы частные
+производные профилей давления и температуры по
+свободным параметрам $r_b$, $\Delta T_w$, $p_{wf}$.
+
+\paragraph{Температурный профиль.}
+Координата $\zeta = \ln(R_\ext/r)/L_0$ не зависит от $r_b$,
+поэтому
+\begin{equation}\label{eq:dT_drb}
+  \frac{\pp T}{\pp r_b} = 0.
+\end{equation}
+Производная по амплитуде:
+\begin{equation}\label{eq:dT_dTw}
+  \frac{\pp T}{\pp \Delta T_w} = -\Psi(\zeta).
+\end{equation}
+
+\paragraph{Давление в зоне разгазирования.}
+Из~\eqref{eq:p_inner}: $p = p_{wf} + \Delta p_1\,\eta^\gamma$.
+При фиксированном $r$ и изменении $r_b$ зависят:
+$\eta = \ln(r/r_w)/L_b$, $L_b = \ln(r_b/r_w)$,
+$\gamma$~\eqref{eq:gamma_constraint},
+$\Delta p_1 = p_b^* - p_{wf}$.
+Частные производные:
+\begin{equation}\label{eq:deta_drb}
+  \frac{\pp\eta}{\pp r_b} = -\frac{\eta}{r_b\,L_b},
+  \qquad
+  \frac{\pp L_b}{\pp r_b} = \frac{1}{r_b}.
+\end{equation}
+Давление насыщения на фронте зависит от $r_b$
+через температуру:
+\begin{equation}\label{eq:dpb_drb}
+  \frac{\pp p_b^*}{\pp r_b}
+  = \frac{\dd p_b}{\dd T}\bigg|_{T(r_b)}
+    \cdot \frac{\Delta T_w\,\Psi'(\zeta_b)}{r_b\,L_0} \geqslant 0.
+\end{equation}
+Знак: рост $r_b$ уменьшает $\zeta_b$ (фронт сдвигается
+в более тёплую область) $\Rightarrow$ $T(r_b)$ растёт
+$\Rightarrow$ $p_b^*$ растёт ($\dd p_b/\dd T > 0$
+по Стендингу). При $\Delta T_w = 0$: $\pp p_b^*/\pp r_b = 0$
+(температурное поле однородно, $p_b^*$ не зависит от $r_b$).
+
+Полная производная давления в зоне~1:
+\begin{equation}\label{eq:dp_drb_inner}
+  \frac{\pp p}{\pp r_b}\bigg|_\text{inner}
+  = \frac{\pp\Delta p_1}{\pp r_b}\,\eta^\gamma
+    + \Delta p_1\,\eta^\gamma\!\left(
+      \ln\eta\cdot\frac{\pp\gamma}{\pp r_b}
+      + \frac{\gamma}{\eta}\,\frac{\pp\eta}{\pp r_b}
+    \right),
+\end{equation}
+где $\pp\Delta p_1/\pp r_b = \pp p_b^*/\pp r_b$~\eqref{eq:dpb_drb}.
+Производная $\pp\gamma/\pp r_b$ определяется
+дифференцированием~\eqref{eq:gamma_constraint}
+и зависит от $\pp p_b^*/\pp r_b$, $\pp L_b/\pp r_b$,
+$\pp L_e/\pp r_b$. Формула~\eqref{eq:dp_drb_inner}
+приводится для анализа структуры; при численной
+реализации $\pp p/\pp r_b$ вычисляется конечной
+разностью по $r_b$ (с пересчётом $p_b^*$ и $\gamma$
+при каждом $r_b \pm \delta r_b$).
+
+\paragraph{Давление в однофазной зоне.}
+Из~\eqref{eq:p_outer}:
+$p = p_b^* + \Delta p_2\,\ln(r/r_b)/L_e$,
+где $\Delta p_2 = p_0 - p_b^*$, $L_e = \ln(R_\ext/r_b)$.
+\begin{multline}\label{eq:dp_drb_outer}
+  \frac{\pp p}{\pp r_b}\bigg|_\text{outer}
+  = \frac{\pp p_b^*}{\pp r_b}
+    \left(1 - \frac{\ln(r/r_b)}{L_e}\right) \\
+    + \frac{\Delta p_2}{r_b}
+    \left(
+      \frac{\ln(r/r_b)}{L_e^2} - \frac{1}{L_e}
+    \right).
+\end{multline}
+Предельные значения:
+при $r = r_b$: $\pp p/\pp r_b = \pp p_b^*/\pp r_b
+  - \Delta p_2/(r_b L_e)$;
+при $r = R_\ext$: $\pp p/\pp r_b = 0$
+(давление на контуре фиксировано $p = p_0$).
+
+\paragraph{Производная по $p_{wf}$.}
+В зоне разгазирования:
+\begin{equation}\label{eq:dp_dpwf}
+  \frac{\pp p}{\pp p_{wf}}\bigg|_\text{inner}
+  = 1 - \eta^\gamma + \gamma\,\eta^\gamma\ln\eta,
+\end{equation}
+где учтено $\pp\gamma/\pp p_{wf} = \gamma/\Delta p_1$
+из~\eqref{eq:gamma_constraint}.
+Пределы: при $\eta = 0$ --- $\pp p/\pp p_{wf} = 1$
+(давление на забое равно $p_{wf}$);
+при $\eta = 1$ --- $\pp p/\pp p_{wf} = 0$.
+В однофазной зоне: $\pp p/\pp p_{wf} = 0$
+(давление $p_0$ и $p_b^*$ не зависят от $p_{wf}$).
+
+\paragraph{Замечание о $\pp p/\pp\Delta T_w$.}
+Давление формально зависит от $\Delta T_w$ через
+$p_b^*(T(r_b))$~\eqref{eq:pb_star}. Однако вклад
+$C_p\cdot\pp p/\pp\Delta T_w$ мал по сравнению с $C_T$.
+В однофазной зоне ($S_g = 0$, $p > p_b$):
+$C_p \approx \phi\,(c_r + c_o)/B_g \sim 10^{-8}$ [1/Па] (при $c_o = 0$ по Стендингу),
+$\pp p/\pp\Delta T_w \sim (\dd p_b/\dd T)\,\Psi(\zeta_b)
+  \sim 5\times 10^{4}$ [Па/К],
+$C_T \approx -\phi\,\beta_o/B_g \sim -2\times 10^{-2}$ [1/К]:
+\[
+  \frac{C_p\cdot|\pp p/\pp\Delta T_w|}{|C_T|}
+  \sim \frac{10^{-8}\cdot 5\times 10^4}{2\times 10^{-2}}
+  \sim 2{,}5\times 10^{-2} \approx 2{,}5\%.
+\]
+Пренебрегается в соответствии с~\eqref{eq:dp_dt}.
+
+\subsubsection{Коэффициенты первого уравнения (масса нефти)}
+\label{sssec:oil_mass_coefficients}
+
+Подставляя~\eqref{eq:dp_dt}--\eqref{eq:dT_dt}
+в~\eqref{eq:moment0}, собираем коэффициенты
+при $\dot{r}_b$, $\dot{S}_{g,w}$, $\dot{\Delta T}_w$.
+
+\paragraph{Элемент $\mathcal{A}_{11}$.}
+Коэффициент при $\dot{r}_b$:
+\begin{equation}\label{eq:A11}
+  \boxed{
+    \mathcal{A}_{11}
+    = \int_{r_w}^{R_\ext} r\,C_p\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+Член с $C_T$ обнуляется, т.\,к.\ $\pp T/\pp r_b = 0$~\eqref{eq:dT_drb}.
+
+\emph{Знак:} $C_p > 0$ (ёмкость среды),
+$\pp p/\pp r_b < 0$ (расширение зоны разгазирования
+распределяет перепад давления на большую область,
+снижая $p$ в каждой точке).
+Поэтому $\mathcal{A}_{11} < 0$.
+
+Интеграл разбивается на две зоны с замороженными PVT
+($\bar{C}_p^{(1)}$, $\bar{C}_p^{(2)}$):
+\begin{equation}\label{eq:A11_zones}
+  \mathcal{A}_{11}
+  = \bar{C}_p^{(1)}\!\int_{r_w}^{r_b} r\,
+      \frac{\pp p}{\pp r_b}\bigg|_\text{inner}\dd r
+    + \bar{C}_p^{(2)}\!\int_{r_b}^{R_\ext} r\,
+      \frac{\pp p}{\pp r_b}\bigg|_\text{outer}\dd r,
+\end{equation}
+где $\pp p/\pp r_b$ в каждой зоне
+даётся~\eqref{eq:dp_drb_inner}
+и~\eqref{eq:dp_drb_outer}.
+Экспоненциальные весовые функции $r\,\dd r
+= r_w^2 L_b\,e^{2\eta L_b}\,\dd\eta$ не сводятся к
+$I_\Phi^{(n)}$~\eqref{eq:IPhi}; интегралы вычисляются
+численно.
+
+\paragraph{Элемент $\mathcal{A}_{12} = 0$.}
+Следует из расщепления~\eqref{eq:matrix_structure}:
+давление не зависит от $S_{g,w}$.
+
+\paragraph{Элемент $\mathcal{A}_{13}$.}
+Коэффициент при $\dot{\Delta T}_w$:
+\begin{equation}\label{eq:A13}
+  \boxed{
+    \mathcal{A}_{13}
+    = \int_{r_w}^{R_\ext} r\,C_T\,
+      \frac{\pp T}{\pp\Delta T_w}\,\dd r
+    = -\int_{r_w}^{R_\ext} r\,C_T\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+Двухзонное разбиение:
+\begin{equation}\label{eq:A13_zones}
+  \mathcal{A}_{13}
+  = -\bar{C}_T^{(1)}\!\int_{r_w}^{r_b} r\,\Psi(\zeta)\,\dd r
+    - \bar{C}_T^{(2)}\!\int_{r_b}^{R_\ext} r\,\Psi(\zeta)\,\dd r.
+\end{equation}
+Интегралы содержат $r\,\dd r = R_\ext^2 L_0\,e^{-2\zeta L_0}\,\dd\zeta$
+и не сводятся к $J^{(m)}$~\eqref{eq:IPsi}; также вычисляются численно.
+
+\emph{Знак:} при $C_T < 0$ и $\Psi > 0$: $\mathcal{A}_{13} > 0$.
+Математически: $-C_T > 0$ и $\Psi > 0$, поэтому
+подынтегральная в~\eqref{eq:A13} положительна.
+Влияние на динамику $r_b$ определяется
+решением полной системы~\eqref{eq:ode_system}.
+
+\paragraph{Правая часть $\mathcal{F}_1$.}
+\begin{equation}\label{eq:F1}
+  \boxed{
+    \mathcal{F}_1
+    = \left[r\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+    + Q_\text{quad}
+    - I_{p_{wf}}\,\dot{p}_{wf},
+  }
+\end{equation}
+где член с $\dot{p}_{wf}$ перенесён в правую часть,
+т.\,к.\ $p_{wf}(t)$ --- заданная функция.
+
+Граничные потоки:
+\begin{equation}\label{eq:boundary_fluxes}
+  \left[r\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+  = \Lambda_\ext\,\frac{\Delta p_2}{L_e}
+    - \underbrace{
+      \Lambda_w\,\frac{\Delta p_1\,\gamma}
+      {L_b}\,\lim_{\eta\to 0}\eta^{\gamma-1}
+    }_{\to\,0\;\text{при}\;\gamma > 1;\;
+      +\infty\;\text{при}\;\gamma < 1},
+\end{equation}
+где $\Lambda_\ext = \Lambda(p_0, T_0, 0, k)$ и
+$\Lambda_w = \Lambda(p_{wf}, T_w, S_{g,w}, k)$ ---
+точечные (не замороженные) значения на границах.
+На контуре: $r\,\Lambda\,\pp p/\pp r\big|_{R_\ext}
+= R_\ext\,\Lambda_\ext\,\Delta p_2/(R_\ext L_e)
+= \Lambda_\ext\,\Delta p_2/L_e$.
+На забое ($\eta = 0$): производная $\pp p/\pp r \sim \eta^{\gamma-1}$
+расходится при $\gamma < 1$. Для baseline-параметров
+$\gamma < 1$ всегда ($\Delta p_2/\Delta p_1 = 2/3$,
+$L_b/L_e < 1$); фундаментальное ограничение параметризации
+$\Phi(\eta) = \eta^\gamma$.
+
+Квадратичный интеграл из~\eqref{eq:moment0}
+редуцируется к зоне разгазирования, т.\,к.\ в однофазной зоне
+$\pp R_s/\pp p = 0$ и $\pp R_s/\pp T = 0$ (фиксированный состав):
+\begin{equation}\label{eq:Q_quad}
+  Q_\text{quad}
+  = \int_{r_w}^{r_b} r\,\frac{\lambda_o}{B_o}\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+    \right)\frac{\pp p}{\pp r}\,\dd r.
+\end{equation}
+
+Интеграл давления при нестационарном $p_{wf}$:
+\begin{equation}\label{eq:I_pwf}
+  I_{p_{wf}} = \int_{r_w}^{R_\ext} r\,C_p\,
+    \frac{\pp p}{\pp p_{wf}}\,\dd r,
+\end{equation}
+при стационарном $p_{wf}$: $\dot{p}_{wf} = 0$ и вклад
+обнуляется.
+
+\emph{Знак:} $\mathcal{F}_1 < 0$ (отток через забой
+доминирует над притоком через контур).
+Это согласуется с $\mathcal{A}_{11} < 0$:
+$\dot{r}_b = \mathcal{F}_1/\mathcal{A}_{11} > 0$,
+т.\,е.\ зона разгазирования растёт.
+
+\paragraph{Сингулярность при $\gamma < 1$.}
+Подынтегральная $Q_\text{quad}$ содержит
+$(\pp p/\pp r)^2 \sim \eta^{2(\gamma-1)}$. При $\gamma > 1/2$ ---
+интегрируема; при $\gamma \leqslant 1/2$ --- расходится.
+При начальном $r_b \approx r_w$ зона~1 вырождается
+($L_b \to 0$), интеграл стремится к нулю.
+При конечном $r_b$ с $\gamma < 1/2$: требуется
+регуляризация (замена переменных или выделение
+сингулярности при численном интегрировании).
 
 
 %=============================================================================

@@ -4,7 +4,7 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && python -m pytest tests/ -v`.
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && .venv/Scripts/python -m pytest tests/ -v`.
 
 ---
 
@@ -100,6 +100,7 @@ ls vault/plans/<id-lowercase>*
 - [ ] **Производительность:** аллокации внутри горячих циклов (интегрирование, ODE step)?
 - [ ] **Обратная совместимость:** изменится ли поведение для рабочих сценариев?
 - [ ] **Порядок вызовов:** зависимость от порядка инициализации?
+- [ ] **Состояние при ошибке:** raise/early return — объект остаётся в валидном состоянии?
 - [ ] **Численная устойчивость:** tolerance, overflow/underflow, catastrophic cancellation
 - [ ] **Связь с другими задачами:** конфликт с BUG/DEBT/FEAT/VAL?
 - [ ] **Import-цепочки:** не ломает ли фикс import-ы в других модулях?
@@ -183,9 +184,9 @@ ls vault/plans/<id-lowercase>*
 1. Прочитай этот файл целиком
 2. Прочитай связанные vault-заметки (ссылки ниже)
 3. Создай ветку: `git checkout -b <branch>`
-4. Активируй venv: `.venv/Scripts/activate`
-5. Прогони тесты (baseline): `python -m pytest tests/ -v`
-6. Воспроизведи баг: `python -m pytest tests/<file> -k "<test>" -v`
+4. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
+5. Прогони тесты (baseline): `.venv/Scripts/python -m pytest tests/ -v`
+6. Воспроизведи баг: `.venv/Scripts/python -m pytest tests/<file> -k "<test>" -v`
 7. Начни с шага 1. После каждого шага: pytest
 ```
 

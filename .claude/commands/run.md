@@ -2,7 +2,7 @@
 
 Пользователь указал конфиг или параметры: `$ARGUMENTS`
 
-Если `$ARGUMENTS` пуст — использовать `method_of_moments/configs/baseline.json`.
+Если `$ARGUMENTS` пуст — использовать `configs/baseline.json` (относительно `method_of_moments/`).
 
 ## Инструкции
 

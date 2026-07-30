@@ -204,8 +204,8 @@ src/
 
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-python -m pytest tests/ -v                    # тесты
-python src/main.py configs/baseline.json      # решатель
+.venv\Scripts\python -m pytest tests/ -v          # тесты
+.venv\Scripts\python src/main.py configs/baseline.json  # решатель
 ```
 
 ### Зависимости

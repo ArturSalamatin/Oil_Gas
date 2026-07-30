@@ -70,8 +70,10 @@ def plot_Bo():
     fig, ax = plt.subplots()
     for T in [320, 350, 380]:
         Bo_vals = [FLUID.Bo(pi, T) for pi in p]
-        ax.plot(p / 1e6, Bo_vals, label=f"T = {T} К")
-    ax.axvline(P_B / 1e6, color="k", ls="--", lw=0.8, label=f"$p_b$")
+        line, = ax.plot(p / 1e6, Bo_vals, label=f"T = {T} К")
+        pb_T = FLUID.pb(T)
+        ax.axvline(pb_T / 1e6, color=line.get_color(), ls="--", lw=0.8)
+    ax.plot([], [], color="k", ls="--", lw=0.8, label="$p_b(T)$")
     ax.set_xlabel("Давление, МПа")
     ax.set_ylabel("$B_o$, м³пл/м³ст")
     ax.set_title("Объёмный коэффициент нефти $B_o(p)$ — Standing")

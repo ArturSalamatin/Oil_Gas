@@ -7,7 +7,12 @@ from pathlib import Path
 import pytest
 
 from src.pvt.black_oil import BlackOilFluid
-from src.coefficients import frozen_pvt_zone1, frozen_pvt_zone2
+from src.coefficients import (
+    frozen_pvt_zone1, frozen_pvt_zone2,
+    dp_drb_numerical, dp_dpwf_numerical,
+)
+from src.profiles.pressure import PressureProfile
+from src.profiles.temperature import TemperatureProfile
 
 
 # ─── Фикстуры ─────────────────────────────────────────────────────
@@ -107,3 +112,86 @@ class TestFrozenPVT:
     def test_frozen_zone1_isothermal(self):
         p_bar, T_bar, Sg_bar = frozen_pvt_zone1(P_WF, P_B, T_0, 0.0, SG_BASELINE)
         assert T_bar == pytest.approx(T_0)
+
+
+# ─── Фикстуры профилей ────────────────────────────────────────────
+
+R_W = 0.1
+R_EXT = 500.0
+SIGMA = 2.0
+
+
+@pytest.fixture
+def p_profile():
+    return PressureProfile(R_W, R_EXT, P_WF, P_0)
+
+
+@pytest.fixture
+def t_profile():
+    return TemperatureProfile(R_W, R_EXT, T_0, SIGMA)
+
+
+# ─── Тесты dp/dr_b ────────────────────────────────────────────────
+
+class TestDpDrb:
+    def test_dp_drb_sign_inner(self, fluid, p_profile, t_profile):
+        """∂p/∂r_b < 0 в зоне разгазирования."""
+        r_b = 5.0
+        dT_w = 2.0
+        r_test = math.sqrt(R_W * r_b)
+        val = dp_drb_numerical(p_profile, r_test, r_b, fluid, t_profile, dT_w)
+        assert val < 0, f"∂p/∂r_b должен быть < 0 в зоне 1, получено {val:.6e}"
+
+    def test_dp_drb_sign_outer(self, fluid, p_profile, t_profile):
+        """∂p/∂r_b < 0 в однофазной зоне (или ≈0 вблизи контура)."""
+        r_b = 5.0
+        dT_w = 2.0
+        r_test = math.sqrt(r_b * R_EXT)
+        val = dp_drb_numerical(p_profile, r_test, r_b, fluid, t_profile, dT_w)
+        assert val <= 0, f"∂p/∂r_b должен быть ≤ 0 в зоне 2, получено {val:.6e}"
+
+    def test_dp_drb_zero_at_Rext(self, fluid, p_profile, t_profile):
+        """∂p/∂r_b = 0 на контуре (p(R_ext) = p_0 = const)."""
+        r_b = 5.0
+        dT_w = 2.0
+        val = dp_drb_numerical(p_profile, R_EXT, r_b, fluid, t_profile, dT_w)
+        assert abs(val) < 1.0, f"∂p/∂r_b на контуре ≈ 0, получено {val:.6e}"
+
+    def test_dp_drb_continuity_at_rb(self, fluid, p_profile, t_profile):
+        """∂p/∂r_b непрерывна в r = r_b (конечная разность)."""
+        r_b = 5.0
+        dT_w = 2.0
+        eps = 1e-4
+        val_left = dp_drb_numerical(
+            p_profile, r_b * (1 - eps), r_b, fluid, t_profile, dT_w)
+        val_right = dp_drb_numerical(
+            p_profile, r_b * (1 + eps), r_b, fluid, t_profile, dT_w)
+        assert val_left == pytest.approx(val_right, rel=0.05), (
+            f"Разрыв dp/dr_b на r_b: left={val_left:.6e}, right={val_right:.6e}"
+        )
+
+
+class TestDpDpwf:
+    def test_dp_dpwf_at_rw(self, fluid, p_profile, t_profile):
+        """∂p/∂p_wf(r_w) ≈ 1."""
+        r_b = 5.0
+        dT_w = 2.0
+        val = dp_dpwf_numerical(p_profile, R_W, r_b, fluid, t_profile, dT_w)
+        assert val == pytest.approx(1.0, abs=0.05), (
+            f"∂p/∂p_wf(r_w) ≈ 1, получено {val:.6f}"
+        )
+
+    def test_dp_dpwf_at_Rext(self, fluid, p_profile, t_profile):
+        """∂p/∂p_wf(R_ext) = 0 (p₀ = const)."""
+        r_b = 5.0
+        dT_w = 2.0
+        val = dp_dpwf_numerical(p_profile, R_EXT, r_b, fluid, t_profile, dT_w)
+        assert abs(val) < 1e-4, f"∂p/∂p_wf(R_ext) ≈ 0, получено {val:.6e}"
+
+    def test_dp_dpwf_zero_in_zone2(self, fluid, p_profile, t_profile):
+        """∂p/∂p_wf = 0 в однофазной зоне."""
+        r_b = 5.0
+        dT_w = 2.0
+        r_test = math.sqrt(r_b * R_EXT)
+        val = dp_dpwf_numerical(p_profile, r_test, r_b, fluid, t_profile, dT_w)
+        assert abs(val) < 0.01, f"∂p/∂p_wf в зоне 2 ≈ 0, получено {val:.6e}"

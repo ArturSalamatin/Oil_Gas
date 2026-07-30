@@ -2,7 +2,10 @@
 
 import math
 
-from ..integrals import J as _J_integral
+try:
+    from ..integrals import J as _J_integral
+except ImportError:
+    from integrals import J as _J_integral
 
 
 class TemperatureProfile:

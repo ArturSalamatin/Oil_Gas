@@ -285,3 +285,46 @@ class TestPbStar:
         tp = MockTemp()
         pb_star = pp.pb_star(R_B, 0.0, fluid, tp)
         assert pb_star == pytest.approx(fluid.pb(T_0))
+
+
+# ═══ Интеграционные тесты ════════════════════════════════════════════
+
+class TestIntegrationPbStarWithTemperature:
+
+    def test_pb_star_decreases_with_cooling(self):
+        from src.pvt.black_oil import BlackOilFluid
+        pvt_cfg = {"rho_o_st": 850.0, "rho_g_st": 0.85}
+        fluid = BlackOilFluid(pvt_cfg, p_b=PB_STAR, T_0=T_0)
+
+        pp = PressureProfile(R_W, R_EXT, P_WF, P_0)
+        tp = TemperatureProfile(R_W, R_EXT, T_0, sigma=SIGMA)
+
+        pb_iso = pp.pb_star(R_B, 0.0, fluid, tp)
+        pb_cool = pp.pb_star(R_B, 5.0, fluid, tp)
+        assert pb_cool < pb_iso
+
+
+class TestIntegrationProfilesConsistency:
+
+    def test_profiles_at_rb(self):
+        from src.pvt.black_oil import BlackOilFluid
+        pvt_cfg = {"rho_o_st": 850.0, "rho_g_st": 0.85}
+        fluid = BlackOilFluid(pvt_cfg, p_b=PB_STAR, T_0=T_0)
+
+        pp = PressureProfile(R_W, R_EXT, P_WF, P_0)
+        sp = SaturationProfile(R_W, beta=BETA)
+        tp = TemperatureProfile(R_W, R_EXT, T_0, sigma=SIGMA)
+
+        pb_star = pp.pb_star(R_B, 0.0, fluid, tp)
+        gamma = pp.gamma(R_B, pb_star)
+
+        p_inner = pp(R_B, R_B, pb_star, gamma)
+        p_outer = pp(R_B + 1e-10, R_B, pb_star, gamma)
+        assert p_inner == pytest.approx(pb_star)
+        assert p_outer == pytest.approx(pb_star, rel=1e-6)
+        assert sp(R_B, R_B, SG_W) == pytest.approx(0.0)
+
+    def test_gamma_positive(self):
+        pp = PressureProfile(R_W, R_EXT, P_WF, P_0)
+        gamma = pp.gamma(R_B, PB_STAR)
+        assert gamma > 0

@@ -4,7 +4,7 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && python -m pytest tests/ -v`.
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && .venv/Scripts/python -m pytest tests/ -v`.
 
 ---
 
@@ -103,6 +103,7 @@ ls vault/plans/<id-lowercase>*
 - [ ] **Все call sites найдены:** grep по имени класса/функции, import-ы
 - [ ] **Зависимости пакетов:** pyproject.toml, import paths
 - [ ] **Обратная совместимость API:** вызывающий код не ломается
+- [ ] **Состояние при ошибке:** raise/early return — объект остаётся в валидном состоянии?
 - [ ] **Тесты:** все существующие тесты продолжают проходить
 - [ ] **Circular imports:** новая структура import-ов не создаёт циклов
 - [ ] **Docstrings:** ссылки на `\eqref{}` корректны после переноса
@@ -242,8 +243,8 @@ ls vault/plans/<id-lowercase>*
 1. Прочитай этот файл целиком
 2. Прочитай связанные vault-заметки (ссылки ниже)
 3. Создай ветку: `git checkout -b <branch>`
-4. Активируй venv: `.venv/Scripts/activate` (Windows) или `source .venv/bin/activate` (Linux)
-5. Прогони тесты (baseline): `python -m pytest tests/ -v`
+4. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
+5. Прогони тесты (baseline): `.venv/Scripts/python -m pytest tests/ -v`
 6. Запомни количество тестов и время — это baseline
 7. Начни с шага 1. После каждого шага: pytest
 ```

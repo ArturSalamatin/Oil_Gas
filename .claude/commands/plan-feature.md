@@ -4,7 +4,7 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && python -m pytest tests/ -v`.
+**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && .venv/Scripts/python -m pytest tests/ -v`.
 
 ---
 
@@ -120,6 +120,7 @@ ls vault/plans/<id-lowercase>*
 - [ ] **ODE совместимость:** если добавляется новое ODE — совместимо с интегратором?
 - [ ] **PVT зависимости:** если фича зависит от PVT — при каких p, T корреляции валидны?
 - [ ] **Обратная совместимость:** все существующие тесты зелёные
+- [ ] **Состояние при ошибке:** raise/early return — объект остаётся в валидном состоянии?
 - [ ] **Import-цепочки:** не создаёт circular imports
 - [ ] **Производительность:** вычисление в горячих циклах не деградирует
 - [ ] **Связь с другими задачами:** конфликт с BUG/DEBT/FEAT/VAL?
@@ -256,8 +257,8 @@ ls vault/plans/<id-lowercase>*
 2. Прочитай moments_method.tex (раздел: <конкретный раздел>)
 3. Прочитай связанные vault-заметки (ссылки ниже)
 4. Создай ветку: `git checkout -b <branch>`
-5. Активируй venv: `.venv/Scripts/activate`
-6. Прогони тесты (baseline): `python -m pytest tests/ -v`
+5. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
+6. Прогони тесты (baseline): `.venv/Scripts/python -m pytest tests/ -v`
 7. Начни с шага 1. После каждого шага: pytest
 ```
 

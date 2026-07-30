@@ -204,8 +204,8 @@ src/
 
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-python -m pytest tests/ -v                    # тесты
-python src/main.py configs/baseline.json      # решатель
+.venv\Scripts\python -m pytest tests/ -v          # тесты
+.venv\Scripts\python src/main.py configs/baseline.json  # решатель
 ```
 
 ### Зависимости
@@ -298,7 +298,7 @@ vault/
 ├── 00-home/
 │   └── index.md                    # Навигационный хаб — ссылки на все разделы
 ├── knowledge/
-│   ├── literature/                 # ~67 заметок: расширенные обзоры + краткие из контекста цитирования
+│   ├── literature/                 # ~70 заметок: расширенные обзоры + краткие из контекста цитирования
 │   │   ├── index-literature.md     # Тематический индекс (6 разделов + расширенные обзоры)
 │   │   ├── cited-references.md     # ~60 записей — алфавитный индекс кратких заметок
 │   │   └── Автор Год — тема.md     # Заметки (расширенные и краткие)

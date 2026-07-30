@@ -323,8 +323,10 @@ gh issue view <N> --repo ArturSalamatin/Oil_Gas --comments
 ```
 
 Если уже есть комментарий с заголовком `## Аудит плана` — это повторный аудит. Не добавляй новый комментарий, а **обнови существующий** через `gh api`:
+1. Сохрани новый текст комментария в scratchpad-файл
+2. Обнови:
 ```powershell
-gh api repos/ArturSalamatin/Oil_Gas/issues/comments/<comment_id> -X PATCH -f body="<новый текст>"
+gh api repos/ArturSalamatin/Oil_Gas/issues/comments/<comment_id> -X PATCH -F body=@<path-to-file>
 ```
 
 Если комментария с аудитом нет — создай новый.

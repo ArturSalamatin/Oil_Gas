@@ -7,7 +7,7 @@ issue: FEAT-005c
 github: 7
 branch: feat/feat-005c/energy-coefficients
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-31
   found: 0

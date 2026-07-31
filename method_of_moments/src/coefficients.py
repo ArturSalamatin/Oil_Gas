@@ -492,3 +492,28 @@ def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
         I_pwf = (i1 + i2) * state.dp_wf_dt
 
     return flux_cond + conv_total + jt_total + I_pwf
+
+
+def assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Сборка A·ẋ=F. Ур. (eq:ode_system), (eq:matrix_structure) moments_method.tex."""
+    A = np.zeros((3, 3))
+
+    A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
+    # A[0, 1] = 0  — расщепление (eq:matrix_structure)
+    A[0, 2] = oil_A13(fluid, rock, p_profile, t_profile, state)
+
+    A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+    A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+    A[1, 2] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+
+    A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+    # A[2, 1] = 0  — расщепление (eq:matrix_structure)
+    A[2, 2] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+
+    F = np.array([
+        oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
+        gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
+        energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
+    ])
+
+    return A, F

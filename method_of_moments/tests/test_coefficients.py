@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from src.pvt.black_oil import BlackOilFluid
@@ -13,6 +14,7 @@ from src.coefficients import (
     oil_A11, oil_A13, oil_F1,
     gas_A21, gas_A22, gas_A23, gas_F2,
     energy_A31, energy_A33, energy_F3,
+    assemble_ode_system,
     OdeState,
 )
 from src.profiles.pressure import PressureProfile
@@ -619,3 +621,88 @@ class TestConsistency:
         assert dot_rb > 0, (
             f"ṙ_b = F₁/A₁₁ = {f1:.6e}/{a11:.6e} = {dot_rb:.6e} должен быть > 0"
         )
+
+
+class TestAssembly:
+    """Тесты сборки матрицы A и вектора F — FEAT-005d."""
+
+    def test_A12_zero(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₁₂ = 0 — расщепление (eq:matrix_structure)."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert A[0, 1] == 0.0, f"A₁₂ должен быть 0, получено {A[0, 1]:.6e}"
+
+    def test_A32_zero(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₃₂ = 0 — расщепление (eq:matrix_structure)."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert A[2, 1] == 0.0, f"A₃₂ должен быть 0, получено {A[2, 1]:.6e}"
+
+    def test_det_nonzero(self, fluid, rock, p_profile, t_profile, s_profile):
+        """det(A) ≠ 0 при baseline параметрах."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        det = np.linalg.det(A)
+        assert det != 0.0, "det(A) = 0 — матрица вырождена"
+        assert np.isfinite(det), f"det(A) не конечен: {det}"
+
+    def test_2x2_subsystem_nonsingular(self, fluid, rock, p_profile,
+                                        t_profile, s_profile):
+        """Определитель подсистемы 2×2 (уравнения 1 и 3) ненулевой."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        det_13 = A[0, 0] * A[2, 2] - A[0, 2] * A[2, 0]
+        assert det_13 != 0.0, (
+            f"A₁₁·A₃₃ − A₁₃·A₃₁ = {det_13:.6e} — подсистема 2×2 вырождена"
+        )
+
+    def test_all_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        """Все элементы A и F конечны."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.all(np.isfinite(A)), f"A содержит NaN/Inf:\n{A}"
+        assert np.all(np.isfinite(F)), f"F содержит NaN/Inf: {F}"
+
+    def test_solve_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        """ẋ = A⁻¹·F — все компоненты конечны."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        x_dot = np.linalg.solve(A, F)
+        assert np.all(np.isfinite(x_dot)), f"ẋ содержит NaN/Inf: {x_dot}"
+
+    def test_solve_dot_rb_positive(self, fluid, rock, p_profile, t_profile,
+                                    s_profile):
+        """ṙ_b > 0 из полной матричной системы."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        x_dot = np.linalg.solve(A, F)
+        assert x_dot[0] > 0, (
+            f"ṙ_b = {x_dot[0]:.6e} должен быть > 0 (зона разгазирования растёт)"
+        )
+
+    def test_assembly_matches_components(self, fluid, rock, p_profile,
+                                         t_profile, s_profile):
+        """Элементы A и F из сборки совпадают с прямыми вызовами."""
+        state = _make_state()
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        assert A[0, 0] == pytest.approx(oil_A11(fluid, rock, p_profile, t_profile, state))
+        assert A[0, 2] == pytest.approx(oil_A13(fluid, rock, p_profile, t_profile, state))
+        assert A[1, 0] == pytest.approx(gas_A21(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert A[1, 1] == pytest.approx(gas_A22(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert A[1, 2] == pytest.approx(gas_A23(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert A[2, 0] == pytest.approx(energy_A31(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert A[2, 2] == pytest.approx(energy_A33(fluid, rock, p_profile, t_profile, s_profile, state))
+
+        assert F[0] == pytest.approx(oil_F1(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert F[1] == pytest.approx(gas_F2(fluid, rock, p_profile, t_profile, s_profile, state))
+        assert F[2] == pytest.approx(energy_F3(fluid, rock, p_profile, t_profile, s_profile, state))
+
+    def test_small_Sg(self, fluid, rock, p_profile, t_profile, s_profile):
+        """Сборка работает при малом Sg_w ≈ 0.01 и rb ≈ rw."""
+        state = _make_state(r_b=0.2, Sg_w=0.01, dT_w=0.1)
+        A, F = assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.all(np.isfinite(A)), f"A при Sg≈0:\n{A}"
+        assert np.all(np.isfinite(F)), f"F при Sg≈0: {F}"
+        det = np.linalg.det(A)
+        assert det != 0.0, f"det(A) = 0 при Sg≈0"

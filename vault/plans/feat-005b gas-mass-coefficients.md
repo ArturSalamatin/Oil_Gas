@@ -7,7 +7,7 @@ issue: FEAT-005b
 github: 6
 branch: feat/feat-005b/gas-mass-coefficients
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-30
   found: 1

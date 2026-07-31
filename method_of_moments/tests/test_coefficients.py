@@ -291,24 +291,26 @@ class TestF1:
 # ─── Тесты A₂₂ (eq:A22) ─────────────────────────────────────────
 
 class TestA22:
-    def test_A22_positive(self, s_profile):
+    def test_A22_positive(self, fluid, rock, p_profile, t_profile, s_profile):
         """A₂₂ > 0: подынтегральная r·(1−η^β) ≥ 0."""
         state = _make_state()
-        val = gas_A22(s_profile, state)
+        val = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
         assert val > 0, f"A₂₂ должен быть > 0, получено {val:.6e}"
 
-    def test_A22_grows_with_rb(self, s_profile):
+    def test_A22_grows_with_rb(self, fluid, rock, p_profile, t_profile,
+                               s_profile):
         """A₂₂ растёт с r_b (больше домен интегрирования)."""
         state1 = _make_state(r_b=5.0)
         state2 = _make_state(r_b=10.0)
-        val1 = gas_A22(s_profile, state1)
-        val2 = gas_A22(s_profile, state2)
+        val1 = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state1)
+        val2 = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state2)
         assert val2 > val1, f"A₂₂(rb=10) должен быть > A₂₂(rb=5)"
 
-    def test_A22_zero_at_rw(self, s_profile):
+    def test_A22_zero_at_rw(self, fluid, rock, p_profile, t_profile,
+                            s_profile):
         """A₂₂ → 0 при rb → rw (домен вырождается)."""
         state = _make_state(r_b=R_W * 1.0001)
-        val = gas_A22(s_profile, state)
+        val = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
         assert abs(val) < 1e-6, f"A₂₂ → 0 при rb→rw, получено {val:.6e}"
 
 

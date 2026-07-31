@@ -215,7 +215,7 @@ def oil_F1(fluid, rock, p_profile, t_profile, s_profile, state):
 # ─── A₂₂: ∫r·(1−η^β) dr (eq:A22) ─────────────────────────────────
 
 
-def gas_A22(s_profile, state):
+def gas_A22(fluid, rock, p_profile, t_profile, s_profile, state):
     """Коэффициент A₂₂ при Ṡg,w в уравнении массы газа. Ур. (eq:A22) moments_method.tex."""
     r_b = state.r_b
     r_w = s_profile.r_w

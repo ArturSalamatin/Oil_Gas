@@ -8,7 +8,7 @@ from .ode_system import make_rhs
 
 
 def _initial_conditions(fluid, rock, p_profile, t_profile, p_wf, t_eps):
-    """Начальные условия ODE. Заглушка до FEAT-006. Ур. (eq:ic_regularized) moments_method.tex."""
+    """Начальные условия ODE. Ур. (eq:ic_regularized) moments_method.tex. DEBT-001: вынести в initial.py."""
     p_0 = p_profile.p_0
     p_b = fluid.p_b
     T_0 = t_profile.T_0

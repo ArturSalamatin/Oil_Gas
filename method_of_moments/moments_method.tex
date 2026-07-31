@@ -1261,6 +1261,164 @@ $I_{p_{wf}}^{(2)}\,\dot{p}_{wf}$ остаётся с~\emph{тем~же}
 $r_w + \varepsilon$, $\varepsilon = 10^{-3}\,r_w$.
 
 
+\subsubsection{Коэффициенты третьего уравнения (энергия)}
+
+Нулевой момент уравнения энергии~\eqref{eq:T_moment0}
+содержит ёмкостный, конвективный и источниковые члены.
+Подставляя~\eqref{eq:dT_dt} и раскрывая
+$\partial p/\partial t$~\eqref{eq:dp_dt},
+получаем строку $(\mathcal{A}_{31},\, 0,\, \mathcal{A}_{33})$
+и правую часть $\mathcal{F}_3$.
+
+Элемент $\mathcal{A}_{32} = 0$ по расщеплению~\eqref{eq:matrix_structure}:
+температурный профиль $\Psi(\zeta)$ не зависит от~$S_{g,w}$.
+
+\paragraph{Элемент $\mathcal{A}_{31}$.}
+
+Вклад даёт только $Q_{\text{ad}}^*$~\eqref{eq:Qad_star},
+содержащий $\partial p/\partial t$.
+Ёмкостный член~(I) не вносит вклада:
+$\partial T/\partial r_b = 0$~\eqref{eq:dT_drb}.
+Конвективный~(II) содержит $\partial T/\partial r$, а не
+$\partial T/\partial t$, и не зависит от~$\dot{r}_b$.
+
+Коэффициент при $\dot{r}_b$ стоит в правой части (eq:T\_moment0),
+поэтому при переносе в матрицу ($A\dot{q} = F$) знак меняется:
+\begin{equation}\label{eq:A31}
+  \boxed{
+    \mathcal{A}_{31}
+    = -\int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{ad}}^{*}\,
+      \frac{\partial p}{\partial r_b}\,dr
+  }
+\end{equation}
+где $\bar{Q}_{\text{ad}}^{*}$ --- коэффициент при $\partial p/\partial t$
+в формуле $Q_{\text{ad}}^*$:
+\begin{equation}\label{eq:Qad_star_coeff}
+  \bar{Q}_{\text{ad}}^{*}(p,T,S_g)
+  = \phi\!\left[T\sum_\alpha S_\alpha\,\alpha_\alpha
+    + c_r\bigl(p + (\rho c_p)_s\,T\bigr)\right]
+  + L\,\rho_g^{\text{ст}}\,\phi\,\xi_o\,\frac{\partial R_s}{\partial p}.
+\end{equation}
+
+Двухзонное разбиение:
+\begin{equation}\label{eq:A31_zones}
+  \mathcal{A}_{31}
+  = -\bar{Q}_{\text{ad},1}^{*}
+    \int_{r_w}^{r_b} r\,\frac{\partial p}{\partial r_b}\bigg|_{\text{inner}} dr
+    - \bar{Q}_{\text{ad},2}^{*}
+    \int_{r_b}^{R_{\text{ext}}} r\,\frac{\partial p}{\partial r_b}\bigg|_{\text{outer}} dr.
+\end{equation}
+
+\emph{Знак:} $\bar{Q}_{\text{ad}}^{*} > 0$,
+$\partial p/\partial r_b < 0$, интеграл $< 0$,
+минус от переноса RHS$\to$LHS
+$\Rightarrow$ $\mathcal{A}_{31} > 0$.
+
+\emph{Структура:} аналогична $\mathcal{A}_{11}$~\eqref{eq:A11_zones}
+с заменой $C_p \to \bar{Q}_{\text{ad}}^{*}$ и противоположным знаком.
+
+\paragraph{Элемент $\mathcal{A}_{33}$.}
+
+Вклад даёт ёмкостный член~(I) через
+$\partial T/\partial \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}.
+Конвективный и источниковые не зависят от~$\dot{\Delta T}_w$.
+
+\begin{equation}\label{eq:A33}
+  \boxed{
+    \mathcal{A}_{33}
+    = -\int_{r_w}^{R_{\text{ext}}} r\,(\rho c_p)_{\text{eff}}^{*}\,
+      \Psi(\zeta)\,dr
+  }
+\end{equation}
+
+Двухзонное разбиение:
+\begin{equation}\label{eq:A33_zones}
+  \mathcal{A}_{33}
+  = -(\rho c_p)_{\text{eff},1}^{*}
+    \int_{r_w}^{r_b} r\,\Psi(\zeta)\,dr
+    - (\rho c_p)_{\text{eff},2}^{*}
+    \int_{r_b}^{R_{\text{ext}}} r\,\Psi(\zeta)\,dr.
+\end{equation}
+
+\emph{Знак:}
+$(\rho c_p)_{\text{eff}}^{*} > 0$, $\Psi > 0$
+$\Rightarrow$ $\mathcal{A}_{33} < 0$.
+Минус от $\partial T/\partial\Delta T_w = -\Psi$.
+
+\emph{Структура:} аналогична $\mathcal{A}_{13}$~\eqref{eq:A13}
+с заменой $C_T \to (\rho c_p)_{\text{eff}}^{*}$.
+
+\paragraph{Правая часть $\mathcal{F}_3$.}
+
+Собирает все члены, не зависящие от
+$\dot{r}_b$, $\dot{S}_{g,w}$, $\dot{\Delta T}_w$:
+\begin{equation}\label{eq:F3}
+  \boxed{
+    \mathcal{F}_3
+    = \underbrace{R_{\text{ext}}\,\lambda_{\text{eff}}\,T'(R_{\text{ext}})}_{
+        \text{теплопроводность}}
+    + \underbrace{\int_{r_w}^{R_{\text{ext}}} r\,\bar{C}_{\text{conv}}^{*}\,
+      \frac{\partial p}{\partial r}\,\frac{\partial T}{\partial r}\,dr}_{
+        \text{конвекция}}
+    + \underbrace{\int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{JT}}^{*}\,
+      \left(\frac{\partial p}{\partial r}\right)^{\!2} dr}_{
+        \text{JT}}
+    + \underbrace{I_{p_{wf}}^{(3)}\,\dot{p}_{wf}}_{
+        \text{нестац.\ }p_{wf}}
+  }
+\end{equation}
+
+Замороженные коэффициенты:
+\begin{align}
+  \bar{C}_{\text{conv}}^{*}
+    &= \rho_o\,c_{p,o}\,\lambda_o + \rho_g\,c_{p,g}\,\lambda_g
+       - L\,\rho_g^{\text{ст}}\,\frac{\lambda_o}{B_o}\,
+         \frac{\partial R_s}{\partial T},
+  \label{eq:Cconv_star}\\[4pt]
+  \bar{Q}_{\text{JT}}^{*}
+    &= \sum_\alpha \lambda_\alpha\,(1 - \alpha_\alpha\,T)
+       - L\,\rho_g^{\text{ст}}\,\frac{\lambda_o}{B_o}\,
+         \frac{\partial R_s}{\partial p},
+  \label{eq:QJT_star_coeff}\\[4pt]
+  I_{p_{wf}}^{(3)}
+    &= \int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{ad}}^{*}\,
+       \frac{\partial p}{\partial p_{wf}}\,dr.
+  \label{eq:I_pwf_energy}
+\end{align}
+
+\emph{Знаки конвективного и JT интегралов.}
+Конвективный: два минуса (перенос LHS$\to$RHS
+и Дарси $u = -\lambda\,\partial p/\partial r$) компенсируются
+$\Rightarrow$ знак~<<$+$>>.
+JT: $Q_{\text{JT}}^* \propto (\partial p/\partial r)^2 \geq 0$,
+стоит в RHS --- знак~<<$+$>>.
+
+\emph{Замечание:} знак $\bar{Q}_{\text{JT}}^{*}$ не фиксирован.
+При сильной дегазации ($L\,\rho_g^{\text{ст}}\,(\lambda_o/B_o)\,
+\partial R_s/\partial p$ велико) он может быть отрицательным ---
+дегазационное охлаждение доминирует над JT-нагревом.
+
+\paragraph{Сингулярности.}
+JT-интеграл содержит $(\partial p/\partial r)^2 \sim \eta^{2(\gamma-1)}$,
+интегрируемый при $\gamma > 1/2$ (как в $Q_{\text{quad}}$
+из~$\mathcal{F}_1$).
+Конвективный содержит произведение
+$(\partial p/\partial r)(\partial T/\partial r)$;
+при $r \to r_w$: $\partial T/\partial r = 0$ (ГУ),
+поэтому произведение конечно при $\gamma + \sigma > 1$
+(baseline: $\gamma + \sigma \approx 2.6$).
+
+\paragraph{Проверка размерностей.}
+Все члены $A\dot{q} = F$ имеют размерность [Вт/м]:
+\begin{itemize}
+  \item $[\mathcal{A}_{31}] = [\text{Дж/м}^2]$;
+        $[\mathcal{A}_{31}\,\dot{r}_b] = [\text{Вт/м}]$ \checkmark
+  \item $[\mathcal{A}_{33}] = [\text{Дж/(м\textperiodcentered К)}]$;
+        $[\mathcal{A}_{33}\,\dot{\Delta T}_w] = [\text{Вт/м}]$ \checkmark
+  \item $[\mathcal{F}_3] = [\text{Вт/м}]$ \checkmark
+\end{itemize}
+
+
 %=============================================================================
 \section{Начальная стадия: автомодельная асимптотика при $t \to 0$}
 \label{sec:initial_stage}

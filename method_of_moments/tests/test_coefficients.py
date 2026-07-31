@@ -12,6 +12,7 @@ from src.coefficients import (
     dp_drb_numerical, dp_dpwf_numerical,
     oil_A11, oil_A13, oil_F1,
     gas_A21, gas_A22, gas_A23, gas_F2,
+    energy_A31, energy_A33, energy_F3,
     OdeState,
 )
 from src.profiles.pressure import PressureProfile
@@ -404,6 +405,208 @@ class TestF2:
 
 
 # ─── Тест согласованности строк 1 и 2 ───────────────────────────
+
+# ─── Тесты (ρcp)_eff (FEAT-005c, шаг 1) ─────────────────────────
+
+class TestRhocpEff:
+    def test_rhocp_eff_positive(self, fluid):
+        val = fluid.rhocp_eff(P_WF, T_0, SG_BASELINE, PHI, 2e6)
+        assert val > 0, f"(ρcp)_eff должен быть > 0, получено {val}"
+
+    def test_rhocp_eff_star_ge_eff(self, fluid):
+        rhocp = fluid.rhocp_eff(P_WF, T_0, SG_BASELINE, PHI, 2e6)
+        rhocp_star = fluid.rhocp_eff_star(P_WF, T_0, SG_BASELINE, PHI, 2e6)
+        assert rhocp_star >= rhocp, (
+            f"(ρcp)_eff*={rhocp_star:.3e} < (ρcp)_eff={rhocp:.3e}"
+        )
+
+    def test_rhocp_eff_single_phase(self, fluid):
+        val = fluid.rhocp_eff(P_0, T_0, 0.0, PHI, 2e6)
+        assert val > 0
+
+    def test_rhocp_eff_star_dimension(self, fluid):
+        val = fluid.rhocp_eff_star(P_WF, T_0, SG_BASELINE, PHI, 2e6)
+        assert 1e4 < val < 1e8, f"(ρcp)_eff* порядка 10⁶, получено {val:.3e}"
+
+    def test_rhocp_eff_star_equals_eff_above_pb(self, fluid):
+        """Выше pb: dRs/dT = 0 ⟹ модификация = 0."""
+        rhocp = fluid.rhocp_eff(P_0, T_0, 0.0, PHI, 2e6)
+        rhocp_star = fluid.rhocp_eff_star(P_0, T_0, 0.0, PHI, 2e6)
+        assert rhocp_star == pytest.approx(rhocp, rel=1e-12)
+
+
+# ─── Тесты Q̄_ad* (FEAT-005c, шаг 2) ─────────────────────────────
+
+# ─── Тесты A₃₁ (FEAT-005c, шаг 3) ───────────────────────────────
+
+class TestA31:
+    def test_A31_sign(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₃₁ > 0: −(Q̄_ad* > 0)·(∂p/∂rb < 0) → положительный."""
+        state = _make_state()
+        val = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"A₃₁ должен быть > 0, получено {val:.6e}"
+
+    def test_A31_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₃₁ не конечен: {val}"
+
+    def test_A31_single_phase(self, fluid, rock, p_profile, t_profile,
+                              s_profile):
+        """A₃₁ конечен при вырождении зоны 1."""
+        state = _make_state(r_b=R_W * 1.01, Sg_w=0.0, dT_w=0.0)
+        val = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₃₁ не конечен при r_b→r_w: {val}"
+
+
+# ─── Тесты A₃₃ (FEAT-005c, шаг 4) ───────────────────────────────
+
+class TestA33:
+    def test_A33_sign(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₃₃ < 0: (ρcp)_eff* > 0, Ψ > 0, знак минус."""
+        state = _make_state()
+        val = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val < 0, f"A₃₃ должен быть < 0, получено {val:.6e}"
+
+    def test_A33_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₃₃ не конечен: {val}"
+
+    def test_A33_isothermal(self, fluid, rock, p_profile, t_profile,
+                            s_profile):
+        """A₃₃ конечен и < 0 при ΔTw = 0."""
+        state = _make_state(dT_w=0.0)
+        val = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₃₃(ΔTw=0) не конечен: {val}"
+        assert val < 0, f"A₃₃(ΔTw=0) должен быть < 0, получено {val:.6e}"
+
+
+# ─── Тесты C̄_conv*, Q̄_JT* (FEAT-005c, шаг 5 PVT) ────────────────
+
+class TestCConvStar:
+    def test_C_conv_star_positive(self, fluid, rock):
+        k = rock["k"]
+        val = fluid.C_conv_star(P_WF, T_0, SG_BASELINE, k)
+        assert val > 0, f"C̄_conv* должен быть > 0, получено {val:.6e}"
+
+
+class TestQJTStarCoeff:
+    def test_QJT_star_coeff_finite(self, fluid, rock):
+        k = rock["k"]
+        val = fluid.QJT_star_coeff(P_WF, T_0, SG_BASELINE, k)
+        assert math.isfinite(val), f"Q̄_JT* не конечен: {val}"
+
+    def test_QJT_star_coeff_single_phase_positive(self, fluid, rock):
+        """Выше pb: dRs/dp = 0 ⟹ нет дегазационной добавки, JT > 0."""
+        k = rock["k"]
+        val = fluid.QJT_star_coeff(P_0, T_0, 0.0, k)
+        assert val > 0, f"Q̄_JT* (однофазный) должен быть > 0, получено {val:.6e}"
+
+
+# ─── Тесты F₃ (FEAT-005c, шаг 5) ────────────────────────────────
+
+class TestF3:
+    def test_F3_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"F₃ не конечен: {val}"
+
+    def test_F3_nonzero(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₃ ≠ 0 при dT_w > 0."""
+        state = _make_state(dT_w=2.0)
+        val = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val != 0.0, f"F₃ не должен быть 0, получено {val:.6e}"
+
+    def test_F3_isothermal_nonzero(self, fluid, rock, p_profile, t_profile,
+                                   s_profile):
+        """При dT_w = 0: F₃ ≠ 0 (JT действует при любом ΔP)."""
+        state = _make_state(dT_w=0.0)
+        val = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val != 0.0, f"F₃(ΔTw=0) не должен быть 0"
+
+    def test_F3_dot_dTw_positive(self, fluid, rock, p_profile, t_profile,
+                                 s_profile):
+        """ΔṪ_w = F₃/A₃₃ > 0: охлаждение нарастает (A₃₃ < 0)."""
+        state = _make_state(dT_w=0.0)
+        a33 = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        f3 = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        dot_dTw = f3 / a33
+        assert dot_dTw > 0, (
+            f"ΔṪ_w = F₃/A₃₃ = {f3:.3e}/{a33:.3e} = {dot_dTw:.3e} должен быть > 0"
+        )
+
+    def test_F3_no_pwf(self, fluid, rock, p_profile, t_profile, s_profile):
+        """dp_wf_dt = 0 → I_pwf = 0."""
+        state = _make_state(dp_wf_dt=0.0)
+        val = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val)
+
+    def test_F3_nonstationary_pwf(self, fluid, rock, p_profile, t_profile,
+                                  s_profile):
+        """F₃ меняется при ṗ_wf ≠ 0."""
+        state_stat = _make_state()
+        state_nstat = _make_state(dp_wf_dt=1e5)
+        val_stat = energy_F3(fluid, rock, p_profile, t_profile, s_profile,
+                             state_stat)
+        val_nstat = energy_F3(fluid, rock, p_profile, t_profile, s_profile,
+                              state_nstat)
+        assert math.isfinite(val_nstat)
+        assert val_stat != pytest.approx(val_nstat, rel=1e-6), (
+            f"F₃ не изменился при ṗ_wf=1e5"
+        )
+
+
+# ─── Тест A₃₂ = 0 (FEAT-005c, шаг 6) ────────────────────────────
+
+class TestA32Zero:
+    def test_no_energy_A32_in_api(self):
+        """A₃₂ = 0 по расщеплению (eq:matrix_structure)."""
+        import src.coefficients as coeff
+        assert not hasattr(coeff, "energy_A32"), (
+            "energy_A32 не должна существовать: A₃₂ = 0 по расщеплению"
+        )
+
+
+# ─── Тест согласованности строки 3 (FEAT-005c, шаг 6) ───────────
+
+class TestEnergyConsistency:
+    def test_energy_coefficients_finite(self, fluid, rock, p_profile,
+                                       t_profile, s_profile):
+        state = _make_state()
+        a31 = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        a33 = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        f3 = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(a31)
+        assert math.isfinite(a33)
+        assert math.isfinite(f3)
+        assert a33 != 0.0
+
+    def test_single_phase_limit_energy(self, fluid, rock, p_profile,
+                                       t_profile, s_profile):
+        """При r_b → r_w + ε все коэффициенты конечны."""
+        state = _make_state(r_b=R_W * 1.01, Sg_w=0.001, dT_w=0.0)
+        a31 = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        a33 = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        f3 = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(a31), f"A₃₁ не конечен при r_b→r_w: {a31}"
+        assert math.isfinite(a33), f"A₃₃ не конечен при r_b→r_w: {a33}"
+        assert math.isfinite(f3), f"F₃ не конечен при r_b→r_w: {f3}"
+
+
+class TestQadStarCoeff:
+    def test_Qad_star_coeff_positive(self, fluid):
+        val = fluid.Qad_star_coeff(P_WF, T_0, SG_BASELINE, PHI, 2e6, CR)
+        assert val > 0, f"Q̄_ad* должен быть > 0, получено {val}"
+
+    def test_Qad_star_coeff_single_phase(self, fluid):
+        val = fluid.Qad_star_coeff(P_0, T_0, 0.0, PHI, 2e6, CR)
+        assert val > 0, f"Q̄_ad* (однофазный) должен быть > 0, получено {val}"
+
+    def test_Qad_star_coeff_dimension(self, fluid):
+        val = fluid.Qad_star_coeff(P_WF, T_0, SG_BASELINE, PHI, 2e6, CR)
+        assert 1e-3 < val < 1e2, f"Q̄_ad* ~ 0.1–1.0 (безразм.), получено {val:.3e}"
+
 
 class TestConsistency:
     def test_dot_rb_positive(self, fluid, rock, p_profile, t_profile,

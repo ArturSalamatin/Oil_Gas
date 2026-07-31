@@ -215,3 +215,43 @@ class BlackOilFluid:
     def L(self, p, T):
         """Теплота дегазации [Дж/кг]. Ур. (eq:L_def) two_phase_energy.tex."""
         return self._L_degas
+
+    # ─── Энергетические коэффициенты (FEAT-005c) ───────────────────
+
+    def rhocp_eff(self, p, T, Sg, phi, rho_cp_s):
+        """(ρcp)_eff — эффективная объёмная теплоёмкость. Ур. (eq:rhocp_eff) moments_method.tex."""
+        So = 1.0 - Sg
+        return ((1.0 - phi) * rho_cp_s
+                + phi * (So * self.rho_o(p, T) * self.cp_o(p, T)
+                         + Sg * self.rho_g(p, T) * self.cp_g(p, T)))
+
+    def rhocp_eff_star(self, p, T, Sg, phi, rho_cp_s):
+        """(ρcp)_eff* — модифицированная теплоёмкость с дегазацией. Ур. (eq:rhocp_eff_mod) moments_method.tex."""
+        rhocp = self.rhocp_eff(p, T, Sg, phi, rho_cp_s)
+        return rhocp - self.L(p, T) * self.rho_g_st * phi * self.xi_o(p, T, Sg) * self.dRs_dT(p, T)
+
+    def Qad_star_coeff(self, p, T, Sg, phi, rho_cp_s, cr):
+        """Q̄_ad* — коэффициент при ∂p/∂t в Q_ad*. Ур. (eq:Qad, eq:Qad_star) moments_method.tex."""
+        So = 1.0 - Sg
+        thermal_exp = T * So * self.beta_o(p, T) + Sg
+        compressibility = cr * (p + rho_cp_s * T)
+        Qad_base = phi * (thermal_exp + compressibility)
+        return Qad_base + self.L(p, T) * self.rho_g_st * phi * self.xi_o(p, T, Sg) * self.dRs_dp(p, T)
+
+    def C_conv_star(self, p, T, Sg, k):
+        """C̄_conv* — замороженный конвективный коэффициент. Ур. (eq:rhocp_conv_mod) moments_method.tex."""
+        lam_o = self.mobility_o(p, T, Sg, k)
+        lam_g = self.mobility_g(p, T, Sg, k)
+        Bo_val = self.Bo(p, T)
+        return (self.rho_o(p, T) * self.cp_o(p, T) * lam_o
+                + self.rho_g(p, T) * self.cp_g(p, T) * lam_g
+                - self.L(p, T) * self.rho_g_st * (lam_o / Bo_val) * self.dRs_dT(p, T))
+
+    def QJT_star_coeff(self, p, T, Sg, k):
+        """Q̄_JT* — замороженный коэффициент JT при (dp/dr)². Ур. (eq:QJT_star) moments_method.tex."""
+        lam_o = self.mobility_o(p, T, Sg, k)
+        lam_g = self.mobility_g(p, T, Sg, k)
+        Bo_val = self.Bo(p, T)
+        return (lam_o * (1.0 - self.alpha_o(p, T) * T)
+                + lam_g * (1.0 - self.alpha_g(p, T) * T)
+                - self.L(p, T) * self.rho_g_st * (lam_o / Bo_val) * self.dRs_dp(p, T))

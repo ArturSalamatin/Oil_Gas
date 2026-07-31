@@ -7,7 +7,7 @@ issue: FEAT-007a
 github: 9
 branch: feat/feat-007a/ode-rhs
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-31
   found: 0

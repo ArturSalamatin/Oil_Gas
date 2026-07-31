@@ -11,6 +11,7 @@ from src.coefficients import (
     frozen_pvt_zone1, frozen_pvt_zone2,
     dp_drb_numerical, dp_dpwf_numerical,
     oil_A11, oil_A13, oil_F1,
+    gas_A21, gas_A22, gas_A23, gas_F2,
     OdeState,
 )
 from src.profiles.pressure import PressureProfile
@@ -210,8 +211,9 @@ def s_profile():
     return SaturationProfile(R_W, BETA)
 
 
-def _make_state(r_b=5.0, Sg_w=0.1, dT_w=2.0, p_wf=P_WF):
-    return OdeState(r_b=r_b, Sg_w=Sg_w, dT_w=dT_w, p_wf=p_wf)
+def _make_state(r_b=5.0, Sg_w=0.1, dT_w=2.0, p_wf=P_WF, dp_wf_dt=0.0):
+    return OdeState(r_b=r_b, Sg_w=Sg_w, dT_w=dT_w, p_wf=p_wf,
+                    dp_wf_dt=dp_wf_dt)
 
 
 # ─── Тесты A₁₂ = 0 ────────────────────────────────────────────────
@@ -284,3 +286,131 @@ class TestF1:
         assert math.isfinite(a11), f"A₁₁ не конечен при r_b→r_w: {a11}"
         assert math.isfinite(a13), f"A₁₃ не конечен при r_b→r_w: {a13}"
         assert math.isfinite(f1), f"F₁ не конечен при r_b→r_w: {f1}"
+
+
+# ─── Тесты A₂₂ (eq:A22) ─────────────────────────────────────────
+
+class TestA22:
+    def test_A22_positive(self, s_profile):
+        """A₂₂ > 0: подынтегральная r·(1−η^β) ≥ 0."""
+        state = _make_state()
+        val = gas_A22(s_profile, state)
+        assert val > 0, f"A₂₂ должен быть > 0, получено {val:.6e}"
+
+    def test_A22_grows_with_rb(self, s_profile):
+        """A₂₂ растёт с r_b (больше домен интегрирования)."""
+        state1 = _make_state(r_b=5.0)
+        state2 = _make_state(r_b=10.0)
+        val1 = gas_A22(s_profile, state1)
+        val2 = gas_A22(s_profile, state2)
+        assert val2 > val1, f"A₂₂(rb=10) должен быть > A₂₂(rb=5)"
+
+    def test_A22_zero_at_rw(self, s_profile):
+        """A₂₂ → 0 при rb → rw (домен вырождается)."""
+        state = _make_state(r_b=R_W * 1.0001)
+        val = gas_A22(s_profile, state)
+        assert abs(val) < 1e-6, f"A₂₂ → 0 при rb→rw, получено {val:.6e}"
+
+
+# ─── Тесты A₂₁ (eq:A21) ─────────────────────────────────────────
+
+class TestA21:
+    def test_A21_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₂₁ конечен при baseline параметрах."""
+        state = _make_state()
+        val = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₂₁ не конечен: {val}"
+
+    def test_A21_positive(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₂₁ > 0: оба слагаемых положительны (∂p/∂rb < 0)."""
+        state = _make_state()
+        val = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"A₂₁ должен быть > 0, получено {val:.6e}"
+
+    def test_A21_single_phase(self, fluid, rock, p_profile, t_profile,
+                              s_profile):
+        """A₂₁ конечен при вырожденном домене (rb ≈ rw, Sg_w = 0)."""
+        state = _make_state(r_b=R_W * 1.01, Sg_w=0.0)
+        val = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₂₁ не конечен при r_b→r_w: {val}"
+
+
+# ─── Тесты A₂₃ (eq:A23) ─────────────────────────────────────────
+
+class TestA23:
+    def test_A23_sign_consistent(self, fluid, rock, p_profile, t_profile,
+                                 s_profile):
+        """sign(A₂₃) = −sign(β_o_sat): при baseline β_o_sat < 0 → A₂₃ > 0."""
+        state = _make_state()
+        pbs = p_profile.pb_star(state.r_b, state.dT_w, fluid, t_profile)
+        p1, T1, _ = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                     state.dT_w, state.Sg_w)
+        beta_o_sat_val = fluid.beta_o_sat(p1, T1)
+        val = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+        if beta_o_sat_val < 0:
+            assert val > 0, (
+                f"β_o_sat={beta_o_sat_val:.3e} < 0, но A₂₃={val:.6e} не > 0"
+            )
+        else:
+            assert val < 0, (
+                f"β_o_sat={beta_o_sat_val:.3e} > 0, но A₂₃={val:.6e} не < 0"
+            )
+
+    def test_A23_isothermal(self, fluid, rock, p_profile, t_profile,
+                            s_profile):
+        """A₂₃ конечен при ΔTw = 0 (Ψ не зависит от ΔTw)."""
+        state = _make_state(dT_w=0.0)
+        val = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"A₂₃(ΔTw=0) не конечен: {val}"
+
+
+# ─── Тесты F₂ (eq:F2) ───────────────────────────────────────────
+
+class TestF2:
+    def test_F2_sign(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₂ > 0: нефть притекает в зону разгазирования, Sg растёт."""
+        state = _make_state()
+        val = gas_F2(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"F₂ должен быть > 0, получено {val:.6e}"
+
+    def test_F2_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₂ конечен при baseline параметрах."""
+        state = _make_state()
+        val = gas_F2(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"F₂ не конечен: {val}"
+
+    def test_F2_single_phase(self, fluid, rock, p_profile, t_profile,
+                             s_profile):
+        """F₂ конечен при вырожденном домене."""
+        state = _make_state(r_b=R_W * 1.01, Sg_w=0.0)
+        val = gas_F2(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(val), f"F₂ не конечен при r_b→r_w: {val}"
+
+    def test_F2_nonstationary_pwf(self, fluid, rock, p_profile, t_profile,
+                                  s_profile):
+        """F₂ при ṗ_wf ≠ 0 отличается от стационарного значения."""
+        state_stat = _make_state()
+        state_nstat = _make_state(dp_wf_dt=1e5)
+        val_stat = gas_F2(fluid, rock, p_profile, t_profile, s_profile,
+                          state_stat)
+        val_nstat = gas_F2(fluid, rock, p_profile, t_profile, s_profile,
+                           state_nstat)
+        assert math.isfinite(val_nstat), f"F₂(ṗ_wf≠0) не конечен: {val_nstat}"
+        assert val_stat != pytest.approx(val_nstat, rel=1e-6), (
+            f"F₂ не изменился при ṗ_wf=1e5: {val_stat:.6e} ≈ {val_nstat:.6e}"
+        )
+
+
+# ─── Тест согласованности строк 1 и 2 ───────────────────────────
+
+class TestConsistency:
+    def test_dot_rb_positive(self, fluid, rock, p_profile, t_profile,
+                             s_profile):
+        """ṙ_b = F₁/A₁₁ > 0 (из первого уравнения при расщеплении)."""
+        state = _make_state()
+        a11 = oil_A11(fluid, rock, p_profile, t_profile, state)
+        f1 = oil_F1(fluid, rock, p_profile, t_profile, s_profile, state)
+        dot_rb = f1 / a11
+        assert dot_rb > 0, (
+            f"ṙ_b = F₁/A₁₁ = {f1:.6e}/{a11:.6e} = {dot_rb:.6e} должен быть > 0"
+        )

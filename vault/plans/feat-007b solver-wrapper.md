@@ -7,7 +7,7 @@ issue: FEAT-007b
 github: 10
 branch: feat/feat-007b/solver-wrapper
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-31
   found: 0

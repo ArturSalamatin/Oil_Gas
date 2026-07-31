@@ -557,6 +557,43 @@ class TestF3:
         )
 
 
+# ─── Тест A₃₂ = 0 (FEAT-005c, шаг 6) ────────────────────────────
+
+class TestA32Zero:
+    def test_no_energy_A32_in_api(self):
+        """A₃₂ = 0 по расщеплению (eq:matrix_structure)."""
+        import src.coefficients as coeff
+        assert not hasattr(coeff, "energy_A32"), (
+            "energy_A32 не должна существовать: A₃₂ = 0 по расщеплению"
+        )
+
+
+# ─── Тест согласованности строки 3 (FEAT-005c, шаг 6) ───────────
+
+class TestEnergyConsistency:
+    def test_energy_coefficients_finite(self, fluid, rock, p_profile,
+                                       t_profile, s_profile):
+        state = _make_state()
+        a31 = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        a33 = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        f3 = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(a31)
+        assert math.isfinite(a33)
+        assert math.isfinite(f3)
+        assert a33 != 0.0
+
+    def test_single_phase_limit_energy(self, fluid, rock, p_profile,
+                                       t_profile, s_profile):
+        """При r_b → r_w + ε все коэффициенты конечны."""
+        state = _make_state(r_b=R_W * 1.01, Sg_w=0.001, dT_w=0.0)
+        a31 = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        a33 = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        f3 = energy_F3(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert math.isfinite(a31), f"A₃₁ не конечен при r_b→r_w: {a31}"
+        assert math.isfinite(a33), f"A₃₃ не конечен при r_b→r_w: {a33}"
+        assert math.isfinite(f3), f"F₃ не конечен при r_b→r_w: {f3}"
+
+
 class TestQadStarCoeff:
     def test_Qad_star_coeff_positive(self, fluid):
         val = fluid.Qad_star_coeff(P_WF, T_0, SG_BASELINE, PHI, 2e6, CR)

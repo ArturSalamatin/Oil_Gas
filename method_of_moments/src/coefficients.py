@@ -338,3 +338,157 @@ def gas_F2(fluid, rock, p_profile, t_profile, s_profile, state):
         I_pwf = i * state.dp_wf_dt
 
     return boundary + I_pwf
+
+
+# ─── A₃₁: −∫r·Q̄_ad*·∂p/∂r_b dr (eq:A31) ─────────────────────────
+
+
+def energy_A31(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₃₁ при ṙ_b в уравнении энергии. Ур. (eq:A31) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    phi = rock["phi"]
+    cr = rock["c_r"]
+    rho_cp_s = rock["rho_cp_s"]
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0, dT_w, state.Sg_w)
+    Qad1 = fluid.Qad_star_coeff(p1, T1, Sg1, phi, rho_cp_s, cr)
+
+    p2, T2, Sg2 = frozen_pvt_zone2(pbs, p_profile.p_0, t_profile.T_0)
+    Qad2 = fluid.Qad_star_coeff(p2, T2, Sg2, phi, rho_cp_s, cr)
+
+    def integrand_zone1(r):
+        dp = dp_drb_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+        return r * Qad1 * dp
+
+    def integrand_zone2(r):
+        dp = dp_drb_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+        return r * Qad2 * dp
+
+    r_w = p_profile.r_w
+    R_ext = p_profile.R_ext
+
+    I1, _ = quad(integrand_zone1, r_w, r_b)
+    I2, _ = quad(integrand_zone2, r_b, R_ext)
+    return -(I1 + I2)
+
+
+# ─── A₃₃: −∫r·(ρcp)_eff*·Ψ(ζ) dr (eq:A33) ──────────────────────
+
+
+def energy_A33(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₃₃ при Δ̇T_w в уравнении энергии. Ур. (eq:A33) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    phi = rock["phi"]
+    rho_cp_s = rock["rho_cp_s"]
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0, dT_w, state.Sg_w)
+    rhocp1 = fluid.rhocp_eff_star(p1, T1, Sg1, phi, rho_cp_s)
+
+    p2, T2, Sg2 = frozen_pvt_zone2(pbs, p_profile.p_0, t_profile.T_0)
+    rhocp2 = fluid.rhocp_eff_star(p2, T2, Sg2, phi, rho_cp_s)
+
+    def integrand_zone1(r):
+        zeta = t_profile.zeta(r)
+        return r * rhocp1 * t_profile.Psi(zeta)
+
+    def integrand_zone2(r):
+        zeta = t_profile.zeta(r)
+        return r * rhocp2 * t_profile.Psi(zeta)
+
+    r_w = p_profile.r_w
+    R_ext = p_profile.R_ext
+
+    I1, _ = quad(integrand_zone1, r_w, r_b)
+    I2, _ = quad(integrand_zone2, r_b, R_ext)
+    return -(I1 + I2)
+
+
+# ─── F₃: теплопроводность + конвекция + JT + ṗ_wf (eq:F3) ───────
+
+
+def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Правая часть F₃ уравнения энергии. Ур. (eq:F3) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    phi = rock["phi"]
+    cr = rock["c_r"]
+    k = rock["k"]
+    lambda_eff = rock["lambda_eff"]
+    rho_cp_s = rock["rho_cp_s"]
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    gam = p_profile.gamma(r_b, pbs)
+
+    r_w = p_profile.r_w
+    R_ext = p_profile.R_ext
+
+    # --- теплопроводность: R_ext · λ_eff · T'(R_ext) ---
+    flux_cond = R_ext * lambda_eff * t_profile.dT_dr(R_ext, dT_w)
+
+    # --- замороженные PVT ---
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0, dT_w, Sg_w)
+    p2, T2, Sg2 = frozen_pvt_zone2(pbs, p_profile.p_0, t_profile.T_0)
+
+    Cconv1 = fluid.C_conv_star(p1, T1, Sg1, k)
+    Cconv2 = fluid.C_conv_star(p2, T2, Sg2, k)
+
+    QJT1 = fluid.QJT_star_coeff(p1, T1, Sg1, k)
+    QJT2 = fluid.QJT_star_coeff(p2, T2, Sg2, k)
+
+    # --- конвективный: +∫r · C̄_conv* · (dp/dr)(dT/dr) dr ---
+    def conv_integrand_z1(r):
+        dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
+        dT_dr = t_profile.dT_dr(r, dT_w)
+        return r * Cconv1 * dp_dr * dT_dr
+
+    def conv_integrand_z2(r):
+        dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
+        dT_dr = t_profile.dT_dr(r, dT_w)
+        return r * Cconv2 * dp_dr * dT_dr
+
+    I_conv1, _ = quad(conv_integrand_z1, r_w, r_b)
+    I_conv2, _ = quad(conv_integrand_z2, r_b, R_ext)
+    conv_total = I_conv1 + I_conv2
+
+    # --- JT: +∫r · Q̄_JT* · (dp/dr)² dr ---
+    def jt_integrand_z1(r):
+        dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
+        return r * QJT1 * dp_dr ** 2
+
+    def jt_integrand_z2(r):
+        dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
+        return r * QJT2 * dp_dr ** 2
+
+    if gam > 0.5:
+        I_jt1, _ = quad(jt_integrand_z1, r_w, r_b)
+    else:
+        I_jt1, _ = quad(jt_integrand_z1, r_w, r_b, points=[r_w + r_w * 1e-6])
+    I_jt2, _ = quad(jt_integrand_z2, r_b, R_ext)
+    jt_total = I_jt1 + I_jt2
+
+    # --- I_pwf^(3): +∫r · Q̄_ad* · (dp/dp_wf) dr · ṗ_wf ---
+    I_pwf = 0.0
+    if state.dp_wf_dt != 0.0:
+        Qad1 = fluid.Qad_star_coeff(p1, T1, Sg1, phi, rho_cp_s, cr)
+        Qad2 = fluid.Qad_star_coeff(p2, T2, Sg2, phi, rho_cp_s, cr)
+
+        def pwf_z1(r):
+            dp = dp_dpwf_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+            return r * Qad1 * dp
+
+        def pwf_z2(r):
+            dp = dp_dpwf_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+            return r * Qad2 * dp
+
+        i1, _ = quad(pwf_z1, r_w, r_b)
+        i2, _ = quad(pwf_z2, r_b, R_ext)
+        I_pwf = (i1 + i2) * state.dp_wf_dt
+
+    return flux_cond + conv_total + jt_total + I_pwf

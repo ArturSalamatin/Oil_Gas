@@ -7,7 +7,7 @@ issue: FEAT-005d
 github: 8
 branch: feat/feat-005d/matrix-assembly
 model_level: М.6
-status: в процессе
+status: реализован
 audit:
   date: 2026-07-31
   found: 0

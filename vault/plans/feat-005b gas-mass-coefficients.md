@@ -82,7 +82,7 @@ $$\int_{r_w}^{r_b} r\,\frac{\partial S_g}{\partial t}\,dr = \dot{S}_{g,w}\underb
 
 $$\boxed{\mathcal{A}_{21} = \underbrace{\frac{S_{g,w}\beta}{r_b L_b}\int_{r_w}^{r_b} r\,\eta^\beta\,dr}_{\text{вклад из } d\mathcal{S}_0/dt} - \underbrace{\int_{r_w}^{r_b} r\,S_o\,(c_r+c_o^{\text{sat}})\,\frac{\partial p}{\partial r_b}\,dr}_{\text{вклад давления (перенесён из RHS)}}}$$
 
-> Знак: первый член (из $d\mathcal{S}_0/dt$, стоит в LHS) — положительный. Второй член (из $\int r S_o(c_r+c_o^{\text{sat}})\partial p/\partial t$, перенесён из RHS в LHS со сменой знака) — также положительный ($\partial p/\partial r_b < 0$, минус перед интегралом даёт $> 0$). Оба слагаемых одного знака, $\mathcal{A}_{21} > 0$.
+> Знак: первый член (геометрия) — положительный. Второй член: $-\int r S_o(c_r+c_o^{\text{sat}})(\partial p/\partial r_b)\,dr$. Его знак зависит от $c_r + c_o^{\text{sat}}$: при baseline $c_o^{\text{sat}} < 0$ и $|c_o^{\text{sat}}| \gg c_r$, поэтому $c_r + c_o^{\text{sat}} < 0$, и второй член **отрицательный**. Но геометрический вклад доминирует, $\mathcal{A}_{21} > 0$.
 > Первый интеграл — только по зоне разгазирования (в отличие от $\mathcal{A}_{11}$, который по всей области).
 > Второй интеграл — вклад от зависимости $\eta(r, r_b)$ через $L_b(r_b)$.
 > Замороженные PVT: $S_o = 1 - \bar{S}_{g,1}$, $(c_r+c_o^{\text{sat}})$ при $(\bar{p}_1, \bar{T}_1)$.
@@ -170,7 +170,7 @@ $$\mathcal{A}_{22} = \int_{r_w}^{r_b} r\,(1 - \eta^\beta)\,dr, \quad \eta = \fra
 1. В `coefficients.py` после `oil_F1` добавить:
 
 ```python
-def gas_A22(s_profile, state):
+def gas_A22(fluid, rock, p_profile, t_profile, s_profile, state):
     """Коэффициент A₂₂ при Ṡg,w в уравнении массы газа. Ур. (eq:A22) moments_method.tex."""
     r_b = state.r_b
     r_w = s_profile.r_w
@@ -184,7 +184,7 @@ def gas_A22(s_profile, state):
     return I
 ```
 
-> Сигнатура минимальна: не нужны `fluid`, `rock`, `p_profile`, `t_profile` — чисто геометрический интеграл.
+> Сигнатура унифицирована с остальными gas_* для единообразия при сборке матрицы (FEAT-005d). Аргументы `fluid`, `rock`, `p_profile`, `t_profile` не используются.
 
 **Проверка после шага:**
 - Регрессия: `.venv/Scripts/python -m pytest tests/ -v`

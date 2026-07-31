@@ -735,16 +735,20 @@ $\mathcal{A}_{ij}$. Члены, не содержащие производных
 системы~\eqref{eq:ode_system}.
 
 \paragraph{Температурный вклад в уравнение насыщенности.}
-Элемент $\mathcal{A}_{23}$ содержит:
+Элемент $\mathcal{A}_{23}$ содержит (подробный
+вывод~--- в~\S\ref{sssec:gas_mass_coefficients}):
 \[
-  \mathcal{A}_{23} \sim -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
-    \frac{\pp T}{\pp \Delta T_w}\,\dd r.
+  \mathcal{A}_{23} \sim +\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
+    \frac{\pp T}{\pp \Delta T_w}\,\dd r
+  = -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
 \]
 
 
 \subsection{Явный вид коэффициентов}
+\label{ssec:explicit_coefficients}
 
 \paragraph{Двухзонное замораживание PVT-свойств.}
+\label{par:frozen_pvt}
 Для вычисления интегралов PVT-свойства замораживаются
 раздельно в каждой зоне:
 \begin{itemize}[nosep]
@@ -1064,6 +1068,197 @@ $(\pp p/\pp r)^2 \sim \eta^{2(\gamma-1)}$. При $\gamma > 1/2$ ---
 При конечном $r_b$ с $\gamma < 1/2$: требуется
 регуляризация (замена переменных или выделение
 сингулярности при численном интегрировании).
+
+\subsubsection{Коэффициенты второго уравнения (масса газа)}
+\label{sssec:gas_mass_coefficients}
+
+Подставляя~\eqref{eq:dp_dt}--\eqref{eq:dT_dt}
+и~\eqref{eq:Sg_profile} в~\eqref{eq:Sg_moment0},
+собираем коэффициенты при $\dot{r}_b$, $\dot{S}_{g,w}$,
+$\dot{\Delta T}_w$.%
+\footnote{FEAT-005b: коэффициенты уравнения массы газа.}
+
+\emph{Область интегрирования.}
+В~отличие от первого уравнения~(\S\ref{sssec:oil_mass_coefficients}),
+где интеграл берётся по всей области $[r_w, R_\ext]$,
+здесь все интегралы ограничены зоной разгазирования
+$[r_w, r_b]$, т.\,к.\ $S_g \equiv 0$ при $r > r_b$.
+Следовательно, достаточно одной замороженной зоны
+($\bar{p}_1$, $\bar{T}_1$, $\bar{S}_{g,1}$,
+см.~\S\ref{par:frozen_pvt}).
+
+\emph{Вывод левой части.}
+Применяя правило Лейбница к~$\mathcal{S}_0$~\eqref{eq:Sn}:
+\begin{equation}\label{eq:dS0_dt}
+  \frac{\dd\mathcal{S}_0}{\dd t}
+  = \underbrace{r_b\,S_g(r_b)\,\dot{r}_b}_{=\,0}
+    + \int_{r_w}^{r_b} r\,\frac{\pp S_g}{\pp t}\,\dd r,
+\end{equation}
+т.\,к.\ $S_g(r_b) = 0$. Поэтому $\dd\mathcal{S}_0/\dd t$
+определяется только объёмным интегралом $\pp S_g/\pp t$.
+
+\emph{Раскрытие $\pp S_g / \pp t$.}
+Профиль~\eqref{eq:Sg_profile} зависит от $t$ через
+$r_b(t)$ и $S_{g,w}(t)$:
+\begin{equation}\label{eq:dSg_dt}
+  \frac{\pp S_g}{\pp t}
+  = \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w},
+\end{equation}
+где
+\begin{equation}\label{eq:dSg_drb}
+  \frac{\pp S_g}{\pp r_b}
+  = S_{g,w}\,\beta\,
+    \frac{\eta^\beta}{r_b\,L_b},
+  \qquad
+  \frac{\pp S_g}{\pp S_{g,w}}
+  = 1 - \eta^\beta,
+\end{equation}
+$\eta = \ln(r/r_w)/L_b$, $L_b = \ln(r_b/r_w)$.
+Двойной минус: $\pp\eta/\pp r_b = -\eta/(r_b\,L_b)$
+и $\pp S_g/\pp\eta = -S_{g,w}\,\beta\,\eta^{\beta-1}$
+дают $\pp S_g / \pp r_b > 0$ (рост $r_b$ сдвигает фронт,
+увеличивая $S_g$ внутри зоны).
+
+\emph{Подстановка $\pp p / \pp t$ и $\pp T / \pp t$.}
+В правой части~\eqref{eq:Sg_moment0} используем
+разложения~\eqref{eq:dp_dt}--\eqref{eq:dT_dt},
+учитывая $\pp T / \pp r_b = 0$~\eqref{eq:dT_drb}
+и $\pp T/\pp \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}.
+
+\paragraph{Элемент $\mathcal{A}_{22}$.}
+Коэффициент при $\dot{S}_{g,w}$. Из левой
+части~\eqref{eq:Sg_moment0} (через~\eqref{eq:dSg_dt}):
+\begin{equation}\label{eq:A22}
+  \boxed{
+    \mathcal{A}_{22}
+    = \int_{r_w}^{r_b} r\,(1 - \eta^\beta)\,\dd r.
+  }
+\end{equation}
+Геометрический интеграл, не зависящий от PVT.
+
+\emph{Знак:} $\eta \in [0,1]$, поэтому $1-\eta^\beta > 0$
+и $\mathcal{A}_{22} > 0$. При $r_b \to r_w$ зона
+вырождается: $\mathcal{A}_{22} \to 0$.
+
+\paragraph{Элемент $\mathcal{A}_{21}$.}
+Коэффициент при $\dot{r}_b$. Левая часть
+даёт интеграл~\eqref{eq:dSg_drb}, правая ---
+вклад давления через $(\pp p/\pp r_b)\,\dot{r}_b$:
+\begin{equation}\label{eq:A21}
+  \boxed{
+    \mathcal{A}_{21}
+    = \frac{S_{g,w}\,\beta}{r_b\,L_b}\,
+      \int_{r_w}^{r_b} r\,\eta^\beta\,\dd r
+    - \int_{r_w}^{r_b} r\,S_o\,(c_r + c_o^\sat)\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+Первое слагаемое --- вклад геометрии
+(движение фронта $r_b$), знак $> 0$.
+Второе --- вклад давления:
+$-\int r\,S_o\,(c_r+c_o^\sat)\,(\pp p/\pp r_b)\,\dd r$.
+Знак этого слагаемого зависит от $c_r + c_o^\sat$.
+При типичных условиях $|c_o^\sat| \gg c_r$
+(поскольку $c_o^\sat < 0$~\eqref{eq:co_sat}),
+и $c_r + c_o^\sat < 0$, что даёт второму слагаемому
+знак $< 0$. Однако геометрический вклад (первое
+слагаемое) доминирует, поэтому $\mathcal{A}_{21} > 0$.
+
+Температурный вклад в $\mathcal{A}_{21}$ обращается
+в нуль, т.\,к.\ $\pp T / \pp r_b = 0$~\eqref{eq:dT_drb}.
+
+PVT-свойства замораживаются по зоне~1:
+$\bar{S}_{o,1} = 1 - \bar{S}_{g,1}$,
+$\bar{c}_{o,1}^\sat = c_o^\sat(\bar{p}_1, \bar{T}_1)$.
+
+\paragraph{Элемент $\mathcal{A}_{23}$.}
+Коэффициент при $\dot{\Delta T}_w$. Из правой
+части~\eqref{eq:Sg_moment0} --- вклад температуры
+через $\pp T / \pp \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}:
+\begin{equation}\label{eq:A23}
+  \boxed{
+    \mathcal{A}_{23}
+    = -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+\emph{Знак.}
+$\Psi(\zeta) > 0$, $S_o > 0$, поэтому
+$\mathrm{sign}(\mathcal{A}_{23}) = -\mathrm{sign}(\beta_o^\sat)$.
+Величина $\beta_o^\sat$~\eqref{eq:beta_o_sat}:
+$\beta_o^\sat = \beta_o + (1/B_o)\,
+(\pp B_o/\pp R_s)_p\,(\pp R_s/\pp T)_p$.
+Тепловое расширение $\beta_o > 0$, но коррекция
+$(1/B_o)(\pp B_o / \pp R_s)(\pp R_s / \pp T)$ отрицательна
+(т.\,к.\ $\pp R_s / \pp T < 0$ при типичных условиях),
+поэтому знак $\beta_o^\sat$ зависит от конкуренции
+двух вкладов. При baseline-условиях
+($p \approx 16{,}5$~МПа, $T = 348$~К)
+коррекция превышает по модулю $\beta_o$, и
+$\beta_o^\sat < 0$,
+поэтому $\mathcal{A}_{23} > 0$.
+
+\emph{Вывод.}
+В~\eqref{eq:Sg_moment0} температурный член
+$-\int r\,S_o\,\beta_o^\sat\,(\pp T/\pp t)\,\dd r$
+стоит в правой части. Подставляя
+$\pp T / \pp t = (\pp T / \pp\Delta T_w)\,\dot{\Delta T}_w
+= -\Psi\,\dot{\Delta T}_w$ и перенося $\dot{\Delta T}_w$
+в левую часть:
+\[
+  \mathcal{A}_{23} = -(-1)\!\int r\,S_o\,\beta_o^\sat\,\Psi\,\dd r
+  \;\Longrightarrow\;
+  \mathcal{A}_{23} = +\!\int r\,S_o\,\beta_o^\sat\,\Psi\,\dd r?
+\]
+Нет: минус перед интегралом $-\int r\,S_o\,\beta_o^\sat$
+в~\eqref{eq:Sg_moment0} и минус от $\pp T/\pp\Delta T_w = -\Psi$
+дают при переносе в левую часть:
+\[
+  \text{ЛЧ} \leftarrow -\bigl[-S_o\,\beta_o^\sat\,(-\Psi)\bigr]\,\dot{\Delta T}_w
+  = -S_o\,\beta_o^\sat\,\Psi\,\dot{\Delta T}_w,
+\]
+что и даёт~\eqref{eq:A23}.
+
+\paragraph{Правая часть $\mathcal{F}_2$.}
+Из граничных потоков~\eqref{eq:Sg_flux}
+(с замороженным $B_o$ из зоны~1):
+\begin{equation}\label{eq:F2}
+  \boxed{
+    \mathcal{F}_2
+    = -\frac{B_o}{\phi}\!\left[
+        \frac{r\,\lambda_o}{B_o}\,\frac{\pp p}{\pp r}
+      \right]_{r_w}^{r_b}
+    + I_{p_{wf}}^{(2)}\,\dot{p}_{wf},
+  }
+\end{equation}
+где интеграл давления при нестационарном $p_{wf}$:
+\begin{equation}\label{eq:I_pwf_2}
+  I_{p_{wf}}^{(2)} = \int_{r_w}^{r_b} r\,S_o\,(c_r+c_o^\sat)\,
+    \frac{\pp p}{\pp p_{wf}}\,\dd r.
+\end{equation}
+
+\emph{Структурное отличие знака от $\mathcal{F}_1$.}
+В первом уравнении~\eqref{eq:moment0} интеграл давления
+$\int r\,C_p\,(\pp p/\pp t)\,\dd r$ стоит в левой части.
+При выделении $\dot{p}_{wf}$ этот интеграл переносится
+в правую часть с~переменой знака: $-I_{p_{wf}}\,\dot{p}_{wf}$
+в~\eqref{eq:F1}. Во~втором уравнении~\eqref{eq:Sg_moment0}
+интеграл давления $\int r\,S_o\,(c_r+c_o^\sat)\,(\pp p/\pp t)
+\,\dd r$ стоит в правой части, поэтому
+$I_{p_{wf}}^{(2)}\,\dot{p}_{wf}$ остаётся с~\emph{тем~же}
+знаком: $+I_{p_{wf}}^{(2)}\,\dot{p}_{wf}$ в~\eqref{eq:F2}.
+
+\emph{Знак:} при стационарном $p_{wf}$ ($\dot{p}_{wf} = 0$)
+правая часть $\mathcal{F}_2$ определяется только граничным
+потоком. При $\gamma < 1$ поток через забой ($r = r_w$)
+доминирует: $\mathcal{F}_2 > 0$.
+
+\paragraph{Сингулярность потока при $\gamma < 1$.}
+Аналогично $\mathcal{F}_1$~\eqref{eq:boundary_fluxes},
+поток $r\,(\lambda_o/B_o)\,(\pp p/\pp r)$ при $r \to r_w$
+содержит $\eta^{\gamma-1}$, расходящийся при $\gamma < 1$.
+В коде применяется $\varepsilon$-отступ:
+$r_w + \varepsilon$, $\varepsilon = 10^{-3}\,r_w$.
 
 
 %=============================================================================

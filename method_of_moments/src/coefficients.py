@@ -210,3 +210,131 @@ def oil_F1(fluid, rock, p_profile, t_profile, s_profile, state):
         I_pwf = (i1 + i2) * state.dp_wf_dt
 
     return boundary_flux + Q_quad - I_pwf
+
+
+# ─── A₂₂: ∫r·(1−η^β) dr (eq:A22) ─────────────────────────────────
+
+
+def gas_A22(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₂₂ при Ṡg,w в уравнении массы газа. Ур. (eq:A22) moments_method.tex."""
+    r_b = state.r_b
+    r_w = s_profile.r_w
+    beta = s_profile.beta
+
+    def integrand(r):
+        eta = s_profile.eta(r, r_b)
+        return r * (1.0 - eta ** beta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return I
+
+
+# ─── A₂₁: Sg·β/(rb·Lb)·∫r·η^β dr − ∫r·So·(cr+co_sat)·∂p/∂rb dr ─
+
+
+def gas_A21(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₂₁ при ṙ_b в уравнении массы газа. Ур. (eq:A21) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+    cr = rock["c_r"]
+    beta = s_profile.beta
+    L_b = np.log(r_b / r_w)
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    So1 = 1.0 - Sg1
+    co_sat_1 = fluid.co_sat(p1, T1)
+
+    def integrand_eta(r):
+        eta = s_profile.eta(r, r_b)
+        return r * eta ** beta
+
+    I_eta, _ = quad(integrand_eta, r_w, r_b)
+
+    def integrand_pressure(r):
+        dp = dp_drb_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+        return r * So1 * (cr + co_sat_1) * dp
+
+    I_pressure, _ = quad(integrand_pressure, r_w, r_b)
+
+    return Sg_w * beta / (r_b * L_b) * I_eta - I_pressure
+
+
+# ─── A₂₃: −∫r·So·β_o_sat·Ψ dr (eq:A23) ──────────────────────────
+
+
+def gas_A23(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₂₃ при Δ̇T_w в уравнении массы газа. Ур. (eq:A23) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    So1 = 1.0 - Sg1
+    beta_o_sat_1 = fluid.beta_o_sat(p1, T1)
+
+    def integrand(r):
+        zeta = t_profile.zeta(r)
+        return r * So1 * beta_o_sat_1 * t_profile.Psi(zeta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return -I
+
+
+# ─── F₂: −(Bo/φ)·[r·λo/Bo·dp/dr] + I_pwf^(2) (eq:F2) ───────────
+
+
+def gas_F2(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Правая часть F₂ уравнения массы газа. Ур. (eq:F2) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+    phi = rock["phi"]
+    cr = rock["c_r"]
+    k = rock["k"]
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    gam = p_profile.gamma(r_b, pbs)
+
+    T_b = t_profile(r_b, dT_w)
+    mob_o_Bo_b = fluid.mobility_o_over_Bo(pbs, T_b, 0.0, k)
+    dp_dr_b = p_profile.dp_dr(r_b, r_b, pbs, gam)
+    flux_rb = r_b * mob_o_Bo_b * dp_dr_b
+
+    T_w = t_profile(r_w, dT_w)
+    mob_o_Bo_w = fluid.mobility_o_over_Bo(p_profile.p_wf, T_w, Sg_w, k)
+    if gam >= 1.0:
+        dp_dr_w = p_profile.dp_dr(r_w, r_b, pbs, gam)
+        flux_rw = r_w * mob_o_Bo_w * dp_dr_w
+    else:
+        eps_r = r_w * 1e-3
+        dp_dr_w = p_profile.dp_dr(r_w + eps_r, r_b, pbs, gam)
+        flux_rw = (r_w + eps_r) * mob_o_Bo_w * dp_dr_w
+
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    Bo_frozen = fluid.Bo(p1, T1)
+
+    boundary = -(Bo_frozen / phi) * (flux_rb - flux_rw)
+
+    I_pwf = 0.0
+    if state.dp_wf_dt != 0.0:
+        So1 = 1.0 - Sg1
+        co_sat_1 = fluid.co_sat(p1, T1)
+
+        def integrand_pwf(r):
+            dp = dp_dpwf_numerical(p_profile, r, r_b, fluid, t_profile,
+                                   dT_w)
+            return r * So1 * (cr + co_sat_1) * dp
+
+        i, _ = quad(integrand_pwf, r_w, r_b)
+        I_pwf = i * state.dp_wf_dt
+
+    return boundary + I_pwf

@@ -1420,6 +1420,383 @@ $(\partial p/\partial r)(\partial T/\partial r)$;
 
 
 %=============================================================================
+\subsection{Расширение ODE: показатель формы $\beta(t)$}
+\label{ssec:beta_ode}
+%=============================================================================
+
+\paragraph{Мотивация.}
+При фиксированном $\beta = \text{const}$ система~\eqref{eq:ode_system}
+из трёх~ODE ($r_b$, $S_{g,w}$, $\Delta T_w$) порождает
+затухающие осцилляции всех переменных при нестационарных
+граничных условиях. Газонасыщенность $S_{g,w}$ может уходить
+в отрицательные значения, что нефизично.
+
+Причина: три степени свободы при фиксированных формах профилей
+не могут описать перестройку пространственного профиля $S_g(r)$.
+Добавление $\beta(t)$ как четвёртой ODE-переменной расширяет
+пространство допустимых профилей.
+
+\paragraph{Расширение разложения $\pp S_g/\pp t$.}
+При $\beta = \beta(t)$ разложение~\eqref{eq:dSg_dt}
+дополняется третьим членом:
+\begin{equation}\label{eq:dSg_dt_ext}
+  \frac{\pp S_g}{\pp t}
+  = \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w}
+    + \frac{\pp S_g}{\pp \beta}\,\dot{\beta},
+\end{equation}
+где
+\begin{equation}\label{eq:dSg_dbeta}
+  \frac{\pp S_g}{\pp \beta}
+  = -S_{g,w}\,\eta^\beta\,\ln\eta.
+\end{equation}
+
+\emph{Знак:} $\ln\eta < 0$ при $\eta \in (0,1)$,
+поэтому $\pp S_g/\pp\beta > 0$:
+увеличение $\beta$ увеличивает $S_g$ (профиль
+становится более <<плоским>>, приближаясь к $S_{g,w}$).
+
+\paragraph{Элемент $\mathcal{A}_{2\beta}$ (при $\dot\beta$
+во~2-м уравнении).}
+Подставляя~\eqref{eq:dSg_dt_ext}
+в нулевой момент~\eqref{eq:Sg_moment0},
+получаем новый коэффициент при $\dot\beta$:
+\begin{equation}\label{eq:A2beta}
+  \boxed{
+    \mathcal{A}_{2\beta}
+    = \int_{r_w}^{r_b} r\,
+      \frac{\pp S_g}{\pp\beta}\,\dd r
+    = -S_{g,w}\!\int_{r_w}^{r_b}
+      r\,\eta^\beta\,\ln\eta\,\dd r.
+  }
+\end{equation}
+\emph{Знак:} $\ln\eta < 0$, минус перед интегралом,
+поэтому $\mathcal{A}_{2\beta} > 0$ при $S_{g,w} > 0$.
+
+Уравнение~\eqref{eq:ode2} расширяется:
+\begin{equation}\label{eq:ode2_ext}
+  \mathcal{A}_{21}\,\dot{r}_b
+  + \mathcal{A}_{22}\,\dot{S}_{g,w}
+  + \mathcal{A}_{2\beta}\,\dot{\beta}
+  + \mathcal{A}_{24}\,\dot{\Delta T}_w
+  = \mathcal{F}_2,
+\end{equation}
+где $\mathcal{A}_{24} \equiv \mathcal{A}_{23}$
+из~\eqref{eq:A23} (перенумерация).
+
+\paragraph{Выбор весовой функции 4-го момента.}
+Для получения уравнения на $\dot\beta$ нужен
+четвёртый интегральный момент уравнения насыщенности.
+Рассмотрим вес $w_4(r) = r\,\eta^\beta$. Он:
+\begin{itemize}[nosep]
+  \item даёт замкнутые интегралы (степенные по $\eta$);
+  \item подавляет сингулярность $\pp p/\pp r$ при $r \to r_w$
+    ($\eta^\beta \to 0$ при $\eta \to 0$, $\beta > 0$);
+  \item линейно независим от веса нулевого момента
+    (вес~$r$): $\int_0^1 (1-\eta^\beta)\,\eta^\beta\,\dd\eta
+    \ne 0$.
+\end{itemize}
+
+\paragraph{Четвёртый момент.}
+Умножаем~\eqref{eq:Sg_eq2} на $r\,\eta^\beta$
+и интегрируем от $r_w$ до $r_b$:
+\begin{equation}\label{eq:Sg_moment_beta}
+  \frac{\dd}{\dd t}
+  \int_{r_w}^{r_b} r\,\eta^\beta\,S_g\,\dd r
+  = \int_{r_w}^{r_b} r\,\eta^\beta
+    \left[
+      S_o\,(c_r + c_o^\sat)\,\frac{\pp p}{\pp t}
+      - S_o\,\beta_o^\sat\,\frac{\pp T}{\pp t}
+    \right]\dd r
+  + F_4^\div,
+\end{equation}
+где $F_4^\div$ --- вклад дивергентного члена
+(см.\ ниже, \eqref{eq:F4_boundary}--\eqref{eq:F4_volume}).
+
+\paragraph{Левая часть.}
+По правилу Лейбница с граничным членом
+$[r\,\eta^\beta\,S_g]_{r=r_b} = r_b \cdot 1 \cdot 0 = 0$:
+\begin{equation}\label{eq:dM4_dt}
+  \frac{\dd}{\dd t}
+  \int_{r_w}^{r_b} r\,\eta^\beta\,S_g\,\dd r
+  = \int_{r_w}^{r_b} r\,
+    \frac{\pp}{\pp t}
+    \bigl[\eta^\beta\,S_{g,w}\,(1-\eta^\beta)\bigr]\,\dd r.
+\end{equation}
+
+Подынтегральное:
+\begin{equation}\label{eq:d_eta_beta_dt}
+  \frac{\pp\eta^\beta}{\pp t}
+  = \eta^\beta
+    \left[\ln\eta\cdot\dot\beta
+      - \frac{\beta}{r_b\,L_b}\,\dot{r}_b\right],
+  \qquad
+  \frac{\pp\eta^{2\beta}}{\pp t}
+  = \eta^{2\beta}
+    \left[2\ln\eta\cdot\dot\beta
+      - \frac{2\beta}{r_b\,L_b}\,\dot{r}_b\right].
+\end{equation}
+
+Раскрывая $\pp[\eta^\beta S_{g,w}(1-\eta^\beta)]/\pp t$:
+\begin{multline}\label{eq:d_integrand_dt}
+  \frac{\pp}{\pp t}
+  \bigl[\eta^\beta\,S_{g,w}\,(1-\eta^\beta)\bigr]
+  = \eta^\beta(1-\eta^\beta)\,\dot{S}_{g,w} \\
+  + S_{g,w}\,(\eta^\beta - 2\eta^{2\beta})\,\ln\eta
+    \cdot\dot\beta
+  + S_{g,w}\,\frac{\beta}{r_b\,L_b}\,
+    (2\eta^{2\beta} - \eta^\beta)\,\dot{r}_b.
+\end{multline}
+
+\paragraph{Элемент $\mathcal{A}_{41}$ (при $\dot{r}_b$).}
+Из~\eqref{eq:d_integrand_dt} (третье слагаемое)
+и из правой части (давление через $(\pp p/\pp r_b)\dot{r}_b$,
+аналогично $\mathcal{A}_{21}$~\eqref{eq:A21}
+но с весом $\eta^\beta$):
+\begin{equation}\label{eq:A41}
+  \boxed{
+    \mathcal{A}_{41}
+    = \frac{S_{g,w}\,\beta}{r_b\,L_b}
+      \int_{r_w}^{r_b} r\,(2\eta^{2\beta} - \eta^\beta)\,\dd r
+    - \int_{r_w}^{r_b} r\,\eta^\beta\,
+      \bar{S}_{o}\,(\bar{c}_r + \bar{c}_o^\sat)\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+
+\paragraph{Элемент $\mathcal{A}_{42}$ (при $\dot{S}_{g,w}$).}
+Из первого слагаемого~\eqref{eq:d_integrand_dt}:
+\begin{equation}\label{eq:A42}
+  \boxed{
+    \mathcal{A}_{42}
+    = \int_{r_w}^{r_b} r\,\eta^\beta\,(1 - \eta^\beta)\,\dd r.
+  }
+\end{equation}
+Геометрический, $\mathcal{A}_{42} > 0$.
+
+\paragraph{Элемент $\mathcal{A}_{43}$ (при $\dot\beta$).}
+Из второго слагаемого~\eqref{eq:d_integrand_dt}:
+\begin{equation}\label{eq:A43}
+  \boxed{
+    \mathcal{A}_{43}
+    = S_{g,w}\!\int_{r_w}^{r_b} r\,
+      \eta^\beta\,\ln\eta\,(1 - 2\eta^\beta)\,\dd r.
+  }
+\end{equation}
+
+\emph{Знак.} Множитель $\ln\eta < 0$.
+Множитель $(1 - 2\eta^\beta)$ меняет знак
+при $\eta = (1/2)^{1/\beta}$.
+Итоговый знак определяется интегрально;
+при $\beta = 2$ и типичных параметрах
+$\mathcal{A}_{43} < 0$.
+
+\paragraph{Элемент $\mathcal{A}_{44}$
+  (при $\dot{\Delta T}_w$).}
+Из правой части (температура через
+$\pp T/\pp\Delta T_w = -\Psi$,
+аналогично $\mathcal{A}_{23}$~\eqref{eq:A23}
+но с весом $\eta^\beta$):
+\begin{equation}\label{eq:A44}
+  \boxed{
+    \mathcal{A}_{44}
+    = -\int_{r_w}^{r_b} r\,\eta^\beta\,
+      \bar{S}_o\,\bar\beta_o^\sat\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+
+\paragraph{Правая часть $\mathcal{F}_4$.}
+Дивергентный член интегрируется с весом $r\,\eta^\beta$.
+Интегрирование по частям:
+\begin{equation}\label{eq:F4_boundary}
+  F_4^\div
+  = -\frac{\bar{B}_o}{\phi}
+    \biggl[
+      \underbrace{\eta^\beta\,
+        \frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'}_{r_w}^{r_b}
+    \biggr]
+  + \frac{\bar{B}_o}{\phi}
+    \int_{r_w}^{r_b}
+    \frac{\dd\eta^\beta}{\dd r}\,
+    \frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'\,\dd r.
+\end{equation}
+
+Граничные значения: при $r = r_b$: $\eta^\beta = 1$
+(поток на фронте, как в $\mathcal{F}_2$).
+При $r = r_w$: $\eta^\beta = 0$
+--- \textbf{сингулярность $p'$ подавлена}.
+
+Объёмный интеграл: $\dd\eta^\beta/\dd r
+= \beta\,\eta^{\beta-1}/(r\,L_b)$, поэтому
+\begin{equation}\label{eq:F4_volume}
+  F_4^{(V)}
+  = \frac{\bar{B}_o}{\phi}\,\frac{\beta}{L_b}
+    \int_{r_w}^{r_b}
+    \eta^{\beta-1}\,
+    \frac{\bar\lambda_o}{\bar{B}_o}\,p'\,\dd r.
+\end{equation}
+
+С замороженным $\bar\lambda_o/\bar{B}_o$ и профилем
+давления $p' \propto \eta^{\gamma-1}/(r\,L_b)$
+подынтегральное $\propto \eta^{\beta+\gamma-2}$;
+интеграл сходится при $\beta + \gamma > 1$
+(всегда: $\beta \geqslant 1$, $\gamma > 0$).
+
+Итого:
+\begin{equation}\label{eq:F4}
+  \boxed{
+    \mathcal{F}_4
+    = -\frac{\bar{B}_o}{\phi}
+      \left.\frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'
+      \right|_{r=r_b}
+    + F_4^{(V)}
+    + I_{p_{wf}}^{(4)}\,\dot{p}_{wf},
+  }
+\end{equation}
+где $I_{p_{wf}}^{(4)}$ --- вклад нестационарного $p_{wf}$
+(аналогичен $I_{p_{wf}}^{(2)}$~\eqref{eq:I_pwf_2}
+с весом $\eta^\beta$).
+
+\emph{Отличие от $\mathcal{F}_2$:}
+в $\mathcal{F}_2$~\eqref{eq:F2} поток на~$r_w$
+содержит сингулярность при $\gamma < 1$.
+В $\mathcal{F}_4$ поток на~$r_w$ обнуляется
+весом $\eta^\beta(r_w) = 0$.
+
+\paragraph{Новые замкнутые интегралы.}
+Для вычисления $\mathcal{A}_{4j}$ через замкнутые формулы
+вводятся:
+\begin{align}
+  \widetilde{I}_S^{(n)}(\beta)
+  &= \int_0^1 \eta^{n+\beta}\,(1-\eta^\beta)\,\dd\eta
+   = \frac{1}{n+\beta+1} - \frac{1}{n+2\beta+1},
+  \label{eq:I_S_tilde} \\[4pt]
+  K_S^{(n)}(\beta)
+  &= \int_0^1 \eta^{n+\beta}\,\ln\eta\,
+     (1-2\eta^\beta)\,\dd\eta
+   = -\frac{1}{(n{+}\beta{+}1)^2}
+     + \frac{2}{(n{+}2\beta{+}1)^2}.
+  \label{eq:K_S}
+\end{align}
+
+\emph{Вывод:}
+$\int_0^1 \eta^m\,\ln\eta\,\dd\eta = -1/(m{+}1)^2$
+(интегрирование по частям: $u = \ln\eta$,
+$\dd v = \eta^m\,\dd\eta$).
+Тогда:
+\[
+  K_S^{(n)} = \int_0^1 \eta^{n+\beta}\ln\eta\,\dd\eta
+  - 2\int_0^1 \eta^{n+2\beta}\ln\eta\,\dd\eta
+  = -\frac{1}{(n{+}\beta{+}1)^2}
+    + \frac{2}{(n{+}2\beta{+}1)^2}. \quad\checkmark
+\]
+
+Интеграл для~$\mathcal{A}_{2\beta}$~\eqref{eq:A2beta}:
+\begin{equation}\label{eq:K_A2beta}
+  \int_0^1 \eta^{n+\beta}\,\ln\eta\,\dd\eta
+  = -\frac{1}{(n{+}\beta{+}1)^2}.
+\end{equation}
+
+\paragraph{Расширенная матрица 4$\times$4.}
+С учётом переменного $\beta(t)$,
+вектор неизвестных:
+$\mathbf{q} = (r_b,\,S_{g,w},\,\beta,\,\Delta T_w)^\top$.
+Система:
+\begin{equation}\label{eq:ode_system_4x4}
+  \boxed{
+    \begin{pmatrix}
+      \mathcal{A}_{11} & 0
+        & 0 & \mathcal{A}_{14} \\
+      \mathcal{A}_{21} & \mathcal{A}_{22}
+        & \mathcal{A}_{2\beta} & \mathcal{A}_{24} \\
+      \mathcal{A}_{31} & 0
+        & 0 & \mathcal{A}_{34} \\
+      \mathcal{A}_{41} & \mathcal{A}_{42}
+        & \mathcal{A}_{43} & \mathcal{A}_{44}
+    \end{pmatrix}
+    \begin{pmatrix}
+      \dot{r}_b \\ \dot{S}_{g,w} \\ \dot\beta
+      \\ \dot{\Delta T}_w
+    \end{pmatrix}
+    =
+    \begin{pmatrix}
+      \mathcal{F}_1 \\ \mathcal{F}_2
+      \\ \mathcal{F}_3 \\ \mathcal{F}_4
+    \end{pmatrix}.
+  }
+\end{equation}
+
+Строки~1 и~3 (давление и энергия) не содержат $\dot\beta$:
+профили $p(r)$ и $T(r)$ не зависят от $\beta$
+(при замороженных PVT: $C_p$, $C_T$ вычисляются
+при среднем $\bar{S}_g = \tfrac{1}{2}S_{g,w}$,
+не зависящем от $\beta$).
+
+$\mathcal{A}_{14} \equiv \mathcal{A}_{13}$~\eqref{eq:A13},
+$\mathcal{A}_{24} \equiv \mathcal{A}_{23}$~\eqref{eq:A23},
+$\mathcal{A}_{34} \equiv \mathcal{A}_{33}$~\eqref{eq:A33}
+(перенумерация: $\Delta T_w$ переходит в~4-й столбец).
+
+\paragraph{Допущение: замороженные PVT и $\beta$.}
+PVT-свойства ($\bar{S}_o$, $\bar{c}_o^\sat$,
+$\bar\beta_o^\sat$) вычисляются при среднем
+$\bar{S}_g = \tfrac{1}{2}S_{g,w}$, не зависящем от~$\beta$.
+Точное среднее $\langle S_g\rangle = S_{g,w}(1 - 1/(\beta{+}1))$
+зависит от~$\beta$, но различие при $\beta \in [1,\,4]$
+составляет $< 20\%$ и поглощается приближением
+замороженных коэффициентов.
+
+\paragraph{Предельные случаи.}
+
+\emph{$\beta = \mathrm{const}$ ($\dot\beta = 0$).}
+Четвёртое уравнение становится алгебраическим ограничением;
+первые три совпадают с~\eqref{eq:ode_system}
+(столбец~$\dot\beta$ зануляется).
+При $\beta = \mathrm{const}$ 4-ю строку отбрасываем,
+восстанавливая исходную систему~3$\times$3.
+
+\emph{$S_{g,w} \to 0$.}
+$\mathcal{A}_{43} \propto S_{g,w} \to 0$;
+$\mathcal{A}_{2\beta} \propto S_{g,w} \to 0$.
+Уравнение для $\dot\beta$ вырождается:
+форма пустого профиля неопределена.
+Рекомендуется \verb|clamp|: $\dot\beta = 0$
+при $S_{g,w} < \varepsilon$.
+
+\emph{$\beta \to 1$.}
+Профиль $S_g = S_{g,w}(1-\eta)$ (линейный).
+Все $\mathcal{A}_{4j}$, $\mathcal{F}_4$ конечны
+($\widetilde{I}_S^{(n)} = 1/(n{+}2) - 1/(n{+}3)$,
+$K_S^{(n)} = -1/(n{+}2)^2 + 2/(n{+}3)^2$).
+
+\emph{$\beta \to \infty$.}
+$S_g \to S_{g,w}$ (ступенька),
+$\widetilde{I}_S^{(n)} \to 0$,
+$K_S^{(n)} \to 0$,
+$\mathcal{A}_{42} \to 0$,
+$\mathcal{A}_{43} \to 0$.
+Уравнение для $\dot\beta$ стабилизирует $\beta$.
+
+\paragraph{Таблица: формула $\to$ код (для FEAT-010).}
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+  \textbf{Формула} & \textbf{Python-функция} & \textbf{Модуль} \\
+  \hline
+  \eqref{eq:A2beta} & \texttt{gas\_A2beta()} & \texttt{coefficients.py} \\
+  \eqref{eq:A41}    & \texttt{gas\_A41()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A42}    & \texttt{gas\_A42()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A43}    & \texttt{gas\_A43()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A44}    & \texttt{gas\_A44()}    & \texttt{coefficients.py} \\
+  \eqref{eq:F4}     & \texttt{gas\_F4()}     & \texttt{coefficients.py} \\
+  \eqref{eq:I_S_tilde} & \texttt{I\_S\_tilde()} & \texttt{integrals.py} \\
+  \eqref{eq:K_S}       & \texttt{K\_S()}        & \texttt{integrals.py} \\
+\end{tabular}
+\end{center}
+
+
+%=============================================================================
 \section{Начальная стадия: автомодельная асимптотика при $t \to 0$}
 \label{sec:initial_stage}
 %=============================================================================

@@ -164,13 +164,9 @@ def oil_F1(fluid, rock, p_profile, t_profile, s_profile, state):
 
     T_w = t_profile(r_w, dT_w)
     Lambda_w = fluid.Lambda(p_profile.p_wf, T_w, Sg_w, k)
-    if gam >= 1.0:
-        dp_dr_w = p_profile.dp_dr(r_w, r_b, pbs, gam)
-        flux_w = r_w * Lambda_w * dp_dr_w
-    else:
-        eps_r = r_w * 1e-3
-        dp_dr_w = p_profile.dp_dr(r_w + eps_r, r_b, pbs, gam)
-        flux_w = (r_w + eps_r) * Lambda_w * dp_dr_w
+    eps_r = r_w * 1e-3
+    dp_dr_w = p_profile.dp_dr(r_w + eps_r, r_b, pbs, gam)
+    flux_w = (r_w + eps_r) * Lambda_w * dp_dr_w
 
     boundary_flux = flux_ext - flux_w
 
@@ -185,11 +181,8 @@ def oil_F1(fluid, rock, p_profile, t_profile, s_profile, state):
         dT_dr_val = t_profile.dT_dr(r, dT_w)
         return r * mob_o_Bo_1 * (dRs_dp_1 * dp_dr_val + dRs_dT_1 * dT_dr_val) * dp_dr_val
 
-    if gam > 0.5:
-        Q_quad, _ = quad(Q_quad_integrand, r_w, r_b)
-    else:
-        lower = r_w + r_w * 1e-3
-        Q_quad, _ = quad(Q_quad_integrand, lower, r_b)
+    lower = r_w + r_w * 1e-3
+    Q_quad, _ = quad(Q_quad_integrand, lower, r_b)
 
     # --- I_pwf: ∫r·Cp·(dp/dp_wf)·dp_wf/dt dr ---
     I_pwf = 0.0
@@ -311,13 +304,9 @@ def gas_F2(fluid, rock, p_profile, t_profile, s_profile, state):
 
     T_w = t_profile(r_w, dT_w)
     mob_o_Bo_w = fluid.mobility_o_over_Bo(p_profile.p_wf, T_w, Sg_w, k)
-    if gam >= 1.0:
-        dp_dr_w = p_profile.dp_dr(r_w, r_b, pbs, gam)
-        flux_rw = r_w * mob_o_Bo_w * dp_dr_w
-    else:
-        eps_r = r_w * 1e-3
-        dp_dr_w = p_profile.dp_dr(r_w + eps_r, r_b, pbs, gam)
-        flux_rw = (r_w + eps_r) * mob_o_Bo_w * dp_dr_w
+    eps_r = r_w * 1e-3
+    dp_dr_w = p_profile.dp_dr(r_w + eps_r, r_b, pbs, gam)
+    flux_rw = (r_w + eps_r) * mob_o_Bo_w * dp_dr_w
 
     p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
                                     dT_w, Sg_w)
@@ -467,11 +456,8 @@ def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
         dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
         return r * QJT2 * dp_dr ** 2
 
-    if gam > 0.5:
-        I_jt1, _ = quad(jt_integrand_z1, r_w, r_b)
-    else:
-        lower = r_w + r_w * 1e-3
-        I_jt1, _ = quad(jt_integrand_z1, lower, r_b)
+    lower = r_w + r_w * 1e-3
+    I_jt1, _ = quad(jt_integrand_z1, lower, r_b)
     I_jt2, _ = quad(jt_integrand_z2, r_b, R_ext)
     jt_total = I_jt1 + I_jt2
 

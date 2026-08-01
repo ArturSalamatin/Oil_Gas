@@ -6,7 +6,7 @@ date: 2026-07-31
 issue: BUG-001
 github: 12
 branch: fix/bug-001/solver-nan-divergence
-status: в процессе
+status: реализован
 audit:
   date: 2026-08-01
   found: 0

@@ -188,7 +188,8 @@ def oil_F1(fluid, rock, p_profile, t_profile, s_profile, state):
     if gam > 0.5:
         Q_quad, _ = quad(Q_quad_integrand, r_w, r_b)
     else:
-        Q_quad, _ = quad(Q_quad_integrand, r_w, r_b, points=[r_w + r_w * 1e-6])
+        lower = r_w + r_w * 1e-3
+        Q_quad, _ = quad(Q_quad_integrand, lower, r_b)
 
     # --- I_pwf: ∫r·Cp·(dp/dp_wf)·dp_wf/dt dr ---
     I_pwf = 0.0
@@ -469,7 +470,8 @@ def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
     if gam > 0.5:
         I_jt1, _ = quad(jt_integrand_z1, r_w, r_b)
     else:
-        I_jt1, _ = quad(jt_integrand_z1, r_w, r_b, points=[r_w + r_w * 1e-6])
+        lower = r_w + r_w * 1e-3
+        I_jt1, _ = quad(jt_integrand_z1, lower, r_b)
     I_jt2, _ = quad(jt_integrand_z2, r_b, R_ext)
     jt_total = I_jt1 + I_jt2
 

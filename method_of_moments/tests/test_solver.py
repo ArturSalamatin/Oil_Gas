@@ -148,6 +148,18 @@ class TestSolveMoments:
     def test_all_finite(self, sol):
         assert np.all(np.isfinite(sol.y))
 
+    @pytest.mark.slow
+    @pytest.mark.filterwarnings("ignore::scipy.integrate.IntegrationWarning")
+    def test_solve_t10_no_nan(self, fluid, rock, p_profile, t_profile,
+                              s_profile):
+        """BUG-001: solver не должен падать при t_end=10 (gamma пересекает 0.5)."""
+        sol = solve_moments(
+            fluid, rock, p_profile, t_profile, s_profile,
+            P_WF, R_EXT, t_end=10.0, t_eps=T_EPS,
+        )
+        assert sol.t.size >= 2
+        assert np.all(np.isfinite(sol.y))
+
 
 # ─── Тесты reconstruct_profiles ───────────────────────────────────
 

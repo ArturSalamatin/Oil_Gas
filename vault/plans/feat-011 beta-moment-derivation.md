@@ -7,7 +7,7 @@ issue: FEAT-011
 github: 14
 branch: feat/feat-011/beta-moment-derivation
 model_level: М.4
-status: в процессе
+status: реализован
 audit:
   date: 2026-08-01
   found: 2

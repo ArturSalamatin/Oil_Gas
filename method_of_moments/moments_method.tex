@@ -1559,7 +1559,7 @@ $[r\,\eta^\beta\,S_g]_{r=r_b} = r_b \cdot 1 \cdot 0 = 0$:
     = \frac{S_{g,w}\,\beta}{r_b\,L_b}
       \int_{r_w}^{r_b} r\,(2\eta^{2\beta} - \eta^\beta)\,\dd r
     - \int_{r_w}^{r_b} r\,\eta^\beta\,
-      \bar{S}_{o}\,(\bar{c}_r + \bar{c}_o^\sat)\,
+      S_o\,(c_r + c_o^\sat)\,
       \frac{\pp p}{\pp r_b}\,\dd r.
   }
 \end{equation}
@@ -1601,7 +1601,7 @@ $\pp T/\pp\Delta T_w = -\Psi$,
   \boxed{
     \mathcal{A}_{44}
     = -\int_{r_w}^{r_b} r\,\eta^\beta\,
-      \bar{S}_o\,\bar\beta_o^\sat\,\Psi(\zeta)\,\dd r.
+      S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
   }
 \end{equation}
 
@@ -1610,15 +1610,15 @@ $\pp T/\pp\Delta T_w = -\Psi$,
 Интегрирование по частям:
 \begin{equation}\label{eq:F4_boundary}
   F_4^\div
-  = -\frac{\bar{B}_o}{\phi}
+  = -\frac{B_o}{\phi}
     \biggl[
       \underbrace{\eta^\beta\,
-        \frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'}_{r_w}^{r_b}
+        \frac{r\,\lambda_o}{B_o}\,p'}_{r_w}^{r_b}
     \biggr]
-  + \frac{\bar{B}_o}{\phi}
+  + \frac{B_o}{\phi}
     \int_{r_w}^{r_b}
     \frac{\dd\eta^\beta}{\dd r}\,
-    \frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'\,\dd r.
+    \frac{r\,\lambda_o}{B_o}\,p'\,\dd r.
 \end{equation}
 
 Граничные значения: при $r = r_b$: $\eta^\beta = 1$
@@ -1630,13 +1630,13 @@ $\pp T/\pp\Delta T_w = -\Psi$,
 = \beta\,\eta^{\beta-1}/(r\,L_b)$, поэтому
 \begin{equation}\label{eq:F4_volume}
   F_4^{(V)}
-  = \frac{\bar{B}_o}{\phi}\,\frac{\beta}{L_b}
+  = \frac{B_o}{\phi}\,\frac{\beta}{L_b}
     \int_{r_w}^{r_b}
     \eta^{\beta-1}\,
-    \frac{\bar\lambda_o}{\bar{B}_o}\,p'\,\dd r.
+    \frac{\lambda_o}{B_o}\,p'\,\dd r.
 \end{equation}
 
-С замороженным $\bar\lambda_o/\bar{B}_o$ и профилем
+С замороженным $\lambda_o/B_o$ и профилем
 давления $p' \propto \eta^{\gamma-1}/(r\,L_b)$
 подынтегральное $\propto \eta^{\beta+\gamma-2}$;
 интеграл сходится при $\beta + \gamma > 1$
@@ -1646,8 +1646,8 @@ $\pp T/\pp\Delta T_w = -\Psi$,
 \begin{equation}\label{eq:F4}
   \boxed{
     \mathcal{F}_4
-    = -\frac{\bar{B}_o}{\phi}
-      \left.\frac{r\,\bar\lambda_o}{\bar{B}_o}\,p'
+    = -\frac{B_o}{\phi}
+      \left.\frac{r\,\lambda_o}{B_o}\,p'
       \right|_{r=r_b}
     + F_4^{(V)}
     + I_{p_{wf}}^{(4)}\,\dot{p}_{wf},

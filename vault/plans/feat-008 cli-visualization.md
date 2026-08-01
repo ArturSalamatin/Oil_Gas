@@ -6,7 +6,7 @@ date: 2026-07-31
 issue: FEAT-008
 github: 11
 branch: feat/feat-008/cli-visualization
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-07-31
   found: 0

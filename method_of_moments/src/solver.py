@@ -41,11 +41,17 @@ def _event_rb_reached(r_e):
 
 def solve_moments(fluid, rock, p_profile, t_profile, s_profile,
                   p_wf, r_e, t_end, t_eps=1e-5, dp_wf_dt=0.0,
+                  beta_fixed=True, beta0=2.0,
                   **ivp_kwargs):
     """Интегрирование ODE метода моментов. §5–6 moments_method.tex."""
-    y0 = _initial_conditions(fluid, rock, p_profile, t_profile, p_wf, t_eps)
+    y0_3 = _initial_conditions(fluid, rock, p_profile, t_profile, p_wf, t_eps)
+    if beta_fixed:
+        y0 = y0_3
+    else:
+        y0 = np.array([y0_3[0], y0_3[1], beta0, y0_3[2]])
+
     rhs = make_rhs(fluid, rock, p_profile, t_profile, s_profile,
-                   p_wf, dp_wf_dt)
+                   p_wf, dp_wf_dt, beta_fixed=beta_fixed)
     event = _event_rb_reached(r_e)
 
     defaults = dict(method='Radau', rtol=1e-6, atol=1e-9,
@@ -56,13 +62,13 @@ def solve_moments(fluid, rock, p_profile, t_profile, s_profile,
 
 
 def reconstruct_profiles(r_b, Sg_w, dT_w, p_profile, t_profile,
-                         s_profile, fluid, r_grid):
+                         s_profile, fluid, r_grid, beta=None):
     """Восстановление p(r), Sg(r), T(r) из параметров решения. §4 moments_method.tex."""
     pb_star = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
     gamma = p_profile.gamma(r_b, pb_star)
 
     p_arr = np.array([p_profile(r, r_b, pb_star, gamma) for r in r_grid])
-    Sg_arr = np.array([s_profile(r, r_b, Sg_w) for r in r_grid])
+    Sg_arr = np.array([s_profile(r, r_b, Sg_w, beta=beta) for r in r_grid])
     T_arr = np.array([t_profile(r, dT_w) for r in r_grid])
 
     return p_arr, Sg_arr, T_arr

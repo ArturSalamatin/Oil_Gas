@@ -26,7 +26,7 @@ class TestLoadConfig:
 class TestBuildObjects:
     def test_builds_from_baseline(self):
         cfg = load_config(CONFIGS / "baseline.json")
-        fluid, rock, p_prof, t_prof, s_prof, solver_opts = build_objects(cfg)
+        fluid, rock, p_prof, t_prof, s_prof, solver_opts, beta_fixed = build_objects(cfg)
         assert fluid.p_b == cfg["initial_conditions"]["p_b"]
         assert p_prof.r_w == cfg["geometry"]["r_w"]
         assert t_prof.T_0 == cfg["initial_conditions"]["T_0"]

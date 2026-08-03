@@ -659,26 +659,51 @@ def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
     return flux_cond + conv_total + jt_total + I_pwf
 
 
-def assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state):
-    """Сборка A·ẋ=F. Ур. (eq:ode_system), (eq:matrix_structure) moments_method.tex."""
-    A = np.zeros((3, 3))
+def assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state,
+                        beta_fixed=True):
+    """Сборка A·ẋ=F. Ур. (eq:ode_system), (eq:ode_system_4x4) moments_method.tex."""
+    if beta_fixed:
+        A = np.zeros((3, 3))
 
-    A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
-    # A[0, 1] = 0  — расщепление (eq:matrix_structure)
-    A[0, 2] = oil_A13(fluid, rock, p_profile, t_profile, state)
+        A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
+        A[0, 2] = oil_A13(fluid, rock, p_profile, t_profile, state)
 
-    A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
-    A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
-    A[1, 2] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 2] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
 
-    A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
-    # A[2, 1] = 0  — расщепление (eq:matrix_structure)
-    A[2, 2] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 2] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
 
-    F = np.array([
-        oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
-        gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
-        energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
-    ])
+        F = np.array([
+            oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
+            energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
+        ])
+    else:
+        A = np.zeros((4, 4))
+
+        A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
+        A[0, 3] = oil_A13(fluid, rock, p_profile, t_profile, state)
+
+        A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 2] = gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 3] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 3] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        A[3, 0] = gas_A41(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 1] = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 2] = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 3] = gas_A44(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        F = np.array([
+            oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
+            energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F4(fluid, rock, p_profile, t_profile, s_profile, state),
+        ])
 
     return A, F

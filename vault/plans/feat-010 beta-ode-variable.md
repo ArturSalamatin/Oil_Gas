@@ -7,7 +7,7 @@ issue: FEAT-010
 github: 13
 branch: feat/feat-010/beta-ode-variable
 model_level: М.4
-status: в процессе
+status: реализован
 audit:
   date: 2026-08-03
   found: 3

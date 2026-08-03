@@ -43,7 +43,8 @@
     "profiles": {
         "beta": 2.0,
         "sigma": 2.0,
-        "comment": "показатели формы профилей Sg(r) и T(r)"
+        "beta_fixed": false,
+        "comment": "показатели формы профилей Sg(r) и T(r), beta_fixed=false — β как ODE-переменная"
     },
     "solver": {
         "t_epsilon": 1e-5,

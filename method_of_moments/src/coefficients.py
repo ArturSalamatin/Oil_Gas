@@ -15,6 +15,7 @@ class OdeState:
     dT_w: float
     p_wf: float
     dp_wf_dt: float = 0.0
+    beta: float = 2.0
 
 
 # ─── Замораживание PVT (§5.4) ──────────────────────────────────────

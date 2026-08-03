@@ -214,3 +214,45 @@ class TestReconstructProfiles:
         assert p_arr.shape == r_grid.shape
         assert Sg_arr.shape == r_grid.shape
         assert T_arr.shape == r_grid.shape
+
+
+# ─── Тесты 4×4 (beta_fixed=False) ───────────────────────────────
+
+
+@pytest.mark.filterwarnings("ignore::scipy.integrate.IntegrationWarning")
+class TestSolve4x4:
+    @pytest.fixture
+    def sol_4x4(self, fluid, rock, p_profile, t_profile, s_profile):
+        return solve_moments(
+            fluid, rock, p_profile, t_profile, s_profile,
+            P_WF, R_EXT, t_end=0.1, t_eps=T_EPS,
+            beta_fixed=False, beta0=BETA,
+        )
+
+    @pytest.fixture
+    def sol_3x3(self, fluid, rock, p_profile, t_profile, s_profile):
+        return solve_moments(
+            fluid, rock, p_profile, t_profile, s_profile,
+            P_WF, R_EXT, t_end=0.1, t_eps=T_EPS,
+            beta_fixed=True,
+        )
+
+    def test_4x4_runs(self, sol_4x4):
+        assert sol_4x4.t.size >= 2
+        assert sol_4x4.y.shape[0] == 4
+
+    def test_4x4_all_finite(self, sol_4x4):
+        assert np.all(np.isfinite(sol_4x4.y))
+
+    def test_4x4_rb_monotonic(self, sol_4x4):
+        assert np.all(np.diff(sol_4x4.y[0]) >= 0)
+
+    def test_4x4_beta_positive(self, sol_4x4):
+        assert np.all(sol_4x4.y[2] > 0), (
+            f"β должна быть > 0, min={sol_4x4.y[2].min():.6e}"
+        )
+
+    def test_4x4_Sgw_bounds(self, sol_4x4):
+        assert np.all(sol_4x4.y[1] >= -1e-6), (
+            f"Sg_w слишком отрицательна: min={sol_4x4.y[1].min():.6e}"
+        )

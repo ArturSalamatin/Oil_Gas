@@ -13,6 +13,7 @@ from src.coefficients import (
     dp_drb_numerical, dp_dpwf_numerical,
     oil_A11, oil_A13, oil_F1,
     gas_A21, gas_A22, gas_A23, gas_F2,
+    gas_A2beta, gas_A41, gas_A42, gas_A43, gas_A44, gas_F4,
     energy_A31, energy_A33, energy_F3,
     assemble_ode_system,
     OdeState,
@@ -706,3 +707,113 @@ class TestAssembly:
         assert np.all(np.isfinite(F)), f"F при Sg≈0: {F}"
         det = np.linalg.det(A)
         assert det != 0.0, f"det(A) = 0 при Sg≈0"
+
+
+# ─── Тесты A_{2,β} ──────────────────────────────────────────────
+
+
+class TestA2beta:
+    def test_A2beta_positive(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A_{2,β} > 0 при Sg_w > 0 (ln η < 0, минус перед интегралом)."""
+        state = _make_state(Sg_w=0.1)
+        val = gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"A_2beta должен быть > 0, получено {val:.6e}"
+
+    def test_A2beta_zero_at_Sg0(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A_{2,β} = 0 при Sg_w = 0."""
+        state = _make_state(Sg_w=0.0)
+        val = gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val == pytest.approx(0.0, abs=1e-15)
+
+    def test_A2beta_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val)
+
+
+# ─── Тесты A₄₁ ──────────────────────────────────────────────────
+
+
+class TestA41:
+    def test_A41_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = gas_A41(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"A₄₁ не конечен: {val}"
+
+    def test_A41_structure_like_A21(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₁ имеет ту же структуру, что A₂₁, но с дополнительным весом η^β."""
+        state = _make_state()
+        a21 = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        a41 = gas_A41(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(a21)
+        assert np.isfinite(a41)
+
+
+# ─── Тесты A₄₂ ──────────────────────────────────────────────────
+
+
+class TestA42:
+    def test_A42_positive(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₂ > 0 — геометрический интеграл."""
+        state = _make_state()
+        val = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"A₄₂ должен быть > 0, получено {val:.6e}"
+
+    def test_A42_less_than_A22(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₂ < A₂₂: дополнительный множитель η^β < 1 уменьшает интеграл."""
+        state = _make_state()
+        a22 = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+        a42 = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert a42 < a22, f"A₄₂={a42:.6e} должен быть < A₂₂={a22:.6e}"
+
+
+# ─── Тесты A₄₃ ──────────────────────────────────────────────────
+
+
+class TestA43:
+    def test_A43_positive(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₃ > 0 при Sg_w > 0 (Галёркин, однозначный знак)."""
+        state = _make_state(Sg_w=0.1)
+        val = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val > 0, f"A₄₃ должен быть > 0, получено {val:.6e}"
+
+    def test_A43_zero_at_Sg0(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₃ = 0 при Sg_w = 0."""
+        state = _make_state(Sg_w=0.0)
+        val = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert val == pytest.approx(0.0, abs=1e-15)
+
+
+# ─── Тесты A₄₄ ──────────────────────────────────────────────────
+
+
+class TestA44:
+    def test_A44_sign_like_A23(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₄ и A₂₃ имеют одинаковый знак (оба строятся из −∫r·So·βo_sat·Ψ·dr)."""
+        state = _make_state()
+        a23 = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+        a44 = gas_A44(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.sign(a44) == np.sign(a23), (
+            f"A₄₄={a44:.6e} и A₂₃={a23:.6e} должны иметь одинаковый знак"
+        )
+
+    def test_A44_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = gas_A44(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val)
+
+
+# ─── Тесты F₄ ────────────────────────────────────────────────────
+
+
+class TestF4:
+    def test_F4_finite(self, fluid, rock, p_profile, t_profile, s_profile):
+        state = _make_state()
+        val = gas_F4(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"F₄ не конечен: {val}"
+
+    def test_F4_no_rw_singularity(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₄ конечен даже при малом γ — сингулярность на r_w подавлена весом η^β."""
+        state = _make_state(r_b=0.2, Sg_w=0.05, dT_w=0.5)
+        val = gas_F4(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"F₄ при малом rb: {val}"

@@ -1501,8 +1501,8 @@ $(\partial p/\partial r)(\partial T/\partial r)$;
 Умножаем~\eqref{eq:Sg_eq2} на $r\,\eta^\beta$
 и интегрируем от $r_w$ до $r_b$:
 \begin{equation}\label{eq:Sg_moment_beta}
-  \frac{\dd}{\dd t}
-  \int_{r_w}^{r_b} r\,\eta^\beta\,S_g\,\dd r
+  \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \frac{\pp S_g}{\pp t}\,\dd r
   = \int_{r_w}^{r_b} r\,\eta^\beta
     \left[
       S_o\,(c_r + c_o^\sat)\,\frac{\pp p}{\pp t}
@@ -1514,15 +1514,28 @@ $(\partial p/\partial r)(\partial T/\partial r)$;
 (см.\ ниже, \eqref{eq:F4_boundary}--\eqref{eq:F4_volume}).
 
 \paragraph{Левая часть.}
-По правилу Лейбница с граничным членом
-$[r\,\eta^\beta\,S_g]_{r=r_b} = r_b \cdot 1 \cdot 0 = 0$:
+Подставляя параметризацию
+$S_g = S_{g,w}(1 - \eta^\beta)$,
+$\pp S_g/\pp t$ содержит
+$\dot{r}_b$, $\dot{S}_{g,w}$, $\dot\beta$
+(из~\eqref{eq:dSg_dt_ext}).
+Интеграл $\int r\,\eta^\beta\,(\pp S_g/\pp t)\,\dd r$
+тождественно равен
 \begin{equation}\label{eq:dM4_dt}
-  \frac{\dd}{\dd t}
-  \int_{r_w}^{r_b} r\,\eta^\beta\,S_g\,\dd r
-  = \int_{r_w}^{r_b} r\,
-    \frac{\pp}{\pp t}
-    \bigl[\eta^\beta\,S_{g,w}\,(1-\eta^\beta)\bigr]\,\dd r.
+  \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \frac{\pp S_g}{\pp t}\,\dd r
+  = \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \biggl[
+      \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+      + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w}
+      + \frac{\pp S_g}{\pp\beta}\,\dot\beta
+    \biggr]\,\dd r.
 \end{equation}
+Эквивалентно, вычисляя $\dd/\dd t\!\int r\,\eta^\beta\,S_g\,\dd r$
+по правилу Лейбница (граничный член
+$[r\,\eta^\beta\,S_g]_{r=r_b} = 0$,
+т.\,к.\ $S_g(r_b) = 0$), с учётом зависимости
+$\eta^\beta$ от $t$:
 
 Подынтегральное:
 \begin{equation}\label{eq:d_eta_beta_dt}

@@ -45,15 +45,21 @@ def build_objects(cfg):
     s_profile = SaturationProfile(geo["r_w"], prof["beta"])
 
     solver_opts = cfg["solver"]
+    beta_fixed = prof.get("beta_fixed", True)
+    if isinstance(beta_fixed, str):
+        beta_fixed = beta_fixed.lower() not in ("false", "0", "no")
 
-    return fluid, rock, p_profile, t_profile, s_profile, solver_opts
+    return fluid, rock, p_profile, t_profile, s_profile, solver_opts, beta_fixed
 
 
-def save_csv(sol, path):
-    """OdeResult → CSV с колонками t, r_b, Sg_w, dT_w."""
+def save_csv(sol, path, beta_fixed=True):
+    """OdeResult → CSV."""
     data = np.column_stack([sol.t, sol.y.T])
-    np.savetxt(path, data, delimiter=",",
-               header="t,r_b,Sg_w,dT_w", comments="")
+    if beta_fixed:
+        header = "t,r_b,Sg_w,dT_w"
+    else:
+        header = "t,r_b,Sg_w,beta,dT_w"
+    np.savetxt(path, data, delimiter=",", header=header, comments="")
 
 
 def plot_dynamics(sol, path):
@@ -69,13 +75,17 @@ def plot_dynamics(sol, path):
 
 
 def plot_profiles(sol, p_profile, t_profile, s_profile, fluid,
-                  r_w, r_e, path):
+                  r_w, r_e, path, beta_fixed=True):
     """p(r), Sg(r), T(r) на последний момент → PNG."""
-    r_b, Sg_w, dT_w = sol.y[:, -1]
+    if beta_fixed:
+        r_b, Sg_w, dT_w = sol.y[:, -1]
+        beta = None
+    else:
+        r_b, Sg_w, beta, dT_w = sol.y[:, -1]
     r_grid = np.geomspace(r_w, r_e, 500)
     p_arr, Sg_arr, T_arr = reconstruct_profiles(
         r_b, Sg_w, dT_w, p_profile, t_profile, s_profile,
-        fluid, r_grid)
+        fluid, r_grid, beta=beta)
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12),
                                          sharex=True)
@@ -103,7 +113,7 @@ def plot_profiles(sol, p_profile, t_profile, s_profile, fluid,
 def run(config_path, output_dir="results"):
     """JSON-конфиг → решение → CSV + графики."""
     cfg = load_config(config_path)
-    fluid, rock, p_profile, t_profile, s_profile, solver_opts = build_objects(cfg)
+    fluid, rock, p_profile, t_profile, s_profile, solver_opts, beta_fixed = build_objects(cfg)
 
     geo = cfg["geometry"]
     bc = cfg["boundary_conditions"]
@@ -115,6 +125,8 @@ def run(config_path, output_dir="results"):
         fluid, rock, p_profile, t_profile, s_profile,
         p_wf, r_e, solver_opts["t_end"],
         t_eps=solver_opts["t_epsilon"],
+        beta_fixed=beta_fixed,
+        beta0=cfg["profiles"].get("beta", 2.0),
         method=solver_opts.get("method", "Radau"),
         rtol=solver_opts.get("rtol", 1e-6),
         atol=solver_opts.get("atol", 1e-9),
@@ -132,10 +144,10 @@ def run(config_path, output_dir="results"):
               file=sys.stderr)
         return sol
 
-    save_csv(sol, out / "solution.csv")
+    save_csv(sol, out / "solution.csv", beta_fixed=beta_fixed)
     plot_dynamics(sol, out / "rb_vs_t.png")
     plot_profiles(sol, p_profile, t_profile, s_profile, fluid,
-                  r_w, r_e, out / "profiles.png")
+                  r_w, r_e, out / "profiles.png", beta_fixed=beta_fixed)
 
     print(f"Результаты: {out}/")
     print(f"  solution.csv  ({sol.t.shape[0]} точек,"

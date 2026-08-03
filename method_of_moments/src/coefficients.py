@@ -15,6 +15,7 @@ class OdeState:
     dT_w: float
     p_wf: float
     dp_wf_dt: float = 0.0
+    beta: float = 2.0
 
 
 # ─── Замораживание PVT (§5.4) ──────────────────────────────────────
@@ -213,7 +214,7 @@ def gas_A22(fluid, rock, p_profile, t_profile, s_profile, state):
     """Коэффициент A₂₂ при Ṡg,w в уравнении массы газа. Ур. (eq:A22) moments_method.tex."""
     r_b = state.r_b
     r_w = s_profile.r_w
-    beta = s_profile.beta
+    beta = state.beta
 
     def integrand(r):
         eta = s_profile.eta(r, r_b)
@@ -233,7 +234,7 @@ def gas_A21(fluid, rock, p_profile, t_profile, s_profile, state):
     Sg_w = state.Sg_w
     r_w = p_profile.r_w
     cr = rock["c_r"]
-    beta = s_profile.beta
+    beta = state.beta
     L_b = np.log(r_b / r_w)
 
     pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
@@ -328,6 +329,182 @@ def gas_F2(fluid, rock, p_profile, t_profile, s_profile, state):
         I_pwf = i * state.dp_wf_dt
 
     return boundary + I_pwf
+
+
+# ─── A_{2,β}: −Sg_w·∫r·η^β·ln(η)·dr (eq:A2beta) ─────────────────
+
+
+def gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A_{2,β} при β̇ во 2-м уравнении. Ур. (eq:A2beta) moments_method.tex."""
+    r_b = state.r_b
+    Sg_w = state.Sg_w
+    r_w = s_profile.r_w
+    beta = state.beta
+
+    def integrand(r):
+        eta = s_profile.eta(r, r_b)
+        if eta <= 0.0:
+            return 0.0
+        return r * eta**beta * np.log(eta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return -Sg_w * I
+
+
+# ─── A₄₁: Sg·β/(rb·Lb)·∫r·η^{2β}·dr − ∫r·η^β·So·(cr+co)·∂p/∂rb dr (eq:A41)
+
+
+def gas_A41(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₄₁ при ṙ_b в 4-м уравнении. Ур. (eq:A41) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+    cr = rock["c_r"]
+    beta = state.beta
+    L_b = np.log(r_b / r_w)
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    So1 = 1.0 - Sg1
+    co_sat_1 = fluid.co_sat(p1, T1)
+
+    def integrand_eta(r):
+        eta = s_profile.eta(r, r_b)
+        return r * eta ** (2.0 * beta)
+
+    I_eta, _ = quad(integrand_eta, r_w, r_b)
+
+    def integrand_pressure(r):
+        eta = s_profile.eta(r, r_b)
+        dp = dp_drb_numerical(p_profile, r, r_b, fluid, t_profile, dT_w)
+        return r * eta**beta * So1 * (cr + co_sat_1) * dp
+
+    I_pressure, _ = quad(integrand_pressure, r_w, r_b)
+
+    return Sg_w * beta / (r_b * L_b) * I_eta - I_pressure
+
+
+# ─── A₄₂: ∫r·η^β·(1−η^β)·dr (eq:A42) ───────────────────────────
+
+
+def gas_A42(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₄₂ при Ṡg,w в 4-м уравнении. Ур. (eq:A42) moments_method.tex."""
+    r_b = state.r_b
+    r_w = s_profile.r_w
+    beta = state.beta
+
+    def integrand(r):
+        eta = s_profile.eta(r, r_b)
+        return r * eta**beta * (1.0 - eta**beta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return I
+
+
+# ─── A₄₃: −Sg_w·∫r·η^{2β}·ln(η)·dr (eq:A43) ───────────────────
+
+
+def gas_A43(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₄₃ при β̇ в 4-м уравнении. Ур. (eq:A43) moments_method.tex."""
+    r_b = state.r_b
+    Sg_w = state.Sg_w
+    r_w = s_profile.r_w
+    beta = state.beta
+
+    def integrand(r):
+        eta = s_profile.eta(r, r_b)
+        if eta <= 0.0:
+            return 0.0
+        return r * eta ** (2.0 * beta) * np.log(eta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return -Sg_w * I
+
+
+# ─── A₄₄: −∫r·η^β·So·βo_sat·Ψ(ζ)·dr (eq:A44) ─────────────────
+
+
+def gas_A44(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Коэффициент A₄₄ при ΔṪ_w в 4-м уравнении. Ур. (eq:A44) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+    beta = state.beta
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    So1 = 1.0 - Sg1
+    beta_o_sat_1 = fluid.beta_o_sat(p1, T1)
+
+    def integrand(r):
+        eta = s_profile.eta(r, r_b)
+        zeta = t_profile.zeta(r)
+        return r * eta**beta * So1 * beta_o_sat_1 * t_profile.Psi(zeta)
+
+    I, _ = quad(integrand, r_w, r_b)
+    return -I
+
+
+# ─── F₄: −(Bo/φ)·r·(λo/Bo)·p'|_{rb} + F₄^(V) + I_pwf^(4) (eq:F4)
+
+
+def gas_F4(fluid, rock, p_profile, t_profile, s_profile, state):
+    """Правая часть F₄ четвёртого уравнения. Ур. (eq:F4) moments_method.tex."""
+    r_b = state.r_b
+    dT_w = state.dT_w
+    Sg_w = state.Sg_w
+    r_w = p_profile.r_w
+    phi = rock["phi"]
+    k = rock["k"]
+    beta = state.beta
+    L_b = np.log(r_b / r_w)
+
+    pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)
+    gam = p_profile.gamma(r_b, pbs)
+
+    p1, T1, Sg1 = frozen_pvt_zone1(p_profile.p_wf, pbs, t_profile.T_0,
+                                    dT_w, Sg_w)
+    Bo_frozen = fluid.Bo(p1, T1)
+
+    T_b = t_profile(r_b, dT_w)
+    mob_o_Bo_b = fluid.mobility_o_over_Bo(pbs, T_b, 0.0, k)
+    dp_dr_b = p_profile.dp_dr(r_b, r_b, pbs, gam)
+    flux_rb = r_b * mob_o_Bo_b * dp_dr_b
+
+    boundary = -(Bo_frozen / phi) * flux_rb
+
+    mob_o_Bo_frozen = fluid.mobility_o_over_Bo(p1, T1, Sg1, k)
+
+    def integrand_vol(r):
+        eta = s_profile.eta(r, r_b)
+        if eta <= 0.0:
+            return 0.0
+        dp_dr = p_profile.dp_dr(r, r_b, pbs, gam)
+        return eta ** (beta - 1.0) * mob_o_Bo_frozen * dp_dr
+
+    I_vol, _ = quad(integrand_vol, r_w, r_b)
+    F4_vol = (Bo_frozen / phi) * (beta / L_b) * I_vol
+
+    I_pwf = 0.0
+    if state.dp_wf_dt != 0.0:
+        So1 = 1.0 - Sg1
+        co_sat_1 = fluid.co_sat(p1, T1)
+        cr = rock["c_r"]
+
+        def integrand_pwf(r):
+            eta = s_profile.eta(r, r_b)
+            dp = dp_dpwf_numerical(p_profile, r, r_b, fluid, t_profile,
+                                   dT_w)
+            return r * eta**beta * So1 * (cr + co_sat_1) * dp
+
+        i, _ = quad(integrand_pwf, r_w, r_b)
+        I_pwf = i * state.dp_wf_dt
+
+    return boundary + F4_vol + I_pwf
 
 
 # ─── A₃₁: −∫r·Q̄_ad*·∂p/∂r_b dr (eq:A31) ─────────────────────────
@@ -482,26 +659,51 @@ def energy_F3(fluid, rock, p_profile, t_profile, s_profile, state):
     return flux_cond + conv_total + jt_total + I_pwf
 
 
-def assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state):
-    """Сборка A·ẋ=F. Ур. (eq:ode_system), (eq:matrix_structure) moments_method.tex."""
-    A = np.zeros((3, 3))
+def assemble_ode_system(fluid, rock, p_profile, t_profile, s_profile, state,
+                        beta_fixed=True):
+    """Сборка A·ẋ=F. Ур. (eq:ode_system), (eq:ode_system_4x4) moments_method.tex."""
+    if beta_fixed:
+        A = np.zeros((3, 3))
 
-    A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
-    # A[0, 1] = 0  — расщепление (eq:matrix_structure)
-    A[0, 2] = oil_A13(fluid, rock, p_profile, t_profile, state)
+        A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
+        A[0, 2] = oil_A13(fluid, rock, p_profile, t_profile, state)
 
-    A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
-    A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
-    A[1, 2] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 2] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
 
-    A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
-    # A[2, 1] = 0  — расщепление (eq:matrix_structure)
-    A[2, 2] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 2] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
 
-    F = np.array([
-        oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
-        gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
-        energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
-    ])
+        F = np.array([
+            oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
+            energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
+        ])
+    else:
+        A = np.zeros((4, 4))
+
+        A[0, 0] = oil_A11(fluid, rock, p_profile, t_profile, state)
+        A[0, 3] = oil_A13(fluid, rock, p_profile, t_profile, state)
+
+        A[1, 0] = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 1] = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 2] = gas_A2beta(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[1, 3] = gas_A23(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        A[2, 0] = energy_A31(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[2, 3] = energy_A33(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        A[3, 0] = gas_A41(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 1] = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 2] = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
+        A[3, 3] = gas_A44(fluid, rock, p_profile, t_profile, s_profile, state)
+
+        F = np.array([
+            oil_F1(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F2(fluid, rock, p_profile, t_profile, s_profile, state),
+            energy_F3(fluid, rock, p_profile, t_profile, s_profile, state),
+            gas_F4(fluid, rock, p_profile, t_profile, s_profile, state),
+        ])
 
     return A, F

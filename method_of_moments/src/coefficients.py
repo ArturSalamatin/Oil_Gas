@@ -214,7 +214,7 @@ def gas_A22(fluid, rock, p_profile, t_profile, s_profile, state):
     """Коэффициент A₂₂ при Ṡg,w в уравнении массы газа. Ур. (eq:A22) moments_method.tex."""
     r_b = state.r_b
     r_w = s_profile.r_w
-    beta = s_profile.beta
+    beta = state.beta
 
     def integrand(r):
         eta = s_profile.eta(r, r_b)
@@ -234,7 +234,7 @@ def gas_A21(fluid, rock, p_profile, t_profile, s_profile, state):
     Sg_w = state.Sg_w
     r_w = p_profile.r_w
     cr = rock["c_r"]
-    beta = s_profile.beta
+    beta = state.beta
     L_b = np.log(r_b / r_w)
 
     pbs = p_profile.pb_star(r_b, dT_w, fluid, t_profile)

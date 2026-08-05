@@ -215,9 +215,10 @@ def s_profile():
     return SaturationProfile(R_W, BETA)
 
 
-def _make_state(r_b=5.0, Sg_w=0.1, dT_w=2.0, p_wf=P_WF, dp_wf_dt=0.0):
+def _make_state(r_b=5.0, Sg_w=0.1, dT_w=2.0, p_wf=P_WF, dp_wf_dt=0.0,
+                beta=BETA):
     return OdeState(r_b=r_b, Sg_w=Sg_w, dT_w=dT_w, p_wf=p_wf,
-                    dp_wf_dt=dp_wf_dt)
+                    dp_wf_dt=dp_wf_dt, beta=beta)
 
 
 # ─── Тесты A₁₂ = 0 ────────────────────────────────────────────────
@@ -741,7 +742,7 @@ class TestA41:
         assert np.isfinite(val), f"A₄₁ не конечен: {val}"
 
     def test_A41_structure_like_A21(self, fluid, rock, p_profile, t_profile, s_profile):
-        """A₄₁ имеет ту же структуру, что A₂₁, но с дополнительным весом η^β."""
+        """A₄₁ имеет ту же структуру, что A₂₁, но с дополнительным весом η²."""
         state = _make_state()
         a21 = gas_A21(fluid, rock, p_profile, t_profile, s_profile, state)
         a41 = gas_A41(fluid, rock, p_profile, t_profile, s_profile, state)
@@ -760,11 +761,18 @@ class TestA42:
         assert val > 0, f"A₄₂ должен быть > 0, получено {val:.6e}"
 
     def test_A42_less_than_A22(self, fluid, rock, p_profile, t_profile, s_profile):
-        """A₄₂ < A₂₂: дополнительный множитель η^β < 1 уменьшает интеграл."""
+        """A₄₂ < A₂₂: множитель η² < 1 уменьшает интеграл."""
         state = _make_state()
         a22 = gas_A22(fluid, rock, p_profile, t_profile, s_profile, state)
         a42 = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
         assert a42 < a22, f"A₄₂={a42:.6e} должен быть < A₂₂={a22:.6e}"
+
+    def test_A42_stable_at_large_beta(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₂ конечен и > 0 при β = 100 (регрессия DEBT-004)."""
+        state = _make_state(Sg_w=0.1, beta=100.0)
+        val = gas_A42(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"A₄₂ не конечен при β=100: {val}"
+        assert val > 0, f"A₄₂ должен быть > 0 при β=100, получено {val:.6e}"
 
 
 # ─── Тесты A₄₃ ──────────────────────────────────────────────────
@@ -772,7 +780,7 @@ class TestA42:
 
 class TestA43:
     def test_A43_positive(self, fluid, rock, p_profile, t_profile, s_profile):
-        """A₄₃ > 0 при Sg_w > 0 (Галёркин, однозначный знак)."""
+        """A₄₃ > 0 при Sg_w > 0 (фиксированный вес η², однозначный знак)."""
         state = _make_state(Sg_w=0.1)
         val = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
         assert val > 0, f"A₄₃ должен быть > 0, получено {val:.6e}"
@@ -782,6 +790,13 @@ class TestA43:
         state = _make_state(Sg_w=0.0)
         val = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
         assert val == pytest.approx(0.0, abs=1e-15)
+
+    def test_A43_stable_at_large_beta(self, fluid, rock, p_profile, t_profile, s_profile):
+        """A₄₃ конечен и > 0 при β = 100 (регрессия DEBT-004)."""
+        state = _make_state(Sg_w=0.1, beta=100.0)
+        val = gas_A43(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"A₄₃ не конечен при β=100: {val}"
+        assert val > 0, f"A₄₃ должен быть > 0 при β=100, получено {val:.6e}"
 
 
 # ─── Тесты A₄₄ ──────────────────────────────────────────────────
@@ -813,7 +828,13 @@ class TestF4:
         assert np.isfinite(val), f"F₄ не конечен: {val}"
 
     def test_F4_no_rw_singularity(self, fluid, rock, p_profile, t_profile, s_profile):
-        """F₄ конечен даже при малом γ — сингулярность на r_w подавлена весом η^β."""
+        """F₄ конечен даже при малом γ — сингулярность на r_w подавлена весом η²."""
         state = _make_state(r_b=0.2, Sg_w=0.05, dT_w=0.5)
         val = gas_F4(fluid, rock, p_profile, t_profile, s_profile, state)
         assert np.isfinite(val), f"F₄ при малом rb: {val}"
+
+    def test_F4_stable_at_large_beta(self, fluid, rock, p_profile, t_profile, s_profile):
+        """F₄ конечен при β = 100 (регрессия DEBT-004)."""
+        state = _make_state(Sg_w=0.1, beta=100.0)
+        val = gas_F4(fluid, rock, p_profile, t_profile, s_profile, state)
+        assert np.isfinite(val), f"F₄ не конечен при β=100: {val}"

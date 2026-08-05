@@ -6,7 +6,7 @@ date: 2026-08-05
 issue: DEBT-004
 github: 15
 branch: refactor/debt-004/fixed-weight-4th-moment
-status: в процессе
+status: реализован
 audit:
   date: 2026-08-05
   found: 0

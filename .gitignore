@@ -19,6 +19,24 @@
 *.snm
 *.vrb
 
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+*.coverage
+htmlcov/
+
+# Results (воспроизводимы, не хранить в git)
+method_of_moments/results*
+method_of_moments/results/*.csv
+method_of_moments/results/*.png
+
 # OS
 Thumbs.db
 desktop.ini

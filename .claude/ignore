@@ -1,0 +1,28 @@
+# Бинарные файлы — не читаемы Claude (PDF читается через Read tool, но не нужен в контексте)
+Refs/**/*.pdf
+Refs/**/*.djvu
+*.doc
+*.docx
+*.pptx
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Python build artifacts
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Результаты (перегенерируемы)
+method_of_moments/results/
+
+# Obsidian config
+.obsidian/

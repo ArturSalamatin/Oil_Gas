@@ -700,9 +700,13 @@ $r_b(t)$, $\Delta T_w(t)$ (и $p_{wf}(t)$, задаваемое).
 через $\dot{r}_b$ и $\dot{\Delta T}_w$:
 \begin{equation}\label{eq:dp_dt}
   \frac{\pp p}{\pp t}
-  = \frac{\pp p}{\pp r_b}\,\dot{r}_b
+  \approx \frac{\pp p}{\pp r_b}\,\dot{r}_b
     + \frac{\pp p}{\pp p_{wf}}\,\dot{p}_{wf},
 \end{equation}
+где опущен член
+$(\pp p/\pp\Delta T_w)\,\dot{\Delta T}_w$,
+пренебрежимо малый по сравнению с температурным
+вкладом $C_T$ (обоснование в~\S\ref{sssec:profile_derivatives}).
 \begin{equation}\label{eq:dT_dt}
   \frac{\pp T}{\pp t}
   = \frac{\pp T}{\pp r_b}\,\dot{r}_b
@@ -726,20 +730,25 @@ $\mathcal{A}_{ij}$. Члены, не содержащие производных
 \]
 Из~\eqref{eq:T_profile}: $\pp T/\pp \Delta T_w = -\Psi(\zeta)$.
 При $C_T < 0$ (типичный случай: $\pp R_s/\pp T < 0$)
-этот вклад положителен: охлаждение увеличивает
-давление насыщения и <<тормозит>> расширение зоны разгазирования.
+и $\Psi > 0$: вклад положителен ($\mathcal{A}_{13} > 0$).
+Влияние на динамику $r_b$ определяется из полной
+системы~\eqref{eq:ode_system}.
 
 \paragraph{Температурный вклад в уравнение насыщенности.}
-Элемент $\mathcal{A}_{23}$ содержит:
+Элемент $\mathcal{A}_{23}$ содержит (подробный
+вывод~--- в~\S\ref{sssec:gas_mass_coefficients}):
 \[
-  \mathcal{A}_{23} \sim -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
-    \frac{\pp T}{\pp \Delta T_w}\,\dd r.
+  \mathcal{A}_{23} \sim +\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,
+    \frac{\pp T}{\pp \Delta T_w}\,\dd r
+  = -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
 \]
 
 
 \subsection{Явный вид коэффициентов}
+\label{ssec:explicit_coefficients}
 
 \paragraph{Двухзонное замораживание PVT-свойств.}
+\label{par:frozen_pvt}
 Для вычисления интегралов PVT-свойства замораживаются
 раздельно в каждой зоне:
 \begin{itemize}[nosep]
@@ -805,9 +814,989 @@ $\dot{S}_{g,w}$, и
 при замороженных значениях $\bar{S}_g$), поэтому
 система остаётся связанной.
 
-Явные формулы для всех $\mathcal{A}_{ij}$ и $\mathcal{F}_i$
-через эти интегралы приводятся при конкретной реализации
-(вычислительная записка).
+Ниже приводятся явные формулы для первой строки матрицы
+($\mathcal{A}_{11}$, $\mathcal{A}_{13}$, $\mathcal{F}_1$)
+--- уравнение сохранения массы нефти.%
+\footnote{FEAT-005a: коэффициенты уравнения массы нефти.}
+
+\subsubsection{Производные профилей по параметрам}
+\label{sssec:profile_derivatives}
+
+Для вычисления $\mathcal{A}_{ij}$ необходимы частные
+производные профилей давления и температуры по
+свободным параметрам $r_b$, $\Delta T_w$, $p_{wf}$.
+
+\paragraph{Температурный профиль.}
+Координата $\zeta = \ln(R_\ext/r)/L_0$ не зависит от $r_b$,
+поэтому
+\begin{equation}\label{eq:dT_drb}
+  \frac{\pp T}{\pp r_b} = 0.
+\end{equation}
+Производная по амплитуде:
+\begin{equation}\label{eq:dT_dTw}
+  \frac{\pp T}{\pp \Delta T_w} = -\Psi(\zeta).
+\end{equation}
+
+\paragraph{Давление в зоне разгазирования.}
+Из~\eqref{eq:p_inner}: $p = p_{wf} + \Delta p_1\,\eta^\gamma$.
+При фиксированном $r$ и изменении $r_b$ зависят:
+$\eta = \ln(r/r_w)/L_b$, $L_b = \ln(r_b/r_w)$,
+$\gamma$~\eqref{eq:gamma_constraint},
+$\Delta p_1 = p_b^* - p_{wf}$.
+Частные производные:
+\begin{equation}\label{eq:deta_drb}
+  \frac{\pp\eta}{\pp r_b} = -\frac{\eta}{r_b\,L_b},
+  \qquad
+  \frac{\pp L_b}{\pp r_b} = \frac{1}{r_b}.
+\end{equation}
+Давление насыщения на фронте зависит от $r_b$
+через температуру:
+\begin{equation}\label{eq:dpb_drb}
+  \frac{\pp p_b^*}{\pp r_b}
+  = \frac{\dd p_b}{\dd T}\bigg|_{T(r_b)}
+    \cdot \frac{\Delta T_w\,\Psi'(\zeta_b)}{r_b\,L_0} \geqslant 0.
+\end{equation}
+Знак: рост $r_b$ уменьшает $\zeta_b$ (фронт сдвигается
+в более тёплую область) $\Rightarrow$ $T(r_b)$ растёт
+$\Rightarrow$ $p_b^*$ растёт ($\dd p_b/\dd T > 0$
+по Стендингу). При $\Delta T_w = 0$: $\pp p_b^*/\pp r_b = 0$
+(температурное поле однородно, $p_b^*$ не зависит от $r_b$).
+
+Полная производная давления в зоне~1:
+\begin{equation}\label{eq:dp_drb_inner}
+  \frac{\pp p}{\pp r_b}\bigg|_\text{inner}
+  = \frac{\pp\Delta p_1}{\pp r_b}\,\eta^\gamma
+    + \Delta p_1\,\eta^\gamma\!\left(
+      \ln\eta\cdot\frac{\pp\gamma}{\pp r_b}
+      + \frac{\gamma}{\eta}\,\frac{\pp\eta}{\pp r_b}
+    \right),
+\end{equation}
+где $\pp\Delta p_1/\pp r_b = \pp p_b^*/\pp r_b$~\eqref{eq:dpb_drb}.
+Производная $\pp\gamma/\pp r_b$ определяется
+дифференцированием~\eqref{eq:gamma_constraint}
+и зависит от $\pp p_b^*/\pp r_b$, $\pp L_b/\pp r_b$,
+$\pp L_e/\pp r_b$. Формула~\eqref{eq:dp_drb_inner}
+приводится для анализа структуры; при численной
+реализации $\pp p/\pp r_b$ вычисляется конечной
+разностью по $r_b$ (с пересчётом $p_b^*$ и $\gamma$
+при каждом $r_b \pm \delta r_b$).
+
+\paragraph{Давление в однофазной зоне.}
+Из~\eqref{eq:p_outer}:
+$p = p_b^* + \Delta p_2\,\ln(r/r_b)/L_e$,
+где $\Delta p_2 = p_0 - p_b^*$, $L_e = \ln(R_\ext/r_b)$.
+\begin{multline}\label{eq:dp_drb_outer}
+  \frac{\pp p}{\pp r_b}\bigg|_\text{outer}
+  = \frac{\pp p_b^*}{\pp r_b}
+    \left(1 - \frac{\ln(r/r_b)}{L_e}\right) \\
+    + \frac{\Delta p_2}{r_b}
+    \left(
+      \frac{\ln(r/r_b)}{L_e^2} - \frac{1}{L_e}
+    \right).
+\end{multline}
+Предельные значения:
+при $r = r_b$: $\pp p/\pp r_b = \pp p_b^*/\pp r_b
+  - \Delta p_2/(r_b L_e)$;
+при $r = R_\ext$: $\pp p/\pp r_b = 0$
+(давление на контуре фиксировано $p = p_0$).
+
+\paragraph{Производная по $p_{wf}$.}
+В зоне разгазирования:
+\begin{equation}\label{eq:dp_dpwf}
+  \frac{\pp p}{\pp p_{wf}}\bigg|_\text{inner}
+  = 1 - \eta^\gamma + \gamma\,\eta^\gamma\ln\eta,
+\end{equation}
+где учтено $\pp\gamma/\pp p_{wf} = \gamma/\Delta p_1$
+из~\eqref{eq:gamma_constraint}.
+Пределы: при $\eta = 0$ --- $\pp p/\pp p_{wf} = 1$
+(давление на забое равно $p_{wf}$);
+при $\eta = 1$ --- $\pp p/\pp p_{wf} = 0$.
+В однофазной зоне: $\pp p/\pp p_{wf} = 0$
+(давление $p_0$ и $p_b^*$ не зависят от $p_{wf}$).
+
+\paragraph{Замечание о $\pp p/\pp\Delta T_w$.}
+Давление формально зависит от $\Delta T_w$ через
+$p_b^*(T(r_b))$~\eqref{eq:pb_star}. Однако вклад
+$C_p\cdot\pp p/\pp\Delta T_w$ мал по сравнению с $C_T$.
+В однофазной зоне ($S_g = 0$, $p > p_b$):
+$C_p \approx \phi\,(c_r + c_o)/B_g \sim 10^{-8}$ [1/Па] (при $c_o = 0$ по Стендингу),
+$\pp p/\pp\Delta T_w \sim (\dd p_b/\dd T)\,\Psi(\zeta_b)
+  \sim 5\times 10^{4}$ [Па/К],
+$C_T \approx -\phi\,\beta_o/B_g \sim -2\times 10^{-2}$ [1/К]:
+\[
+  \frac{C_p\cdot|\pp p/\pp\Delta T_w|}{|C_T|}
+  \sim \frac{10^{-8}\cdot 5\times 10^4}{2\times 10^{-2}}
+  \sim 2{,}5\times 10^{-2} \approx 2{,}5\%.
+\]
+Пренебрегается в соответствии с~\eqref{eq:dp_dt}.
+
+\subsubsection{Коэффициенты первого уравнения (масса нефти)}
+\label{sssec:oil_mass_coefficients}
+
+Подставляя~\eqref{eq:dp_dt}--\eqref{eq:dT_dt}
+в~\eqref{eq:moment0}, собираем коэффициенты
+при $\dot{r}_b$, $\dot{S}_{g,w}$, $\dot{\Delta T}_w$.
+
+\paragraph{Элемент $\mathcal{A}_{11}$.}
+Коэффициент при $\dot{r}_b$:
+\begin{equation}\label{eq:A11}
+  \boxed{
+    \mathcal{A}_{11}
+    = \int_{r_w}^{R_\ext} r\,C_p\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+Член с $C_T$ обнуляется, т.\,к.\ $\pp T/\pp r_b = 0$~\eqref{eq:dT_drb}.
+
+\emph{Знак:} $C_p > 0$ (ёмкость среды),
+$\pp p/\pp r_b < 0$ (расширение зоны разгазирования
+распределяет перепад давления на большую область,
+снижая $p$ в каждой точке).
+Поэтому $\mathcal{A}_{11} < 0$.
+
+Интеграл разбивается на две зоны с замороженными PVT
+($\bar{C}_p^{(1)}$, $\bar{C}_p^{(2)}$):
+\begin{equation}\label{eq:A11_zones}
+  \mathcal{A}_{11}
+  = \bar{C}_p^{(1)}\!\int_{r_w}^{r_b} r\,
+      \frac{\pp p}{\pp r_b}\bigg|_\text{inner}\dd r
+    + \bar{C}_p^{(2)}\!\int_{r_b}^{R_\ext} r\,
+      \frac{\pp p}{\pp r_b}\bigg|_\text{outer}\dd r,
+\end{equation}
+где $\pp p/\pp r_b$ в каждой зоне
+даётся~\eqref{eq:dp_drb_inner}
+и~\eqref{eq:dp_drb_outer}.
+Экспоненциальные весовые функции $r\,\dd r
+= r_w^2 L_b\,e^{2\eta L_b}\,\dd\eta$ не сводятся к
+$I_\Phi^{(n)}$~\eqref{eq:IPhi}; интегралы вычисляются
+численно.
+
+\paragraph{Элемент $\mathcal{A}_{12} = 0$.}
+Следует из расщепления~\eqref{eq:matrix_structure}:
+давление не зависит от $S_{g,w}$.
+
+\paragraph{Элемент $\mathcal{A}_{13}$.}
+Коэффициент при $\dot{\Delta T}_w$:
+\begin{equation}\label{eq:A13}
+  \boxed{
+    \mathcal{A}_{13}
+    = \int_{r_w}^{R_\ext} r\,C_T\,
+      \frac{\pp T}{\pp\Delta T_w}\,\dd r
+    = -\int_{r_w}^{R_\ext} r\,C_T\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+Двухзонное разбиение:
+\begin{equation}\label{eq:A13_zones}
+  \mathcal{A}_{13}
+  = -\bar{C}_T^{(1)}\!\int_{r_w}^{r_b} r\,\Psi(\zeta)\,\dd r
+    - \bar{C}_T^{(2)}\!\int_{r_b}^{R_\ext} r\,\Psi(\zeta)\,\dd r.
+\end{equation}
+Интегралы содержат $r\,\dd r = R_\ext^2 L_0\,e^{-2\zeta L_0}\,\dd\zeta$
+и не сводятся к $J^{(m)}$~\eqref{eq:IPsi}; также вычисляются численно.
+
+\emph{Знак:} при $C_T < 0$ и $\Psi > 0$: $\mathcal{A}_{13} > 0$.
+Математически: $-C_T > 0$ и $\Psi > 0$, поэтому
+подынтегральная в~\eqref{eq:A13} положительна.
+Влияние на динамику $r_b$ определяется
+решением полной системы~\eqref{eq:ode_system}.
+
+\paragraph{Правая часть $\mathcal{F}_1$.}
+\begin{equation}\label{eq:F1}
+  \boxed{
+    \mathcal{F}_1
+    = \left[r\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+    + Q_\text{quad}
+    - I_{p_{wf}}\,\dot{p}_{wf},
+  }
+\end{equation}
+где член с $\dot{p}_{wf}$ перенесён в правую часть,
+т.\,к.\ $p_{wf}(t)$ --- заданная функция.
+
+Граничные потоки:
+\begin{equation}\label{eq:boundary_fluxes}
+  \left[r\,\Lambda\,\frac{\pp p}{\pp r}\right]_{r_w}^{R_\ext}
+  = \Lambda_\ext\,\frac{\Delta p_2}{L_e}
+    - \underbrace{
+      \Lambda_w\,\frac{\Delta p_1\,\gamma}
+      {L_b}\,\lim_{\eta\to 0}\eta^{\gamma-1}
+    }_{\to\,0\;\text{при}\;\gamma > 1;\;
+      +\infty\;\text{при}\;\gamma < 1},
+\end{equation}
+где $\Lambda_\ext = \Lambda(p_0, T_0, 0, k)$ и
+$\Lambda_w = \Lambda(p_{wf}, T_w, S_{g,w}, k)$ ---
+точечные (не замороженные) значения на границах.
+На контуре: $r\,\Lambda\,\pp p/\pp r\big|_{R_\ext}
+= R_\ext\,\Lambda_\ext\,\Delta p_2/(R_\ext L_e)
+= \Lambda_\ext\,\Delta p_2/L_e$.
+На забое ($\eta = 0$): производная $\pp p/\pp r \sim \eta^{\gamma-1}$
+расходится при $\gamma < 1$. Для baseline-параметров
+$\gamma < 1$ всегда ($\Delta p_2/\Delta p_1 = 2/3$,
+$L_b/L_e < 1$); фундаментальное ограничение параметризации
+$\Phi(\eta) = \eta^\gamma$.
+
+Квадратичный интеграл из~\eqref{eq:moment0}
+редуцируется к зоне разгазирования, т.\,к.\ в однофазной зоне
+$\pp R_s/\pp p = 0$ и $\pp R_s/\pp T = 0$ (фиксированный состав):
+\begin{equation}\label{eq:Q_quad}
+  Q_\text{quad}
+  = \int_{r_w}^{r_b} r\,\frac{\lambda_o}{B_o}\!\left(
+      \frac{\pp R_s}{\pp p}\,\frac{\pp p}{\pp r}
+      + \frac{\pp R_s}{\pp T}\,\frac{\pp T}{\pp r}
+    \right)\frac{\pp p}{\pp r}\,\dd r.
+\end{equation}
+
+Интеграл давления при нестационарном $p_{wf}$:
+\begin{equation}\label{eq:I_pwf}
+  I_{p_{wf}} = \int_{r_w}^{R_\ext} r\,C_p\,
+    \frac{\pp p}{\pp p_{wf}}\,\dd r,
+\end{equation}
+при стационарном $p_{wf}$: $\dot{p}_{wf} = 0$ и вклад
+обнуляется.
+
+\emph{Знак:} $\mathcal{F}_1 < 0$ (отток через забой
+доминирует над притоком через контур).
+Это согласуется с $\mathcal{A}_{11} < 0$:
+$\dot{r}_b = \mathcal{F}_1/\mathcal{A}_{11} > 0$,
+т.\,е.\ зона разгазирования растёт.
+
+\paragraph{Сингулярность при $\gamma < 1$.}
+Подынтегральная $Q_\text{quad}$ содержит
+$(\pp p/\pp r)^2 \sim \eta^{2(\gamma-1)}$. При $\gamma > 1/2$ ---
+интегрируема; при $\gamma \leqslant 1/2$ --- расходится.
+При начальном $r_b \approx r_w$ зона~1 вырождается
+($L_b \to 0$), интеграл стремится к нулю.
+При конечном $r_b$ с $\gamma < 1/2$: требуется
+регуляризация (замена переменных или выделение
+сингулярности при численном интегрировании).
+
+\subsubsection{Коэффициенты второго уравнения (масса газа)}
+\label{sssec:gas_mass_coefficients}
+
+Подставляя~\eqref{eq:dp_dt}--\eqref{eq:dT_dt}
+и~\eqref{eq:Sg_profile} в~\eqref{eq:Sg_moment0},
+собираем коэффициенты при $\dot{r}_b$, $\dot{S}_{g,w}$,
+$\dot{\Delta T}_w$.%
+\footnote{FEAT-005b: коэффициенты уравнения массы газа.}
+
+\emph{Область интегрирования.}
+В~отличие от первого уравнения~(\S\ref{sssec:oil_mass_coefficients}),
+где интеграл берётся по всей области $[r_w, R_\ext]$,
+здесь все интегралы ограничены зоной разгазирования
+$[r_w, r_b]$, т.\,к.\ $S_g \equiv 0$ при $r > r_b$.
+Следовательно, достаточно одной замороженной зоны
+($\bar{p}_1$, $\bar{T}_1$, $\bar{S}_{g,1}$,
+см.~\S\ref{par:frozen_pvt}).
+
+\emph{Вывод левой части.}
+Применяя правило Лейбница к~$\mathcal{S}_0$~\eqref{eq:Sn}:
+\begin{equation}\label{eq:dS0_dt}
+  \frac{\dd\mathcal{S}_0}{\dd t}
+  = \underbrace{r_b\,S_g(r_b)\,\dot{r}_b}_{=\,0}
+    + \int_{r_w}^{r_b} r\,\frac{\pp S_g}{\pp t}\,\dd r,
+\end{equation}
+т.\,к.\ $S_g(r_b) = 0$. Поэтому $\dd\mathcal{S}_0/\dd t$
+определяется только объёмным интегралом $\pp S_g/\pp t$.
+
+\emph{Раскрытие $\pp S_g / \pp t$.}
+Профиль~\eqref{eq:Sg_profile} зависит от $t$ через
+$r_b(t)$ и $S_{g,w}(t)$:
+\begin{equation}\label{eq:dSg_dt}
+  \frac{\pp S_g}{\pp t}
+  = \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w},
+\end{equation}
+где
+\begin{equation}\label{eq:dSg_drb}
+  \frac{\pp S_g}{\pp r_b}
+  = S_{g,w}\,\beta\,
+    \frac{\eta^\beta}{r_b\,L_b},
+  \qquad
+  \frac{\pp S_g}{\pp S_{g,w}}
+  = 1 - \eta^\beta,
+\end{equation}
+$\eta = \ln(r/r_w)/L_b$, $L_b = \ln(r_b/r_w)$.
+Двойной минус: $\pp\eta/\pp r_b = -\eta/(r_b\,L_b)$
+и $\pp S_g/\pp\eta = -S_{g,w}\,\beta\,\eta^{\beta-1}$
+дают $\pp S_g / \pp r_b > 0$ (рост $r_b$ сдвигает фронт,
+увеличивая $S_g$ внутри зоны).
+
+\emph{Подстановка $\pp p / \pp t$ и $\pp T / \pp t$.}
+В правой части~\eqref{eq:Sg_moment0} используем
+разложения~\eqref{eq:dp_dt}--\eqref{eq:dT_dt},
+учитывая $\pp T / \pp r_b = 0$~\eqref{eq:dT_drb}
+и $\pp T/\pp \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}.
+
+\paragraph{Элемент $\mathcal{A}_{22}$.}
+Коэффициент при $\dot{S}_{g,w}$. Из левой
+части~\eqref{eq:Sg_moment0} (через~\eqref{eq:dSg_dt}):
+\begin{equation}\label{eq:A22}
+  \boxed{
+    \mathcal{A}_{22}
+    = \int_{r_w}^{r_b} r\,(1 - \eta^\beta)\,\dd r.
+  }
+\end{equation}
+Геометрический интеграл, не зависящий от PVT.
+
+\emph{Знак:} $\eta \in [0,1]$, поэтому $1-\eta^\beta > 0$
+и $\mathcal{A}_{22} > 0$. При $r_b \to r_w$ зона
+вырождается: $\mathcal{A}_{22} \to 0$.
+
+\paragraph{Элемент $\mathcal{A}_{21}$.}
+Коэффициент при $\dot{r}_b$. Левая часть
+даёт интеграл~\eqref{eq:dSg_drb}, правая ---
+вклад давления через $(\pp p/\pp r_b)\,\dot{r}_b$:
+\begin{equation}\label{eq:A21}
+  \boxed{
+    \mathcal{A}_{21}
+    = \frac{S_{g,w}\,\beta}{r_b\,L_b}\,
+      \int_{r_w}^{r_b} r\,\eta^\beta\,\dd r
+    - \int_{r_w}^{r_b} r\,S_o\,(c_r + c_o^\sat)\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+Первое слагаемое --- вклад геометрии
+(движение фронта $r_b$), знак $> 0$.
+Второе --- вклад давления:
+$-\int r\,S_o\,(c_r+c_o^\sat)\,(\pp p/\pp r_b)\,\dd r$.
+Знак этого слагаемого зависит от $c_r + c_o^\sat$.
+При типичных условиях $|c_o^\sat| \gg c_r$
+(поскольку $c_o^\sat < 0$~\eqref{eq:co_sat}),
+и $c_r + c_o^\sat < 0$, что даёт второму слагаемому
+знак $< 0$. Однако геометрический вклад (первое
+слагаемое) доминирует, поэтому $\mathcal{A}_{21} > 0$.
+
+Температурный вклад в $\mathcal{A}_{21}$ обращается
+в нуль, т.\,к.\ $\pp T / \pp r_b = 0$~\eqref{eq:dT_drb}.
+
+PVT-свойства замораживаются по зоне~1:
+$\bar{S}_{o,1} = 1 - \bar{S}_{g,1}$,
+$\bar{c}_{o,1}^\sat = c_o^\sat(\bar{p}_1, \bar{T}_1)$.
+
+\paragraph{Элемент $\mathcal{A}_{23}$.}
+Коэффициент при $\dot{\Delta T}_w$. Из правой
+части~\eqref{eq:Sg_moment0} --- вклад температуры
+через $\pp T / \pp \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}:
+\begin{equation}\label{eq:A23}
+  \boxed{
+    \mathcal{A}_{23}
+    = -\int_{r_w}^{r_b} r\,S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+\emph{Знак.}
+$\Psi(\zeta) > 0$, $S_o > 0$, поэтому
+$\mathrm{sign}(\mathcal{A}_{23}) = -\mathrm{sign}(\beta_o^\sat)$.
+Величина $\beta_o^\sat$~\eqref{eq:beta_o_sat}:
+$\beta_o^\sat = \beta_o + (1/B_o)\,
+(\pp B_o/\pp R_s)_p\,(\pp R_s/\pp T)_p$.
+Тепловое расширение $\beta_o > 0$, но коррекция
+$(1/B_o)(\pp B_o / \pp R_s)(\pp R_s / \pp T)$ отрицательна
+(т.\,к.\ $\pp R_s / \pp T < 0$ при типичных условиях),
+поэтому знак $\beta_o^\sat$ зависит от конкуренции
+двух вкладов. При baseline-условиях
+($p \approx 16{,}5$~МПа, $T = 348$~К)
+коррекция превышает по модулю $\beta_o$, и
+$\beta_o^\sat < 0$,
+поэтому $\mathcal{A}_{23} > 0$.
+
+\emph{Вывод.}
+В~\eqref{eq:Sg_moment0} температурный член
+$-\int r\,S_o\,\beta_o^\sat\,(\pp T/\pp t)\,\dd r$
+стоит в правой части. Подставляя
+$\pp T / \pp t = (\pp T / \pp\Delta T_w)\,\dot{\Delta T}_w
+= -\Psi\,\dot{\Delta T}_w$ и перенося $\dot{\Delta T}_w$
+в левую часть:
+\[
+  \mathcal{A}_{23} = -(-1)\!\int r\,S_o\,\beta_o^\sat\,\Psi\,\dd r
+  \;\Longrightarrow\;
+  \mathcal{A}_{23} = +\!\int r\,S_o\,\beta_o^\sat\,\Psi\,\dd r?
+\]
+Нет: минус перед интегралом $-\int r\,S_o\,\beta_o^\sat$
+в~\eqref{eq:Sg_moment0} и минус от $\pp T/\pp\Delta T_w = -\Psi$
+дают при переносе в левую часть:
+\[
+  \text{ЛЧ} \leftarrow -\bigl[-S_o\,\beta_o^\sat\,(-\Psi)\bigr]\,\dot{\Delta T}_w
+  = -S_o\,\beta_o^\sat\,\Psi\,\dot{\Delta T}_w,
+\]
+что и даёт~\eqref{eq:A23}.
+
+\paragraph{Правая часть $\mathcal{F}_2$.}
+Из граничных потоков~\eqref{eq:Sg_flux}
+(с замороженным $B_o$ из зоны~1):
+\begin{equation}\label{eq:F2}
+  \boxed{
+    \mathcal{F}_2
+    = -\frac{B_o}{\phi}\!\left[
+        \frac{r\,\lambda_o}{B_o}\,\frac{\pp p}{\pp r}
+      \right]_{r_w}^{r_b}
+    + I_{p_{wf}}^{(2)}\,\dot{p}_{wf},
+  }
+\end{equation}
+где интеграл давления при нестационарном $p_{wf}$:
+\begin{equation}\label{eq:I_pwf_2}
+  I_{p_{wf}}^{(2)} = \int_{r_w}^{r_b} r\,S_o\,(c_r+c_o^\sat)\,
+    \frac{\pp p}{\pp p_{wf}}\,\dd r.
+\end{equation}
+
+\emph{Структурное отличие знака от $\mathcal{F}_1$.}
+В первом уравнении~\eqref{eq:moment0} интеграл давления
+$\int r\,C_p\,(\pp p/\pp t)\,\dd r$ стоит в левой части.
+При выделении $\dot{p}_{wf}$ этот интеграл переносится
+в правую часть с~переменой знака: $-I_{p_{wf}}\,\dot{p}_{wf}$
+в~\eqref{eq:F1}. Во~втором уравнении~\eqref{eq:Sg_moment0}
+интеграл давления $\int r\,S_o\,(c_r+c_o^\sat)\,(\pp p/\pp t)
+\,\dd r$ стоит в правой части, поэтому
+$I_{p_{wf}}^{(2)}\,\dot{p}_{wf}$ остаётся с~\emph{тем~же}
+знаком: $+I_{p_{wf}}^{(2)}\,\dot{p}_{wf}$ в~\eqref{eq:F2}.
+
+\emph{Знак:} при стационарном $p_{wf}$ ($\dot{p}_{wf} = 0$)
+правая часть $\mathcal{F}_2$ определяется только граничным
+потоком. При $\gamma < 1$ поток через забой ($r = r_w$)
+доминирует: $\mathcal{F}_2 > 0$.
+
+\paragraph{Сингулярность потока при $\gamma < 1$.}
+Аналогично $\mathcal{F}_1$~\eqref{eq:boundary_fluxes},
+поток $r\,(\lambda_o/B_o)\,(\pp p/\pp r)$ при $r \to r_w$
+содержит $\eta^{\gamma-1}$, расходящийся при $\gamma < 1$.
+В коде применяется $\varepsilon$-отступ:
+$r_w + \varepsilon$, $\varepsilon = 10^{-3}\,r_w$.
+
+
+\subsubsection{Коэффициенты третьего уравнения (энергия)}
+
+Нулевой момент уравнения энергии~\eqref{eq:T_moment0}
+содержит ёмкостный, конвективный и источниковые члены.
+Подставляя~\eqref{eq:dT_dt} и раскрывая
+$\partial p/\partial t$~\eqref{eq:dp_dt},
+получаем строку $(\mathcal{A}_{31},\, 0,\, \mathcal{A}_{33})$
+и правую часть $\mathcal{F}_3$.
+
+Элемент $\mathcal{A}_{32} = 0$ по расщеплению~\eqref{eq:matrix_structure}:
+температурный профиль $\Psi(\zeta)$ не зависит от~$S_{g,w}$.
+
+\paragraph{Элемент $\mathcal{A}_{31}$.}
+
+Вклад даёт только $Q_{\text{ad}}^*$~\eqref{eq:Qad_star},
+содержащий $\partial p/\partial t$.
+Ёмкостный член~(I) не вносит вклада:
+$\partial T/\partial r_b = 0$~\eqref{eq:dT_drb}.
+Конвективный~(II) содержит $\partial T/\partial r$, а не
+$\partial T/\partial t$, и не зависит от~$\dot{r}_b$.
+
+Коэффициент при $\dot{r}_b$ стоит в правой части (eq:T\_moment0),
+поэтому при переносе в матрицу ($A\dot{q} = F$) знак меняется:
+\begin{equation}\label{eq:A31}
+  \boxed{
+    \mathcal{A}_{31}
+    = -\int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{ad}}^{*}\,
+      \frac{\partial p}{\partial r_b}\,dr
+  }
+\end{equation}
+где $\bar{Q}_{\text{ad}}^{*}$ --- коэффициент при $\partial p/\partial t$
+в формуле $Q_{\text{ad}}^*$:
+\begin{equation}\label{eq:Qad_star_coeff}
+  \bar{Q}_{\text{ad}}^{*}(p,T,S_g)
+  = \phi\!\left[T\sum_\alpha S_\alpha\,\alpha_\alpha
+    + c_r\bigl(p + (\rho c_p)_s\,T\bigr)\right]
+  + L\,\rho_g^{\text{ст}}\,\phi\,\xi_o\,\frac{\partial R_s}{\partial p}.
+\end{equation}
+
+Двухзонное разбиение:
+\begin{equation}\label{eq:A31_zones}
+  \mathcal{A}_{31}
+  = -\bar{Q}_{\text{ad},1}^{*}
+    \int_{r_w}^{r_b} r\,\frac{\partial p}{\partial r_b}\bigg|_{\text{inner}} dr
+    - \bar{Q}_{\text{ad},2}^{*}
+    \int_{r_b}^{R_{\text{ext}}} r\,\frac{\partial p}{\partial r_b}\bigg|_{\text{outer}} dr.
+\end{equation}
+
+\emph{Знак:} $\bar{Q}_{\text{ad}}^{*} > 0$,
+$\partial p/\partial r_b < 0$, интеграл $< 0$,
+минус от переноса RHS$\to$LHS
+$\Rightarrow$ $\mathcal{A}_{31} > 0$.
+
+\emph{Структура:} аналогична $\mathcal{A}_{11}$~\eqref{eq:A11_zones}
+с заменой $C_p \to \bar{Q}_{\text{ad}}^{*}$ и противоположным знаком.
+
+\paragraph{Элемент $\mathcal{A}_{33}$.}
+
+Вклад даёт ёмкостный член~(I) через
+$\partial T/\partial \Delta T_w = -\Psi(\zeta)$~\eqref{eq:dT_dTw}.
+Конвективный и источниковые не зависят от~$\dot{\Delta T}_w$.
+
+\begin{equation}\label{eq:A33}
+  \boxed{
+    \mathcal{A}_{33}
+    = -\int_{r_w}^{R_{\text{ext}}} r\,(\rho c_p)_{\text{eff}}^{*}\,
+      \Psi(\zeta)\,dr
+  }
+\end{equation}
+
+Двухзонное разбиение:
+\begin{equation}\label{eq:A33_zones}
+  \mathcal{A}_{33}
+  = -(\rho c_p)_{\text{eff},1}^{*}
+    \int_{r_w}^{r_b} r\,\Psi(\zeta)\,dr
+    - (\rho c_p)_{\text{eff},2}^{*}
+    \int_{r_b}^{R_{\text{ext}}} r\,\Psi(\zeta)\,dr.
+\end{equation}
+
+\emph{Знак:}
+$(\rho c_p)_{\text{eff}}^{*} > 0$, $\Psi > 0$
+$\Rightarrow$ $\mathcal{A}_{33} < 0$.
+Минус от $\partial T/\partial\Delta T_w = -\Psi$.
+
+\emph{Структура:} аналогична $\mathcal{A}_{13}$~\eqref{eq:A13}
+с заменой $C_T \to (\rho c_p)_{\text{eff}}^{*}$.
+
+\paragraph{Правая часть $\mathcal{F}_3$.}
+
+Собирает все члены, не зависящие от
+$\dot{r}_b$, $\dot{S}_{g,w}$, $\dot{\Delta T}_w$:
+\begin{equation}\label{eq:F3}
+  \boxed{
+    \mathcal{F}_3
+    = \underbrace{R_{\text{ext}}\,\lambda_{\text{eff}}\,T'(R_{\text{ext}})}_{
+        \text{теплопроводность}}
+    + \underbrace{\int_{r_w}^{R_{\text{ext}}} r\,\bar{C}_{\text{conv}}^{*}\,
+      \frac{\partial p}{\partial r}\,\frac{\partial T}{\partial r}\,dr}_{
+        \text{конвекция}}
+    + \underbrace{\int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{JT}}^{*}\,
+      \left(\frac{\partial p}{\partial r}\right)^{\!2} dr}_{
+        \text{JT}}
+    + \underbrace{I_{p_{wf}}^{(3)}\,\dot{p}_{wf}}_{
+        \text{нестац.\ }p_{wf}}
+  }
+\end{equation}
+
+Замороженные коэффициенты:
+\begin{align}
+  \bar{C}_{\text{conv}}^{*}
+    &= \rho_o\,c_{p,o}\,\lambda_o + \rho_g\,c_{p,g}\,\lambda_g
+       - L\,\rho_g^{\text{ст}}\,\frac{\lambda_o}{B_o}\,
+         \frac{\partial R_s}{\partial T},
+  \label{eq:Cconv_star}\\[4pt]
+  \bar{Q}_{\text{JT}}^{*}
+    &= \sum_\alpha \lambda_\alpha\,(1 - \alpha_\alpha\,T)
+       - L\,\rho_g^{\text{ст}}\,\frac{\lambda_o}{B_o}\,
+         \frac{\partial R_s}{\partial p},
+  \label{eq:QJT_star_coeff}\\[4pt]
+  I_{p_{wf}}^{(3)}
+    &= \int_{r_w}^{R_{\text{ext}}} r\,\bar{Q}_{\text{ad}}^{*}\,
+       \frac{\partial p}{\partial p_{wf}}\,dr.
+  \label{eq:I_pwf_energy}
+\end{align}
+
+\emph{Знаки конвективного и JT интегралов.}
+Конвективный: два минуса (перенос LHS$\to$RHS
+и Дарси $u = -\lambda\,\partial p/\partial r$) компенсируются
+$\Rightarrow$ знак~<<$+$>>.
+JT: $Q_{\text{JT}}^* \propto (\partial p/\partial r)^2 \geq 0$,
+стоит в RHS --- знак~<<$+$>>.
+
+\emph{Замечание:} знак $\bar{Q}_{\text{JT}}^{*}$ не фиксирован.
+При сильной дегазации ($L\,\rho_g^{\text{ст}}\,(\lambda_o/B_o)\,
+\partial R_s/\partial p$ велико) он может быть отрицательным ---
+дегазационное охлаждение доминирует над JT-нагревом.
+
+\paragraph{Сингулярности.}
+JT-интеграл содержит $(\partial p/\partial r)^2 \sim \eta^{2(\gamma-1)}$,
+интегрируемый при $\gamma > 1/2$ (как в $Q_{\text{quad}}$
+из~$\mathcal{F}_1$).
+Конвективный содержит произведение
+$(\partial p/\partial r)(\partial T/\partial r)$;
+при $r \to r_w$: $\partial T/\partial r = 0$ (ГУ),
+поэтому произведение конечно при $\gamma + \sigma > 1$
+(baseline: $\gamma + \sigma \approx 2.6$).
+
+\paragraph{Проверка размерностей.}
+Все члены $A\dot{q} = F$ имеют размерность [Вт/м]:
+\begin{itemize}
+  \item $[\mathcal{A}_{31}] = [\text{Дж/м}^2]$;
+        $[\mathcal{A}_{31}\,\dot{r}_b] = [\text{Вт/м}]$ \checkmark
+  \item $[\mathcal{A}_{33}] = [\text{Дж/(м\textperiodcentered К)}]$;
+        $[\mathcal{A}_{33}\,\dot{\Delta T}_w] = [\text{Вт/м}]$ \checkmark
+  \item $[\mathcal{F}_3] = [\text{Вт/м}]$ \checkmark
+\end{itemize}
+
+
+%=============================================================================
+\subsection{Расширение ODE: показатель формы $\beta(t)$}
+\label{ssec:beta_ode}
+%=============================================================================
+
+\paragraph{Мотивация.}
+При фиксированном $\beta = \text{const}$ система~\eqref{eq:ode_system}
+из трёх~ODE ($r_b$, $S_{g,w}$, $\Delta T_w$) порождает
+затухающие осцилляции всех переменных при нестационарных
+граничных условиях. Газонасыщенность $S_{g,w}$ может уходить
+в отрицательные значения, что нефизично.
+
+Причина: три степени свободы при фиксированных формах профилей
+не могут описать перестройку пространственного профиля $S_g(r)$.
+Добавление $\beta(t)$ как четвёртой ODE-переменной расширяет
+пространство допустимых профилей.
+
+\paragraph{Расширение разложения $\pp S_g/\pp t$.}
+При $\beta = \beta(t)$ разложение~\eqref{eq:dSg_dt}
+дополняется третьим членом:
+\begin{equation}\label{eq:dSg_dt_ext}
+  \frac{\pp S_g}{\pp t}
+  = \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+    + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w}
+    + \frac{\pp S_g}{\pp \beta}\,\dot{\beta},
+\end{equation}
+где
+\begin{equation}\label{eq:dSg_dbeta}
+  \frac{\pp S_g}{\pp \beta}
+  = -S_{g,w}\,\eta^\beta\,\ln\eta.
+\end{equation}
+
+\emph{Знак:} $\ln\eta < 0$ при $\eta \in (0,1)$,
+поэтому $\pp S_g/\pp\beta > 0$:
+увеличение $\beta$ увеличивает $S_g$ (профиль
+становится более <<плоским>>, приближаясь к $S_{g,w}$).
+
+\paragraph{Элемент $\mathcal{A}_{2\beta}$ (при $\dot\beta$
+во~2-м уравнении).}
+Подставляя~\eqref{eq:dSg_dt_ext}
+в нулевой момент~\eqref{eq:Sg_moment0},
+получаем новый коэффициент при $\dot\beta$:
+\begin{equation}\label{eq:A2beta}
+  \boxed{
+    \mathcal{A}_{2\beta}
+    = \int_{r_w}^{r_b} r\,
+      \frac{\pp S_g}{\pp\beta}\,\dd r
+    = -S_{g,w}\!\int_{r_w}^{r_b}
+      r\,\eta^\beta\,\ln\eta\,\dd r.
+  }
+\end{equation}
+\emph{Знак:} $\ln\eta < 0$, минус перед интегралом,
+поэтому $\mathcal{A}_{2\beta} > 0$ при $S_{g,w} > 0$.
+
+Уравнение~\eqref{eq:ode2} расширяется:
+\begin{equation}\label{eq:ode2_ext}
+  \mathcal{A}_{21}\,\dot{r}_b
+  + \mathcal{A}_{22}\,\dot{S}_{g,w}
+  + \mathcal{A}_{2\beta}\,\dot{\beta}
+  + \mathcal{A}_{24}\,\dot{\Delta T}_w
+  = \mathcal{F}_2,
+\end{equation}
+где $\mathcal{A}_{24} \equiv \mathcal{A}_{23}$
+из~\eqref{eq:A23} (перенумерация).
+
+\paragraph{Выбор весовой функции 4-го момента.}
+Для получения уравнения на $\dot\beta$ нужен
+четвёртый интегральный момент уравнения насыщенности.
+Рассмотрим вес $w_4(r) = r\,\eta^\beta$. Он:
+\begin{itemize}[nosep]
+  \item даёт замкнутые интегралы (степенные по $\eta$);
+  \item подавляет сингулярность $\pp p/\pp r$ при $r \to r_w$
+    ($\eta^\beta \to 0$ при $\eta \to 0$, $\beta > 0$);
+  \item линейно независим от веса нулевого момента
+    (вес~$r$): $\int_0^1 (1-\eta^\beta)\,\eta^\beta\,\dd\eta
+    \ne 0$.
+\end{itemize}
+
+\paragraph{Четвёртый момент.}
+Умножаем~\eqref{eq:Sg_eq2} на $r\,\eta^\beta$
+и интегрируем от $r_w$ до $r_b$:
+\begin{equation}\label{eq:Sg_moment_beta}
+  \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \frac{\pp S_g}{\pp t}\,\dd r
+  = \int_{r_w}^{r_b} r\,\eta^\beta
+    \left[
+      S_o\,(c_r + c_o^\sat)\,\frac{\pp p}{\pp t}
+      - S_o\,\beta_o^\sat\,\frac{\pp T}{\pp t}
+    \right]\dd r
+  + F_4^\div,
+\end{equation}
+где $F_4^\div$ --- вклад дивергентного члена
+(см.\ ниже, \eqref{eq:F4_boundary}--\eqref{eq:F4_volume}).
+
+\paragraph{Левая часть.}
+Подставляя параметризацию
+$S_g = S_{g,w}(1 - \eta^\beta)$,
+$\pp S_g/\pp t$ содержит
+$\dot{r}_b$, $\dot{S}_{g,w}$, $\dot\beta$
+(из~\eqref{eq:dSg_dt_ext}).
+Интеграл $\int r\,\eta^\beta\,(\pp S_g/\pp t)\,\dd r$
+тождественно равен
+\begin{equation}\label{eq:dM4_dt}
+  \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \frac{\pp S_g}{\pp t}\,\dd r
+  = \int_{r_w}^{r_b} r\,\eta^\beta\,
+    \biggl[
+      \frac{\pp S_g}{\pp r_b}\,\dot{r}_b
+      + \frac{\pp S_g}{\pp S_{g,w}}\,\dot{S}_{g,w}
+      + \frac{\pp S_g}{\pp\beta}\,\dot\beta
+    \biggr]\,\dd r.
+\end{equation}
+Подставляя производные~\eqref{eq:dSg_drb}
+и~\eqref{eq:dSg_dbeta}:
+\begin{align}
+  \eta^\beta\,\frac{\pp S_g}{\pp r_b}
+  &= S_{g,w}\,\beta\,
+     \frac{\eta^{2\beta}}{r_b\,L_b},
+  \label{eq:eta_dSg_drb} \\
+  \eta^\beta\,\frac{\pp S_g}{\pp S_{g,w}}
+  &= \eta^\beta\,(1-\eta^\beta),
+  \label{eq:eta_dSg_dSgw} \\
+  \eta^\beta\,\frac{\pp S_g}{\pp\beta}
+  &= -S_{g,w}\,\eta^{2\beta}\,\ln\eta.
+  \label{eq:eta_dSg_dbeta}
+\end{align}
+
+\paragraph{Элемент $\mathcal{A}_{41}$ (при $\dot{r}_b$).}
+Из левой части~\eqref{eq:dM4_dt}
+(через~\eqref{eq:eta_dSg_drb})
+и из правой части~\eqref{eq:Sg_moment_beta}
+(давление через $(\pp p/\pp r_b)\dot{r}_b$,
+аналогично $\mathcal{A}_{21}$~\eqref{eq:A21}
+но с весом $\eta^\beta$):
+\begin{equation}\label{eq:A41}
+  \boxed{
+    \mathcal{A}_{41}
+    = \frac{S_{g,w}\,\beta}{r_b\,L_b}
+      \int_{r_w}^{r_b} r\,\eta^{2\beta}\,\dd r
+    - \int_{r_w}^{r_b} r\,\eta^\beta\,
+      S_o\,(c_r + c_o^\sat)\,
+      \frac{\pp p}{\pp r_b}\,\dd r.
+  }
+\end{equation}
+Структура идентична $\mathcal{A}_{21}$~\eqref{eq:A21}
+с заменой $\eta^\beta \to \eta^{2\beta}$ в геометрическом
+интеграле и добавлением веса $\eta^\beta$
+во~втором интеграле.
+
+\paragraph{Элемент $\mathcal{A}_{42}$ (при $\dot{S}_{g,w}$).}
+Из~\eqref{eq:eta_dSg_dSgw}:
+\begin{equation}\label{eq:A42}
+  \boxed{
+    \mathcal{A}_{42}
+    = \int_{r_w}^{r_b} r\,\eta^\beta\,(1 - \eta^\beta)\,\dd r.
+  }
+\end{equation}
+Геометрический, $\mathcal{A}_{42} > 0$.
+
+\paragraph{Элемент $\mathcal{A}_{43}$ (при $\dot\beta$).}
+Из~\eqref{eq:eta_dSg_dbeta}:
+\begin{equation}\label{eq:A43}
+  \boxed{
+    \mathcal{A}_{43}
+    = -S_{g,w}\!\int_{r_w}^{r_b} r\,
+      \eta^{2\beta}\,\ln\eta\,\dd r.
+  }
+\end{equation}
+
+\emph{Знак.} $\ln\eta < 0$ при $\eta \in (0,1)$,
+минус перед интегралом, поэтому
+$\mathcal{A}_{43} > 0$ при $S_{g,w} > 0$.
+
+\paragraph{Элемент $\mathcal{A}_{44}$
+  (при $\dot{\Delta T}_w$).}
+Из правой части (температура через
+$\pp T/\pp\Delta T_w = -\Psi$,
+аналогично $\mathcal{A}_{23}$~\eqref{eq:A23}
+но с весом $\eta^\beta$):
+\begin{equation}\label{eq:A44}
+  \boxed{
+    \mathcal{A}_{44}
+    = -\int_{r_w}^{r_b} r\,\eta^\beta\,
+      S_o\,\beta_o^\sat\,\Psi(\zeta)\,\dd r.
+  }
+\end{equation}
+
+\paragraph{Правая часть $\mathcal{F}_4$.}
+Дивергентный член интегрируется с весом $r\,\eta^\beta$.
+Интегрирование по частям:
+\begin{equation}\label{eq:F4_boundary}
+  F_4^\div
+  = -\frac{B_o}{\phi}
+    \biggl[
+      \underbrace{\eta^\beta\,
+        \frac{r\,\lambda_o}{B_o}\,p'}_{r_w}^{r_b}
+    \biggr]
+  + \frac{B_o}{\phi}
+    \int_{r_w}^{r_b}
+    \frac{\dd\eta^\beta}{\dd r}\,
+    \frac{r\,\lambda_o}{B_o}\,p'\,\dd r.
+\end{equation}
+
+Граничные значения: при $r = r_b$: $\eta^\beta = 1$
+(поток на фронте, как в $\mathcal{F}_2$).
+При $r = r_w$: $\eta^\beta = 0$
+--- \textbf{сингулярность $p'$ подавлена}.
+
+Объёмный интеграл: $\dd\eta^\beta/\dd r
+= \beta\,\eta^{\beta-1}/(r\,L_b)$, поэтому
+\begin{equation}\label{eq:F4_volume}
+  F_4^{(V)}
+  = \frac{B_o}{\phi}\,\frac{\beta}{L_b}
+    \int_{r_w}^{r_b}
+    \eta^{\beta-1}\,
+    \frac{\lambda_o}{B_o}\,p'\,\dd r.
+\end{equation}
+
+С замороженным $\lambda_o/B_o$ и профилем
+давления $p' \propto \eta^{\gamma-1}/(r\,L_b)$
+подынтегральное $\propto \eta^{\beta+\gamma-2}$;
+интеграл сходится при $\beta + \gamma > 1$
+(всегда: $\beta \geqslant 1$, $\gamma > 0$).
+
+Итого:
+\begin{equation}\label{eq:F4}
+  \boxed{
+    \mathcal{F}_4
+    = -\frac{B_o}{\phi}
+      \left.\frac{r\,\lambda_o}{B_o}\,p'
+      \right|_{r=r_b}
+    + F_4^{(V)}
+    + I_{p_{wf}}^{(4)}\,\dot{p}_{wf},
+  }
+\end{equation}
+где $I_{p_{wf}}^{(4)}$ --- вклад нестационарного $p_{wf}$
+(аналогичен $I_{p_{wf}}^{(2)}$~\eqref{eq:I_pwf_2}
+с весом $\eta^\beta$).
+
+\emph{Отличие от $\mathcal{F}_2$:}
+в $\mathcal{F}_2$~\eqref{eq:F2} поток на~$r_w$
+содержит сингулярность при $\gamma < 1$.
+В $\mathcal{F}_4$ поток на~$r_w$ обнуляется
+весом $\eta^\beta(r_w) = 0$.
+
+\paragraph{Новые замкнутые интегралы.}
+Базовый интеграл с логарифмом:
+\begin{equation}\label{eq:K_base}
+  \int_0^1 \eta^m\,\ln\eta\,\dd\eta = -\frac{1}{(m{+}1)^2},
+  \qquad m > -1
+\end{equation}
+(интегрирование по частям: $u = \ln\eta$,
+$\dd v = \eta^m\,\dd\eta$).
+
+Для $\mathcal{A}_{42}$:
+\begin{equation}\label{eq:I_S_tilde}
+  \widetilde{I}_S^{(n)}(\beta)
+  = \int_0^1 \eta^{n+\beta}\,(1-\eta^\beta)\,\dd\eta
+  = \frac{1}{n+\beta+1} - \frac{1}{n+2\beta+1}.
+\end{equation}
+
+Для $\mathcal{A}_{43}$ (при интегрировании по $\eta$):
+\begin{equation}\label{eq:K_S}
+  \int_0^1 \eta^{2\beta}\,\ln\eta\,\dd\eta
+  = -\frac{1}{(2\beta{+}1)^2}.
+\end{equation}
+
+Для $\mathcal{A}_{2\beta}$~\eqref{eq:A2beta}:
+\begin{equation}\label{eq:K_A2beta}
+  \int_0^1 \eta^{\beta}\,\ln\eta\,\dd\eta
+  = -\frac{1}{(\beta{+}1)^2}.
+\end{equation}
+
+\emph{Замечание.} Интегралы записаны в~переменных
+$\eta \in [0,1]$.
+При вычислении $\mathcal{A}_{4j}$ через \texttt{quad}
+по~$r \in [r_w, r_b]$ множитель $r$ и якобиан
+$\dd r = r\,L_b\,\dd\eta$ учитываются автоматически;
+замкнутые формулы выше служат для оценок
+и предельных случаев.
+
+\paragraph{Расширенная матрица 4$\times$4.}
+С учётом переменного $\beta(t)$,
+вектор неизвестных:
+$\mathbf{q} = (r_b,\,S_{g,w},\,\beta,\,\Delta T_w)^\top$.
+Система:
+\begin{equation}\label{eq:ode_system_4x4}
+  \boxed{
+    \begin{pmatrix}
+      \mathcal{A}_{11} & 0
+        & 0 & \mathcal{A}_{14} \\
+      \mathcal{A}_{21} & \mathcal{A}_{22}
+        & \mathcal{A}_{2\beta} & \mathcal{A}_{24} \\
+      \mathcal{A}_{31} & 0
+        & 0 & \mathcal{A}_{34} \\
+      \mathcal{A}_{41} & \mathcal{A}_{42}
+        & \mathcal{A}_{43} & \mathcal{A}_{44}
+    \end{pmatrix}
+    \begin{pmatrix}
+      \dot{r}_b \\ \dot{S}_{g,w} \\ \dot\beta
+      \\ \dot{\Delta T}_w
+    \end{pmatrix}
+    =
+    \begin{pmatrix}
+      \mathcal{F}_1 \\ \mathcal{F}_2
+      \\ \mathcal{F}_3 \\ \mathcal{F}_4
+    \end{pmatrix}.
+  }
+\end{equation}
+
+Строки~1 и~3 (давление и энергия) не содержат $\dot\beta$:
+профили $p(r)$ и $T(r)$ не зависят от $\beta$
+(при замороженных PVT: $C_p$, $C_T$ вычисляются
+при среднем $\bar{S}_g = \tfrac{1}{2}S_{g,w}$,
+не зависящем от $\beta$).
+
+$\mathcal{A}_{14} \equiv \mathcal{A}_{13}$~\eqref{eq:A13},
+$\mathcal{A}_{24} \equiv \mathcal{A}_{23}$~\eqref{eq:A23},
+$\mathcal{A}_{34} \equiv \mathcal{A}_{33}$~\eqref{eq:A33}
+(перенумерация: $\Delta T_w$ переходит в~4-й столбец).
+
+\paragraph{Допущение: замороженные PVT и $\beta$.}
+PVT-свойства ($\bar{S}_o$, $\bar{c}_o^\sat$,
+$\bar\beta_o^\sat$) вычисляются при среднем
+$\bar{S}_g = \tfrac{1}{2}S_{g,w}$, не зависящем от~$\beta$.
+Точное среднее $\langle S_g\rangle = S_{g,w}(1 - 1/(\beta{+}1))$
+зависит от~$\beta$, но различие при $\beta \in [1,\,4]$
+составляет $< 20\%$ и поглощается приближением
+замороженных коэффициентов.
+
+\paragraph{Предельные случаи.}
+
+\emph{$\beta = \mathrm{const}$ ($\dot\beta = 0$).}
+Четвёртое уравнение становится алгебраическим ограничением;
+первые три совпадают с~\eqref{eq:ode_system}
+(столбец~$\dot\beta$ зануляется).
+При $\beta = \mathrm{const}$ 4-ю строку отбрасываем,
+восстанавливая исходную систему~3$\times$3.
+
+\emph{$S_{g,w} \to 0$.}
+$\mathcal{A}_{43} \propto S_{g,w} \to 0$;
+$\mathcal{A}_{2\beta} \propto S_{g,w} \to 0$.
+Уравнение для $\dot\beta$ вырождается:
+форма пустого профиля неопределена.
+Рекомендуется \verb|clamp|: $\dot\beta = 0$
+при $S_{g,w} < \varepsilon$.
+
+\emph{$\beta \to 1$.}
+Профиль $S_g = S_{g,w}(1-\eta)$ (линейный).
+Все $\mathcal{A}_{4j}$, $\mathcal{F}_4$ конечны
+($\widetilde{I}_S^{(0)} = 1/2 - 1/3 = 1/6$,
+$\int_0^1\eta^2\ln\eta\,\dd\eta = -1/9$).
+
+\emph{$\beta \to \infty$.}
+$S_g \to S_{g,w}$ (ступенька),
+$\widetilde{I}_S^{(n)} \to 0$,
+$\int_0^1\eta^{2\beta}\ln\eta\,\dd\eta \to 0$,
+$\mathcal{A}_{42} \to 0$,
+$\mathcal{A}_{43} \to 0$.
+Уравнение для $\dot\beta$ стабилизирует $\beta$.
+
+\paragraph{Таблица: формула $\to$ код (для FEAT-010).}
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+  \textbf{Формула} & \textbf{Python-функция} & \textbf{Модуль} \\
+  \hline
+  \eqref{eq:A2beta} & \texttt{gas\_A2beta()} & \texttt{coefficients.py} \\
+  \eqref{eq:A41}    & \texttt{gas\_A41()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A42}    & \texttt{gas\_A42()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A43}    & \texttt{gas\_A43()}    & \texttt{coefficients.py} \\
+  \eqref{eq:A44}    & \texttt{gas\_A44()}    & \texttt{coefficients.py} \\
+  \eqref{eq:F4}     & \texttt{gas\_F4()}     & \texttt{coefficients.py} \\
+  \eqref{eq:I_S_tilde} & \texttt{I\_S\_tilde()} & \texttt{integrals.py} \\
+  \eqref{eq:K_S}       & \texttt{K\_S()}        & \texttt{integrals.py} \\
+\end{tabular}
+\end{center}
 
 
 %=============================================================================

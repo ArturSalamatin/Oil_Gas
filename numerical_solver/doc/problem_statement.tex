@@ -644,7 +644,7 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 \begin{equation}\label{eq:F_total}
   F = \sum_\alpha \rho_\alpha\,h_\alpha\,u_\alphaб \quad  h_\alpha = e_\alpha\ + p/\rho_\alpha.
 \end{equation}
- 
+
 Определим энтальпию многокомпонентной нефтяной фазы, которая является смесью двух компонентов. 
 Её энтальпия разлагается через парциальные энтальпии:
 \begin{equation}\label{eq:oil_enthalpy_components}
@@ -800,7 +800,7 @@ $\bar{h}_{go}(p, T, R_s)$~--- парциальная удельная энтал
 \begin{equation}\label{eq:L_def}
   \boxed{
     L(p,T) = h_g(p,T) - \bar{h}_{go}(p, T, R_s^{\text{eq}}(p,T)).
-  }
+  } 
 \end{equation}
 
 Парциальная энтальпия~$\bar{h}_{go}$ определена для произвольного
@@ -818,24 +818,154 @@ $\bar{h}_{go}(p, T, R_s)$~--- парциальная удельная энтал
 энергия расходуется на~перевод молекул газа из~растворённого состояния
 в~свободное.
 
-\paragraph{(g) Гладкие члены.}
+\paragraph{Поведение в~однофазной зоне.}
+В~однофазной зоне ($S_g = 0$, режим~2) газосодержание~$R_s$
+определяется из баланса масс. При отсутствии дополнительных
+источников газа и~постоянном составе притока $R_s = R_s^0 =
+\mathrm{const}$, поэтому $\partial R_s/\partial t = 0$
+и~$\partial R_s/\partial r = 0$. Из~определения~\eqref{eq:mdot}
+следует $\mdot = 0$, и~вклад дегазации $Q_{\mathrm{deg}}
+= -L\,\mdot = 0$~--- дегазации нет.
 
-После выделения члена дегазации остаются производные энтальпий при
-фиксированном составе. Термодинамические тождества:
-\begin{align}
-  dh_o\big|_{R_s} &= c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
-    \label{eq:dh_oil} \\
-  dh_g &= c_{p,g}\,dT + v_g\,(1 - \alpha_g\,T)\,dp,
-    \label{eq:dh_gas}
-\end{align}
-где $v_\alpha = 1/\rho_\alpha$~--- удельный объём. Первый член~---
-изобарный нагрев, второй~--- изотермическое сжатие/расширение.
+Формально в~определении~\eqref{eq:L_def} фигурирует энтальпия
+газовой фазы~$h_g$, которая не~имеет физического смысла при~$S_g=0$
+(газовой фазы не~существует). Однако при~$\mdot = 0$ произведение
+$L\,\mdot = 0$ независимо от~значения~$L$, поэтому значение~$L$
+в~однофазной зоне несущественно и~не~влияет на~решение.
 
-Поскольку $\rho_\alpha v_\alpha = 1$, члены с~давлением упрощаются:
-\begin{equation}\label{eq:smooth_oil_p}
-  \phi\,S_o\,(1-\alpha_o T)\,\pdt{p}
-  + u_o\,(1-\alpha_o T)\,\pdr{p}.
+\paragraph{Вклады изменения энтальпий при фиксированном составе.}
+
+В~уравнениях~\eqref{eq:F_components_derived}
+и~\eqref{eq:hg_components_derived} помимо членов фазового перехода
+($-\mdot\,\bar{h}_{go}$ и~$+\mdot\,h_g$) остались слагаемые
+с~производными энтальпий по~$t$ и~$r$. Перечислим их явно.
+
+По~аналогии с~\eqref{eq:F_components_der} для нефтяного компонента $\bar{h}_{oo}$
+(первое слагаемое в~\eqref{eq:H_fluids}, \eqref{eq:F_components}):
+\begin{multline}\label{eq:hoo_terms}
+  \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
+  + \divr{\rho_o^{\text{ст}}\,
+    \frac{u_o}{B_o}\,\bar{h}_{oo}} =
+    \\
+    \bar{h}_{oo}\!\left[
+    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    + \divr{\rho_o^{\text{ст}}\,\frac{u_o}{B_o}}
+  \right]
+  +
+  \\ 
+    \left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
+\end{multline}
+Выражение в~квадратных скобках представляет собой плотность $\rho_o^{\text{ст}}$, 
+умноженную на~левую
+часть баланса нефтяного компонента~\eqref{eq:mass_oil}, которая
+равна нулю. Следовательно, первый член обращается в~нуль, и~остаются
+только производные~$\bar{h}_{oo}$
+\begin{equation}\label{eq:hoo_remainder}
+    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
+  + \divr{\rho_o^{\text{ст}}\,
+    \frac{u_o}{B_o}\,\bar{h}_{oo}} =\left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
 \end{equation}
+
+Таким образом, уравнение~\eqref{eq:energy_cons} принимает следующий вид
+с учетом выполненных преобразований
+\begin{multline}\label{eq:energy_cons_der}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}  + 
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} } +
+      \\
+  \left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}} = 
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
+
+
+Уравнение~\eqref{eq:energy_cons_der} содержит производные парциальных
+энтальпий~$\bar{h}_{oo}$, $\bar{h}_{go}$ и~энтальпии газовой
+фазы~$h_g$. Раскроем их, используя термодинамические тождества.
+
+Дифференциал~$dh_o|_{R_s}$ записывается при \textbf{фиксированном}
+составе фазы ($R_s = \mathrm{const}$), поскольку вклад изменения
+состава (изменения~$R_s$) уже выделен в~пункте~(f) через массовый
+темп дегазации~$\mdot$ и~теплоту~$L$. Здесь рассматривается только
+изменение энтальпии фазы при неизменном составе~--- за~счёт нагрева
+и~изменения давления:
+\begin{equation}\label{eq:dh_oil}
+  dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
+\end{equation} 
+где $v_o = 1/\rho_o$~--- удельный объём нефтяной фазы. Первое
+слагаемое~--- изменение энтальпии при изобарном нагреве, второе~---
+при изотермическом изменении давления (соотношение Максвелла).
+
+Для газовой фазы (однокомпонентная, состав фиксирован тривиально):
+\begin{equation}\label{eq:dh_gas}
+  dh_g = c_{p,g}\,dT + v_g\,(1 - \alpha_g\,T)\,dp.
+\end{equation}
+
+Подставим~\eqref{eq:dh_oil} и~\eqref{eq:dh_gas}
+в~\eqref{eq:hoo_remainder}--\eqref{eq:hg_remainder}. Учитывая,
+что $\rho_o = (\rho_o^{\text{ст}} + R_s\,\rho_g^{\text{ст}})/B_o$
+и~$\rho_g = \rho_g^{\text{ст}}/B_g$, сумма
+\eqref{eq:hoo_remainder}~$+$~\eqref{eq:hgo_remainder} соответствует
+вкладу нефтяной фазы с~массой $\phi\,S_o\,\rho_o$ и~расходом
+$\rho_o\,u_o$, а~\eqref{eq:hg_remainder}~--- вкладу газовой фазы
+с~массой $\phi\,S_g\,\rho_g$ и~расходом $\rho_g\,u_g$.
+Перечислим все возникающие члены:
+
+\textbf{Нефтяная фаза:}
+\begin{itemize}[nosep]
+  \item с~$\partial T/\partial t$:
+        $\phi\,S_o\,\rho_o\,c_{p,o}\,\partial T/\partial t$;
+  \item с~$\partial T/\partial r$:
+        $\rho_o\,c_{p,o}\,u_o\,\partial T/\partial r$;
+  \item с~$\partial p/\partial t$:
+        $\phi\,S_o\,(1-\alpha_o T)\,\partial p/\partial t$
+        (использовано $\rho_o\,v_o = 1$);
+  \item с~$\partial p/\partial r$:
+        $u_o\,(1-\alpha_o T)\,\partial p/\partial r$.
+\end{itemize}
+
+\textbf{Газовая фаза:}
+\begin{itemize}[nosep]
+  \item с~$\partial T/\partial t$:
+        $\phi\,S_g\,\rho_g\,c_{p,g}\,\partial T/\partial t$;
+  \item с~$\partial T/\partial r$:
+        $\rho_g\,c_{p,g}\,u_g\,\partial T/\partial r$;
+  \item с~$\partial p/\partial t$:
+        $\phi\,S_g\,(1-\alpha_g T)\,\partial p/\partial t$;
+  \item с~$\partial p/\partial r$:
+        $u_g\,(1-\alpha_g T)\,\partial p/\partial r$.
+\end{itemize}
+
+Члены с~$\partial T$ формируют эффективную теплоёмкость
+и~конвективный коэффициент (пункт~(j)). Члены с~$\partial p$
+формируют адиабатический эффект~$\Qad$ и~эффект
+Джоуля--Томсона~$\QJT$ (пункт~(j)).
 
 
 \paragraph{(h) Вклад породы.}

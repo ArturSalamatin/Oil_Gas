@@ -935,17 +935,10 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
     + \left(\rho_g^{\text{ст}}\,
       \frac{u_g}{B_g}\right)\pdr{h_g}  + 
       \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{R_s\,S_o}{B_o}\right)
-    \left.\pdt{\bar{h}_{go}}\right|_{R_s}
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{R_s\,u_o}{B_o}\right)\left.\pdr{\bar{h}_{go} }\right|_{R_s} +
-      \\ 
-  \left(\phi\,\rho_o^{\text{ст}}\,
-      \frac{S_o}{B_o}\right)
-    \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
-    + \left(\rho_o^{\text{ст}}\,
-      \frac{u_o}{B_o}\right)\left.\pdr{\bar{h}_{oo}}\right|_{R_s} = 
+    \phi\,\frac{S_o}{B_o}
+    \left.\pdt{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right)\right|_{R_s}
+    + 
+      \frac{u_o}{B_o}\left.\pdr{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right) \right|_{R_s} = 
   \\
   \divr{\leff\,\pdr{T}} - L\mdot,
 \end{multline}
@@ -953,12 +946,45 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 Раскроем производные парциальных энтальпий
 в~\eqref{eq:energy_cons_derived}. Благодаря соотношению
 Гиббса--Дюгема~\eqref{eq:gibbs_duhem} производные берутся при
-$R_s = \mathrm{const}$, и~вклады двух компонентов нефтяной фазы
-можно объединить в~вклад фазы как целого.
+$R_s = \mathrm{const}$. Покажем, что при этом условии вклады двух
+компонентов нефтяной фазы объединяются в~вклад фазы как целого.
 
-\textbf{Вклад нефтяной фазы.}
-Энтальпия нефтяной фазы при фиксированном~$R_s$ зависит от~$p$
-и~$T$. Дифференциал (соотношение Максвелла):
+\textbf{Объединение компонентных вкладов в~фазовый.}
+Энтальпия нефтяной фазы~\eqref{eq:oil_enthalpy_components}
+выражается через парциальные энтальпии:
+\[
+  \phi\,S_o\,\rho_o\,h_o
+  = \phi\,\frac{S_o}{B_o}\!\left(
+      \rho_o^{\text{ст}}\,\bar{h}_{oo}
+      + R_s\,\rho_g^{\text{ст}}\,\bar{h}_{go}
+    \right).
+\]
+Продифференцируем обе части по~$t$ при $R_s = \mathrm{const}$
+(множитель~$R_s$ выносится из-под производной, поскольку он
+фиксирован):
+\begin{multline*}
+  \phi\,\frac{S_o}{B_o}\!\left(
+    \rho_o^{\text{ст}}\,\left.\pdt{\bar{h}_{oo}}\right|_{R_s}
+    + R_s\,\rho_g^{\text{ст}}\,\left.\pdt{\bar{h}_{go}}\right|_{R_s}
+  \right)
+  \\
+  = \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
+    - h_o\,\left.\pdt{(\phi\,S_o\,\rho_o)}\right|_{R_s}.
+\end{multline*}
+Последний член содержит изменение массы фазы в~элементе и~при
+подстановке в~баланс энергии сокращается с~аналогичным членом
+из~конвективного потока (по~закону сохранения массы нефтяной фазы).
+В~итоге от~вкладов обоих компонентов остаётся:
+\[
+  \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
+  + \rho_o\,u_o\,\left.\pdr{h_o}\right|_{R_s}.
+\]
+Аналогичное рассуждение для пространственных производных
+($\partial/\partial r$) приводит к~тому же результату.
+
+\textbf{Дифференциал энтальпии нефтяной фазы} при фиксированном
+составе ($p$ и~$T$~--- независимые переменные, соотношение
+Максвелла):
 \begin{equation}\label{eq:dh_oil}
   dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
 \end{equation}
@@ -966,11 +992,7 @@ $R_s = \mathrm{const}$, и~вклады двух компонентов нефт
 изменение энтальпии при изобарном нагреве, второе~---
 при изотермическом изменении давления.
 
-Из~определения энтальпии нефтяной фазы~\eqref{eq:oil_enthalpy_components}:
-$\phi\,S_o\,\rho_o\,h_o
-= \phi(S_o/B_o)(\rho_o^{\text{ст}}\,\bar{h}_{oo}
-+ R_s\,\rho_g^{\text{ст}}\,\bar{h}_{go})$.
-Поэтому при $R_s = \mathrm{const}$:
+Подставляя~\eqref{eq:dh_oil}:
 \begin{multline}\label{eq:oil_phase_enthalpy_terms}
   \left(\phi\,\rho_o^{\text{ст}}\,\frac{S_o}{B_o}\right)
     \left.\pdt{\bar{h}_{oo}}\right|_{R_s}

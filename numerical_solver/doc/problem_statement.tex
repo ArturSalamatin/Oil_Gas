@@ -644,7 +644,7 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 \begin{equation}\label{eq:F_total}
   F = \sum_\alpha \rho_\alpha\,h_\alpha\,u_\alphaб \quad  h_\alpha = e_\alpha\ + p/\rho_\alpha.
 \end{equation}
-
+ 
 Определим энтальпию многокомпонентной нефтяной фазы, которая является смесью двух компонентов. 
 Её энтальпия разлагается через парциальные энтальпии:
 \begin{equation}\label{eq:oil_enthalpy_components}
@@ -697,29 +697,82 @@ $\bar{h}_{go}(p, T, R_s)$~--- парциальная удельная энтал
           + \frac{u_g}{B_g}\,h_g
         \right]}_{\text{газ.\ комп.}}.
 \end{equation}
+  
+Вклад газового компонента в уравнении~\eqref{eq:energy_cons} содержит
+два слагаемых~--- растворённый газ (с~$\bar{h}_{go}$) и~свободный газ
+(с~$h_g$). Рассмотрим их по~отдельности. Из~\eqref{eq:H_fluids} и~\eqref{eq:F_components} 
+соберем все члены, содержащие~$\bar{h}_{go}$, и раскроем производные
 
-
-\paragraph{(f) Выделение теплоты дегазации.}
-
-Соберём в~левой части~\eqref{eq:energy_cons},
-$\partial E/\partial t + \mathrm{div}\,F$, все члены,
-содержащие $\bar{h}_{go}$ как множитель:
+\begin{multline}\label{eq:F_components_der}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} = 
+    \\
+    \rho_g^{\text{ст}}\,\bar{h}_{go}\!\left[
+    \pdt{}\!\left(\phi\,
+      \frac{R_s\,S_o}{B_o}\right)
+    + \divr{
+      \frac{R_s\,u_o}{B_o}}
+  \right]
+  + 
+  \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\divr{\bar{h}_{go} }.
+\end{multline}
+Вычитая уравнение баланса свободного
+газа~\eqref{eq:free_gas_rate} из~уравнения баланса газового
+компонента~\eqref{eq:mass_gas}, выразим сумму в квадратных скобках 
+в уравнении~\eqref{eq:F_components} через массовый темп производства свободного газа
 \[
-  \bar{h}_{go}\!\left[
-    \pdt{m_g^{\text{раств}}}
-    + \divr{\frac{R_s\,u_o}{B_o}\,\rho_g^{\text{ст}}}
-  \right].
+  \pdt{}\!\left(\phi\,\frac{R_s\,S_o}{B_o}\right)
+  + \divr{\frac{R_s\,u_o}{B_o}}
+  = \phi\,\xio\,\pdt{R_s}
+    + \frac{u_o}{B_o}\,\pdr{R_s}
+  = -\frac{\mdot}{\rho_g^{\text{ст}}},
 \]
-По~определению темпа дегазации~\eqref{eq:mdot}, выражение в~скобках
-равно~$-\mdot$. Аналогично, для~$h_g$:
+где последнее равенство следует из~определения~\eqref{eq:mdot}.
+Следовательно, уравнение~\eqref{eq:F_components_der} примет следующий вид
+\begin{multline}\label{eq:F_components_derived}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} = 
+    \\
+    -\mdot\bar{h}_{go}
+  + 
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\divr{\bar{h}_{go} }
+\end{multline}
+
+Аналогично, соберем члены с~$h_g$ в уравнениях~\eqref{eq:H_fluids},
+\eqref{eq:F_components} в рамках баланса энергии~\eqref{eq:energy_cons}
 \[
   h_g\!\left[
-    \pdt{m_g^{\text{своб}}}
-    + \divr{\frac{u_g}{B_g}\,\rho_g^{\text{ст}}}
-  \right] = h_g\,\mdot.
+    \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    + \divr{\rho_g^{\text{ст}}\,\frac{u_g}{B_g}}
+  \right]
+  + \text{(члены с~} dh_g\text{)}.
+\]
+Выражение в~скобках~--- $\rho_g^{\text{ст}}$ на~левую часть баланса
+свободного газа~\eqref{eq:free_gas_rate}. Правая
+часть~\eqref{eq:free_gas_rate} равна~$\mdot/\rho_g^{\text{ст}}$
+(со~знаком, учитывающим направление перехода). Итого вклад:
+\[
+  +h_g\,\mdot + \text{(члены с~} dh_g\text{)}.
 \]
 
-Сумма:
+\textbf{Сумма вкладов фазового перехода.}
+Члены с~$d\bar{h}_{go}$ и~$dh_g$~--- это <<гладкие>> вклады,
+описывающие изменение энтальпий при фиксированном составе фаз
+(рассмотрены в~пункте~(g)). Вклад собственно фазового перехода:
 \begin{equation}\label{eq:phase_change_heat}
   (h_g - \bar{h}_{go})\,\mdot \equiv L\,\mdot,
 \end{equation}

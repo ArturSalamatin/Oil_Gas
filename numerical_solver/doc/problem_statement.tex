@@ -907,14 +907,51 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 
 Уравнение~\eqref{eq:energy_cons_der} содержит производные парциальных
 энтальпий~$\bar{h}_{oo}$, $\bar{h}_{go}$ и~энтальпии газовой
-фазы~$h_g$. Раскроем их, используя термодинамические тождества.
+фазы~$h_g$. Парциальные энтальпии~$\bar{h}_{oo}$ и~$\bar{h}_{go}$ зависят
+от~$p$, $T$ и~состава~$R_s$. Их полные производные по~$t$
+содержат члены с~$\partial R_s/\partial t$:
+\[
+  \pdt{\bar{h}_{oo}} = \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
+    + \frac{\partial\bar{h}_{oo}}{\partial R_s}\,\pdt{R_s},
+  \qquad
+  \pdt{\bar{h}_{go}} = \left.\pdt{\bar{h}_{go}}\right|_{R_s}
+    + \frac{\partial\bar{h}_{go}}{\partial R_s}\,\pdt{R_s}.
+\]
+Запишем соотношение Гиббса--Дюгема для бинарной смеси (нефтяная фаза)
+при постоянных~$p$ и~$T$
+\begin{equation}\label{eq:gibbs_duhem}
+  \rho_o^{\text{ст}}\,d\bar{h}_{oo}\big|_{p,T}
+  + R_s\,\rho_g^{\text{ст}}\,d\bar{h}_{go}\big|_{p,T} = 0.
+\end{equation}
+В результате группировки слагаемых в уравнении~\eqref{eq:energy_cons_der} 
+с учетом соотношеия~\eqref{eq:gibbs_duhem} запишем
+\begin{multline}\label{eq:energy_cons_derived}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}  + 
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \left.\pdt{\bar{h}_{go}}\right|_{R_s}
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\left.\pdr{\bar{h}_{go} }\right|_{R_s} +
+      \\ 
+  \left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\left.\pdr{\bar{h}_{oo}}\right|_{R_s} = 
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
 
-Дифференциал~$dh_o|_{R_s}$ записывается при \textbf{фиксированном}
-составе фазы ($R_s = \mathrm{const}$), поскольку вклад изменения
-состава (изменения~$R_s$) уже выделен в~пункте~(f) через массовый
-темп дегазации~$\mdot$ и~теплоту~$L$. Здесь рассматривается только
-изменение энтальпии фазы при неизменном составе~--- за~счёт нагрева
-и~изменения давления:
+Дифференциал энтальпии нефтяной фазы при фиксированном составе
+($p$ и~$T$~--- независимые переменные):
 \begin{equation}\label{eq:dh_oil}
   dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
 \end{equation} 
@@ -928,12 +965,14 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 \end{equation}
 
 Подставим~\eqref{eq:dh_oil} и~\eqref{eq:dh_gas}
-в~\eqref{eq:hoo_remainder}--\eqref{eq:hg_remainder}. Учитывая,
+в~уравнение~\eqref{eq:energy_cons_der}. Учитывая,
 что $\rho_o = (\rho_o^{\text{ст}} + R_s\,\rho_g^{\text{ст}})/B_o$
-и~$\rho_g = \rho_g^{\text{ст}}/B_g$, сумма
-\eqref{eq:hoo_remainder}~$+$~\eqref{eq:hgo_remainder} соответствует
-вкладу нефтяной фазы с~массой $\phi\,S_o\,\rho_o$ и~расходом
-$\rho_o\,u_o$, а~\eqref{eq:hg_remainder}~--- вкладу газовой фазы
+и~$\rho_g = \rho_g^{\text{ст}}/B_g$, сумма вклада
+нефтяного компонента~\eqref{eq:hoo_remainder} и~последних двух
+слагаемых~\eqref{eq:F_components_derived} соответствует вкладу
+нефтяной фазы с~массой $\phi\,S_o\,\rho_o$ и~расходом
+$\rho_o\,u_o$, а~последние два слагаемых
+\eqref{eq:hg_components_derived}~--- вкладу газовой фазы
 с~массой $\phi\,S_g\,\rho_g$ и~расходом $\rho_g\,u_g$.
 Перечислим все возникающие члены:
 

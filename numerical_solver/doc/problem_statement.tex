@@ -1101,7 +1101,7 @@ $\alpha_o$~--- ее коэффициент объёмного теплового
 \begin{equation}\label{eq:5}
 \Qdeg = - L(p,T)\mdot
 \end{equation}
-и получим окончательно 
+и получим уравнение баланса энергии
 \begin{equation}\label{eq:energy_final}
   \boxed{
     \rhocpeff\,\pdt{T}
@@ -1111,6 +1111,51 @@ $\alpha_o$~--- ее коэффициент объёмного теплового
   }
 \end{equation}
  
+\paragraph{Запись через коэффициент Джоуля--Томсона.}
+
+Введём \textbf{коэффициент Джоуля--Томсона}~--- изменение
+температуры при изоэнтальпийном расширении:
+\begin{equation}\label{eq:muJT_def}
+  \mu_{\mathrm{JT},\alpha}
+  = \left.\frac{\partial T}{\partial p}\right|_{h_\alpha}
+  = \frac{v_\alpha\,(\alpha_\alpha\,T - 1)}{c_{p,\alpha}},
+  \qquad \alpha \in \{o,\,g\},
+\end{equation}
+где $v_\alpha = 1/\rho_\alpha$. Отсюда
+\begin{equation}\label{eq:alpha_via_muJT}
+  1 - \alpha_\alpha\,T
+  = -\rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}.
+\end{equation}
+
+Подставим~\eqref{eq:alpha_via_muJT} в~определения
+$\QJT$~\eqref{eq:4} и~$\Qad$~\eqref{eq:3}
+\begin{equation}\label{eq:QJT_muJT}
+  \boxed{
+    \QJT^*
+    = \sum_\alpha \rho_\alpha\,c_{p,\alpha}\,
+      \mu_{\mathrm{JT},\alpha}\,u_\alpha\,\pdr{p}.
+  }
+\end{equation}
+\begin{equation}\label{eq:Qad_muJT}
+  \boxed{
+    \Qad^*
+    = \phi\!\left[
+      \sum_\alpha S_\alpha\!\left(1
+        + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}\right)
+      + c_r\!\left(p + (\rho c_p)_s\,T\right)
+    \right]\pdt{p}.
+  }
+\end{equation}
+Здесь использовано $\alpha_\alpha\,T
+= 1 + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}$
+из~\eqref{eq:alpha_via_muJT}.
+
+В~PVT-контракте (раздел~\ref{ssec:closures}) коэффициент
+$\mu_{\mathrm{JT},\alpha}(p,T)$ заменяет~$\alpha_\alpha(p,T)$
+как входной параметр. Пересчёт, при необходимости:
+$\alpha_\alpha = (1 + \rho_\alpha\,c_{p,\alpha}\,
+\mu_{\mathrm{JT},\alpha})/T$.
+
 %............................................................................
 \subsubsection{Сводная таблица системы уравнений}
 

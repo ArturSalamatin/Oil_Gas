@@ -942,94 +942,108 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
   \\
   \divr{\leff\,\pdr{T}} - L\mdot,
 \end{multline}
-
-Раскроем производные парциальных энтальпий
-в~\eqref{eq:energy_cons_derived}. Благодаря соотношению
-Гиббса--Дюгема~\eqref{eq:gibbs_duhem} производные берутся при
-$R_s = \mathrm{const}$. Покажем, что при этом условии вклады двух
-компонентов нефтяной фазы объединяются в~вклад фазы как целого.
-
-\textbf{Объединение компонентных вкладов в~фазовый.}
-Энтальпия нефтяной фазы~\eqref{eq:oil_enthalpy_components}
-выражается через парциальные энтальпии:
-\[
-  \phi\,S_o\,\rho_o\,h_o
-  = \phi\,\frac{S_o}{B_o}\!\left(
-      \rho_o^{\text{ст}}\,\bar{h}_{oo}
-      + R_s\,\rho_g^{\text{ст}}\,\bar{h}_{go}
-    \right).
-\]
-Продифференцируем обе части по~$t$ при $R_s = \mathrm{const}$
-(множитель~$R_s$ выносится из-под производной, поскольку он
-фиксирован):
-\begin{multline*}
-  \phi\,\frac{S_o}{B_o}\!\left(
-    \rho_o^{\text{ст}}\,\left.\pdt{\bar{h}_{oo}}\right|_{R_s}
-    + R_s\,\rho_g^{\text{ст}}\,\left.\pdt{\bar{h}_{go}}\right|_{R_s}
-  \right)
+Преобразуем уравнение~\eqref{eq:energy_cons_derived} далее с учетом 
+определения~\eqref{eq:rho_oil} плотности нефтяной фазы и 
+определения энтальпии нефти~\eqref{eq:oil_enthalpy_components}
+\begin{multline}\label{eq:energy_cons_derived2}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}
+    \pdt{h_g}\!
+    + \rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\pdr{h_g}  + 
+      \\
+    \phi\,\frac{S_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)
+    \left.\pdt{h_o}\right|_{R_s}
+    + 
+      \frac{u_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)\left.\pdr{h_o}\right|_{R_s} = 
   \\
-  = \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
-    - h_o\,\left.\pdt{(\phi\,S_o\,\rho_o)}\right|_{R_s}.
-\end{multline*}
-Последний член содержит изменение массы фазы в~элементе и~при
-подстановке в~баланс энергии сокращается с~аналогичным членом
-из~конвективного потока (по~закону сохранения массы нефтяной фазы).
-В~итоге от~вкладов обоих компонентов остаётся:
-\[
-  \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
-  + \rho_o\,u_o\,\left.\pdr{h_o}\right|_{R_s}.
-\]
-Аналогичное рассуждение для пространственных производных
-($\partial/\partial r$) приводит к~тому же результату.
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
 
-\textbf{Дифференциал энтальпии нефтяной фазы} при фиксированном
-составе ($p$ и~$T$~--- независимые переменные, соотношение
-Максвелла):
+Дифференциал энтальпии нефтяной фазы при фиксированном
+составе принимает следующий вид
 \begin{equation}\label{eq:dh_oil}
   dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
 \end{equation}
-где $v_o = 1/\rho_o$~--- удельный объём. Первое слагаемое~---
-изменение энтальпии при изобарном нагреве, второе~---
-при изотермическом изменении давления.
+где $v_o = 1/\rho_o$~--- удельный объём, 
+$c_{p,o}$~--- удельная изобарная теплоёмкость (двухкомпонентной) нефти,
+$\alpha_o$~--- ее коэффициент объёмного теплового расширения. 
+Первое слагаемое хараектеризует изменение энтальпии при изобарном нагреве, 
+второе~--- при изотермическом изменении давления. Аналогичное соотношение запсиывается
+для газовой фазы. 
 
-Подставляя~\eqref{eq:dh_oil}:
-\begin{multline}\label{eq:oil_phase_enthalpy_terms}
-  \left(\phi\,\rho_o^{\text{ст}}\,\frac{S_o}{B_o}\right)
-    \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
-  + \left(\rho_o^{\text{ст}}\,\frac{u_o}{B_o}\right)
-    \left.\pdr{\bar{h}_{oo}}\right|_{R_s}
+Подставляя~\eqref{eq:dh_oil} в уравнение~\eqref{eq:energy_cons_derived2}, получим
+\begin{multline}\label{eq:energy_cons_derived3}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \phi\,\rho_g\,S_g
+    \left(c_{p,g}\,\pdt{T} + v_g\,(1 - \alpha_g\,T)\,\pdt{p}\right)\!
+    + \rho_g\,u_g\left(c_{p,g}\,\pdr{T} + v_g\,(1 - \alpha_g\,T)\,\pdr{p}\right)  + 
+    \\
+    \phi\,S_o\,\rho_o
+    \left(c_{p,o}\,\pdt{T} + v_o\,(1 - \alpha_o\,T)\,\pdt{p}\right)
+    + 
+      u_o\,\rho_o\left(c_{p,o}\,\pdr{T} + v_o\,(1 - \alpha_o\,T)\,\pdr{p}\right) = 
   \\
-  + \left(\phi\,\rho_g^{\text{ст}}\,\frac{R_s\,S_o}{B_o}\right)
-    \left.\pdt{\bar{h}_{go}}\right|_{R_s}
-  + \left(\rho_g^{\text{ст}}\,\frac{R_s\,u_o}{B_o}\right)
-    \left.\pdr{\bar{h}_{go}}\right|_{R_s}
-  \\
-  = \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
-    + \rho_o\,u_o\,\left.\pdr{h_o}\right|_{R_s}.
+  \divr{\leff\,\pdr{T}} - L\mdot.
 \end{multline}
-Подставляя~\eqref{eq:dh_oil}:
-\begin{equation}\label{eq:oil_phase_final}
-  \phi\,S_o\,\rho_o\,c_{p,o}\,\pdt{T}
-  + \rho_o\,c_{p,o}\,u_o\,\pdr{T}
-  + \phi\,S_o\,(1-\alpha_o T)\,\pdt{p}
-  + u_o\,(1-\alpha_o T)\,\pdr{p},
-\end{equation}
-где использовано $\rho_o\,v_o = 1$.
 
-\textbf{Вклад газовой фазы.}
-Газовая фаза однокомпонентна, состав фиксирован тривиально.
-Дифференциал:
-\begin{equation}\label{eq:dh_gas}
-  dh_g = c_{p,g}\,dT + v_g\,(1 - \alpha_g\,T)\,dp.
-\end{equation}
-Подставляя в~последние два слагаемых~\eqref{eq:energy_cons_derived}:
-\begin{equation}\label{eq:gas_phase_final}
-  \phi\,S_g\,\rho_g\,c_{p,g}\,\pdt{T}
-  + \rho_g\,c_{p,g}\,u_g\,\pdr{T}
-  + \phi\,S_g\,(1-\alpha_g T)\,\pdt{p}
-  + u_g\,(1-\alpha_g T)\,\pdr{p},
-\end{equation}
-где использовано $\rho_g\,v_g = 1$.
+
+
+% \begin{equation}\label{eq:dh_oil}
+%   \pdr{h_o}\big|_{R_s} = \left(c_{p,o}\,\pdr{T} + v_o\,(1 - \alpha_o\,T)\,\pdr{p}\right),
+% \end{equation}
+% \begin{equation}\label{eq:dh_oil}
+%   \pdr{h_g} = \left(c_{p,g}\,\pdr{T} + v_g\,(1 - \alpha_g\,T)\,\pdr{p}\right),
+% \end{equation}
+% \begin{equation}\label{eq:dh_oil}
+%   \pdt{h_o}\big|_{R_s} = \left(c_{p,o}\,\pdt{T} + v_o\,(1 - \alpha_o\,T)\,\pdt{p}\right),
+% \end{equation}
+% \begin{equation}\label{eq:dh_oil}
+%   \pdt{h_g} = \left(c_{p,g}\,\pdt{T} + v_g\,(1 - \alpha_g\,T)\,\pdt{p}\right),
+% \end{equation}
+
+% \begin{multline}\label{eq:oil_phase_enthalpy_terms}
+%   \left(\phi\,\rho_o^{\text{ст}}\,\frac{S_o}{B_o}\right)
+%     \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
+%   + \left(\rho_o^{\text{ст}}\,\frac{u_o}{B_o}\right)
+%     \left.\pdr{\bar{h}_{oo}}\right|_{R_s}
+%   \\
+%   + \left(\phi\,\rho_g^{\text{ст}}\,\frac{R_s\,S_o}{B_o}\right)
+%     \left.\pdt{\bar{h}_{go}}\right|_{R_s}
+%   + \left(\rho_g^{\text{ст}}\,\frac{R_s\,u_o}{B_o}\right)
+%     \left.\pdr{\bar{h}_{go}}\right|_{R_s}
+%   \\
+%   = \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
+%     + \rho_o\,u_o\,\left.\pdr{h_o}\right|_{R_s}.
+% \end{multline}
+% Подставляя~\eqref{eq:dh_oil}:
+% \begin{equation}\label{eq:oil_phase_final}
+%   \phi\,S_o\,\rho_o\,c_{p,o}\,\pdt{T}
+%   + \rho_o\,c_{p,o}\,u_o\,\pdr{T}
+%   + \phi\,S_o\,(1-\alpha_o T)\,\pdt{p}
+%   + u_o\,(1-\alpha_o T)\,\pdr{p},
+% \end{equation}
+% где использовано $\rho_o\,v_o = 1$.
+
+% \textbf{Вклад газовой фазы.}
+% Газовая фаза однокомпонентна, состав фиксирован тривиально.
+% Дифференциал:
+% \begin{equation}\label{eq:dh_gas}
+%   dh_g = c_{p,g}\,dT + v_g\,(1 - \alpha_g\,T)\,dp.
+% \end{equation}
+% Подставляя в~последние два слагаемых~\eqref{eq:energy_cons_derived}:
+% \begin{equation}\label{eq:gas_phase_final}
+%   \phi\,S_g\,\rho_g\,c_{p,g}\,\pdt{T}
+%   + \rho_g\,c_{p,g}\,u_g\,\pdr{T}
+%   + \phi\,S_g\,(1-\alpha_g T)\,\pdt{p}
+%   + u_g\,(1-\alpha_g T)\,\pdr{p},
+% \end{equation}
+% где использовано $\rho_g\,v_g = 1$.
 
 \textbf{Итог.}
 Суммируя~\eqref{eq:oil_phase_final} и~\eqref{eq:gas_phase_final}:
@@ -1045,78 +1059,49 @@ $R_s = \mathrm{const}$. Покажем, что при этом условии в
 Сборка выполняется в~пункте~(j).
 
 
-\paragraph{(h) Вклад породы.}
-
-Из~\eqref{eq:E_expanded}:
+Раскроем производные от слагаемых, описывающих теплоемкость пород и
+работу внешних сил
 \begin{equation}\label{eq:rock_dt}
   \pdt{}\!\left[
-    (1-\phi)\,(\rho c_p)_s\,T
+    (1-\phi)\,(\rho c_p)_s\,T-\phi\,p
   \right]
   = (1-\phi)\,(\rho c_p)_s\,\pdt{T}
-    - (\rho c_p)_s\,T\,\phi\,c_r\,\pdt{p}.
+    - (\rho c_p)_s\,T\,\phi\,c_r\,\pdt{p}-\phi\,(1 + p\,c_r)\,\pdt{p}.
 \end{equation}
+Подставим это выражение в уравнение~\eqref{eq:energy_cons_derived3}
+и перегруппируем слагаемые
+\begin{multline}\label{eq:energy_cons_derived4}
+  \left[(1-\phi)\,(\rho c_p)_s\, +\phi\,\rho_g\,S_gc_{p,g}\,  +\phi\,S_o\,\rho_oc_{p,o}\right]\pdt{T}
+    + 
+    \\
+    (\phi\,S_g\,(1 - \alpha_g\,T)+\phi\,S_o\,(1 - \alpha_o\,T)\,-(\rho c_p)_s\,T\,\phi\,c_r-\phi\,(1 + p\,c_r))\,\pdt{p}
+      +
+      \\
+    (\rho_g\,u_gc_{p,g}+\rho_ou_oc_{p,o})\,\pdr{T} + (u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T))\pdr{p} = 
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot.
+\end{multline}
 
-
-\paragraph{(i) Член $-\phi p$.}
-
-\begin{equation}\label{eq:phip_dt}
-  -\pdt{(\phi\,p)}
-  = -\phi\,\pdt{p}
-    - p\,\pdt{\phi}
-  = -\phi\,(1 + p\,c_r)\,\pdt{p}.
+Определим эффективные характеристики гомогенной смеси
+\begin{equation}\label{eq:1}
+\rhocpeff
+    = (1-\phi)\,(\rho c_p)_s
+      + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
 \end{equation}
-
-
-\paragraph{(j) Сборка.}
-
-Собираем все вклады. Группируем:
-\begin{itemize}[nosep]
-  \item Члены с $\partial T/\partial t$ $\to$ определяют $\rhocpeff$.
-  \item Члены с $\partial T/\partial r$ $\to$ определяют $\rhocpconv$.
-  \item Члены с $\partial p/\partial t$ $\to$ переносим в правую часть
-        $\to$ $\Qad$.
-  \item Члены с $\partial p/\partial r$ $\to$ переносим в правую часть
-        $\to$ $\QJT$.
-  \item Член дегазации $\to$ $\Qdeg$.
-\end{itemize}
-
-Члены с~$\partial T/\partial t$:
-\begin{equation}\label{eq:T_accum}
-  \left[(1-\phi)\,(\rho c_p)_s
-    + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g})
-  \right]\pdt{T}
-  \equiv \rhocpeff\,\pdt{T}.
+\begin{equation}\label{eq:2}
+\rhocpconv
+    = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g,
 \end{equation}
-
-Члены с~$\partial T/\partial r$:
-\begin{equation}\label{eq:T_conv}
-  (\rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g)\,\pdr{T}
-  \equiv \rhocpconv\,\pdr{T}.
+\begin{equation}\label{eq:3}
+\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha + (\rho c_p)_s\,T\,\,c_r + p\,c_r\right]\pdt{p},
 \end{equation}
-
-Члены с~$\partial p/\partial t$. Переносим в~правую часть со~сменой
-знака и~определяем $\Qad$:
-\begin{equation}\label{eq:Qad_assembly}
-  \Qad \equiv \phi\!\left[T\sum_\alpha S_\alpha\alpha_\alpha
-    + c_r\!\left(p + (\rho c_p)_s\,T\right)\right]
-    \pdt{p}.
+\begin{equation}\label{eq:4}
+\QJT = -\left[u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
 \end{equation}
-
-Члены с~$\partial p/\partial r$. Переносим в~правую часть
-и~определяем $\QJT$:
-\begin{equation}\label{eq:QJT_assembly}
-  \QJT \equiv -\left[u_o\,(1-\alpha_o T)
-    + u_g\,(1-\alpha_g T)\right]\pdr{p}.
+\begin{equation}\label{eq:5}
+\Qdeg = - L(p,T)\mdot
 \end{equation}
-
-Член дегазации (из~пункта~(f)):
-\begin{equation}\label{eq:Qdeg_assembly}
-  \Qdeg \equiv -L(p,T)\,\mdot.
-\end{equation}
-
-
-\paragraph{(k) Итоговое уравнение энергии.}
-
+и получим окончательно 
 \begin{equation}\label{eq:energy_final}
   \boxed{
     \rhocpeff\,\pdt{T}
@@ -1125,87 +1110,14 @@ $R_s = \mathrm{const}$. Покажем, что при этом условии в
     + \QJT + \Qad + \Qdeg.
   }
 \end{equation}
-
-Определения коэффициентов и~источников:
-
-\begin{equation}\label{eq:rhocp_eff}
-  \boxed{
-    \rhocpeff
-    = (1-\phi)\,(\rho c_p)_s
-      + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}).
-  }
-\end{equation}
-
-\begin{equation}\label{eq:rhocp_conv}
-  \boxed{
-    \rhocpconv
-    = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g.
-  }
-\end{equation}
-
-\textbf{Эффект Джоуля--Томсона} (конвективный):
-\begin{equation}\label{eq:QJT}
-  \boxed{
-    \QJT = -\sum_\alpha u_\alpha\,(1-\alpha_\alpha T)\,\pdr{p}.
-  }
-\end{equation}
-Проверка знака. При течении к~скважине $u_\alpha < 0$,
-$\partial p/\partial r > 0$.
-Для \textbf{нефтяной фазы}: $\alpha_o T < 1$ при типичных пластовых
-условиях ($\alpha_o \sim 10^{-3}$~К$^{-1}$, $T \sim 350$~К,
-$\alpha_o T \sim 0{,}3$). Тогда $(1-\alpha_o T) > 0$ и
-$-u_o\,(1-\alpha_o T)\,\partial p/\partial r > 0$~---
-JT-вклад нефтяной фазы \emph{положителен}: дросселирование жидкости
-при~$\alpha T < 1$ приводит к~\textbf{нагреву}.
-Для \textbf{газовой фазы}: у~идеального газа $\alpha_g T = 1$
-и~вклад в~$\QJT$ равен нулю.
-
-Наблюдаемое на практике \textbf{охлаждение} при добыче нефти
-обусловлено главным образом дегазацией ($\Qdeg < 0$),
-а~не~эффектом Джоуля--Томсона жидкой фазы.
-
-\textbf{Адиабатический эффект}:
-\begin{equation}\label{eq:Qad}
-  \boxed{
-    \Qad = \phi\!\left[
-      T\sum_\alpha S_\alpha\,\alpha_\alpha
-      + c_r\!\left(p + (\rho c_p)_s\,T\right)
-    \right]\pdt{p}.
-  }
-\end{equation}
-Первое слагаемое~--- вклад теплового расширения флюидов:
-при~$\partial p/\partial t < 0$ флюиды расширяются адиабатически
-и~охлаждаются ($\Qad < 0$). Второе~--- вклад сжимаемости породы,
-состоящий из двух частей: $p\,c_r$~--- работа деформации порового
-объёма; $(\rho c_p)_s\,T\,c_r$~--- изменение эффективной теплоёмкости
-при изменении~$\phi$. Оба вклада от~породы малы при~$c_r = 0$.
-
-\textbf{Теплота дегазации}:
-\begin{equation}\label{eq:Qdeg}
-  \boxed{
-    \Qdeg = -L(p,T)\,\mdot.
-  }
-\end{equation}
-При выделении газа ($\mdot > 0$) и~$L > 0$: $\Qdeg < 0$~---
-система охлаждается.
-
-Через~\eqref{eq:mdot} член~$\Qdeg$ содержит $\partial T/\partial t$
-и~$\partial T/\partial r$. При дискретизации (раздел~\ref{sec:discretization}):
-$\Qdeg < 0$ (охлаждение при дегазации) вычисляется \textbf{неявно}
-(на уровне~$T^{n+1}$), вклад добавляется в~диагональ матрицы~---
-\textbf{усиливает} диагональное преобладание;
-$\Qdeg > 0$ (нагрев при растворении) вычисляется \textbf{явно}
-(на уровне~$T^n$), вклад переходит в~правую часть~--- не~ослабляет
-диагональное преобладание. Критерий разделения~--- сохранение
-диагонального преобладания матрицы СЛАУ.
-
-
+ 
 %............................................................................
 \subsubsection{Сводная таблица системы уравнений}
 
-Полная замкнутая система состоит из трёх уравнений на три неизвестных
-$p(r,t)$, $T(r,t)$, $S_g(r,t)$. Уравнения записаны в~дивергентной
-(консервативной) форме и~дискретизируются непосредственно.
+Полная замкнутая система состоит из \textbf{четырёх уравнений}
+на~\textbf{четыре неизвестных}: $p(r,t)$, $S_g(r,t)$, $R_s(r,t)$,
+$T(r,t)$. Балансы масс записаны в~дивергентной (консервативной)
+форме и~дискретизируются непосредственно.
 
 \paragraph{1. Баланс массы нефтяного компонента~\eqref{eq:mass_oil}:}
 \[
@@ -1223,7 +1135,15 @@ $p(r,t)$, $T(r,t)$, $S_g(r,t)$. Уравнения записаны в~диве�
   \right]} = 0.
 \]
 
-\paragraph{3. Уравнение энергии~\eqref{eq:energy_final}:}
+\paragraph{3. Замыкающее уравнение (переключаемое,
+раздел~\ref{sssec:variable_switching}):}
+\[
+  \text{Режим~1 ($S_g > 0$):}\quad R_s = R_s^{\text{eq}}(p,T);
+  \qquad
+  \text{Режим~2 ($S_g = 0$):}\quad S_g = 0.
+\]
+
+\paragraph{4. Уравнение энергии~\eqref{eq:energy_final}:}
 \[
   \rhocpeff\,\pdt{T}
   + \rhocpconv\,\pdr{T}
@@ -1231,20 +1151,25 @@ $p(r,t)$, $T(r,t)$, $S_g(r,t)$. Уравнения записаны в~диве�
   + \QJT + \Qad + \Qdeg.
 \]
 
-\paragraph{Неизвестные:} $p$, $S_g$~--- определяются из уравнений~1 и~2
-(совместная система); $T$~--- из уравнения~3.
+\paragraph{Неизвестные и~порядок решения:}
+$p$, $S_g$, $R_s$~--- определяются из уравнений~1--3
+(совместная система, метод Ньютона);
+$T$~--- из уравнения~4 на~известных полях $p$, $S_g$, $R_s$.
 
 \paragraph{Замыкающие соотношения:}
 \begin{itemize}[nosep]
-  \item Закон Дарси~\eqref{eq:darcy}: $u_\alpha = -\Lambda_\alpha\,\partial p/\partial r$;
+  \item $S_o = 1 - S_g$ (алгебраическое);
+  \item закон Дарси~\eqref{eq:darcy}:
+        $u_\alpha = -\Lambda_\alpha\,\partial p/\partial r$;
   \item PVT-корреляции: $R_s^{\text{eq}}(p,T)$, $B_o(p,T,R_s)$,
         $B_g(p,T)$, $\rho_\alpha(p,T)$, $\mu_\alpha(p,T)$,
         $c_{p,\alpha}(p,T)$, $\alpha_\alpha(p,T)$;
-        фактическое $R_s$ определяется из баланса масс
-        (раздел~\ref{sssec:variable_switching});
   \item теплота дегазации $L(p,T)$;
   \item ОФП: $k_{ro}(S_o)$, $k_{rg}(S_g)$;
-  \item свойства породы: $\phi$, $k$, $(\rho c_p)_s$, $\leff$.
+  \item свойства породы: $\phi$, $k$, $(\rho c_p)_s$;
+  \item теплопроводность среды~\eqref{eq:lambda_eff}:
+        $\leff = (1{-}\phi)\,\hat\lambda_s
+        + \phi\,(S_o\,\hat\lambda_o + S_g\,\hat\lambda_g)$.
 \end{itemize}
 
 \paragraph{Граничные условия:}
@@ -1256,7 +1181,8 @@ $p(r,t)$, $T(r,t)$, $S_g(r,t)$. Уравнения записаны в~диве�
 \end{itemize}
 
 \paragraph{Начальные условия:}
-$p(r,0) = \ppl$, \quad $T(r,0) = \Tpl$, \quad $S_g(r,0) = 0$.
+$p(r,0) = \ppl$, \quad $T(r,0) = \Tpl$, \quad
+$S_g(r,0) = 0$, \quad $R_s(r,0) = R_s^0$.
 
 
 %=============================================================================

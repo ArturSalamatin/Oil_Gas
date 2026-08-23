@@ -69,6 +69,10 @@
 В~разделе~\ref{sec:time} описывается интегрирование по~времени: метод
 Ньютона для совместной системы давления и~насыщенности, алгоритм одного
 шага, критерии сходимости.
+Приложения содержат подробные выводы промежуточных результатов:
+вывод уравнения для темпа выделения свободного газа,
+полный вывод уравнения энергии из~первого начала термодинамики,
+раскрытие балансов масс и~получение уравнения давления.
 
 
 %=============================================================================
@@ -413,7 +417,7 @@ $\partial p/\partial r > 0$.
   \item Баланс массы газового компонента~\eqref{eq:mass_gas}.
   \item Замыкающее (переключаемое) уравнение: связь между~$S_g$
         и~$R_s$ в~зависимости от~режима (см.~ниже).
-  \item Уравнение энергии~\eqref{eq:energy_final}.
+  \item Уравнение энергии~\eqref{eq:main_energy_final}.
 \end{enumerate}
 
 Дополнительно используется алгебраическое замыкание насыщенностей:
@@ -506,35 +510,10 @@ $R_s^0 > R_s^{\text{eq}}(p)$ срабатывает, и~ячейка перек�
 %............................................................................
 \subsubsection{Темп выделения свободного газа}\label{sssec:degas_rate}
 
-Уравнение баланса нефтяного компонента~\eqref{eq:mass_oil} записано
-в~объёмных единицах нефтяного компонента при стандартных условиях
-[м$^3$ст\,нефти/(м$^3\cdot$с)], плотность~$\rho_o^{\text{ст}}$
-была сокращена из~обеих частей. Аналогично,
-уравнение~\eqref{eq:mass_gas} записано в~объёмных единицах газового
-компонента при стандартных условиях [м$^3$ст\,газа/(м$^3\cdot$с)],
-плотность~$\rho_g^{\text{ст}}$ сокращена.
-
-Газосодержание $R_s$ имеет размерность
-[м$^3$ст\,газа\,/\,м$^3$ст\,нефти]. Поэтому результат умножения
-$R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же размерность, что
-и~\eqref{eq:mass_gas}~--- м$^3$ст\,газа/(м$^3\cdot$с). Это
-допускает вычитание одного уравнения из~другого. Это приводит к следующейзаписи
-\begin{multline}\label{eq:gas_minus_Rs_oil}
-  \pdt{}\!\left(\phi\!\left[
-    \frac{R_s\,S_o}{B_o} + \frac{S_g}{B_g}
-  \right]\right)
-  - R_s\,\pdt{}\!\left(\phi\,\frac{S_o}{B_o}\right)
-  \\
-  + \divr{\left[
-    \frac{R_s\,u_o}{B_o} + \frac{u_g}{B_g}
-  \right]}
-  - R_s\,\divr{\frac{u_o}{B_o}} = 0.
-\end{multline}
-
-Перегруппируем слагаемые, чтобы привести уравнение к виду
-уравнения баланса массы газа в~газовой фазе и явно выделить вклад,
-определяющий производство свободного газа
-\begin{equation}\label{eq:free_gas_rate}
+Вычитая из~баланса газового компонента~\eqref{eq:mass_gas}
+произведение~$R_s$ на баланс нефтяного компонента~\eqref{eq:mass_oil},
+можно выделить баланс свободного газа:
+\begin{equation}\label{eq:main_free_gas_rate}
   \boxed{
     \pdt{}\!\left(\phi\,\frac{S_g}{B_g}\right)
     + \divr{\frac{u_g}{B_g}}
@@ -542,33 +521,14 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
       - \frac{u_o}{B_o}\,\pdr{R_s}.
   }
 \end{equation}
-Здесь слева~--- локальное накопление и~конвективный
-перенос свободного газа, справа~--- источник газа за~счёт
-разгазирования нефти. Покажем, как 
-получено уравнение~\eqref{eq:free_gas_rate}. 
-Временная и конвективная части разности соответственно
-\[
-  \pdt{}\!\left(\phi\,R_s\,\xio\right)
-  - R_s\,\pdt{}\!\left(\phi\,\xio\right)
-  = \phi\,\xio\,\pdt{R_s}, \quad \xio = S_o/B_o.
-\]
-\[
-  \divr{\frac{R_s\,u_o}{B_o}}
-  - R_s\,\divr{\frac{u_o}{B_o}}
-  = \frac{u_o}{B_o}\,\pdr{R_s}.
-\]
-Оба слагаемых описывают переход газового компонента из~растворённого
-состояния в~свободное: первое~--- за~счёт локального изменения~$R_s$
-во~времени (давление падает, газ выделяется), второе~--- за~счёт
-притока нефти с~иным газосодержанием. Перенося их в~правую
-часть~\eqref{eq:free_gas_rate}, получаем источник газовой фазы.
+Слева~--- локальное накопление и~конвективный перенос свободного газа.
+Справа~--- источник газа за~счёт разгазирования нефти: первое
+слагаемое описывает выделение газа при локальном изменении~$R_s$
+во~времени, второе~--- приток нефти с~иным газосодержанием.
 
-Правая часть~\eqref{eq:free_gas_rate} имеет размерность
-м$^3$ст\,газа/(м$^3\cdot$с)~--- это объёмный (при стандартных
-условиях) темп появления свободного газа. Для перехода к~массовому
-темпу~$\mdot$ [кг/(м$^3\cdot$с)] умножаем на~плотность газового
-компонента при стандартных условиях~$\rho_g^{\text{ст}}$:
-\begin{equation}\label{eq:mdot}
+Массовый темп выделения свободного газа
+[кг/(м$^3\cdot$с)]:
+\begin{equation}\label{eq:main_mdot}
   \boxed{
     \mdot = -\rho_g^{\text{ст}}\!\left[
       \phi\,\xio\,\pdt{R_s}
@@ -576,533 +536,17 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
     \right].
   }
 \end{equation}
-
 При~$\mdot > 0$ газ выделяется из нефти; при~$\mdot < 0$~---
-растворяется обратно. Здесь $R_s(r,t)$~--- фактическое
-газосодержание, являющееся неизвестной задачи.
+растворяется обратно.
 
 
 %............................................................................
-\subsubsection{Уравнение энергии: полный вывод}\label{sssec:energy}
+\subsubsection{Уравнение энергии}\label{sssec:energy}
 
-Рассмотрим неподвижный элемент пористой среды. Первое начало
-термодинамики для открытой системы:
-\begin{equation}\label{eq:first_law_open}
-  \frac{dE_{\mathrm{total}}}{dt}
-  = \dot{Q} - \dot{W}_{\text{внешн}}
-    + \sum_{\text{входы}} \dot{m}_{\mathrm{in}}\,h_{\mathrm{in}}
-    - \sum_{\text{выходы}} \dot{m}_{\mathrm{out}}\,h_{\mathrm{out}}.
-\end{equation}
-
-Определим входящие в~\eqref{eq:first_law_open} величины:
-\begin{itemize}[nosep]
-  \item $E_{\mathrm{total}}$~--- полная внутренняя энергия вещества
-        внутри элемента (порода + флюиды), Дж/м$^3$;
-  \item $\dot{Q}$~--- подвод тепла к~элементу за~счёт теплопроводности
-        (кондукция через границы элемента), Вт/м$^3$;
-  \item $\dot{W}_{\text{внешн}}$~--- мощность работы, совершаемой
-        системой над~окружением, помимо работы проталкивания
-        (в~рассматриваемой задаче $\dot{W}_{\text{внешн}} = 0$:
-        нет подвижных стенок и~внешних механических воздействий),
-        Вт/м$^3$;
-  \item $\dot{m}_{\mathrm{in}}$, $\dot{m}_{\mathrm{out}}$~--- массовые
-        расходы флюида, втекающего в~элемент и~вытекающего из~него
-        через его границы, кг/(м$^3\cdot$с);
-  \item $h_{\mathrm{in}}$, $h_{\mathrm{out}}$~--- удельные энтальпии
-        втекающего и~вытекающего флюида, Дж/кг.
-\end{itemize}
-
-% Ключевой вопрос: почему втекающая масса несёт \emph{энтальпию}~$h$,
-% а~не~внутреннюю энергию~$e$? Причина~--- работа проталкивания:
-% порция флюида массой~$\delta m$ и~удельным объёмом~$v = 1/\rho$,
-% втекающая через границу элемента, где давление равно~$p$, приносит
-% с~собой внутреннюю энергию~$e$ и~одновременно внешний флюид
-% совершает над~элементом работу~$pv$ (проталкивает порцию внутрь).
-% Суммарный вклад на~единицу массы:
-% \begin{equation}\label{eq:flow_work}
-%   e + pv = e + \frac{p}{\rho} = h.
-% \end{equation}
-% Аналогично, при вытекании элемент совершает работу~$pv$ над~окружением.
-% Таким образом, энтальпия в~конвективном потоке~--- прямое следствие
-% первого начала, а~не~произвольный выбор.
-
-Для рассматриваемой системы 
-уравнение~\eqref{eq:first_law_open} в \textbf{гомогенном приближении} запишется следующим образом
-\begin{equation}\label{eq:energy_cons}
-  \pdt{E}
-  + \divr{F}
-  = \divr{\leff\,\pdr{T}},
-\end{equation}
-где
-\begin{equation}\label{eq:E_expanded}
-  E = (1 - \phi)\,(\rho c_p)_s\,T + \phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha,
-\end{equation}
-\begin{equation}\label{eq:E_expanded}
-\phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha = \phi\sum_\alpha S_\alpha\,\rho_\alpha\,h_\alpha
-      - \phi\,p,
-\end{equation}
-\begin{equation}\label{eq:F_total}
-  F = \sum_\alpha \rho_\alpha\,h_\alpha\,u_\alphaб \quad  h_\alpha = e_\alpha\ + p/\rho_\alpha.
-\end{equation}
-
-Определим энтальпию многокомпонентной нефтяной фазы, которая является смесью двух компонентов. 
-Её энтальпия разлагается через парциальные энтальпии:
-\begin{equation}\label{eq:oil_enthalpy_components}
-  \phi\,S_o\,\rho_o\,h_o
-  = \phi\,\frac{S_o}{B_o}\!\left(
-      \rho_o^{\text{ст}}\,\bar{h}_{oo}
-      + R_s\,\rho_g^{\text{ст}}\,\bar{h}_{go}
-    \right),
-\end{equation}
-где~$\bar{h}_{oo}(p, T, R_s)$~--- парциальная удельная
-энтальпия\footnote{Парциальная удельная энтальпия компонента~$k$
-в~фазе~--- это производная энтальпии фазы~$H$ по~массе~$m_k$ этого
-компонента при постоянных давлении~$p$, температуре~$T$ и~массах
-остальных компонентов~$m_{j\neq k}$:
-$\bar{h}_k = (\partial H/\partial m_k)_{p,\,T,\,m_{j\neq k}}$.
-Она характеризует вклад единицы массы данного компонента в~энтальпию
-раствора и~отличается как от~энтальпии чистого вещества, так и~от~средней
-энтальпии смеси.} нефтяного компонента в~нефтяной фазе,
-$\bar{h}_{go}(p, T, R_s)$~--- парциальная удельная энтальпия газового
-компонента в~нефтяной фазе. Обе величины зависят от~давления,
-температуры и~фактического состава нефтяной фазы (газосодержания~$R_s$).
-Плотность нефтяной фазы выразится следующим образом через плотности компонент в стандартных условяих
-\begin{equation}\label{eq:rho_oil}
-  \rho_o = \frac{\rho_o^{\text{ст}} + R_s\,\rho_g^{\text{ст}}}{B_o}.
-\end{equation}
-Газовая фаза содержит только один компонент (газ), поэтому её энтальпия
-просто~$h_g(p,T)$.
-
-В уравнении~\eqref{eq:energy_cons} выделим явно слагаемые, которые определяют 
-вклад в общим баланс энергии и отвечают (i) фазовому переходу (дегазации), 
-(ii) эффекту Джоуля--Томсона и (iii) дроссельному эффекту.
-
-В выражении полной энтальпии системы выделим явно части,
-которые отвечают отдельным компонентам, а не фазам. 
-Для внутренней энергии и конвективного потока получим соответственно
-\begin{equation}\label{eq:H_fluids}
-  \phi\sum_\alpha S_\alpha\rho_\alpha h_\alpha
-  = \underbrace{\phi\,\frac{S_o}{B_o}\,\rho_o^{\text{ст}}\,
-      \bar{h}_{oo}}_{\text{нефтяной комп.}}
-    + \underbrace{\phi\,\rho_g^{\text{ст}}\!\left[
-        \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}
-        + \frac{S_g}{B_g}\,h_g
-      \right]}_{\text{газовый комп.}}.
-\end{equation}
-\begin{equation}\label{eq:F_components}
-  F = \underbrace{\frac{u_o}{B_o}\,\rho_o^{\text{ст}}\,
-        \bar{h}_{oo}}_{\text{нефт.\ комп.}}
-      + \underbrace{\rho_g^{\text{ст}}\!\left[
-          \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}
-          + \frac{u_g}{B_g}\,h_g
-        \right]}_{\text{газ.\ комп.}}.
-\end{equation}
-  
-Вклад газового компонента в уравнении~\eqref{eq:energy_cons} содержит
-два слагаемых~--- растворённый газ (с~$\bar{h}_{go}$) и~свободный газ
-(с~$h_g$). Рассмотрим их по~отдельности. Из~\eqref{eq:H_fluids} и~\eqref{eq:F_components} 
-соберем все члены, содержащие~$\bar{h}_{go}$, и раскроем производные
-
-\begin{multline}\label{eq:F_components_der}
-  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
-    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
-  + \divr{\rho_g^{\text{ст}}\,
-    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} = 
-    \\
-    \rho_g^{\text{ст}}\,\bar{h}_{go}\!\left[
-    \pdt{}\!\left(\phi\,
-      \frac{R_s\,S_o}{B_o}\right)
-    + \divr{
-      \frac{R_s\,u_o}{B_o}}
-  \right]
-  + 
-  \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{R_s\,S_o}{B_o}\right)
-    \pdt{\bar{h}_{go}}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} }.
-\end{multline}
-Вычитая уравнение баланса свободного
-газа~\eqref{eq:free_gas_rate} из~уравнения баланса газового
-компонента~\eqref{eq:mass_gas}, выразим сумму в квадратных скобках 
-в уравнении~\eqref{eq:F_components} через массовый темп производства свободного газа
-\[
-  \pdt{}\!\left(\phi\,\frac{R_s\,S_o}{B_o}\right)
-  + \divr{\frac{R_s\,u_o}{B_o}}
-  = \phi\,\xio\,\pdt{R_s}
-    + \frac{u_o}{B_o}\,\pdr{R_s}
-  = -\frac{\mdot}{\rho_g^{\text{ст}}},
-\]
-где последнее равенство следует из~определения~\eqref{eq:mdot}.
-Следовательно, уравнение~\eqref{eq:F_components_der} примет следующий вид
-\begin{multline}\label{eq:F_components_derived}
-  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
-    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
-  + \divr{\rho_g^{\text{ст}}\,
-    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} = 
-    \\
-    -\mdot\bar{h}_{go}
-  + 
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{R_s\,S_o}{B_o}\right)
-    \pdt{\bar{h}_{go}}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} }
-\end{multline}
- 
-Аналогично, соберём члены с~$h_g$ из~\eqref{eq:H_fluids},
-\eqref{eq:F_components} и~раскроем производные:
-\begin{multline}\label{eq:hg_components_der}
-  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
-    \frac{S_g}{B_g}\,h_g\right)
-  + \divr{\rho_g^{\text{ст}}\,
-    \frac{u_g}{B_g}\,h_g} =
-    \\
-    \rho_g^{\text{ст}}\,h_g\!\left[
-    \pdt{}\!\left(\phi\,
-      \frac{S_g}{B_g}\right)
-    + \divr{\frac{u_g}{B_g}}
-  \right]
-  +
-  \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{S_g}{B_g}\right)
-    \pdt{h_g}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{u_g}{B_g}\right)\pdr{h_g}.
-\end{multline}
-Выражение в~квадратных скобках~--- левая часть баланса свободного
-газа~\eqref{eq:free_gas_rate}. Его правая часть
-равна~$\mdot/\rho_g^{\text{ст}}$ (источник свободного газа за~счёт
-дегазации). Следовательно:
-\begin{multline}\label{eq:hg_components_derived}
-  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
-    \frac{S_g}{B_g}\,h_g\right)
-  + \divr{\rho_g^{\text{ст}}\,
-    \frac{u_g}{B_g}\,h_g} =
-    \\
-    +\mdot\,h_g
-  +
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{S_g}{B_g}\right)
-    \pdt{h_g}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{u_g}{B_g}\right)\pdr{h_g}.
-\end{multline}
-
-Сумма уравнений~\eqref{eq:F_components_derived} и~\eqref{eq:hg_components_derived}
-содержит вклад фазового перехода
-\begin{equation}\label{eq:phase_change_heat}
-  (h_g - \bar{h}_{go})\,\mdot \equiv L\,\mdot,
-\end{equation}
-где введена \textbf{удельная теплота дегазации}:
-\begin{equation}\label{eq:L_def}
-  \boxed{
-    L(p,T) = h_g(p,T) - \bar{h}_{go}(p, T, R_s^{\text{eq}}(p,T)).
-  } 
-\end{equation}
-
-Парциальная энтальпия~$\bar{h}_{go}$ определена для произвольного
-состава нефтяной фазы: $\bar{h}_{go} = \bar{h}_{go}(p, T, R_s)$,
-где~$R_s$~--- фактическое содержание газа в~нефти (не~обязательно
-равновесное). В~определении~$L$ состав фиксируется при
-\textbf{равновесном} значении $R_s = R_s^{\text{eq}}(p,T)$,
-обеспечивающем сосуществование нефтяной и~газовой фаз.
-Именно при этом составе имеет смысл говорить о~переходе молекул
-газа между фазами. Поэтому $L$ выражается как функция только~$p$
-и~$T$.
-
-В случае $L > 0$ свободный газ имеет большую энтальпию, чем растворённый.
-При выделении газа ($\mdot > 0$) и~$L > 0$: система охлаждается~---
-энергия расходуется на~перевод молекул газа из~растворённого состояния
-в~свободное.
-
-\paragraph{Поведение в~однофазной зоне.}
-В~однофазной зоне ($S_g = 0$, режим~2) газосодержание~$R_s$
-определяется из баланса масс. При отсутствии дополнительных
-источников газа и~постоянном составе притока $R_s = R_s^0 =
-\mathrm{const}$, поэтому $\partial R_s/\partial t = 0$
-и~$\partial R_s/\partial r = 0$. Из~определения~\eqref{eq:mdot}
-следует $\mdot = 0$, и~вклад дегазации $Q_{\mathrm{deg}}
-= -L\,\mdot = 0$~--- дегазации нет.
-
-Формально в~определении~\eqref{eq:L_def} фигурирует энтальпия
-газовой фазы~$h_g$, которая не~имеет физического смысла при~$S_g=0$
-(газовой фазы не~существует). Однако при~$\mdot = 0$ произведение
-$L\,\mdot = 0$ независимо от~значения~$L$, поэтому значение~$L$
-в~однофазной зоне несущественно и~не~влияет на~решение.
-
-\paragraph{Вклады изменения энтальпий при фиксированном составе.}
-
-В~уравнениях~\eqref{eq:F_components_derived}
-и~\eqref{eq:hg_components_derived} помимо членов фазового перехода
-($-\mdot\,\bar{h}_{go}$ и~$+\mdot\,h_g$) остались слагаемые
-с~производными энтальпий по~$t$ и~$r$. Перечислим их явно.
-
-По~аналогии с~\eqref{eq:F_components_der} для нефтяного компонента $\bar{h}_{oo}$
-(первое слагаемое в~\eqref{eq:H_fluids}, \eqref{eq:F_components}):
-\begin{multline}\label{eq:hoo_terms}
-  \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
-    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
-  + \divr{\rho_o^{\text{ст}}\,
-    \frac{u_o}{B_o}\,\bar{h}_{oo}} =
-    \\
-    \bar{h}_{oo}\!\left[
-    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
-      \frac{S_o}{B_o}\right)
-    + \divr{\rho_o^{\text{ст}}\,\frac{u_o}{B_o}}
-  \right]
-  +
-  \\ 
-    \left(\phi\,\rho_o^{\text{ст}}\,
-      \frac{S_o}{B_o}\right)
-    \pdt{\bar{h}_{oo}}\!
-    + \left(\rho_o^{\text{ст}}\,
-      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
-\end{multline}
-Выражение в~квадратных скобках представляет собой плотность $\rho_o^{\text{ст}}$, 
-умноженную на~левую
-часть баланса нефтяного компонента~\eqref{eq:mass_oil}, которая
-равна нулю. Следовательно, первый член обращается в~нуль, и~остаются
-только производные~$\bar{h}_{oo}$
-\begin{equation}\label{eq:hoo_remainder}
-    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
-    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
-  + \divr{\rho_o^{\text{ст}}\,
-    \frac{u_o}{B_o}\,\bar{h}_{oo}} =\left(\phi\,\rho_o^{\text{ст}}\,
-      \frac{S_o}{B_o}\right)
-    \pdt{\bar{h}_{oo}}\!
-    + \left(\rho_o^{\text{ст}}\,
-      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
-\end{equation}
-
-Таким образом, уравнение~\eqref{eq:energy_cons} принимает следующий вид
-с учетом выполненных преобразований
-\begin{multline}\label{eq:energy_cons_der}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
-      +
-      \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{S_g}{B_g}\right)
-    \pdt{h_g}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{u_g}{B_g}\right)\pdr{h_g}  + 
-      \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{R_s\,S_o}{B_o}\right)
-    \pdt{\bar{h}_{go}}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} } +
-      \\
-  \left(\phi\,\rho_o^{\text{ст}}\,
-      \frac{S_o}{B_o}\right)
-    \pdt{\bar{h}_{oo}}\!
-    + \left(\rho_o^{\text{ст}}\,
-      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}} = 
-  \\
-  \divr{\leff\,\pdr{T}} - L\mdot,
-\end{multline}
-
-
-Уравнение~\eqref{eq:energy_cons_der} содержит производные парциальных
-энтальпий~$\bar{h}_{oo}$, $\bar{h}_{go}$ и~энтальпии газовой
-фазы~$h_g$. Парциальные энтальпии~$\bar{h}_{oo}$ и~$\bar{h}_{go}$ зависят
-от~$p$, $T$ и~состава~$R_s$. Их полные производные по~$t$
-содержат члены с~$\partial R_s/\partial t$:
-\[
-  \pdt{\bar{h}_{oo}} = \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
-    + \frac{\partial\bar{h}_{oo}}{\partial R_s}\,\pdt{R_s},
-  \qquad
-  \pdt{\bar{h}_{go}} = \left.\pdt{\bar{h}_{go}}\right|_{R_s}
-    + \frac{\partial\bar{h}_{go}}{\partial R_s}\,\pdt{R_s}.
-\]
-Запишем соотношение Гиббса--Дюгема для бинарной смеси (нефтяная фаза)
-при постоянных~$p$ и~$T$
-\begin{equation}\label{eq:gibbs_duhem}
-  \rho_o^{\text{ст}}\,d\bar{h}_{oo}\big|_{p,T}
-  + R_s\,\rho_g^{\text{ст}}\,d\bar{h}_{go}\big|_{p,T} = 0.
-\end{equation} 
-В результате группировки слагаемых в уравнении~\eqref{eq:energy_cons_der} 
-с учетом соотношеия~\eqref{eq:gibbs_duhem} запишем
-\begin{multline}\label{eq:energy_cons_derived}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
-      +
-      \\
-    \left(\phi\,\rho_g^{\text{ст}}\,
-      \frac{S_g}{B_g}\right)
-    \pdt{h_g}\!
-    + \left(\rho_g^{\text{ст}}\,
-      \frac{u_g}{B_g}\right)\pdr{h_g}  + 
-      \\
-    \phi\,\frac{S_o}{B_o}
-    \left.\pdt{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right)\right|_{R_s}
-    + 
-      \frac{u_o}{B_o}\left.\pdr{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right) \right|_{R_s} = 
-  \\
-  \divr{\leff\,\pdr{T}} - L\mdot,
-\end{multline}
-Преобразуем уравнение~\eqref{eq:energy_cons_derived} далее с учетом 
-определения~\eqref{eq:rho_oil} плотности нефтяной фазы и 
-определения энтальпии нефти~\eqref{eq:oil_enthalpy_components}
-\begin{multline}\label{eq:energy_cons_derived2}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
-      +
-      \\
-    \phi\,\rho_g^{\text{ст}}\,
-      \frac{S_g}{B_g}
-    \pdt{h_g}\!
-    + \rho_g^{\text{ст}}\,
-      \frac{u_g}{B_g}\pdr{h_g}  + 
-      \\
-    \phi\,\frac{S_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)
-    \left.\pdt{h_o}\right|_{R_s}
-    + 
-      \frac{u_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)\left.\pdr{h_o}\right|_{R_s} = 
-  \\
-  \divr{\leff\,\pdr{T}} - L\mdot,
-\end{multline}
-
-Дифференциал энтальпии нефтяной фазы при фиксированном
-составе принимает следующий вид
-\begin{equation}\label{eq:dh_oil}
-  dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
-\end{equation}
-где $v_o = 1/\rho_o$~--- удельный объём, 
-$c_{p,o}$~--- удельная изобарная теплоёмкость (двухкомпонентной) нефти,
-$\alpha_o$~--- ее коэффициент объёмного теплового расширения. 
-Первое слагаемое хараектеризует изменение энтальпии при изобарном нагреве, 
-второе~--- при изотермическом изменении давления. Аналогичное соотношение запсиывается
-для газовой фазы. 
-
-Подставляя~\eqref{eq:dh_oil} в уравнение~\eqref{eq:energy_cons_derived2}, получим
-\begin{multline}\label{eq:energy_cons_derived3}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
-      +
-      \\
-    \phi\,\rho_g\,S_g
-    \left(c_{p,g}\,\pdt{T} + v_g\,(1 - \alpha_g\,T)\,\pdt{p}\right)\!
-    + \rho_g\,u_g\left(c_{p,g}\,\pdr{T} + v_g\,(1 - \alpha_g\,T)\,\pdr{p}\right)  + 
-    \\
-    \phi\,S_o\,\rho_o
-    \left(c_{p,o}\,\pdt{T} + v_o\,(1 - \alpha_o\,T)\,\pdt{p}\right)
-    + 
-      u_o\,\rho_o\left(c_{p,o}\,\pdr{T} + v_o\,(1 - \alpha_o\,T)\,\pdr{p}\right) = 
-  \\
-  \divr{\leff\,\pdr{T}} - L\mdot.
-\end{multline}
-
-
-
-% \begin{equation}\label{eq:dh_oil}
-%   \pdr{h_o}\big|_{R_s} = \left(c_{p,o}\,\pdr{T} + v_o\,(1 - \alpha_o\,T)\,\pdr{p}\right),
-% \end{equation}
-% \begin{equation}\label{eq:dh_oil}
-%   \pdr{h_g} = \left(c_{p,g}\,\pdr{T} + v_g\,(1 - \alpha_g\,T)\,\pdr{p}\right),
-% \end{equation}
-% \begin{equation}\label{eq:dh_oil}
-%   \pdt{h_o}\big|_{R_s} = \left(c_{p,o}\,\pdt{T} + v_o\,(1 - \alpha_o\,T)\,\pdt{p}\right),
-% \end{equation}
-% \begin{equation}\label{eq:dh_oil}
-%   \pdt{h_g} = \left(c_{p,g}\,\pdt{T} + v_g\,(1 - \alpha_g\,T)\,\pdt{p}\right),
-% \end{equation}
-
-% \begin{multline}\label{eq:oil_phase_enthalpy_terms}
-%   \left(\phi\,\rho_o^{\text{ст}}\,\frac{S_o}{B_o}\right)
-%     \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
-%   + \left(\rho_o^{\text{ст}}\,\frac{u_o}{B_o}\right)
-%     \left.\pdr{\bar{h}_{oo}}\right|_{R_s}
-%   \\
-%   + \left(\phi\,\rho_g^{\text{ст}}\,\frac{R_s\,S_o}{B_o}\right)
-%     \left.\pdt{\bar{h}_{go}}\right|_{R_s}
-%   + \left(\rho_g^{\text{ст}}\,\frac{R_s\,u_o}{B_o}\right)
-%     \left.\pdr{\bar{h}_{go}}\right|_{R_s}
-%   \\
-%   = \phi\,S_o\,\rho_o\,\left.\pdt{h_o}\right|_{R_s}
-%     + \rho_o\,u_o\,\left.\pdr{h_o}\right|_{R_s}.
-% \end{multline}
-% Подставляя~\eqref{eq:dh_oil}:
-% \begin{equation}\label{eq:oil_phase_final}
-%   \phi\,S_o\,\rho_o\,c_{p,o}\,\pdt{T}
-%   + \rho_o\,c_{p,o}\,u_o\,\pdr{T}
-%   + \phi\,S_o\,(1-\alpha_o T)\,\pdt{p}
-%   + u_o\,(1-\alpha_o T)\,\pdr{p},
-% \end{equation}
-% где использовано $\rho_o\,v_o = 1$.
-
-% \textbf{Вклад газовой фазы.}
-% Газовая фаза однокомпонентна, состав фиксирован тривиально.
-% Дифференциал:
-% \begin{equation}\label{eq:dh_gas}
-%   dh_g = c_{p,g}\,dT + v_g\,(1 - \alpha_g\,T)\,dp.
-% \end{equation}
-% Подставляя в~последние два слагаемых~\eqref{eq:energy_cons_derived}:
-% \begin{equation}\label{eq:gas_phase_final}
-%   \phi\,S_g\,\rho_g\,c_{p,g}\,\pdt{T}
-%   + \rho_g\,c_{p,g}\,u_g\,\pdr{T}
-%   + \phi\,S_g\,(1-\alpha_g T)\,\pdt{p}
-%   + u_g\,(1-\alpha_g T)\,\pdr{p},
-% \end{equation}
-% где использовано $\rho_g\,v_g = 1$.
-
-\textbf{Итог.}
-Суммируя~\eqref{eq:oil_phase_final} и~\eqref{eq:gas_phase_final}:
-\begin{itemize}[nosep]
-  \item Члены с~$\partial T/\partial t$ и~$\partial T/\partial r$
-        формируют эффективную теплоёмкость и~конвективный
-        коэффициент.
-  \item Члены с~$\partial p/\partial t$ формируют адиабатический
-        эффект~$\Qad$.
-  \item Члены с~$\partial p/\partial r$ формируют эффект
-        Джоуля--Томсона~$\QJT$.
-\end{itemize}
-Сборка выполняется в~пункте~(j).
-
-
-Раскроем производные от слагаемых, описывающих теплоемкость пород и
-работу внешних сил
-\begin{equation}\label{eq:rock_dt}
-  \pdt{}\!\left[
-    (1-\phi)\,(\rho c_p)_s\,T-\phi\,p
-  \right]
-  = (1-\phi)\,(\rho c_p)_s\,\pdt{T}
-    - (\rho c_p)_s\,T\,\phi\,c_r\,\pdt{p}-\phi\,(1 + p\,c_r)\,\pdt{p}.
-\end{equation}
-Подставим это выражение в уравнение~\eqref{eq:energy_cons_derived3}
-и перегруппируем слагаемые
-\begin{multline}\label{eq:energy_cons_derived4}
-  \left[(1-\phi)\,(\rho c_p)_s\, +\phi\,\rho_g\,S_gc_{p,g}\,  +\phi\,S_o\,\rho_oc_{p,o}\right]\pdt{T}
-    + 
-    \\
-    (\phi\,S_g\,(1 - \alpha_g\,T)+\phi\,S_o\,(1 - \alpha_o\,T)\,-(\rho c_p)_s\,T\,\phi\,c_r-\phi\,(1 + p\,c_r))\,\pdt{p}
-      +
-      \\
-    (\rho_g\,u_gc_{p,g}+\rho_ou_oc_{p,o})\,\pdr{T} + (u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T))\pdr{p} = 
-  \\
-  \divr{\leff\,\pdr{T}} - L\mdot.
-\end{multline}
-
-Определим эффективные характеристики гомогенной смеси
-\begin{equation}\label{eq:1}
-\rhocpeff
-    = (1-\phi)\,(\rho c_p)_s
-      + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
-\end{equation}
-\begin{equation}\label{eq:2}
-\rhocpconv
-    = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g,
-\end{equation}
-\begin{equation}\label{eq:3}
-\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha + (\rho c_p)_s\,T\,\,c_r + p\,c_r\right]\pdt{p},
-\end{equation}
-\begin{equation}\label{eq:4}
-\QJT = -\left[u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
-\end{equation}
-\begin{equation}\label{eq:5}
-\Qdeg = - L(p,T)\mdot
-\end{equation}
-и получим уравнение баланса энергии
-\begin{equation}\label{eq:energy_final}
+Уравнение баланса энергии получено из~первого начала термодинамики
+для открытой многофазной системы в~пористой среде.
+Итоговое уравнение баланса энергии:
+\begin{equation}\label{eq:main_energy_final}
   \boxed{
     \rhocpeff\,\pdt{T}
     + \rhocpconv\,\pdr{T}
@@ -1110,33 +554,76 @@ $\alpha_o$~--- ее коэффициент объёмного теплового
     + \QJT + \Qad + \Qdeg.
   }
 \end{equation}
- 
+
+Эффективная объёмная теплоёмкость (порода + флюиды):
+\begin{equation}\label{eq:main_rhocpeff}
+\rhocpeff
+    = (1-\phi)\,(\rho c_p)_s
+      + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}).
+\end{equation}
+
+Конвективный коэффициент переноса:
+\begin{equation}\label{eq:main_rhocpconv}
+\rhocpconv
+    = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g.
+\end{equation}
+
+Адиабатический эффект~--- нагрев или охлаждение системы при изменении
+давления за~счёт расширения (сжатия) флюидов и~деформации породы:
+\begin{equation}\label{eq:main_Qad}
+\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha + (\rho c_p)_s\,T\,c_r + p\,c_r\right]\pdt{p}.
+\end{equation}
+
+Эффект Джоуля--Томсона~--- изменение температуры при дросселировании
+(течении флюида через пористую среду при наличии градиента давления):
+\begin{equation}\label{eq:main_QJT}
+\QJT = -\left[u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T)\right]\pdr{p}.
+\end{equation}
+
+Теплота дегазации:
+\begin{equation}\label{eq:main_Qdeg}
+\Qdeg = - L(p,T)\,\mdot,
+\end{equation}
+где~$L(p,T)$~--- удельная теплота дегазации [Дж/кг газа], параметр
+PVT-модели (раздел~\ref{ssec:closures}).
+При~$\mdot > 0$ (газ выделяется из~нефти) и~$L > 0$ система
+охлаждается~--- энергия расходуется на~перевод газового компонента
+из~растворённого состояния в~свободное.
+
+\paragraph{Поведение в~однофазной зоне.}
+В~однофазной зоне ($S_g = 0$, режим~2) при отсутствии дополнительных
+источников газа и~постоянном составе притока
+$R_s = R_s^0 = \mathrm{const}$, $\partial R_s/\partial t = 0$,
+$\partial R_s/\partial r = 0$, поэтому $\mdot = 0$
+из~\eqref{eq:main_mdot}, и~$\Qdeg = 0$~--- дегазации нет.
+Значение~$L$ в~однофазной зоне несущественно.
+
 \paragraph{Запись через коэффициент Джоуля--Томсона.}
 
-Введём \textbf{коэффициент Джоуля--Томсона}~--- изменение
-температуры при изоэнтальпийном расширении:
-\begin{equation}\label{eq:muJT_def}
+Коэффициент Джоуля--Томсона~--- изменение температуры при
+изоэнтальпийном расширении:
+\begin{equation}\label{eq:main_muJT_def}
   \mu_{\mathrm{JT},\alpha}
   = \left.\frac{\partial T}{\partial p}\right|_{h_\alpha}
   = \frac{v_\alpha\,(\alpha_\alpha\,T - 1)}{c_{p,\alpha}},
   \qquad \alpha \in \{o,\,g\},
 \end{equation}
 где $v_\alpha = 1/\rho_\alpha$. Отсюда
-\begin{equation}\label{eq:alpha_via_muJT}
+\begin{equation}\label{eq:main_alpha_via_muJT}
   1 - \alpha_\alpha\,T
   = -\rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}.
 \end{equation}
 
-Подставим~\eqref{eq:alpha_via_muJT} в~определения
-$\QJT$~\eqref{eq:4} и~$\Qad$~\eqref{eq:3}
-\begin{equation}\label{eq:QJT_muJT}
+Подставим~\eqref{eq:main_alpha_via_muJT} в~определения
+$\QJT$~\eqref{eq:main_QJT} и~$\Qad$~\eqref{eq:main_Qad}:
+\begin{equation}\label{eq:main_QJT_muJT}
   \boxed{
     \QJT^*
     = \sum_\alpha \rho_\alpha\,c_{p,\alpha}\,
       \mu_{\mathrm{JT},\alpha}\,u_\alpha\,\pdr{p}.
   }
 \end{equation}
-\begin{equation}\label{eq:Qad_muJT}
+\begin{equation}\label{eq:main_Qad_muJT}
   \boxed{
     \Qad^*
     = \phi\!\left[
@@ -1146,13 +633,11 @@ $\QJT$~\eqref{eq:4} и~$\Qad$~\eqref{eq:3}
     \right]\pdt{p}.
   }
 \end{equation}
-Здесь использовано $\alpha_\alpha\,T
-= 1 + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}$
-из~\eqref{eq:alpha_via_muJT}.
 
 В~PVT-контракте (раздел~\ref{ssec:closures}) коэффициент
 $\mu_{\mathrm{JT},\alpha}(p,T)$ заменяет~$\alpha_\alpha(p,T)$
-как входной параметр. Пересчёт, при необходимости:
+как входной параметр. В~коде используется запись через~$\mu_{\mathrm{JT}}$.
+Пересчёт, при необходимости:
 $\alpha_\alpha = (1 + \rho_\alpha\,c_{p,\alpha}\,
 \mu_{\mathrm{JT},\alpha})/T$.
 
@@ -1188,7 +673,7 @@ $T(r,t)$. Балансы масс записаны в~дивергентной (
   \text{Режим~2 ($S_g = 0$):}\quad S_g = 0.
 \]
 
-\paragraph{4. Уравнение энергии~\eqref{eq:energy_final}:}
+\paragraph{4. Уравнение энергии~\eqref{eq:main_energy_final}:}
 \[
   \rhocpeff\,\pdt{T}
   + \rhocpconv\,\pdr{T}
@@ -1508,7 +993,7 @@ PVT-свойства:
 \subsubsection{Уравнение энергии на известных полях}
 
 При фиксированных $p(r,t)$, $u_o(r,t)$, $u_g(r,t)$, $S_g(r,t)$
-уравнение энергии~\eqref{eq:energy_final}~--- \textbf{линейное}
+уравнение энергии~\eqref{eq:main_energy_final}~--- \textbf{линейное}
 по~$T^{n+1}$. Коэффициенты $A(r)$, $B(r)$, $\leff(r)$, $f(r)$
 зависят от~$p^{n+1}$, $S_g^{n+1}$, $u^{n+1}$ (уже известны)
 и~от~$T^n$ (замораживание). После дискретизации~---
@@ -1873,10 +1358,6 @@ $3\times 3$ сохраняется. Меняется только третья �
 Блочная прогонка~--- обобщение скалярной прогонки Томаса на блочные
 системы. Каждый шаг~--- обращение блока $3\times 3$. Сложность~$O(N)$.
 
-Блочная прогонка~--- обобщение скалярной прогонки Томаса на блочные
-системы. Каждый шаг~--- обращение блока $2\times 2$ (аналитически).
-Сложность~$O(N)$.
-
 Сходимость Ньютона квадратичная при хорошем начальном приближении
 ($p^n$); типично 2--4 итерации на~шаг.
 
@@ -2139,6 +1620,587 @@ $r_{N-1} \approx \Rext$), поэтому граничное условие за�
 
 %=============================================================================
 \appendix
+
+%=============================================================================
+\section{Вывод уравнения для темпа выделения свободного газа}\label{app:degas_rate}
+%=============================================================================
+
+Ниже приведён вывод уравнения баланса свободного газа
+и~определения массового темпа дегазации~$\mdot$.
+
+Уравнение баланса нефтяного компонента~\eqref{eq:mass_oil} записано
+в~объёмных единицах нефтяного компонента при стандартных условиях
+[м$^3$ст\,нефти/(м$^3\cdot$с)], плотность~$\rho_o^{\text{ст}}$
+была сокращена из~обеих частей. Аналогично,
+уравнение~\eqref{eq:mass_gas} записано в~объёмных единицах газового
+компонента при стандартных условиях [м$^3$ст\,газа/(м$^3\cdot$с)],
+плотность~$\rho_g^{\text{ст}}$ сокращена.
+
+Газосодержание $R_s$ имеет размерность
+[м$^3$ст\,газа\,/\,м$^3$ст\,нефти]. Поэтому результат умножения
+$R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же размерность, что
+и~\eqref{eq:mass_gas}~--- м$^3$ст\,газа/(м$^3\cdot$с). Это
+допускает вычитание одного уравнения из~другого:
+\begin{multline}\label{eq:gas_minus_Rs_oil}
+  \pdt{}\!\left(\phi\!\left[
+    \frac{R_s\,S_o}{B_o} + \frac{S_g}{B_g}
+  \right]\right)
+  - R_s\,\pdt{}\!\left(\phi\,\frac{S_o}{B_o}\right)
+  \\
+  + \divr{\left[
+    \frac{R_s\,u_o}{B_o} + \frac{u_g}{B_g}
+  \right]}
+  - R_s\,\divr{\frac{u_o}{B_o}} = 0.
+\end{multline}
+
+Перегруппируем слагаемые, чтобы привести уравнение к~виду
+баланса массы газа в~газовой фазе и~явно выделить вклад,
+определяющий производство свободного газа:
+\begin{equation}\label{eq:free_gas_rate}
+  \boxed{
+    \pdt{}\!\left(\phi\,\frac{S_g}{B_g}\right)
+    + \divr{\frac{u_g}{B_g}}
+    = -\phi\,\xio\,\pdt{R_s}
+      - \frac{u_o}{B_o}\,\pdr{R_s}.
+  }
+\end{equation}
+Здесь слева~--- локальное накопление и~конвективный
+перенос свободного газа, справа~--- источник газа за~счёт
+разгазирования нефти.
+Временная и~конвективная части разности соответственно:
+\[
+  \pdt{}\!\left(\phi\,R_s\,\xio\right)
+  - R_s\,\pdt{}\!\left(\phi\,\xio\right)
+  = \phi\,\xio\,\pdt{R_s}, \quad \xio = S_o/B_o.
+\]
+\[
+  \divr{\frac{R_s\,u_o}{B_o}}
+  - R_s\,\divr{\frac{u_o}{B_o}}
+  = \frac{u_o}{B_o}\,\pdr{R_s}.
+\]
+Оба слагаемых описывают переход газового компонента из~растворённого
+состояния в~свободное: первое~--- за~счёт локального изменения~$R_s$
+во~времени, второе~--- за~счёт притока нефти с~иным газосодержанием.
+Перенося их в~правую часть~\eqref{eq:free_gas_rate}, получаем
+источник газовой фазы.
+
+Правая часть~\eqref{eq:free_gas_rate} имеет размерность
+м$^3$ст\,газа/(м$^3\cdot$с)~--- объёмный (при стандартных
+условиях) темп появления свободного газа. Для перехода к~массовому
+темпу~$\mdot$ [кг/(м$^3\cdot$с)] умножаем на~плотность газового
+компонента при стандартных условиях~$\rho_g^{\text{ст}}$:
+\begin{equation}\label{eq:mdot}
+  \boxed{
+    \mdot = -\rho_g^{\text{ст}}\!\left[
+      \phi\,\xio\,\pdt{R_s}
+      + \frac{u_o}{B_o}\,\pdr{R_s}
+    \right].
+  }
+\end{equation}
+
+При~$\mdot > 0$ газ выделяется из нефти; при~$\mdot < 0$~---
+растворяется обратно.
+
+
+%=============================================================================
+\section{Вывод уравнения энергии}\label{app:energy_derivation}
+%=============================================================================
+
+Ниже приведён полный вывод уравнения
+энергии~\eqref{eq:energy_final} из~первого начала термодинамики.
+
+Рассмотрим неподвижный элемент пористой среды. Первое начало
+термодинамики для открытой системы:
+\begin{equation}\label{eq:first_law_open}
+  \frac{dE_{\mathrm{total}}}{dt}
+  = \dot{Q} - \dot{W}_{\text{внешн}}
+    + \sum_{\text{входы}} \dot{m}_{\mathrm{in}}\,h_{\mathrm{in}}
+    - \sum_{\text{выходы}} \dot{m}_{\mathrm{out}}\,h_{\mathrm{out}}.
+\end{equation}
+
+Определим входящие в~\eqref{eq:first_law_open} величины:
+\begin{itemize}[nosep]
+  \item $E_{\mathrm{total}}$~--- полная внутренняя энергия вещества
+        внутри элемента (порода + флюиды), Дж/м$^3$;
+  \item $\dot{Q}$~--- подвод тепла к~элементу за~счёт теплопроводности
+        (кондукция через границы элемента), Вт/м$^3$;
+  \item $\dot{W}_{\text{внешн}}$~--- мощность работы, совершаемой
+        системой над~окружением, помимо работы проталкивания
+        (в~рассматриваемой задаче $\dot{W}_{\text{внешн}} = 0$:
+        нет подвижных стенок и~внешних механических воздействий),
+        Вт/м$^3$;
+  \item $\dot{m}_{\mathrm{in}}$, $\dot{m}_{\mathrm{out}}$~--- массовые
+        расходы флюида, втекающего в~элемент и~вытекающего из~него
+        через его границы, кг/(м$^3\cdot$с);
+  \item $h_{\mathrm{in}}$, $h_{\mathrm{out}}$~--- удельные энтальпии
+        втекающего и~вытекающего флюида, Дж/кг.
+\end{itemize}
+
+Для рассматриваемой системы
+уравнение~\eqref{eq:first_law_open} в \textbf{гомогенном приближении} запишется следующим образом
+\begin{equation}\label{eq:energy_cons}
+  \pdt{E}
+  + \divr{F}
+  = \divr{\leff\,\pdr{T}},
+\end{equation}
+где
+\begin{equation}\label{eq:E_expanded}
+  E = (1 - \phi)\,(\rho c_p)_s\,T + \phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha,
+\end{equation}
+\begin{equation}\label{eq:E_enthalpy_relation}
+\phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha = \phi\sum_\alpha S_\alpha\,\rho_\alpha\,h_\alpha
+      - \phi\,p,
+\end{equation}
+\begin{equation}\label{eq:F_total}
+  F = \sum_\alpha \rho_\alpha\,h_\alpha\,u_\alpha, \quad  h_\alpha = e_\alpha + p/\rho_\alpha.
+\end{equation}
+
+Определим энтальпию многокомпонентной нефтяной фазы, которая является смесью двух компонентов.
+Её энтальпия разлагается через парциальные энтальпии:
+\begin{equation}\label{eq:oil_enthalpy_components}
+  \phi\,S_o\,\rho_o\,h_o
+  = \phi\,\frac{S_o}{B_o}\!\left(
+      \rho_o^{\text{ст}}\,\bar{h}_{oo}
+      + R_s\,\rho_g^{\text{ст}}\,\bar{h}_{go}
+    \right),
+\end{equation}
+где~$\bar{h}_{oo}(p, T, R_s)$~--- парциальная удельная
+энтальпия\footnote{Парциальная удельная энтальпия компонента~$k$
+в~фазе~--- это производная энтальпии фазы~$H$ по~массе~$m_k$ этого
+компонента при постоянных давлении~$p$, температуре~$T$ и~массах
+остальных компонентов~$m_{j\neq k}$:
+$\bar{h}_k = (\partial H/\partial m_k)_{p,\,T,\,m_{j\neq k}}$.
+Она характеризует вклад единицы массы данного компонента в~энтальпию
+раствора и~отличается как от~энтальпии чистого вещества, так и~от~средней
+энтальпии смеси.} нефтяного компонента в~нефтяной фазе,
+$\bar{h}_{go}(p, T, R_s)$~--- парциальная удельная энтальпия газового
+компонента в~нефтяной фазе. Обе величины зависят от~давления,
+температуры и~фактического состава нефтяной фазы (газосодержания~$R_s$).
+Плотность нефтяной фазы выразится следующим образом через плотности компонентов в~стандартных условиях
+\begin{equation}\label{eq:rho_oil}
+  \rho_o = \frac{\rho_o^{\text{ст}} + R_s\,\rho_g^{\text{ст}}}{B_o}.
+\end{equation}
+Газовая фаза содержит только один компонент (газ), поэтому её энтальпия
+просто~$h_g(p,T)$.
+
+В уравнении~\eqref{eq:energy_cons} выделим явно слагаемые, которые определяют
+вклад в~общий баланс энергии и~отвечают (i)~фазовому переходу (дегазации),
+(ii)~эффекту Джоуля--Томсона и (iii)~дроссельному эффекту.
+
+В выражении полной энтальпии системы выделим явно части,
+которые отвечают отдельным компонентам, а~не фазам.
+Для внутренней энергии и~конвективного потока получим соответственно
+\begin{equation}\label{eq:H_fluids}
+  \phi\sum_\alpha S_\alpha\rho_\alpha h_\alpha
+  = \underbrace{\phi\,\frac{S_o}{B_o}\,\rho_o^{\text{ст}}\,
+      \bar{h}_{oo}}_{\text{нефтяной комп.}}
+    + \underbrace{\phi\,\rho_g^{\text{ст}}\!\left[
+        \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}
+        + \frac{S_g}{B_g}\,h_g
+      \right]}_{\text{газовый комп.}}.
+\end{equation}
+\begin{equation}\label{eq:F_components}
+  F = \underbrace{\frac{u_o}{B_o}\,\rho_o^{\text{ст}}\,
+        \bar{h}_{oo}}_{\text{нефт.\ комп.}}
+      + \underbrace{\rho_g^{\text{ст}}\!\left[
+          \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}
+          + \frac{u_g}{B_g}\,h_g
+        \right]}_{\text{газ.\ комп.}}.
+\end{equation}
+
+Вклад газового компонента в уравнении~\eqref{eq:energy_cons} содержит
+два слагаемых~--- растворённый газ (с~$\bar{h}_{go}$) и~свободный газ
+(с~$h_g$). Рассмотрим их по~отдельности. Из~\eqref{eq:H_fluids} и~\eqref{eq:F_components}
+соберём все члены, содержащие~$\bar{h}_{go}$, и~раскроем производные
+
+\begin{multline}\label{eq:F_components_der}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} =
+    \\
+    \rho_g^{\text{ст}}\,\bar{h}_{go}\!\left[
+    \pdt{}\!\left(\phi\,
+      \frac{R_s\,S_o}{B_o}\right)
+    + \divr{
+      \frac{R_s\,u_o}{B_o}}
+  \right]
+  +
+  \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} }.
+\end{multline}
+Вычитая уравнение баланса свободного
+газа~\eqref{eq:free_gas_rate} из~уравнения баланса газового
+компонента~\eqref{eq:mass_gas}, выразим сумму в квадратных скобках
+через массовый темп производства свободного газа
+\[
+  \pdt{}\!\left(\phi\,\frac{R_s\,S_o}{B_o}\right)
+  + \divr{\frac{R_s\,u_o}{B_o}}
+  = \phi\,\xio\,\pdt{R_s}
+    + \frac{u_o}{B_o}\,\pdr{R_s}
+  = -\frac{\mdot}{\rho_g^{\text{ст}}},
+\]
+где последнее равенство следует из~определения~\eqref{eq:mdot}.
+Следовательно, уравнение~\eqref{eq:F_components_der} примет следующий вид
+\begin{multline}\label{eq:F_components_derived}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{R_s\,S_o}{B_o}\,\bar{h}_{go}\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{R_s\,u_o}{B_o}\,\bar{h}_{go}} =
+    \\
+    -\mdot\bar{h}_{go}
+  +
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} }
+\end{multline}
+
+Аналогично, соберём члены с~$h_g$ из~\eqref{eq:H_fluids},
+\eqref{eq:F_components} и~раскроем производные:
+\begin{multline}\label{eq:hg_components_der}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{S_g}{B_g}\,h_g\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{u_g}{B_g}\,h_g} =
+    \\
+    \rho_g^{\text{ст}}\,h_g\!\left[
+    \pdt{}\!\left(\phi\,
+      \frac{S_g}{B_g}\right)
+    + \divr{\frac{u_g}{B_g}}
+  \right]
+  +
+  \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}.
+\end{multline}
+Выражение в~квадратных скобках~--- левая часть баланса свободного
+газа~\eqref{eq:free_gas_rate}. Его правая часть
+равна~$\mdot/\rho_g^{\text{ст}}$ (источник свободного газа за~счёт
+дегазации). Следовательно:
+\begin{multline}\label{eq:hg_components_derived}
+  \pdt{}\!\left(\phi\,\rho_g^{\text{ст}}\,
+    \frac{S_g}{B_g}\,h_g\right)
+  + \divr{\rho_g^{\text{ст}}\,
+    \frac{u_g}{B_g}\,h_g} =
+    \\
+    +\mdot\,h_g
+  +
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}.
+\end{multline}
+
+Сумма уравнений~\eqref{eq:F_components_derived} и~\eqref{eq:hg_components_derived}
+содержит вклад фазового перехода
+\begin{equation}\label{eq:phase_change_heat}
+  (h_g - \bar{h}_{go})\,\mdot \equiv L\,\mdot,
+\end{equation}
+где введена \textbf{удельная теплота дегазации}:
+\begin{equation}\label{eq:L_def}
+  \boxed{
+    L(p,T) = h_g(p,T) - \bar{h}_{go}(p, T, R_s^{\text{eq}}(p,T)).
+  }
+\end{equation}
+
+Парциальная энтальпия~$\bar{h}_{go}$ определена для произвольного
+состава нефтяной фазы: $\bar{h}_{go} = \bar{h}_{go}(p, T, R_s)$,
+где~$R_s$~--- фактическое содержание газа в~нефти (не~обязательно
+равновесное). В~определении~$L$ состав фиксируется при
+\textbf{равновесном} значении $R_s = R_s^{\text{eq}}(p,T)$,
+обеспечивающем сосуществование нефтяной и~газовой фаз.
+Именно при этом составе имеет смысл говорить о~переходе молекул
+газа между фазами. Поэтому $L$ выражается как функция только~$p$
+и~$T$.
+
+В случае $L > 0$ свободный газ имеет большую энтальпию, чем растворённый.
+При выделении газа ($\mdot > 0$) и~$L > 0$: система охлаждается~---
+энергия расходуется на~перевод молекул газа из~растворённого состояния
+в~свободное.
+
+\paragraph{Поведение в~однофазной зоне.}
+В~однофазной зоне ($S_g = 0$, режим~2) газосодержание~$R_s$
+определяется из баланса масс. При отсутствии дополнительных
+источников газа и~постоянном составе притока $R_s = R_s^0 =
+\mathrm{const}$, поэтому $\partial R_s/\partial t = 0$
+и~$\partial R_s/\partial r = 0$. Из~определения~\eqref{eq:mdot}
+следует $\mdot = 0$, и~вклад дегазации $Q_{\mathrm{deg}}
+= -L\,\mdot = 0$~--- дегазации нет.
+
+Формально в~определении~\eqref{eq:L_def} фигурирует энтальпия
+газовой фазы~$h_g$, которая не~имеет физического смысла при~$S_g=0$
+(газовой фазы не~существует). Однако при~$\mdot = 0$ произведение
+$L\,\mdot = 0$ независимо от~значения~$L$, поэтому значение~$L$
+в~однофазной зоне несущественно и~не~влияет на~решение.
+
+\paragraph{Вклады изменения энтальпий при фиксированном составе.}
+
+В~уравнениях~\eqref{eq:F_components_derived}
+и~\eqref{eq:hg_components_derived} помимо членов фазового перехода
+($-\mdot\,\bar{h}_{go}$ и~$+\mdot\,h_g$) остались слагаемые
+с~производными энтальпий по~$t$ и~$r$. Перечислим их явно.
+
+По~аналогии с~\eqref{eq:F_components_der} для нефтяного компонента $\bar{h}_{oo}$
+(первое слагаемое в~\eqref{eq:H_fluids}, \eqref{eq:F_components}):
+\begin{multline}\label{eq:hoo_terms}
+  \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
+  + \divr{\rho_o^{\text{ст}}\,
+    \frac{u_o}{B_o}\,\bar{h}_{oo}} =
+    \\
+    \bar{h}_{oo}\!\left[
+    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    + \divr{\rho_o^{\text{ст}}\,\frac{u_o}{B_o}}
+  \right]
+  +
+  \\
+    \left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
+\end{multline}
+Выражение в~квадратных скобках представляет собой плотность $\rho_o^{\text{ст}}$,
+умноженную на~левую
+часть баланса нефтяного компонента~\eqref{eq:mass_oil}, которая
+равна нулю. Следовательно, первый член обращается в~нуль, и~остаются
+только производные~$\bar{h}_{oo}$
+\begin{equation}\label{eq:hoo_remainder}
+    \pdt{}\!\left(\phi\,\rho_o^{\text{ст}}\,
+    \frac{S_o}{B_o}\,\bar{h}_{oo}\right)
+  + \divr{\rho_o^{\text{ст}}\,
+    \frac{u_o}{B_o}\,\bar{h}_{oo}} =\left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}}.
+\end{equation}
+
+Таким образом, уравнение~\eqref{eq:energy_cons} принимает следующий вид
+с~учётом выполненных преобразований
+\begin{multline}\label{eq:energy_cons_der}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}  +
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{R_s\,S_o}{B_o}\right)
+    \pdt{\bar{h}_{go}}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{R_s\,u_o}{B_o}\right)\pdr{\bar{h}_{go} } +
+      \\
+  \left(\phi\,\rho_o^{\text{ст}}\,
+      \frac{S_o}{B_o}\right)
+    \pdt{\bar{h}_{oo}}\!
+    + \left(\rho_o^{\text{ст}}\,
+      \frac{u_o}{B_o}\right)\pdr{\bar{h}_{oo}} =
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
+
+
+Уравнение~\eqref{eq:energy_cons_der} содержит производные парциальных
+энтальпий~$\bar{h}_{oo}$, $\bar{h}_{go}$ и~энтальпии газовой
+фазы~$h_g$. Парциальные энтальпии~$\bar{h}_{oo}$ и~$\bar{h}_{go}$ зависят
+от~$p$, $T$ и~состава~$R_s$. Их полные производные по~$t$
+содержат члены с~$\partial R_s/\partial t$:
+\[
+  \pdt{\bar{h}_{oo}} = \left.\pdt{\bar{h}_{oo}}\right|_{R_s}
+    + \frac{\partial\bar{h}_{oo}}{\partial R_s}\,\pdt{R_s},
+  \qquad
+  \pdt{\bar{h}_{go}} = \left.\pdt{\bar{h}_{go}}\right|_{R_s}
+    + \frac{\partial\bar{h}_{go}}{\partial R_s}\,\pdt{R_s}.
+\]
+Запишем соотношение Гиббса--Дюгема для бинарной смеси (нефтяная фаза)
+при постоянных~$p$ и~$T$
+\begin{equation}\label{eq:gibbs_duhem}
+  \rho_o^{\text{ст}}\,d\bar{h}_{oo}\big|_{p,T}
+  + R_s\,\rho_g^{\text{ст}}\,d\bar{h}_{go}\big|_{p,T} = 0.
+\end{equation}
+В~результате группировки слагаемых в~уравнении~\eqref{eq:energy_cons_der}
+с~учётом соотношения~\eqref{eq:gibbs_duhem} запишем
+\begin{multline}\label{eq:energy_cons_derived}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \left(\phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}\right)
+    \pdt{h_g}\!
+    + \left(\rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\right)\pdr{h_g}  +
+      \\
+    \phi\,\frac{S_o}{B_o}
+    \left.\pdt{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right)\right|_{R_s}
+    +
+      \frac{u_o}{B_o}\left.\pdr{}\left(\rho_g^{\text{ст}}\,R_s\,\bar{h}_{go} + \rho_o^{\text{ст}}\,\bar{h}_{oo}\right) \right|_{R_s} =
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
+Преобразуем уравнение~\eqref{eq:energy_cons_derived} далее с~учётом
+определения~\eqref{eq:rho_oil} плотности нефтяной фазы и
+определения энтальпии нефти~\eqref{eq:oil_enthalpy_components}
+\begin{multline}\label{eq:energy_cons_derived2}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \phi\,\rho_g^{\text{ст}}\,
+      \frac{S_g}{B_g}
+    \pdt{h_g}\!
+    + \rho_g^{\text{ст}}\,
+      \frac{u_g}{B_g}\pdr{h_g}  +
+      \\
+    \phi\,\frac{S_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)
+    \left.\pdt{h_o}\right|_{R_s}
+    +
+      \frac{u_o}{B_o}\,(\rho_o^{\text{ст}}+\rho_g^{\text{ст}}\,R_s)\left.\pdr{h_o}\right|_{R_s} =
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot,
+\end{multline}
+
+Дифференциал энтальпии нефтяной фазы при фиксированном
+составе принимает следующий вид
+\begin{equation}\label{eq:dh_oil}
+  dh_o\big|_{R_s} = c_{p,o}\,dT + v_o\,(1 - \alpha_o\,T)\,dp,
+\end{equation}
+где $v_o = 1/\rho_o$~--- удельный объём,
+$c_{p,o}$~--- удельная изобарная теплоёмкость (двухкомпонентной) нефти,
+$\alpha_o$~--- её коэффициент объёмного теплового расширения.
+Первое слагаемое характеризует изменение энтальпии при изобарном нагреве,
+второе~--- при изотермическом изменении давления. Аналогичное соотношение записывается
+для газовой фазы.
+
+Подставляя~\eqref{eq:dh_oil} в~уравнение~\eqref{eq:energy_cons_derived2}, получим
+\begin{multline}\label{eq:energy_cons_derived3}
+  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+      +
+      \\
+    \phi\,\rho_g\,S_g
+    \left(c_{p,g}\,\pdt{T} + v_g\,(1 - \alpha_g\,T)\,\pdt{p}\right)\!
+    + \rho_g\,u_g\left(c_{p,g}\,\pdr{T} + v_g\,(1 - \alpha_g\,T)\,\pdr{p}\right)  +
+    \\
+    \phi\,S_o\,\rho_o
+    \left(c_{p,o}\,\pdt{T} + v_o\,(1 - \alpha_o\,T)\,\pdt{p}\right)
+    +
+      u_o\,\rho_o\left(c_{p,o}\,\pdr{T} + v_o\,(1 - \alpha_o\,T)\,\pdr{p}\right) =
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot.
+\end{multline}
+
+Раскроем производные от слагаемых, описывающих теплоёмкость пород и
+работу внешних сил
+\begin{equation}\label{eq:rock_dt}
+  \pdt{}\!\left[
+    (1-\phi)\,(\rho c_p)_s\,T-\phi\,p
+  \right]
+  = (1-\phi)\,(\rho c_p)_s\,\pdt{T}
+    - (\rho c_p)_s\,T\,\phi\,c_r\,\pdt{p}-\phi\,(1 + p\,c_r)\,\pdt{p}.
+\end{equation}
+Подставим это выражение в~уравнение~\eqref{eq:energy_cons_derived3}
+и~перегруппируем слагаемые
+\begin{multline}\label{eq:energy_cons_derived4}
+  \left[(1-\phi)\,(\rho c_p)_s\, +\phi\,\rho_g\,S_gc_{p,g}\,  +\phi\,S_o\,\rho_oc_{p,o}\right]\pdt{T}
+    +
+    \\
+    (\phi\,S_g\,(1 - \alpha_g\,T)+\phi\,S_o\,(1 - \alpha_o\,T)\,-(\rho c_p)_s\,T\,\phi\,c_r-\phi\,(1 + p\,c_r))\,\pdt{p}
+      +
+      \\
+    (\rho_g\,u_gc_{p,g}+\rho_ou_oc_{p,o})\,\pdr{T} + (u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T))\pdr{p} =
+  \\
+  \divr{\leff\,\pdr{T}} - L\mdot.
+\end{multline}
+
+Определим эффективные характеристики гомогенной смеси
+\begin{equation}\label{eq:1}
+\rhocpeff
+    = (1-\phi)\,(\rho c_p)_s
+      + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
+\end{equation}
+\begin{equation}\label{eq:2}
+\rhocpconv
+    = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g,
+\end{equation}
+\begin{equation}\label{eq:3}
+\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha + (\rho c_p)_s\,T\,\,c_r + p\,c_r\right]\pdt{p},
+\end{equation}
+\begin{equation}\label{eq:4}
+\QJT = -\left[u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
+\end{equation}
+\begin{equation}\label{eq:5}
+\Qdeg = - L(p,T)\mdot
+\end{equation}
+и~получим уравнение баланса энергии
+\begin{equation}\label{eq:energy_final}
+  \boxed{
+    \rhocpeff\,\pdt{T}
+    + \rhocpconv\,\pdr{T}
+    = \divr{\leff\,\pdr{T}}
+    + \QJT + \Qad + \Qdeg.
+  }
+\end{equation}
+
+\paragraph{Запись через коэффициент Джоуля--Томсона.}
+
+Введём \textbf{коэффициент Джоуля--Томсона}~--- изменение
+температуры при изоэнтальпийном расширении:
+\begin{equation}\label{eq:muJT_def}
+  \mu_{\mathrm{JT},\alpha}
+  = \left.\frac{\partial T}{\partial p}\right|_{h_\alpha}
+  = \frac{v_\alpha\,(\alpha_\alpha\,T - 1)}{c_{p,\alpha}},
+  \qquad \alpha \in \{o,\,g\},
+\end{equation}
+где $v_\alpha = 1/\rho_\alpha$. Отсюда
+\begin{equation}\label{eq:alpha_via_muJT}
+  1 - \alpha_\alpha\,T
+  = -\rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}.
+\end{equation}
+
+Подставим~\eqref{eq:alpha_via_muJT} в~определения
+$\QJT$~\eqref{eq:4} и~$\Qad$~\eqref{eq:3}
+\begin{equation}\label{eq:QJT_muJT}
+  \boxed{
+    \QJT^*
+    = \sum_\alpha \rho_\alpha\,c_{p,\alpha}\,
+      \mu_{\mathrm{JT},\alpha}\,u_\alpha\,\pdr{p}.
+  }
+\end{equation}
+\begin{equation}\label{eq:Qad_muJT}
+  \boxed{
+    \Qad^*
+    = \phi\!\left[
+      \sum_\alpha S_\alpha\!\left(1
+        + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}\right)
+      + c_r\!\left(p + (\rho c_p)_s\,T\right)
+    \right]\pdt{p}.
+  }
+\end{equation}
+Здесь использовано $\alpha_\alpha\,T
+= 1 + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}$
+из~\eqref{eq:alpha_via_muJT}.
+
+В~PVT-контракте (раздел~\ref{ssec:closures}) коэффициент
+$\mu_{\mathrm{JT},\alpha}(p,T)$ заменяет~$\alpha_\alpha(p,T)$
+как входной параметр. Пересчёт, при необходимости:
+$\alpha_\alpha = (1 + \rho_\alpha\,c_{p,\alpha}\,
+\mu_{\mathrm{JT},\alpha})/T$.
+
+
+%=============================================================================
 \section{Раскрытие балансов масс и уравнение давления}\label{app:expansion}
 %=============================================================================
 

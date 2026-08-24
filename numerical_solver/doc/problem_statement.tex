@@ -1213,20 +1213,30 @@ $3\times 3$ сохраняется. Меняется только третья �
 по~известным $p^{n+1}$, $u^{n+1}$, $S_g^{n+1}$ и~замораживаются
 на~$T^n$. Неизвестная~--- $T_j^{n+1}$.
 
+\paragraph{Upstream-оператор.}
+Для произведения потока~$\mathcal{G}$ на~скалярную величину~$\psi$
+на~грани~$j+\half$ используется аппроксимация против потока:
+\begin{equation}\label{eq:upstream_operator}
+  \langle\mathcal{G}\,\psi\rangle_{j+\half}
+  = \mathcal{G}_{j+\half}^+\,\psi_j
+  + \mathcal{G}_{j+\half}^-\,\psi_{j+1},
+\end{equation}
+где $\mathcal{G}^+ = \max(\mathcal{G},\,0)$,
+$\mathcal{G}^- = \min(\mathcal{G},\,0)$.
+Значение~$\psi$ берётся из~ячейки, откуда направлен
+поток~$\mathcal{G}$.
+
 \paragraph{Конвективный поток энергии через грань.}
-Энтальпийный поток через грань~$j+\half$~--- сумма вкладов
-двух фаз с~upstream-взвешиванием \textbf{раздельно} по~каждой
-фазе (фазы могут течь в~разные стороны):
 \begin{equation}\label{eq:energy_conv_face}
   \mathcal{F}_{j+\half}
   = \sum_\alpha
-    \bigl(\Phi_\alpha^+\,T_j + \Phi_\alpha^-\,T_{j+1}\bigr)_{j+\half},
+    \langle\Phi_\alpha\,T\rangle_{j+\half},
 \end{equation}
 где $\Phi_\alpha = \rho_\alpha\,c_{p,\alpha}\,G_\alpha$~---
-конвективный массовый поток энтальпии фазы~$\alpha$ через грань
-($G_\alpha$~--- объёмный расход фазы через грань, определяемый
-из~закона Дарси); $\Phi_\alpha^+ = \max(\Phi_\alpha,\,0)$,
-$\Phi_\alpha^- = \min(\Phi_\alpha,\,0)$.
+конвективный коэффициент переноса фазы~$\alpha$ через грань
+[Вт/К]; $G_\alpha$~--- объёмный расход фазы через грань
+(из~закона Дарси). Upstream определяется \textbf{раздельно}
+по~каждой фазе (фазы могут течь в~разные стороны).
 
 \paragraph{Кондуктивный поток через грань.}
 \begin{equation}\label{eq:heat_cond_disc}
@@ -1241,17 +1251,13 @@ $\Phi_\alpha^- = \min(\Phi_\alpha,\,0)$.
 \]
 
 \paragraph{Эффект Джоуля--Томсона (пространственный).}
-Произведение $u_\alpha\,\partial p/\partial r$ аппроксимируется
-\textbf{через потоки на~гранях}. JT-поток через грань~$j+\half$:
+JT-поток через грань~$j+\half$:
 \begin{equation}\label{eq:QJT_face}
   \mathcal{J}_{j+\half}
-  = \sum_\alpha \mu_{\mathrm{JT},\alpha}^{j+\half}\!
-    \bigl(\Phi_{\alpha,j+\half}^+\,p_j
-    + \Phi_{\alpha,j+\half}^-\,p_{j+1}\bigr),
+  = \sum_\alpha \mu_{\mathrm{JT},\alpha}^{j+\half}\,
+    \langle\Phi_\alpha\,p\rangle_{j+\half},
 \end{equation}
-где $\Phi_{\alpha}^{\pm}$~--- upstream-разделённые потоки
-из~\eqref{eq:energy_conv_face},
-$\mu_{\mathrm{JT},\alpha}^{j+\half}$~--- коэффициент
+где~$\mu_{\mathrm{JT},\alpha}^{j+\half}$~--- коэффициент
 Джоуля--Томсона на~грани (upstream по~фазе~$\alpha$).
 Вклад JT в~уравнение ячейки~$j$~--- разность потоков:
 \begin{equation}\label{eq:QJT_disc}
@@ -1259,12 +1265,14 @@ $\mu_{\mathrm{JT},\alpha}^{j+\half}$~--- коэффициент
 \end{equation}
 
 \paragraph{Адиабатический эффект (временной).}
-Вычисляется поточечно в~центре ячейки:
+Вычисляется поточечно в~центре ячейки (при~$c_r = 0$,
+через~$\mu_{\mathrm{JT}}$~\eqref{eq:main_Qad_muJT}):
 \begin{equation}\label{eq:Qad_disc}
-  V_j\,{\Qad}_j = V_j\,\phi\left[
-    T_j^n\sum_\alpha S_{\alpha,j}\,\alpha_{\alpha,j}
-    + c_r(p_j^{n+1} + (\rho c_p)_s\,T_j^n)
-    \right]\frac{p_j^{n+1}-p_j^n}{\Delta t}.
+  V_j\,{\Qad}_j = V_j\,\phi\,
+    \sum_\alpha S_{\alpha,j}\,
+    \bigl(1 + \rho_{\alpha,j}\,c_{p,\alpha,j}\,
+    \mu_{\mathrm{JT},\alpha,j}\bigr)\,
+    \frac{p_j^{n+1}-p_j^n}{\Delta t}.
 \end{equation}
 
 \paragraph{Теплота дегазации.}
@@ -1276,16 +1284,14 @@ $\mu_{\mathrm{JT},\alpha}^{j+\half}$~--- коэффициент
 Массовый темп дегазации~\eqref{eq:main_mdot} в~дискретной форме.
 Временная часть~--- разность по~времени в~центре ячейки;
 пространственная часть $(u_o/B_o)\,\partial R_s/\partial r$~---
-\textbf{upstream} через потоки на~гранях.
+upstream через потоки на~гранях.
 Конвективный поток газосодержания через грань~$j+\half$:
 \begin{equation}\label{eq:mdot_conv_face}
   \mathcal{R}_{j+\half}
-  = G_{o,j+\half}^+\,R_{s,j}
-  + G_{o,j+\half}^-\,R_{s,j+1},
+  = \langle G_o\,R_s\rangle_{j+\half},
 \end{equation}
-где $G_{o,j+\half}^{\pm}$~--- upstream-разделённые потоки
-нефтяного компонента через грань~\eqref{eq:flux_oil}:
-$G_o^+ = \max(G_o,\,0)$, $G_o^- = \min(G_o,\,0)$.
+где $G_o$~--- поток нефтяного компонента через
+грань~\eqref{eq:flux_oil}.
 Массовый темп дегазации для ячейки~$j$:
 \begin{equation}\label{eq:mdot_disc}
   V_j\,\mdot_j = -\rho_g^{\text{ст}}\!\left[
@@ -1326,9 +1332,9 @@ $\Qad$ и~$\Qdeg$~--- поточечно в~центре.
 \end{equation}
 где
 \begin{align}
-  a_j &= -Q_{\lambda,j-\half}^T + \Phi_{j-\half}^{+},
+  a_j &= -Q_{\lambda,j-\half}^T - \Phi_{j-\half}^{+},
     \label{eq:tridiag_a} \\
-  c_j &= -Q_{\lambda,j+\half}^T - \Phi_{j+\half}^{-},
+  c_j &= -Q_{\lambda,j+\half}^T + \Phi_{j+\half}^{-},
     \label{eq:tridiag_c} \\
   b_j &= \frac{V_j\,{\rhocpeff}_j}{\Delta t}
     + Q_{\lambda,j-\half}^T + Q_{\lambda,j+\half}^T
@@ -1340,10 +1346,13 @@ $\Qad$ и~$\Qdeg$~--- поточечно в~центре.
     \label{eq:tridiag_d}
 \end{align}
 Здесь $Q_{\lambda,j\pm\half}^T = 2\pi h\,{\leff}^{j\pm\half}/
-\ln(r_{j\pm 1}/r_j)$~--- кондуктивная трансмиссибильность;
-$\Phi_{j+\half}^{\pm} = \sum_\alpha \Phi_{\alpha,j+\half}^{\pm}$~---
-суммарные upstream-потоки энтальпии;
+\ln(r_{j\pm 1}/r_j)$~--- кондуктивная трансмиссибильность ($>0$);
+$\Phi_{j+\half}^{+} = \sum_\alpha \Phi_{\alpha,j+\half}^+ \geqslant 0$,
+$\Phi_{j+\half}^{-} = \sum_\alpha \Phi_{\alpha,j+\half}^- \leqslant 0$~---
+суммарные upstream-разделённые потоки~\eqref{eq:upstream_operator};
 $\mathcal{J}_j$~--- JT-вклад~\eqref{eq:QJT_disc} (известное число).
+Коэффициенты $a_j \leqslant 0$, $c_j \leqslant 0$, $b_j > 0$~---
+диагональное преобладание обеспечено.
 
 СЛАУ~\eqref{eq:energy_tridiag} решается скалярной прогонкой
 (алгоритм Томаса) без итераций.

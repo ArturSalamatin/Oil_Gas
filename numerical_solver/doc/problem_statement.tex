@@ -926,30 +926,59 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 
 
 \subsubsection{Потоки через грани}
-
-В~логарифмической радиальной сетке поток через грань:
-\begin{equation}\label{eq:flux}
-  G_{j+\half} = \frac{2\pi\,h}{\ln(r_{j+1}/r_j)}\,
-    A_{j+\half}\,(p_{j+1} - p_j).
+ 
+Геометрическая трансмиссибильность грани~$j+\half$
+в~логарифмической радиальной сетке:
+\begin{equation}\label{eq:transmissibility}
+  \mathcal{T}_{j+\half} = \frac{2\pi\,h\,k}{\ln(r_{j+1}/r_j)}.
 \end{equation}
 Делитель~--- $\ln(r_{j+1}/r_j)$, а~не~$\Delta r$ (следствие точного
 решения для радиального потока в~кольцевом слое).
+Абсолютная проницаемость~$k$ постоянна, поэтому интерполяция~$k$
+на~грань не~требуется.
 
-Трансмиссибильность грани:
-\begin{equation}\label{eq:transmissibility}
-  \mathcal{T}_{j+\half} = \frac{2\pi\,h}{\ln(r_{j+1}/r_j)}\,
-    A_{j+\half}.
+\paragraph{Потоки компонентов.}
+Поток нефтяного компонента через грань:
+\begin{equation}\label{eq:flux_oil}
+  G_{j+\half}^{o} = \mathcal{T}_{j+\half}\,
+    \left(\frac{k_{ro}}{\mu_o\,B_o}\right)_{\!j+\half}
+    \!(p_{j+1} - p_j).
+\end{equation}
+Поток газового компонента:
+\begin{equation}\label{eq:flux_gas}
+  G_{j+\half}^{g}
+  = \mathcal{T}_{j+\half}\!\left[
+      \left(\frac{R_s\,k_{ro}}{\mu_o\,B_o}\right)_{\!j+\half}
+      + \left(\frac{k_{rg}}{\mu_g\,B_g}\right)_{\!j+\half}
+    \right](p_{j+1}-p_j).
 \end{equation}
 
-\paragraph{Интерполяция свойств на грань.}
-Гармоническое среднее с~\textbf{логарифмическими} весами:
+\paragraph{Upstream-взвешивание.}
+Подвижности фаз $k_{r\alpha}/(\mu_\alpha\,B_\alpha)$ зависят от
+насыщенности~$S_g$ (через ОФП) и~могут иметь разрыв на~фронте
+дегазации. На~грани они берутся из~\textbf{upstream}-ячейки~---
+той, откуда течёт фаза~$\alpha$:
+\[
+  \left(\frac{k_{r\alpha}}{\mu_\alpha\,B_\alpha}\right)_{\!j+\half}
+  = \begin{cases}
+      (k_{r\alpha}/\mu_\alpha B_\alpha)_j, & p_{j+1} > p_j
+        \;\text{(поток влево)}, \\
+      (k_{r\alpha}/\mu_\alpha B_\alpha)_{j+1}, & p_{j+1} < p_j
+        \;\text{(поток вправо)}.
+    \end{cases}
+\]
+Upstream обеспечивает монотонность схемы и~подавляет осцилляции.
+
+\paragraph{Интерполяция скалярных свойств.}
+Свойства, не~зависящие от~насыщенности (теплопроводность~$\leff$),
+интерполируются на~грань \textbf{гармоническим средним}
+с~логарифмическими весами:
 \begin{equation}\label{eq:face_interp}
   A_{j+\half} = \frac{1}{\dfrac{\ln(r_{j+\half}/r_j)}{A_j}
     + \dfrac{\ln(r_{j+1}/r_{j+\half})}{A_{j+1}}}.
 \end{equation}
-Для двухфазного случая подвижность каждой фазы
-$\Lambda_\alpha = k\,k_{r\alpha}/\mu_\alpha$ на~грани~---
-\textbf{upstream} по~направлению потока фазы~$\alpha$.
+Логарифмические веса корректны для радиальной геометрии
+(аналогия с~последовательными сопротивлениями в~кольцевых слоях).
 
 
 \subsubsection{Невязка}
@@ -986,14 +1015,8 @@ $\Lambda_\alpha = k\,k_{r\alpha}/\mu_\alpha$ на~грани~---
       + \left(G_{j+\half}^{g} - G_{j-\half}^{g}\right) = 0,
   }
 \end{equation}
-где полный поток газового компонента через грань:
-\begin{equation}\label{eq:flux_gas}
-  G_{j+\half}^{g}
-  = \left(\frac{R_s\,\Lambda_o}{B_o}\right)_{\!j+\half}
-    \!\mathcal{T}_{j+\half}\,(p_{j+1}-p_j)
-  + \left(\frac{\Lambda_g}{B_g}\right)_{\!j+\half}
-    \!\mathcal{T}_{j+\half}\,(p_{j+1}-p_j).
-\end{equation}
+где полный поток газового компонента через грань~$G_{j+\half}^{g}$
+определён в~\eqref{eq:flux_gas}.
 
 \paragraph{Невязка замыкающего уравнения:}
 
@@ -1185,47 +1208,145 @@ $3\times 3$ сохраняется. Меняется только третья �
 \subsection{Уравнение энергии}\label{ssec:energy_disc}
 %-----------------------------------------------------------------------------
 
-Интегрирование по~объёму ячейки~$V_j$.
+Уравнение энергии~\eqref{eq:energy_linear} интегрируется
+по~объёму ячейки~$V_j$. Все коэффициенты вычисляются
+по~известным $p^{n+1}$, $u^{n+1}$, $S_g^{n+1}$ и~замораживаются
+на~$T^n$. Неизвестная~--- $T_j^{n+1}$.
 
-\paragraph{Временная часть:}
-$V_j\,{\rhocpeff}_j\,(T_j^{n+1} - T_j^n)/\Delta t$.
-
-\paragraph{Конвективный член:}
-upstream \textbf{отдельно по каждой фазе}. Конвективный поток энергии
-через грань~$j+\half$~--- сумма вкладов двух фаз:
-\begin{equation}\label{eq:energy_upwind}
-  \dot{m}_\alpha\,T_{j+\half}
-  = \dot{m}_\alpha^+\,T_j + \dot{m}_\alpha^-\,T_{j+1},
+\paragraph{Конвективный поток энергии через грань.}
+Энтальпийный поток через грань~$j+\half$~--- сумма вкладов
+двух фаз с~upstream-взвешиванием \textbf{раздельно} по~каждой
+фазе (фазы могут течь в~разные стороны):
+\begin{equation}\label{eq:energy_conv_face}
+  \mathcal{F}_{j+\half}
+  = \sum_\alpha
+    \bigl(\Phi_\alpha^+\,T_j + \Phi_\alpha^-\,T_{j+1}\bigr)_{j+\half},
 \end{equation}
-где $\dot{m}_\alpha = \rho_\alpha\,c_{p,\alpha}\,u_\alpha$,
-$\dot{m}_\alpha^+ = \max(\dot{m}_\alpha, 0)$,
-$\dot{m}_\alpha^- = \min(\dot{m}_\alpha, 0)$.
-Формально фазы могут течь в~разные стороны, поэтому upstream
-определяется раздельно.
+где $\Phi_\alpha = \rho_\alpha\,c_{p,\alpha}\,G_\alpha$~---
+конвективный массовый поток энтальпии фазы~$\alpha$ через грань
+($G_\alpha$~--- объёмный расход фазы через грань, определяемый
+из~закона Дарси); $\Phi_\alpha^+ = \max(\Phi_\alpha,\,0)$,
+$\Phi_\alpha^- = \min(\Phi_\alpha,\,0)$.
 
-\paragraph{Диффузионный член (теплопроводность):}
-в~радиальной геометрии~--- тот же вид, что и~для давления.
-Кондуктивный поток через грань~$j+\half$:
+\paragraph{Кондуктивный поток через грань.}
 \begin{equation}\label{eq:heat_cond_disc}
   Q_{\lambda,j+\half} = \frac{2\pi\,h}{\ln(r_{j+1}/r_j)}\,
-    \leff^{j+\half}\,(T_{j+1} - T_j).
+    {\leff}^{j+\half}\,(T_{j+1} - T_j),
 \end{equation}
-Делитель~--- $\ln(r_{j+1}/r_j)$, не~$\Delta r$.
-Интерполяция~$\leff$ на~грань~--- гармоническое среднее
+где~${\leff}^{j+\half}$~--- гармоническое среднее
 с~логарифмическими весами (ср.~\eqref{eq:face_interp}):
 \[
-  {\leff}^{j+\half} =\left( \dfrac{\ln(r_{j+\half}/r_j)}{{\leff}^j}
-    + \dfrac{\ln(r_{j+1}/r_{j+\half})}{{\leff}^{j+1}}\right)^{-1}.
+  {\leff}^{j+\half} =\left( \dfrac{\ln(r_{j+\half}/r_j)}{{\leff}_j}
+    + \dfrac{\ln(r_{j+1}/r_{j+\half})}{{\leff}_{j+1}}\right)^{-1}.
 \]
 
-\paragraph{Источниковые члены:}
-$\QJT$, $\Qad$, $\Qdeg$~--- вычисляются в~центрах ячеек
-по~\textbf{известным} $p^{n+1}$, $u^{n+1}$, $S_g^{n+1}$.
+\paragraph{Эффект Джоуля--Томсона (пространственный).}
+Произведение $u_\alpha\,\partial p/\partial r$ аппроксимируется
+\textbf{через потоки на~гранях}. JT-поток через грань~$j+\half$:
+\begin{equation}\label{eq:QJT_face}
+  \mathcal{J}_{j+\half}
+  = \sum_\alpha \mu_{\mathrm{JT},\alpha}^{j+\half}\!
+    \bigl(\Phi_{\alpha,j+\half}^+\,p_j
+    + \Phi_{\alpha,j+\half}^-\,p_{j+1}\bigr),
+\end{equation}
+где $\Phi_{\alpha}^{\pm}$~--- upstream-разделённые потоки
+из~\eqref{eq:energy_conv_face},
+$\mu_{\mathrm{JT},\alpha}^{j+\half}$~--- коэффициент
+Джоуля--Томсона на~грани (upstream по~фазе~$\alpha$).
+Вклад JT в~уравнение ячейки~$j$~--- разность потоков:
+\begin{equation}\label{eq:QJT_disc}
+  \mathcal{J}_j = \mathcal{J}_{j+\half} - \mathcal{J}_{j-\half}.
+\end{equation}
 
-\paragraph{Схема:}
-неявная по~$T$, коэффициенты замораживаются на~$T^n$.
-Результат~--- \textbf{трёхдиагональная} СЛАУ для~$T_j^{n+1}$.
-Решается скалярной прогонкой (алгоритм Томаса).
+\paragraph{Адиабатический эффект (временной).}
+Вычисляется поточечно в~центре ячейки:
+\begin{equation}\label{eq:Qad_disc}
+  V_j\,{\Qad}_j = V_j\,\phi\left[
+    T_j^n\sum_\alpha S_{\alpha,j}\,\alpha_{\alpha,j}
+    + c_r(p_j^{n+1} + (\rho c_p)_s\,T_j^n)
+    \right]\frac{p_j^{n+1}-p_j^n}{\Delta t}.
+\end{equation}
+
+\paragraph{Теплота дегазации.}
+Вычисляется поточечно:
+\begin{equation}\label{eq:Qdeg_disc}
+  V_j\,{\Qdeg}_j = -V_j\,L_j\,\mdot_j.
+\end{equation}
+
+Массовый темп дегазации~\eqref{eq:main_mdot} в~дискретной форме.
+Временная часть~--- разность по~времени в~центре ячейки;
+пространственная часть $(u_o/B_o)\,\partial R_s/\partial r$~---
+\textbf{upstream} через потоки на~гранях.
+Конвективный поток газосодержания через грань~$j+\half$:
+\begin{equation}\label{eq:mdot_conv_face}
+  \mathcal{R}_{j+\half}
+  = G_{o,j+\half}^+\,R_{s,j}
+  + G_{o,j+\half}^-\,R_{s,j+1},
+\end{equation}
+где $G_{o,j+\half}^{\pm}$~--- upstream-разделённые потоки
+нефтяного компонента через грань~\eqref{eq:flux_oil}:
+$G_o^+ = \max(G_o,\,0)$, $G_o^- = \min(G_o,\,0)$.
+Массовый темп дегазации для ячейки~$j$:
+\begin{equation}\label{eq:mdot_disc}
+  V_j\,\mdot_j = -\rho_g^{\text{ст}}\!\left[
+    V_j\,\phi\,\frac{1-S_{g,j}^{n+1}}{B_{o,j}^{n+1}}\,
+      \frac{R_{s,j}^{n+1} - R_{s,j}^n}{\Delta t}
+    + \bigl(\mathcal{R}_{j+\half} - \mathcal{R}_{j-\half}\bigr)
+  \right].
+\end{equation}
+Формула единая для обоих режимов. В~режиме~2
+($R_s = R_s^0 = \mathrm{const}$) обе части обращаются
+в~нуль и~$\mdot_j = 0$ автоматически.
+
+Все величины вычислены при~$p^{n+1}$, $S_g^{n+1}$ и~$T^n$.
+
+\paragraph{Дискретное уравнение для ячейки~$j$.}
+Интеграл уравнения~\eqref{eq:energy_linear} по~$V_j$:
+\begin{equation}\label{eq:energy_disc_full}
+  \boxed{
+    V_j\,{\rhocpeff}_j\,\frac{T_j^{n+1} - T_j^n}{\Delta t}
+    + \bigl(\mathcal{F}_{j+\half} - \mathcal{F}_{j-\half}\bigr)
+    = \bigl(Q_{\lambda,j+\half} - Q_{\lambda,j-\half}\bigr)
+    + \mathcal{J}_j
+    + V_j\,({\Qad}_j + {\Qdeg}_j).
+  }
+\end{equation}
+Конвективные потоки~$\mathcal{F}$ и~кондуктивные
+потоки~$Q_\lambda$ вычисляются через грани ячейки (левую
+$j{-}\half$ и~правую $j{+}\half$); JT-вклад $\mathcal{J}_j$
+использует потоки на~обеих гранях~\eqref{eq:QJT_disc};
+$\Qad$ и~$\Qdeg$~--- поточечно в~центре.
+
+\paragraph{Трёхдиагональная СЛАУ.}
+Подставляя~\eqref{eq:energy_conv_face} и~\eqref{eq:heat_cond_disc}
+в~\eqref{eq:energy_disc_full}, собираем слагаемые
+при~$T_{j-1}^{n+1}$, $T_j^{n+1}$, $T_{j+1}^{n+1}$:
+\begin{equation}\label{eq:energy_tridiag}
+  a_j\,T_{j-1}^{n+1} + b_j\,T_j^{n+1} + c_j\,T_{j+1}^{n+1} = d_j,
+\end{equation}
+где
+\begin{align}
+  a_j &= -Q_{\lambda,j-\half}^T + \Phi_{j-\half}^{+},
+    \label{eq:tridiag_a} \\
+  c_j &= -Q_{\lambda,j+\half}^T - \Phi_{j+\half}^{-},
+    \label{eq:tridiag_c} \\
+  b_j &= \frac{V_j\,{\rhocpeff}_j}{\Delta t}
+    + Q_{\lambda,j-\half}^T + Q_{\lambda,j+\half}^T
+    + \Phi_{j+\half}^{+} - \Phi_{j-\half}^{-},
+    \label{eq:tridiag_b} \\
+  d_j &= \frac{V_j\,{\rhocpeff}_j}{\Delta t}\,T_j^n
+    + \mathcal{J}_j
+    + V_j\,({\Qad}_j + {\Qdeg}_j).
+    \label{eq:tridiag_d}
+\end{align}
+Здесь $Q_{\lambda,j\pm\half}^T = 2\pi h\,{\leff}^{j\pm\half}/
+\ln(r_{j\pm 1}/r_j)$~--- кондуктивная трансмиссибильность;
+$\Phi_{j+\half}^{\pm} = \sum_\alpha \Phi_{\alpha,j+\half}^{\pm}$~---
+суммарные upstream-потоки энтальпии;
+$\mathcal{J}_j$~--- JT-вклад~\eqref{eq:QJT_disc} (известное число).
+
+СЛАУ~\eqref{eq:energy_tridiag} решается скалярной прогонкой
+(алгоритм Томаса) без итераций.
 
 
 %-----------------------------------------------------------------------------
@@ -1261,28 +1382,35 @@ $\QJT$, $\Qad$, $\Qdeg$~--- вычисляются в~центрах ячеек
 Дебит скважины (объёмный, при ст.~условиях) непосредственно
 определяется потоком $G_{\half}$.
 
-\paragraph{Контур питания ($r = \Rext$, ячейка $j = N{-}1$).}
-В~блоке $3\times 3$ для ячейки~$j = N{-}1$:
-\begin{itemize}[nosep]
-  \item \textbf{Строка~1 (давление)}: условие I~рода,
-    $p_{N-1} = \ppl$. Замена строки аналогично забою.
-  \item \textbf{Строка~2 ($S_g$)}: условие I~рода, $S_{g,N-1} = 0$.
-    Замена строки: диагональный элемент~$= 1$, остальные~$= 0$,
-    правая часть~$= 0$.
-  \item \textbf{Строка~3 ($R_s$)}: на~контуре нефть однофазная
-    (режим~2), замыкающее уравнение $S_g = 0$ уже задано строкой~2.
-    Строку~3 заменяем на~условие I~рода: $R_{s,N-1} = R_s^0$.
-\end{itemize}
+\paragraph{Контур питания ($r = \Rext$, правая грань ячейки
+$j = N{-}1$).}
+Давление на~грани $r_{N+\half} = \Rext$ задано:
+$p\big|_{\Rext} = \ppl$. Поток:
+\begin{equation}\label{eq:bc_flux_ext}
+  G_{N+\half}^{o} = \frac{2\pi\,h}{\ln(\Rext/r_{N-1})}\,
+    \left(\frac{\Lambda_o}{B_o}\right)_{\!N-1}
+    \,(\ppl - p_{N-1}).
+\end{equation}
+На~контуре нефть однофазная ($p = \ppl > \pb$), поэтому
+$S_g\big|_{\Rext} = 0$ и~$R_s\big|_{\Rext} = R_s^0$.
+Эти значения используются при вычислении потоков газового
+компонента и~конвективного переноса энергии через правую грань:
+притекающая нефть имеет состав~$R_s^0$ и~не~содержит свободного газа.
 
 \paragraph{Температура.}
 \begin{itemize}[nosep]
-  \item $r = \Rext$: условие I~рода, $T_{N-1} = \Tpl$.
-    Замена строки: диагональный элемент~$= 1$, остальные~$= 0$,
-    правая часть~$= \Tpl$.
-  \item $r = \rw$: $\partial T/\partial r = 0$. Нулевой кондуктивный
-    поток через левую грань: $Q_{\lambda,\half} = 0$~--- диффузионный
-    поток через левую грань ячейки~$j = 0$ убирается. Конвективный
-    поток: upstream при $u < 0$ не~вносит потока слева.
+  \item $r = \Rext$: условие I~рода. Конвективный поток энергии
+    через правую грань ячейки~$j = N{-}1$ вычисляется
+    с~$T\big|_{\Rext} = \Tpl$ (upstream: приток с~контура).
+    Кондуктивный поток: $Q_{\lambda,N+\half}
+    = \dfrac{2\pi\,h}{\ln(\Rext/r_{N-1})}\,
+    {\leff}_{N-1}\,(\Tpl - T_{N-1})$.
+  \item $r = \rw$: $\partial T/\partial r = 0$.
+    Кондуктивный поток через левую грань обнуляется:
+    $Q_{\lambda,\half} = 0$.
+    Конвективный поток: флюид уходит в~скважину (upstream
+    из~ячейки~$j = 0$), температура на~грани~$= T_0$~---
+    дополнительного граничного условия не~требуется.
 \end{itemize}
 
 
@@ -1302,9 +1430,9 @@ $\QJT$, $\Qad$, $\Qdeg$~--- вычисляются в~центрах ячеек
 
 \begin{itemize}[nosep]
   \item \textbf{Уравнения давления и~насыщенности}~--- совместная
-    полностью неявная система, метод Ньютона. Неизвестные $(p, S_g)$
-    определяются одновременно на~уровне~$n{+}1$. PVT и~ОФП обновляются
-    на~каждой итерации.
+    полностью неявная система, метод Ньютона. Неизвестные
+    $(p, S_g, R_s)$ определяются одновременно на~уровне~$n{+}1$.
+    PVT и~ОФП обновляются на~каждой итерации.
   \item \textbf{Уравнение энергии}~--- неявная по~$T$. Коэффициенты
     вычислены по~$p^{n+1}$, $u^{n+1}$, $S_g^{n+1}$ и~заморожены.
     СЛАУ линейна на~каждом шаге.

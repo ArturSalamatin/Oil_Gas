@@ -1226,16 +1226,27 @@ $\mathcal{G}^- = \min(\mathcal{G},\,0)$.
 Значение~$\psi$ берётся из~ячейки, откуда направлен
 поток~$\mathcal{G}$.
 
+\paragraph{Расход фазы через грань.}
+Объёмный расход фазы~$\alpha$ (при пластовых условиях) через
+грань~$j+\half$:
+\begin{equation}\label{eq:phase_flux}
+  \mathcal{Q}_{\alpha,j+\half}
+  = \mathcal{T}_{j+\half}\,
+    \left(\frac{k_{r\alpha}}{\mu_\alpha}\right)_{\!j+\half}
+    \!(p_{j+1} - p_j),
+\end{equation}
+где подвижность~$k_{r\alpha}/\mu_\alpha$ берётся из~upstream-ячейки.
+
 \paragraph{Конвективный поток энергии через грань.}
 \begin{equation}\label{eq:energy_conv_face}
   \mathcal{F}_{j+\half}
   = \sum_\alpha
     \langle\Phi_\alpha\,T\rangle_{j+\half},
 \end{equation}
-где $\Phi_\alpha = \rho_\alpha\,c_{p,\alpha}\,G_\alpha$~---
-конвективный коэффициент переноса фазы~$\alpha$ через грань
-[Вт/К]; $G_\alpha$~--- объёмный расход фазы через грань
-(из~закона Дарси). Upstream определяется \textbf{раздельно}
+где $\Phi_\alpha = \rho_\alpha\,c_{p,\alpha}\,
+\mathcal{Q}_\alpha$~--- конвективный коэффициент переноса
+фазы~$\alpha$ через грань [Вт/К].
+Upstream определяется \textbf{раздельно}
 по~каждой фазе (фазы могут течь в~разные стороны).
 
 \paragraph{Кондуктивный поток через грань.}
@@ -1288,10 +1299,12 @@ upstream через потоки на~гранях.
 Конвективный поток газосодержания через грань~$j+\half$:
 \begin{equation}\label{eq:mdot_conv_face}
   \mathcal{R}_{j+\half}
-  = \langle G_o\,R_s\rangle_{j+\half},
+  = \langle G^o\,R_s\rangle_{j+\half},
 \end{equation}
-где $G_o$~--- поток нефтяного компонента через
-грань~\eqref{eq:flux_oil}.
+где $G^o = G^o_{j+\half}$~--- поток нефтяного
+\textbf{компонента} через грань~\eqref{eq:flux_oil}
+[м$^3$ст/с] (не путать с~расходом фазы~$\mathcal{Q}_o$
+[м$^3$пл/с]).
 Массовый темп дегазации для ячейки~$j$:
 \begin{equation}\label{eq:mdot_disc}
   V_j\,\mdot_j = -\rho_g^{\text{ст}}\!\left[

@@ -4,6 +4,9 @@
 *.doc
 *.docx
 *.pptx
+numerical_solver/HydroSolverPrototype/Prototype_1.0.3/regression/figures
+*.zip
+
 
 # LaTeX build artifacts
 *.aux
@@ -31,6 +34,7 @@ build/
 .ruff_cache/
 *.coverage
 htmlcov/
+
 
 # Results (воспроизводимы, не хранить в git)
 method_of_moments/results*

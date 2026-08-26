@@ -1,0 +1,180 @@
+{
+  "T00": {
+    "profile_source": "T00_IMEX1b_FI_profiles.xlsx",
+    "rate_source": "T00_IMEX1b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T01": {
+    "profile_source": "T01_IMEX2b_FI_profiles.xlsx",
+    "rate_source": "T01_IMEX2b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      0.25,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T02": {
+    "profile_source": "T02_IMEX3b_FI_profiles.xlsx",
+    "rate_source": "T02_IMEX3b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T03": {
+    "profile_source": "T03_IMEX4b_FI_profiles.xlsx",
+    "rate_source": "T03_IMEX4b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T04": {
+    "profile_source": "T04_IMEX5b_FI_profiles.xlsx",
+    "rate_source": "T04_IMEX5b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T06": {
+    "profile_source": "T06_IMEX6b_FI_profiles.xlsx",
+    "rate_source": "T06_IMEX6b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T07": {
+    "profile_source": "T07_IMEX7b_FI_FIXED_profiles.xlsx",
+    "rate_source": "T07_IMEX7b_FI_FIXED_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      5.0,
+      5.000694444444,
+      6.0,
+      14.0,
+      15.0,
+      15.000694444444,
+      16.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 39
+  },
+  "T08c": {
+    "profile_source": "T08c_IMEX8c_FI_EXTENDED_PVTO_profiles.xlsx",
+    "rate_source": "T08c_IMEX8c_FI_EXTENDED_PVTO_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      5.0,
+      5.000694444444,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 38
+  },
+  "T09": {
+    "profile_source": "T09_IMEX9b_FI_profiles.xlsx",
+    "rate_source": "T09_IMEX9b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  },
+  "T10": {
+    "profile_source": "T10_IMEX10b_FI_FIXED_profiles.xlsx",
+    "rate_source": "T10_IMEX10b_FI_FIXED_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      5.0,
+      5.000694444444,
+      6.0,
+      14.0,
+      15.0,
+      15.000694444444,
+      16.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 39
+  },
+  "T11": {
+    "profile_source": "T11_IMEX11b_FI_profiles.xlsx",
+    "rate_source": "T11_IMEX11b_FI_rates.xlsx",
+    "profile_times": [
+      0.000694444444,
+      1.0,
+      2.0,
+      4.0,
+      6.0,
+      14.0,
+      30.0
+    ],
+    "profile_cells": 101,
+    "rate_rows": 37
+  }
+}

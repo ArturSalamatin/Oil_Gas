@@ -293,10 +293,6 @@ $h$           & мощность (толщина) пласта                  
 \subsection{Система уравнений}\label{ssec:equations}
 %-----------------------------------------------------------------------------
 
-Задача содержит \textbf{четыре неизвестных}: давление~$p(r,t)$,
-газонасыщенность~$S_g(r,t)$, фактическое газосодержание~$R_s(r,t)$
-и~температуру~$T(r,t)$.
-
 %............................................................................
 \subsubsection{Закон Дарси}
 
@@ -388,42 +384,10 @@ $\Lambda_\alpha = k\,k_{r\alpha}/\mu_\alpha$,
     = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g.
 \end{equation}
 
-Источниковые члены:
-\begin{equation}\label{eq:main_Qad}
-\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha
-       + (\rho c_p)_s\,T\,c_r + p\,c_r\right]\pdt{p},
-\end{equation}
-\begin{equation}\label{eq:main_QJT}
-\QJT = -\left[u_g\,(1 - \alpha_g\,T)
-       + u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
-\end{equation}
-\begin{equation}\label{eq:main_Qdeg}
-\Qdeg = - L(p,T)\,\mdot,
-\end{equation}
-где~$L(p,T)$~--- удельная теплота дегазации [Дж/кг газа],
-параметр PVT-модели (раздел~\ref{ssec:closures}).
-
-Массовый темп выделения свободного газа:
-\begin{equation}\label{eq:main_mdot}
-  \boxed{
-    \mdot = -\rho_g^{\text{ст}}\!\left[
-      \phi\,\frac{1-S_g}{B_o}\,\pdt{R_s}
-      + \frac{u_o}{B_o}\,\pdr{R_s}
-    \right].
-  }
-\end{equation}
-При~$\mdot > 0$ газ выделяется; при~$\mdot < 0$~--- растворяется.
-
-Тепловую задачу можно записать через коэффициент Джоуля--Томсона
-$\mu_{\mathrm{JT},\alpha}$, который заменяет~$\alpha_\alpha$:
-\begin{equation}\label{eq:main_muJT_def}
-  \mu_{\mathrm{JT},\alpha}
-  = \frac{v_\alpha\,(\alpha_\alpha\,T - 1)}{c_{p,\alpha}},
-  \qquad
-  1 - \alpha_\alpha\,T
-  = -\rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}.
-\end{equation}
-Тогда
+Источниковые члены записываются через коэффициент
+Джоуля--Томсона~$\mu_{\mathrm{JT},\alpha}$
+(определение и~вывод~--- приложение~\ref{app:energy_derivation},
+ур.~\eqref{eq:muJT_def}--\eqref{eq:alpha_via_muJT}):
 \begin{equation}\label{eq:main_QJT_muJT}
   \boxed{
     \QJT
@@ -441,6 +405,22 @@ $\mu_{\mathrm{JT},\alpha}$, который заменяет~$\alpha_\alpha$:
     \right]\pdt{p}.
   }
 \end{equation}
+\begin{equation}\label{eq:main_Qdeg}
+\Qdeg = - L(p,T)\,\mdot,
+\end{equation}
+где~$L(p,T)$~--- удельная теплота дегазации [Дж/кг газа],
+параметр PVT-модели (раздел~\ref{ssec:closures}).
+
+Массовый темп выделения свободного газа:
+\begin{equation}\label{eq:main_mdot}
+  \boxed{
+    \mdot = -\rho_g^{\text{ст}}\!\left[
+      \phi\,\frac{1-S_g}{B_o}\,\pdt{R_s}
+      + \frac{u_o}{B_o}\,\pdr{R_s}
+    \right].
+  }
+\end{equation}
+При~$\mdot > 0$ газ выделяется; при~$\mdot < 0$~--- растворяется.
 
 %............................................................................
 \subsubsection{Сводная таблица системы уравнений}
@@ -469,7 +449,7 @@ $T(r,t)$. Балансы масс записаны в~дивергентной (
 \paragraph{3. Замыкающее уравнение (переключаемое,
 раздел~\ref{sssec:variable_switching}):}
 \[
-  \text{Режим~1 ($S_g > 0$):}\quad R_s = R_s^{\text{eq}}(p,T);
+  \text{Режим~1 ($S_g > 0$):}\quad R_s = R_s^{\text{eq}}(p);
   \qquad
   \text{Режим~2 ($S_g = 0$):}\quad S_g = 0.
 \]
@@ -926,8 +906,14 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 
 
 \subsubsection{Потоки через грани}
- 
-Геометрическая проводимость грани~$j+\half$
+
+\paragraph{Конвенция знака.}
+Положительное значение потока (объёмного, компонентного,
+теплового) означает перенос \textbf{от~скважины}, в~сторону
+увеличения радиальной координаты~$r$. При типичном режиме
+добычи все потоки направлены к~скважине и~отрицательны.
+
+\paragraph{Геометрическая проводимость} грани~$j+\half$
 в~логарифмической радиальной сетке:
 \begin{equation}\label{eq:transmissibility}
   \mathcal{T}_{j+\half} = \frac{2\pi\,h\,k}{\ln(r_{j+1}/r_j)}.
@@ -942,7 +928,7 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 \begin{equation}\label{eq:flux_oil}
   G_{j+\half}^{o} = \mathcal{T}_{j+\half}\,
     \left(\frac{k_{ro}}{\mu_o\,B_o}\right)_{\!j+\half}
-    \!(p_{j+1} - p_j).
+    \!(p_j - p_{j+1}).
 \end{equation}
 Поток газового компонента:
 \begin{equation}\label{eq:flux_gas}
@@ -950,7 +936,7 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
   = \mathcal{T}_{j+\half}\!\left[
       \left(\frac{R_s\,k_{ro}}{\mu_o\,B_o}\right)_{\!j+\half}
       + \left(\frac{k_{rg}}{\mu_g\,B_g}\right)_{\!j+\half}
-    \right](p_{j+1}-p_j).
+    \right](p_j - p_{j+1}).
 \end{equation}
 
 \paragraph{Аппроксимация против потока.}
@@ -961,10 +947,10 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 \[
   \left(\frac{k_{r\alpha}}{\mu_\alpha\,B_\alpha}\right)_{\!j+\half}
   = \begin{cases}
-      (k_{r\alpha}/\mu_\alpha B_\alpha)_j, & p_{j+1} > p_j
-        \;\text{(поток влево)}, \\
-      (k_{r\alpha}/\mu_\alpha B_\alpha)_{j+1}, & p_{j+1} < p_j
-        \;\text{(поток вправо)}.
+      (k_{r\alpha}/\mu_\alpha B_\alpha)_j, & p_j > p_{j+1}
+        \;\text{(поток вправо, от скважины)}, \\
+      (k_{r\alpha}/\mu_\alpha B_\alpha)_{j+1}, & p_j < p_{j+1}
+        \;\text{(поток влево, к скважине)}.
     \end{cases}
 \]
 Аппроксимация против потока обеспечивает монотонность схемы
@@ -1002,8 +988,9 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
   }
 \end{equation}
 где $G_{j+\half}^{o} = \mathcal{T}_{j+\half}\,
-(\Lambda_o/B_o)_{j+\half}\,(p_{j+1} - p_j)$~--- поток нефтяного
-компонента через грань. Подвижность берётся из~ячейки выше по~потоку.
+(\Lambda_o/B_o)_{j+\half}\,(p_j - p_{j+1})$~--- поток нефтяного
+компонента через грань~\eqref{eq:flux_oil}. Подвижность берётся
+из~ячейки выше по~потоку.
 
 \paragraph{Невязка баланса газового компонента:}
 \begin{equation}\label{eq:residual_gas}
@@ -1189,6 +1176,17 @@ $3\times 3$ сохраняется. Меняется только третья �
   \item Применить граничные условия (модификация коэффициентов).
   \item Решить СЛАУ: $J\,\delta\mathbf{U} = -\mathbf{F}$
         (блочная прогонка с~блоками $3\times 3$, сложность~$O(N)$).
+  \item Ограничение шага (демпфирование): обрезать компоненты
+        поправки по~максимальным допустимым приращениям:
+        \[
+          |\delta p_j| \leqslant \Delta p_{\max},
+          \qquad
+          |\delta S_{g,j}| \leqslant \Delta S_{g,\max}.
+        \]
+        Типичные значения: $\Delta p_{\max} \sim 0{,}2\,|\ppl - \pwf|$,
+        $\Delta S_{g,\max} \sim 0{,}2$.
+        При превышении~--- масштабирование всего вектора~$\delta\mathbf{U}$
+        по~наибольшему нарушению.
   \item Обновить: $\mathbf{U}^{(k+1)} = \mathbf{U}^{(k)} + \delta\mathbf{U}$.
   \item Проверить переключение режимов
         (раздел~\ref{sssec:switching_disc}).
@@ -1234,7 +1232,7 @@ $\mathcal{G}^- = \min(\mathcal{G},\,0)$.
   \mathcal{Q}_{\alpha,j+\half}
   = \mathcal{T}_{j+\half}\,
     \left(\frac{k_{r\alpha}}{\mu_\alpha}\right)_{\!j+\half}
-    \!(p_{j+1} - p_j),
+    \!(p_j - p_{j+1}),
 \end{equation}
 где подвижность~$k_{r\alpha}/\mu_\alpha$ берётся из~ячейки
 выше по~потоку.
@@ -1252,10 +1250,13 @@ $\mathcal{G}^- = \min(\mathcal{G},\,0)$.
 по~каждой фазе (фазы могут течь в~разные стороны).
 
 \paragraph{Кондуктивный поток через грань.}
+Дискретный аналог закона Фурье ($q_r = -\leff\,\partial T/\partial r$),
+проинтегрированный по~цилиндрической поверхности грани:
 \begin{equation}\label{eq:heat_cond_disc}
   Q_{\lambda,j+\half} = \frac{2\pi\,h}{\ln(r_{j+1}/r_j)}\,
-    {\leff}^{j+\half}\,(T_{j+1} - T_j),
+    {\leff}^{j+\half}\,(T_j - T_{j+1}),
 \end{equation}
+$Q_\lambda > 0$~--- поток тепла от~скважины (в~сторону роста~$r$).
 где~${\leff}^{j+\half}$~--- гармоническое среднее
 с~логарифмическими весами (ср.~\eqref{eq:face_interp}):
 \[
@@ -1283,9 +1284,9 @@ JT-поток через грань~$j+\half$:
 через~$\mu_{\mathrm{JT}}$~\eqref{eq:main_Qad_muJT}):
 \begin{equation}\label{eq:Qad_disc}
   V_j\,{\Qad}_j = V_j\,\phi\,
-    \sum_\alpha S_{\alpha,j}\,
-    \bigl(1 + \rho_{\alpha,j}\,c_{p,\alpha,j}\,
-    \mu_{\mathrm{JT},\alpha,j}\bigr)\,
+    \left(1 + \sum_\alpha S_{\alpha,j}\,
+    \rho_{\alpha,j}\,c_{p,\alpha,j}\,
+    \mu_{\mathrm{JT},\alpha,j}\right)
     \frac{p_j^{n+1}-p_j^n}{\Delta t}.
 \end{equation}
 
@@ -1316,9 +1317,16 @@ JT-поток через грань~$j+\half$:
     + \bigl(\mathcal{R}_{j+\half} - \mathcal{R}_{j-\half}\bigr)
   \right].
 \end{equation}
-Формула единая для обоих режимов. В~режиме~2
-($R_s = R_s^0 = \mathrm{const}$) обе части обращаются
-в~нуль и~$\mdot_j = 0$ автоматически.
+Формула единая для обоих режимов. В~однофазной зоне
+(режим~2, $S_g = 0$) величина~$R_s$ определяется из~баланса
+газового компонента. При однородных начальных условиях
+и~притоке с~постоянным составом $R_s = R_s^0 = \mathrm{const}$
+по~пространству и~времени, поэтому оба слагаемых
+в~\eqref{eq:mdot_disc} обращаются в~нуль
+и~$\mdot_j = 0$ автоматически. В~общем случае (неравномерная~$R_s$
+без фазового перехода) временная и~пространственная части
+компенсируют друг друга: перенос $R_s$ потоком нефтяного
+компонента не~создаёт фазового перехода.
 
 Все величины вычислены при~$p^{n+1}$, $S_g^{n+1}$ и~$T^n$.
 
@@ -1328,7 +1336,7 @@ JT-поток через грань~$j+\half$:
   \boxed{
     V_j\,{\rhocpeff}_j\,\frac{T_j^{n+1} - T_j^n}{\Delta t}
     + \bigl(\mathcal{F}_{j+\half} - \mathcal{F}_{j-\half}\bigr)
-    = \bigl(Q_{\lambda,j+\half} - Q_{\lambda,j-\half}\bigr)
+    = -\bigl(Q_{\lambda,j+\half} - Q_{\lambda,j-\half}\bigr)
     + \mathcal{J}_j
     + V_j\,({\Qad}_j + {\Qdeg}_j).
   }
@@ -1402,14 +1410,15 @@ $\mathcal{J}_j$~--- JT-вклад~\eqref{eq:QJT_disc} (известное чис
 \begin{align}
   G_{\half}^{o} &= \mathcal{T}_{\half}\,
     \left(\frac{k_{ro}}{\mu_o\,B_o}\right)_{\!0}
-    \,(p_0 - \pwf),
+    \,(\pwf - p_0),
     \label{eq:bc_flux_well} \\
   G_{\half}^{g} &= \mathcal{T}_{\half}\!\left[
     \left(\frac{R_s\,k_{ro}}{\mu_o\,B_o}\right)_{\!0}
     + \left(\frac{k_{rg}}{\mu_g\,B_g}\right)_{\!0}
-    \right](p_0 - \pwf).
+    \right](\pwf - p_0).
     \label{eq:bc_flux_well_gas}
 \end{align}
+При~$p_0 > \pwf$ потоки отрицательны~--- направлены к~скважине.
 Подвижности берутся из~ячейки~$j = 0$
 (против потока: поток направлен к~скважине).
 
@@ -1417,8 +1426,8 @@ $\mathcal{J}_j$~--- JT-вклад~\eqref{eq:QJT_disc} (известное чис
 ячейки~$j = 0$ наравне с~потоками через правую грань~$G_{3/2}$.
 Давление~$p_0$~--- \textbf{неизвестная}, определяемая
 из~баланса масс; $\pwf$~--- заданный параметр.
-Дебит скважины (при ст.~условиях) определяется
-потоком~$G_{\half}^o$.
+Дебит скважины (при ст.~условиях):
+$q_{o,\text{ст}} = -G_{\half}^o > 0$.
 
 \paragraph{Контур питания ($r = \Rext$, правая грань ячейки
 $j = N{-}1$).}
@@ -1428,27 +1437,38 @@ $p\big|_{\Rext} = \ppl$. На~контуре нефть однофазная
 $k_{rg} = 0$, $R_s\big|_{\Rext} = R_s^0$. Потоки:
 \begin{align}
   G_{N+\half}^{o} &= \mathcal{T}_{N+\half}\,
-    \left(\frac{k_{ro}}{\mu_o\,B_o}\right)_{\!N-1}
-    \,(\ppl - p_{N-1}),
+    \left(\frac{k_{ro}}{\mu_o\,B_o}\right)_{\!\mathrm{ext}}
+    \,(p_{N-1} - \ppl),
     \label{eq:bc_flux_ext} \\
   G_{N+\half}^{g} &= \mathcal{T}_{N+\half}\,
-    \frac{R_s^0\,(k_{ro})_{N-1}}{(\mu_o\,B_o)_{N-1}}
-    \,(\ppl - p_{N-1}).
+    \frac{R_s^0\,(k_{ro})_{\mathrm{ext}}}{(\mu_o\,B_o)_{\mathrm{ext}}}
+    \,(p_{N-1} - \ppl).
     \label{eq:bc_flux_ext_gas}
 \end{align}
+При~$\ppl > p_{N-1}$ потоки отрицательны~--- приток
+с~контура направлен к~скважине.
+Подвижность берётся из~условий на~контуре (против потока:
+приток направлен к~скважине):
+$S_g\big|_{\mathrm{ext}} = 0$, $k_{ro} = k_{ro,\max}$,
+$\mu_o = \mu_o(\ppl)$, $B_o = B_o(\ppl)$.
 Свободного газа нет ($k_{rg}=0$); поток газового компонента
 обусловлен только растворённым газом с~составом~$R_s^0$.
 
 \paragraph{Источниковые члены на~граничных гранях.}
 JT-поток~\eqref{eq:QJT_face} и~конвективный поток
 газосодержания~\eqref{eq:mdot_conv_face} на~граничных гранях
-вычисляются по~тем же формулам, что и~на~внутренних, с~заменой:
+вычисляются по~тем же формулам, что и~на~внутренних.
+На~граничной грани в~операторе против
+потока~\eqref{eq:upstream_operator} значения за~границей
+заменяются граничными условиями:
 \begin{itemize}[nosep]
-  \item на~забое: $p_{j+1} \to \pwf$, $R_{s,j+1} \to R_{s,0}$
-    в~операторе против потока~\eqref{eq:upstream_operator}
-    (давление на~грани задано, $R_s$~--- из~ячейки~$j = 0$);
-  \item на~контуре: $p_{j+1} \to \ppl$,
-    $R_{s,j+1} \to R_s^0$
+  \item на~забое (левая грань ячейки~$j = 0$):
+    давление~$p_{\text{забой}} = \pwf$,
+    $R_s$~--- из~ячейки~$j = 0$ (поток к~скважине,
+    против потока~--- ячейка~$j = 0$);
+  \item на~контуре (правая грань ячейки~$j = N{-}1$):
+    давление~$p_{\text{конт}} = \ppl$,
+    $R_s = R_s^0$
     (приток с~контура имеет известный состав).
 \end{itemize}
 Расход фазы через граничную грань~\eqref{eq:phase_flux}
@@ -1466,7 +1486,7 @@ $\Phi_{\alpha} = \rho_\alpha\,c_{p,\alpha}\,\mathcal{Q}_\alpha$
     Кондуктивный поток:
     $Q_{\lambda,N+\half}
     = \dfrac{2\pi\,h}{\ln(\Rext/r_{N-1})}\,
-    {\leff}_{N-1}\,(\Tpl - T_{N-1})$
+    {\leff}_{N-1}\,(T_{N-1} - \Tpl)$
     (${\leff}$ берётся из~ячейки~$j = N{-}1$, так как
     на~границе нет соседней ячейки для интерполяции).
   \item $r = \rw$: $\partial T/\partial r = 0$.
@@ -1561,8 +1581,20 @@ $\Phi_{\alpha} = \rho_\alpha\,c_{p,\alpha}\,\mathcal{Q}_\alpha$
   \end{enumerate}
 
 \item \textbf{Контроль шага по~времени.}
-  Адаптация $\Delta t$ в~документе не~описывается~--- стратегия
-  определяется при реализации в~коде.
+  Шаг~$\Delta t$ адаптируется по~результатам итераций Ньютона:
+  \begin{itemize}[nosep]
+    \item если Ньютон сошёлся за~$n_{\mathrm{it}} \leqslant n_{\min}$
+          итераций~--- увеличить $\Delta t$ (множитель~$\gamma_{\uparrow}
+          \sim 1{,}5$--$2$, не~выше~$\Delta t_{\max}$);
+    \item если $n_{\mathrm{it}} > n_{\max}$ или~нарушена физичность~---
+          уменьшить $\Delta t$ (множитель~$\gamma_{\downarrow}
+          \sim 0{,}25$--$0{,}5$, не~ниже~$\Delta t_{\min}$),
+          повторить шаг;
+    \item после скачка $\pwf$~--- начать с~малого~$\Delta t_0$.
+  \end{itemize}
+  Типичные значения: $n_{\min} = 3$, $n_{\max} = 8$,
+  $\Delta t_{\min} = 10^{-3}$~с, $\Delta t_{\max} = 10^4$~с.
+  Конкретные параметры задаются в~конфигурационном файле.
 
 \end{enumerate}
 
@@ -2152,23 +2184,23 @@ $\alpha_o$~--- её коэффициент объёмного теплового
 \end{multline}
 
 Определим эффективные характеристики гомогенной смеси
-\begin{equation}\label{eq:1}
+\begin{equation}
 \rhocpeff
     = (1-\phi)\,(\rho c_p)_s
       + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
 \end{equation}
-\begin{equation}\label{eq:2}
+\begin{equation}
 \rhocpconv
     = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g,
 \end{equation}
-\begin{equation}\label{eq:3}
-\Qad = \phi\left[T\,\sum_\alpha S_\alpha\alpha_\alpha + (\rho c_p)_s\,T\,\,c_r + p\,c_r\right]\pdt{p},
+\begin{equation}
+\Qad = \phi\left[T\,\sum_\alpha S_\alpha\,\alpha_\alpha + (\rho c_p)_s\,T\,c_r + p\,c_r\right]\pdt{p},
 \end{equation}
-\begin{equation}\label{eq:4}
-\QJT = -\left[u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
+\begin{equation}
+\QJT = -\left[u_g\,(1 - \alpha_g\,T) + u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
 \end{equation}
-\begin{equation}\label{eq:5}
-\Qdeg = - L(p,T)\mdot
+\begin{equation}
+\Qdeg = - L(p,T)\,\mdot
 \end{equation}
 и~получим уравнение баланса энергии
 \begin{equation}\label{eq:energy_final}
@@ -2197,17 +2229,17 @@ $\alpha_o$~--- её коэффициент объёмного теплового
 \end{equation}
 
 Подставим~\eqref{eq:alpha_via_muJT} в~определения
-$\QJT$~\eqref{eq:4} и~$\Qad$~\eqref{eq:3}
+$\QJT$ и~$\Qad$:
 \begin{equation}\label{eq:QJT_muJT}
   \boxed{
-    \QJT^*
+    \QJT
     = \sum_\alpha \rho_\alpha\,c_{p,\alpha}\,
       \mu_{\mathrm{JT},\alpha}\,u_\alpha\,\pdr{p}.
   }
 \end{equation}
 \begin{equation}\label{eq:Qad_muJT}
   \boxed{
-    \Qad^*
+    \Qad
     = \phi\!\left[
       \sum_\alpha S_\alpha\!\left(1
         + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}\right)

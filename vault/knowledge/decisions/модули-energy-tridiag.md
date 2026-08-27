@@ -214,6 +214,6 @@ T_new = scipy.linalg.solve_banded((1, 1), ab, d)
 ## Связанные заметки
 
 - [[architecture-numerical-solver]]
-- [[модули-pvt-контракт]] — ThermalPVT: c_p, mu_JT, L
+- [[P5-pvt-архитектура]] — FullPVT: c_p, mu_JT, L (тепловые) + Bo, Bg, rho (гидро)
 - [[модули-grid-сетка]] — проводимости, веса
 - [[модули-hydro-newton]] — u_o, u_g, G_o для конвекции и ṁ

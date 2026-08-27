@@ -203,7 +203,7 @@ class SimulatorFactory:
             N=config.grid.N,
             k=config.rock.permeability)
 
-        pvt = create_pvt(config.pvt, config.thermal)  # HydroPVT + ThermalPVT
+        pvt = create_pvt(config)  # FullPVT (гидро + тепловые), см. [[P5-pvt-архитектура]]
         relperm = create_relperm(config.relperm)       # RelPermModel
 
         hydro = NewtonHydroSolver(grid, pvt, relperm, config.numerics)

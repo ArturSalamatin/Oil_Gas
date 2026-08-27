@@ -7,6 +7,8 @@ metadata:
 
 # JSON-конфиг numerical_solver — структура и соглашения
 
+> **SUPERSEDED** частично. Актуальная структура JSON: [[P8-формат-ввода-json]]. Эта заметка содержит полезные детали по валидации и описанию отдельных секций, но структура секций обновлена в P8.
+
 ## Принципы
 
 1. **Всё в SI**: Па, К, м, с, кг. Конвертация единиц — на входе, не внутри кода.
@@ -168,7 +170,7 @@ metadata:
 Три модели:
 1. **standing** — встроенные корреляции Стендинга, Бэггса-Робинсона
 2. **table** — CSV-таблицы (как в InjectorGPN для газа)
-3. **custom** — пользовательский Python-класс, наследующий HydroPVT + ThermalPVT
+3. **custom** — пользовательский Python-класс, наследующий FullPVT
 
 Для custom: `"module_path": "path/to/my_pvt.py"`, `"class_name": "MyPVT"`. Фабрика делает `importlib.import_module` + `getattr` + проверку `isinstance(obj, HydroPVT)`.
 

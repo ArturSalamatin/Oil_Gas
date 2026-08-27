@@ -20,7 +20,8 @@ metadata:
 | **Abstract Factory** | `SimulatorFactory` — создаёт конкретные модули из JSON и передаёт в оркестратор | `*Factory::create(json)` |
 | **Strategy** | PVT-модель, ОФП-модель, гидро-модуль — подключаемые стратегии | `PointGas` / `FieldGas`, шаблонные специализации |
 | **Mediator** | `Simulator` (оркестратор) — координирует гидродинамику, теплоперенос, PVT, ввод/вывод | `SolverManager` |
-| **Adapter** | Обёртка вокруг внешнего гидродинамического модуля коллеги | `Wrapper` / `GasWrapper` |
+| **Adapter** | Обёртка вокруг RadialBlackOilModel коллеги (PrototypeHydroAdapter) | `Wrapper` / `GasWrapper` |
+| **Decorator** | Конвертеры единиц: HydroUnitDecorator (бар↔Па), EnergyUnitDecorator (SI↔SI) | — |
 | **Template Method** | Базовый цикл по времени в `Simulator.run()` | `advance(tau)` |
 
 ## Полиморфизм в Python
@@ -50,10 +51,11 @@ numerical_solver/
 │   ├── __init__.py
 │   ├── pvt/                    # 1. PVT-модуль
 │   │   ├── __init__.py
-│   │   ├── base.py             # ABC: PVTModel, RPModel (ОФП)
-│   │   ├── standing.py         # Конкретная реализация: Standing + Beggs-Robinson
-│   │   ├── relperm.py          # Corey, таблица
-│   │   └── thermal.py          # mu_JT, L, c_p — тепловые PVT-свойства
+│   │   ├── base.py             # ABC: HydroPVT, FullPVT, RelPermModel
+│   │   ├── standing.py         # StandingFullPVT (корреляции + скалярные тепловые)
+│   │   ├── prototype_adapter.py # PrototypePVTAdapter (BlackOilPVT бар→Па → HydroPVT)
+│   │   ├── table_full.py       # TableFullPVT (табличные гидро + скалярные тепловые)
+│   │   └── relperm.py          # CoreyRP, PrototypeRPAdapter
 │   │
 │   ├── grid/                   # 7. Сетка и дискретизация
 │   │   ├── __init__.py
@@ -63,8 +65,8 @@ numerical_solver/
 │   ├── hydro/                  # 5. Гидродинамический модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: HydroSolver, HydroResult
-│   │   ├── analytical.py       # Аналитическая заглушка (стационарные поля)
-│   │   └── adapter.py          # Adapter для внешнего модуля коллеги
+│   │   ├── analytical.py       # AnalyticalHydroSolver (стационарные аналитические поля)
+│   │   └── prototype_adapter.py # PrototypeHydroAdapter (обёртка RadialBlackOilModel)
 │   │
 │   ├── energy/                 # Тепловой модуль
 │   │   ├── __init__.py
@@ -119,7 +121,7 @@ numerical_solver/
 
 Допущение splitting: в гидродинамике PVT зависят только от p (T=T_пл=const).
 
-Тепловые свойства (отдельный контракт `ThermalPVT`):
+Тепловые свойства (расширение в `FullPVT`, наследуемом от `HydroPVT`, см. [[P5-pvt-архитектура]]):
 - `c_p_o(p, T)`, `c_p_g(p, T)` — теплоёмкости
 - `mu_JT_o`, `mu_JT_g` — коэффициенты Джоуля-Томсона (скаляры)
 - `L_degas` — теплота дегазации (скаляр)

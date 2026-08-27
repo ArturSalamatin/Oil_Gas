@@ -47,9 +47,9 @@ class PVTModel(ABC):
 
 ```
 numerical_solver/
-├── src/
+├── gpn_multiphase_solver/      # пакет (pip-имя: gpn-multiphase-solver)
 │   ├── __init__.py
-│   ├── pvt/                    # 1. PVT-модуль
+│   ├── pvt/                    # PVT-модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: HydroPVT, FullPVT, RelPermModel
 │   │   ├── standing.py         # StandingFullPVT (корреляции + скалярные тепловые)
@@ -57,21 +57,21 @@ numerical_solver/
 │   │   ├── table_full.py       # TableFullPVT (табличные гидро + скалярные тепловые)
 │   │   └── relperm.py          # CoreyRP, PrototypeRPAdapter
 │   │
-│   ├── grid/                   # 7. Сетка и дискретизация
+│   ├── grid/                   # Сетка и дискретизация
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: Grid
-│   │   └── log_radial.py       # Конкретная: логарифмическая радиальная сетка
+│   │   └── log_radial.py       # LogRadialGrid
 │   │
-│   ├── hydro/                  # 5. Гидродинамический модуль
+│   ├── hydro/                  # Гидродинамический модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: HydroSolver, HydroResult
-│   │   ├── analytical.py       # AnalyticalHydroSolver (стационарные аналитические поля)
-│   │   └── prototype_adapter.py # PrototypeHydroAdapter (обёртка RadialBlackOilModel)
+│   │   ├── analytical.py       # AnalyticalHydroSolver
+│   │   └── prototype_adapter.py # PrototypeHydroAdapter
 │   │
 │   ├── energy/                 # Тепловой модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: EnergySolver, EnergyResult
-│   │   └── tridiag.py          # Конкретная: прогонка Томаса
+│   │   └── tridiag.py          # TridiagEnergySolver
 │   │
 │   ├── fluxes.py               # Вычисление потоков: G, Q, u, m + upstream
 │   ├── bc.py                   # Граничные условия: ABC WellControl, PressureControl
@@ -79,7 +79,7 @@ numerical_solver/
 │   ├── factory.py              # 7.1. Фабрика: JSON → Simulator
 │   ├── log.py                  # Логирование: user + dev уровни
 │   │
-│   ├── io/                     # 2, 3. Ввод/вывод
+│   ├── io/                     # Ввод/вывод
 │   │   ├── __init__.py
 │   │   ├── config.py           # Чтение JSON, валидация, dataclasses
 │   │   └── output.py           # Сохранение результатов, визуализация

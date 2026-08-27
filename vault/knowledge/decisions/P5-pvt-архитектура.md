@@ -431,7 +431,7 @@ HydroSolver, EnergySolver, fluxes.py — никогда не импортиру�
 ## Файловая структура
 
 ```
-numerical_solver/src/pvt/
+numerical_solver/gpn_multiphase_solver/pvt/
 ├── __init__.py
 ├── base.py             # ABC: HydroPVT, FullPVT
 ├── standing.py         # StandingFullPVT (корреляции)

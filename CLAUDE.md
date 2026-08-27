@@ -267,7 +267,7 @@ def compute_Cp(p, T, Sg, fluid, rock):
 
 Новая библиотека: FVM на радиальной логарифмической сетке. Постановка: `numerical_solver/doc/problem_statement.tex`.
 
-Код: `numerical_solver/src/`. Полностью независим от `method_of_moments/`.
+Код: `numerical_solver/gpn_multiphase_solver/`. Имя пакета: `gpn_multiphase_solver` (pip: `gpn-multiphase-solver`). Полностью независим от `method_of_moments/`.
 
 Архитектурные решения, контракты модулей, конвенции знаков: `vault/knowledge/decisions/`.
 

@@ -1,0 +1,3 @@
+VERSION='1.0.3'
+BUILD_ID='1.0.3-prebeta-final-regression-20260825a'
+INPUT_FORMAT_VERSION='1.0.3'

@@ -1,0 +1,57 @@
+{
+  "status": "SUCCESS",
+  "prototype_version": "1.0.3",
+  "build_id": "1.0.3-prebeta-final-regression-20260825a",
+  "input_format_version": "1.0.3",
+  "input": "/mnt/data/work103/regression/inputs/T01.xlsx",
+  "input_filename": "T01.xlsx",
+  "input_sha256": "337d6ab4bc2298cb184ccceb0d97c0e5ae56a76171a7787325cda39805dd5e03",
+  "output": "/mnt/data/work103/OUTPUT/FINAL_REGRESSION_20260825a/T01",
+  "wall_seconds": 13.687103935000323,
+  "model": {
+    "grid_cells_N": 100,
+    "simulation_time_day": 30.0,
+    "dt_initial_min": 1.0,
+    "dt_min_s": 1e-05,
+    "dtmax_min": 60.0,
+    "jacobian_mode": "grouped",
+    "linear_solver": "sparse"
+  },
+  "accepted_steps": 734,
+  "rejected_steps": 0,
+  "pb_max_rs_bar": 180.0,
+  "requested_report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "schedule_rows_drive_reports": true,
+  "warnings": [
+    "OIL_PVT saturated locus above table: gas-active max P=187.57635 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation."
+  ],
+  "warning_count": 1,
+  "qc": {
+    "report_times_pass": true,
+    "state_and_control_pass": true,
+    "state_and_control_issues": [],
+    "material_balance_pass": true,
+    "material_balance_tolerance_pct_initial": 0.0001,
+    "max_abs_oil_balance_error_pct_initial": 1.8857975692396334e-11,
+    "max_abs_gas_balance_error_pct_initial": 4.4412963230391525e-10
+  }
+}

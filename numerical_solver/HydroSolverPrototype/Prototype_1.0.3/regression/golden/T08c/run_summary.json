@@ -1,0 +1,59 @@
+{
+  "status": "SUCCESS",
+  "prototype_version": "1.0.3",
+  "build_id": "1.0.3-prebeta-final-regression-20260825a",
+  "input_format_version": "1.0.3",
+  "input": "/mnt/data/work103/regression/inputs/T08c.xlsx",
+  "input_filename": "T08c.xlsx",
+  "input_sha256": "dec6f255cf8e25f0e56aa0ea357367d5d1a392ef4441d53a0b9e41704f3829fd",
+  "output": "/mnt/data/work103/OUTPUT/FINAL_REGRESSION_20260825a/T08c",
+  "wall_seconds": 12.13006638800016,
+  "model": {
+    "grid_cells_N": 100,
+    "simulation_time_day": 30.0,
+    "dt_initial_min": 1.0,
+    "dt_min_s": 1e-05,
+    "dtmax_min": 60.0,
+    "jacobian_mode": "grouped",
+    "linear_solver": "sparse"
+  },
+  "accepted_steps": 772,
+  "rejected_steps": 0,
+  "pb_max_rs_bar": 210.85245183002252,
+  "requested_report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    5.0,
+    5.000694444444444,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    5.0,
+    5.000694444444444,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "schedule_rows_drive_reports": true,
+  "warnings": [],
+  "warning_count": 0,
+  "qc": {
+    "report_times_pass": true,
+    "state_and_control_pass": true,
+    "state_and_control_issues": [],
+    "material_balance_pass": true,
+    "material_balance_tolerance_pct_initial": 0.0001,
+    "max_abs_oil_balance_error_pct_initial": 2.3515824932508995e-08,
+    "max_abs_gas_balance_error_pct_initial": 6.28812233568427e-09
+  }
+}

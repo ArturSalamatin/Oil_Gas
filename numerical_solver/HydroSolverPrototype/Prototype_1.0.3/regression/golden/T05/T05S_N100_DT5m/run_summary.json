@@ -1,0 +1,57 @@
+{
+  "status": "SUCCESS",
+  "prototype_version": "1.0.3",
+  "build_id": "1.0.3-prebeta-final-regression-20260825a",
+  "input_format_version": "1.0.3",
+  "input": "/mnt/data/work103/regression/inputs/T05/T05S_N100_DT5m.xlsx",
+  "input_filename": "T05S_N100_DT5m.xlsx",
+  "input_sha256": "b84b3bd2dd8a560c19a800a587eec911874a2fd52a4b49c15de0215df6d45612",
+  "output": "/mnt/data/work103/OUTPUT/FINAL_REGRESSION_20260825a/T05/T05S_N100_DT5m",
+  "wall_seconds": 214.08002540500001,
+  "model": {
+    "grid_cells_N": 100,
+    "simulation_time_day": 30.0,
+    "dt_initial_min": 1.0,
+    "dt_min_s": 1e-05,
+    "dtmax_min": 5.0,
+    "jacobian_mode": "grouped",
+    "linear_solver": "sparse"
+  },
+  "accepted_steps": 8680,
+  "rejected_steps": 3,
+  "pb_max_rs_bar": 180.0,
+  "requested_report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "report_days": [
+    0.0,
+    0.0006944444444444445,
+    1.0,
+    2.0,
+    4.0,
+    6.0,
+    14.0,
+    30.0
+  ],
+  "schedule_rows_drive_reports": true,
+  "warnings": [
+    "OIL_PVT saturated locus above table: gas-active max P=189.43418 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation."
+  ],
+  "warning_count": 1,
+  "qc": {
+    "report_times_pass": true,
+    "state_and_control_pass": true,
+    "state_and_control_issues": [],
+    "material_balance_pass": true,
+    "material_balance_tolerance_pct_initial": 0.0001,
+    "max_abs_oil_balance_error_pct_initial": 1.0399119143063426e-09,
+    "max_abs_gas_balance_error_pct_initial": 1.221111963156879e-07
+  }
+}

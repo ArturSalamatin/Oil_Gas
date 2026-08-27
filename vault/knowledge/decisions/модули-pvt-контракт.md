@@ -1,11 +1,13 @@
 ---
 name: модули-pvt-контракт
-description: Детальный контракт PVT-модуля — два ABC (HydroPVT, ThermalPVT), ОФП (RelPermModel), векторизация, производные
+description: "SUPERSEDED by P5-pvt-архитектура.md — старая версия: два ABC (HydroPVT+ThermalPVT). Актуальная: HydroPVT→FullPVT"
 metadata:
   type: project
 ---
 
 # PVT-контракт — два интерфейса
+
+> **SUPERSEDED.** Эта заметка описывает старую архитектуру (HydroPVT + ThermalPVT, множественное наследование). Актуальная архитектура: [[P5-pvt-архитектура]] (HydroPVT → FullPVT, одиночное наследование, PrototypePVTAdapter). Секция RelPermModel по-прежнему актуальна.
 
 ## Обоснование разделения
 

@@ -178,6 +178,6 @@ co_undersaturated и c_mu_o_undersaturated — опциональные; есл�
 
 ## Связанные заметки
 
-- [[модули-pvt-контракт]] — ABC HydroPVT, ThermalPVT
+- [[P5-pvt-архитектура]] — ABC HydroPVT → FullPVT
 - [[architecture-numerical-solver]] — общая архитектура
 - [[открытые-вопросы-проектирования]] — Q5

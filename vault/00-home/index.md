@@ -35,7 +35,8 @@ date: 2026-07-02
 - **[[numerical-solver-plan]]** — текущий план реализации численного решателя (20.08–23.12.2026)
 - `vault/knowledge/debugging/` — расследования багов
 - `vault/knowledge/validation/` — результаты верификационных кейсов
-- `vault/knowledge/numerics/` — численные заметки (жёсткость ODE, замораживание PVT, ...)
+- `vault/knowledge/numerics/` — численные заметки:
+  - [[upstream для подвижностей фаз а не среднее]] — upstream vs гармоническое среднее на гранях FVM
 - `vault/plans/` — детальные планы из /plan-* команд
 
 ### Inbox

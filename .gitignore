@@ -40,6 +40,10 @@ htmlcov/
 method_of_moments/results*
 method_of_moments/results/*.csv
 method_of_moments/results/*.png
+numerical_solver/results/*.csv
+numerical_solver/results/*.npz
+numerical_solver/results/*.png
+numerical_solver/results/*.xlsx
 
 # OS
 Thumbs.db

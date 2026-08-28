@@ -2,18 +2,14 @@
 
 import numpy as np
 from .base import FullPVT
-
-PSI_PER_PA = 1.0 / 6894.757
-PA_PER_PSI = 6894.757
-SCF_PER_M3 = 5.6146
-RHO_WATER_ST = 999.0
-RHO_AIR_ST = 1.225
-P_ST = 101325.0
-T_ST = 288.71
+from ..units import (
+    PA_TO_PSI, PSI_TO_PA, SCF_PER_M3,
+    RHO_WATER_STD, RHO_AIR_STD, P_STD, T_STD,
+)
 
 
 def _pa_to_psia(p):
-    return np.asarray(p, float) * PSI_PER_PA
+    return np.asarray(p, float) * PA_TO_PSI
 
 def _K_to_F(T):
     return (np.asarray(T, float) - 273.15) * 9.0 / 5.0 + 32.0
@@ -22,10 +18,10 @@ def _K_to_R(T):
     return np.asarray(T, float) * 9.0 / 5.0
 
 def _api_gravity(rho_o_st):
-    return 141.5 / (rho_o_st / RHO_WATER_ST) - 131.5
+    return 141.5 / (rho_o_st / RHO_WATER_STD) - 131.5
 
 def _gas_specific_gravity(rho_g_st):
-    return rho_g_st / RHO_AIR_ST
+    return rho_g_st / RHO_AIR_STD
 
 
 class StandingFullPVT(FullPVT):
@@ -48,7 +44,7 @@ class StandingFullPVT(FullPVT):
 
         self._gamma_api = _api_gravity(rho_o_std)
         self._gamma_g = _gas_specific_gravity(rho_g_std)
-        self._gamma_o = rho_o_std / RHO_WATER_ST
+        self._gamma_o = rho_o_std / RHO_WATER_STD
         self._T_F = _K_to_F(T0)
         self._a = 0.00091 * self._T_F - 0.0125 * self._gamma_api
 
@@ -107,7 +103,7 @@ class StandingFullPVT(FullPVT):
 
     def Bg(self, p):
         p = np.asarray(p, float)
-        return P_ST * self._T0 / (T_ST * p)
+        return P_STD * self._T0 / (T_STD * p)
 
     # ── μ_o ──
 
@@ -157,7 +153,7 @@ class StandingFullPVT(FullPVT):
         Rs = np.asarray(Rs, float)
         Rs_scf = Rs * SCF_PER_M3
         pb_psia = 18.2 * ((Rs_scf / self._gamma_g) ** 0.83 * 10.0 ** self._a - 1.4)
-        return pb_psia * PA_PER_PSI
+        return pb_psia * PSI_TO_PA
 
     # ── Тепловые (скалярные) ──
 

@@ -42,8 +42,8 @@ class LogRadialGrid(Grid):
             raise ValueError(f"R_ext must be > r_well, got R_ext={R_ext}, r_well={r_well}")
         if h <= 0:
             raise ValueError(f"h must be > 0, got {h}")
-        if N < 1:
-            raise ValueError(f"N must be >= 1, got {N}")
+        if not isinstance(N, int) or N < 1:
+            raise ValueError(f"N must be an integer >= 1, got {N}")
         if k <= 0:
             raise ValueError(f"k must be > 0, got {k}")
 

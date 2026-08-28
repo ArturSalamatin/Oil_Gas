@@ -165,6 +165,11 @@ def grid_1ph():
 
 @pytest.fixture
 def state_1ph(grid_1ph):
+    """Стационарный логарифмический профиль давления, однофазный (Sg=0).
+
+    p(r) = p_wf + (p_ext - p_wf) * ln(r/rw) / ln(R/rw).
+    Это точное решение стационарного уравнения фильтрации.
+    """
     r = grid_1ph.r_centers
     log_ratio = np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
     p = P_WF + (P_EXT - P_WF) * log_ratio
@@ -297,9 +302,11 @@ class TestOnePhaseAlgebraicRelations:
                                    RS0 * result_1ph.G_o, rtol=1e-12)
 
     def test_G_free_gas_zero(self, result_1ph):
+        """Sg=0 → krg=0 → mob_g=0 → G_free_gas = 0 на всех гранях."""
         np.testing.assert_allclose(result_1ph.G_free_gas, 0.0, atol=1e-30)
 
     def test_Q_g_zero(self, result_1ph):
+        """Sg=0 → krg=0 → lam_g=0 → Q_g = 0 (нет газовой фазы)."""
         np.testing.assert_allclose(result_1ph.Q_g, 0.0, atol=1e-30)
 
 
@@ -317,10 +324,20 @@ def grid_2ph():
 
 @pytest.fixture
 def state_2ph(grid_2ph, pvt):
+    """Двухфазный профиль: газонасыщенность убывает от скважины к контуру.
+
+    Sg: 0.3 → 0.2 → 0.1 → 0.05 → 0.0
+    p:  8   → 10  → 13  → 16   → 19 МПа
+
+    Ячейки 0–3: двухфазные (regime=1), Rs = Rs_eq(p).
+    Ячейка 4: однофазная (regime=2), Rs = Rs0.
+    Давление монотонно растёт → dp < 0 на всех внутренних гранях →
+    upstream = правая ячейка (типичный поток к скважине).
+    """
     p = np.array([8e6, 10e6, 13e6, 16e6, 19e6])
     Sg = np.array([0.3, 0.2, 0.1, 0.05, 0.0])
     Rs = pvt.Rs_eq(p)
-    Rs[4] = RS0
+    Rs[4] = RS0  # однофазная ячейка: Rs свободно, не из PVT
     T = np.full(N_2PH, T0)
     regime = np.array([1, 1, 1, 1, 2], dtype=int)
     return SimulationState(p=p, Sg=Sg, Rs=Rs, T=T, regime=regime, t=0.0)
@@ -409,13 +426,18 @@ class TestTwoPhaseExtBoundary:
 
 
 def _get_Rs_up(state, bc, f, N):
+    """Rs upstream для грани f. Правило то же, что в fluxes.py:
+    upstream = ячейка с бо́льшим давлением (откуда течёт жидкость).
+    На забое: всегда ячейка 0.
+    На контуре: ячейка N-1 при оттоке, контур при притоке.
+    """
     if f == 0:
         return state.Rs[0]
     elif f == N:
         if state.p[N - 1] >= bc.p_ext:
-            return state.Rs[N - 1]
+            return state.Rs[N - 1]   # отток → upstream = ячейка N-1
         else:
-            return bc.Rs_ext
+            return bc.Rs_ext          # приток → upstream = контур
     else:
         dp = state.p[f - 1] - state.p[f]
         return state.Rs[f - 1] if dp >= 0 else state.Rs[f]

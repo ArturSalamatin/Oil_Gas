@@ -13,18 +13,27 @@ if TYPE_CHECKING:
 
 
 class WellControl(ABC):
-    """Стратегия управления скважиной на одном интервале истории."""
+    """Стратегия управления скважиной на одном интервале истории.
+
+    Определяет, как вычисляется давление на забойной грани (f=0).
+    Для PressureControl — просто p_wf.
+    Для будущего RateControl — итеративно из заданного расхода.
+    """
 
     @abstractmethod
     def boundary_pressure(self, state: SimulationState,
                           grid: Grid, pvt: HydroPVT,
                           relperm: RelPermModel) -> float:
-        """Давление на забойной грани, Па."""
+        """Давление на забойной грани, Па.
+
+        Аргументы state, grid, pvt, relperm нужны для RateControl
+        (вычислить p_wf из заданного расхода). PressureControl их игнорирует.
+        """
         ...
 
 
 class PressureControl(WellControl):
-    """Задано забойное давление p_wf = const."""
+    """Задано забойное давление p_wf = const на интервале."""
 
     def __init__(self, p_wf: float):
         if p_wf <= 0:
@@ -36,4 +45,5 @@ class PressureControl(WellControl):
         return self._p_wf
 
     def boundary_pressure(self, state, grid, pvt, relperm) -> float:
+        # PressureControl: давление задано, аргументы не используются
         return self._p_wf

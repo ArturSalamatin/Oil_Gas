@@ -68,29 +68,43 @@ def compute_fluxes(state: SimulationState, grid: Grid,
     face_area = 2.0 * np.pi * grid.h * grid.r_faces
 
     # ── Внутренние грани (f = 1..N-1) ────────────────────────
+    # Грань f расположена между ячейками f-1 (левая) и f (правая).
+    # dp = p[f-1] - p[f]:
+    #   dp > 0 → поток от скважины (нетипично), upstream = f-1
+    #   dp < 0 → поток к скважине (типично), upstream = f
     for f in range(1, N):
         dp = p[f - 1] - p[f]
         T_f = grid.trans_internal[f - 1]
 
+        # Upstream = ячейка с бо́льшим давлением
         if dp >= 0:
             up = f - 1
         else:
             up = f
 
+        # G_o = T * (kro/(μo·Bo))_up * dp — поток нефтяного компонента, м³ст/с (eq. 8)
         G_o[f] = T_f * mob_o[up] * dp
+        # G_free_gas = T * (krg/(μg·Bg))_up * dp — свободный газ, м³ст/с
         G_free_gas[f] = T_f * mob_g[up] * dp
+        # G_g = (Rs_up * mob_o_up + mob_g_up) * T * dp — полный газовый компонент (eq. 9)
         G_g[f] = T_f * (Rs[up] * mob_o[up] + mob_g[up]) * dp
 
+        # Q_o = T * (kro/μo)_up * dp — расход нефтяной фазы, м³пл/с (eq. 24, без 1/Bo)
         Q_o[f] = T_f * lam_o[up] * dp
+        # Q_g = T * (krg/μg)_up * dp — расход газовой фазы, м³пл/с (без 1/Bg)
         Q_g[f] = T_f * lam_g[up] * dp
 
+        # u = Q / (2πhr) — скорость фильтрации, м/с
         u_o[f] = Q_o[f] / face_area[f]
         u_g[f] = Q_g[f] / face_area[f]
 
+        # m = ρ_up * Q — фазовый массовый расход, кг/с
         m_o[f] = rho_o[up] * Q_o[f]
         m_g[f] = rho_g[up] * Q_g[f]
 
     # ── Забой (f = 0) ────────────────────────────────────────
+    # Upstream: всегда ячейка 0 (ближайшая к забою).
+    # При типичной добыче p_wf < p[0] → dp < 0 → G < 0 (к скважине).
     dp_w = p_wf - p[0]
     up_w = 0
 

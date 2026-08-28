@@ -14,20 +14,20 @@ class HydroSolver(ABC):
 
     @abstractmethod
     def solve(self, state: SimulationState, dt: float,
-              p_wf: float, p_ext: float, Rs0: float
-              ) -> HydroResult:
+              bc: BoundaryConditions) -> HydroResult:
         """Один шаг гидродинамики: state^n → state^{n+1}.
 
         dt определяется Simulator (из TimeSchedule). HydroSolver
         не адаптирует dt — это фиксированный шаг.
 
-        Возвращает HydroResult с полями:
-        - state: обновлённое состояние (p, Sg, Rs, regime)
-        - u_o, u_g: скорости Дарси на гранях [N+1]
-        - G_o, G_g: потоки компонентов через грани [N+1]
+        bc содержит: well (WellControl → p_wf), p_ext, Rs_ext, Sg_ext.
+
+        Возвращает HydroResult (определён в state.py).
         """
         ...
 ```
+
+HydroResult определён в `state.py` (не в `hydro/base.py`) — это контейнер данных, а не часть ABC гидро-модуля. Избегает циклических зависимостей: SimulationHistory импортирует HydroResult, а hydro/base.py импортирует SimulationState.
 
 ```python
 @dataclass
@@ -43,9 +43,12 @@ class HydroResult:
     # Скорости фильтрации на гранях
     u_o: np.ndarray        # [N+1] — м/с, >0 = от скважины
     u_g: np.ndarray        # [N+1] — м/с
-    # Массовые расходы фаз через грани
-    m_o: np.ndarray        # [N+1] — кг/с, >0 = от скважины
-    m_g: np.ndarray        # [N+1] — кг/с
+    # Фазовые массовые расходы через грани
+    m_o: np.ndarray        # [N+1] — кг/с, = ρ_o_up · Q_o
+    m_g: np.ndarray        # [N+1] — кг/с, = ρ_g_up · Q_g
+    # Покомпонентные массовые расходы через грани
+    Gm_o: np.ndarray       # [N+1] — кг/с, = ρ_o_ст · G_o
+    Gm_g: np.ndarray       # [N+1] — кг/с, = ρ_g_ст · G_g
 ```
 
 Связи: `Q_o = G_o · Bo_up`, `Q_g = G_free_gas · Bg_up`, `G_g = Rs_up · G_o + G_free_gas`.
@@ -71,22 +74,25 @@ G_g[f] = Rs_up · Q_o[f] / Bo_up + Q_g[f] / Bg_up
 class AnalyticalHydroSolver(HydroSolver):
     """Аналитические поля для тестирования."""
 
-    def solve(self, state, dt, p_wf, p_ext, Rs0):
+    def solve(self, state, dt, bc):
+        p_wf = bc.well.boundary_pressure(state, self._grid, self._pvt, self._relperm)
+        p_ext = bc.p_ext
+        Rs_ext = bc.Rs_ext
+
         # Логарифмический профиль давления (стационарный однофазный)
         p = p_wf + (p_ext - p_wf) * np.log(r / r_w) / np.log(R_ext / r_w)
 
         # Однофазная зона
         Sg = np.zeros(N)
-        Rs = np.full(N, Rs0)
+        Rs = np.full(N, Rs_ext)
         regime = np.full(N, 2, dtype=int)
 
-        # Скорость Дарси из закона Дарси
-        # u_o(r) = -k/(mu_o) · dp/dr = k·(p_ext-p_wf)/(mu_o·r·ln(R/rw))
-        u_o_faces = ...
-        u_g_faces = np.zeros(N + 1)
+        # Скорость Дарси, потоки, массовые расходы
+        ...
 
-        return HydroResult(state=..., u_o=u_o_faces, u_g=u_g_faces,
-                           G_o=..., G_g=...)
+        return HydroResult(state=..., G_o=..., G_g=..., G_free_gas=...,
+                           Q_o=..., Q_g=..., u_o=..., u_g=...,
+                           m_o=..., m_g=..., Gm_o=..., Gm_g=...)
 ```
 
 Достаточно для: тестирования T(r), проверки JT-эффекта, VAL-001.

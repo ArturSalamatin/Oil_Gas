@@ -64,13 +64,13 @@ numerical_solver/
 │   │
 │   ├── hydro/                  # Гидродинамический модуль
 │   │   ├── __init__.py
-│   │   ├── base.py             # ABC: HydroSolver, HydroResult
+│   │   ├── base.py             # ABC: HydroSolver
 │   │   ├── analytical.py       # AnalyticalHydroSolver
 │   │   └── prototype_adapter.py # PrototypeHydroAdapter
 │   │
 │   ├── energy/                 # Тепловой модуль
 │   │   ├── __init__.py
-│   │   ├── base.py             # ABC: EnergySolver, EnergyResult
+│   │   ├── base.py             # ABC: EnergySolver
 │   │   └── tridiag.py          # TridiagEnergySolver
 │   │
 │   ├── fluxes.py               # Вычисление потоков: G, Q, u, m + upstream
@@ -84,7 +84,7 @@ numerical_solver/
 │   │   ├── config.py           # Чтение JSON, валидация, dataclasses
 │   │   └── output.py           # Сохранение результатов, визуализация
 │   │
-│   └── state.py                # SimulationState, WellData, BoundaryConditions, SimulationHistory
+│   └── state.py                # SimulationState, HydroResult, EnergyResult, WellData, BoundaryConditions, SimulationHistory
 │
 ├── configs/
 │   └── baseline.json           # Эталонный конфиг

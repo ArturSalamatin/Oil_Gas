@@ -105,18 +105,21 @@ def run(self) -> SimulationHistory:
                 regime=hydro_result.state.regime,
                 t=t)
 
-        # Сохранить результат на конце интервала истории
+        # Сохранить результат (каждый save_every-й шаг + конец интервала)
         well_data = WellData(
-            q_o_std=-hydro_result.G_o[0],   # G_o[0] < 0 при добыче, дебит > 0
-            q_g_std=-hydro_result.G_g[0])
-        history.append(state, well_data)
+            q_o_std=-hydro_result.G_o[0],
+            q_g_std=-hydro_result.G_g[0],
+            m_o_well=pvt.rho_o_std * (-hydro_result.G_o[0]),
+            m_g_well=pvt.rho_g_std * (-hydro_result.G_g[0]),
+            p_wf=p_wf,
+            T_wf=state.T[0])
+        history.append(t=state.t, state=state,
+                       hydro=hydro_result, well=well_data)
 
     return history
 ```
 
-Результаты сохраняются **только на концах интервалов истории** — это то, что пользователь хочет видеть. Промежуточные подшаги не сохраняются (экономия памяти).
-
-Число записей в history = len(schedule.history) + 1 (начальное состояние).
+SimulationHistory хранит состояния, потоки и скважинные данные. Частота сохранения — save_every (из JSON). Подробности: [[контейнер-simulation-history]].
 
 ## TimeSchedule — история + шаг интегрирования
 

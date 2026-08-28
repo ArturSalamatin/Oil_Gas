@@ -25,57 +25,28 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 class HydroPVT(ABC):
-    """Свойства фаз для гидродинамики.
+    """Физические свойства фаз (без производных). Единицы: SI.
 
-    Все методы vectorized (np.ndarray). Единицы: SI (Па, Па·с).
+    Производные — в DifferentiableHydroPVT (отдельный ABC).
     """
 
-    # --- Плотности при ст. условиях (скаляры) ---
     @property
     @abstractmethod
-    def rho_o_std(self) -> float: ...    # кг/м³
-
+    def rho_o_std(self) -> float: ...
     @property
     @abstractmethod
-    def rho_g_std(self) -> float: ...    # кг/м³
+    def rho_g_std(self) -> float: ...
 
-    # --- Газосодержание ---
     @abstractmethod
     def Rs_eq(self, p: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dRs_eq_dp(self, p: np.ndarray) -> np.ndarray: ...
-
-    # --- Объёмные коэффициенты ---
     @abstractmethod
     def Bo(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dBo_dp(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dBo_dRs(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
-
     @abstractmethod
     def Bg(self, p: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dBg_dp(self, p: np.ndarray) -> np.ndarray: ...
-
-    # --- Вязкости ---
     @abstractmethod
     def mu_o(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dmu_o_dp(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
-
     @abstractmethod
     def mu_g(self, p: np.ndarray) -> np.ndarray: ...
-
-    @abstractmethod
-    def dmu_g_dp(self, p: np.ndarray) -> np.ndarray: ...
-
-    # --- Давление насыщения ---
     @abstractmethod
     def pb(self, Rs: np.ndarray) -> np.ndarray: ...
 
@@ -117,16 +88,31 @@ class FullPVT(HydroPVT):
 
 ### Иерархия
 
+Физика и метод решения **разделены**:
+
 ```
-HydroPVT (ABC)          ← интерфейс для гидро-модуля
+HydroPVT (ABC)                    ← физические свойства: Bo, Bg, mu, Rs_eq, pb, rho
     │
-    ├── FullPVT (ABC)    ← расширение для температуры, наследует HydroPVT
-    │       │
-    │       ├── StandingFullPVT      ← корреляции Standing + скалярные тепловые
-    │       └── TableFullPVT         ← табличные гидро + скалярные тепловые
+    ├── FullPVT (ABC)             ← + тепловые: c_p, mu_JT, L
+    │       ├── StandingFullPVT   ← корреляции Standing + скалярные тепловые
+    │       └── TableFullPVT      ← табличные гидро + скалярные тепловые
     │
-    └── PrototypePVTAdapter          ← обёртка BlackOilPVT (бар→Па), только гидро
+    ├── PrototypePVTAdapter       ← обёртка BlackOilPVT (бар→Па), только физика
+    │
+    └── DifferentiableHydroPVT (ABC) ← + производные: dBo_dp, dBo_dRs, ...
+                                       (для Newton-солвера, не реализован сейчас)
+
+RelPermModel (ABC)                ← физика: kro, krg
+    │
+    ├── PrototypeRPAdapter        ← обёртка TabulatedRelPerm
+    │
+    └── DifferentiableRelPerm (ABC) ← + производные: dkro_dSg, dkrg_dSg
+            └── CoreyRP           ← аналитические kro, krg + аналитические производные
 ```
+
+- HydroPVT / FullPVT / RelPermModel — **что описывает вещество** (нужно всем модулям)
+- DifferentiableHydroPVT / DifferentiableRelPerm — **как решается СЛАУ** (нужно только Newton-солверу)
+- Модули EnergySolver, Adapter, fluxes зависят от HydroPVT/FullPVT — **без** производных
 
 ## Adapter для PVT прототипа
 
@@ -178,67 +164,27 @@ class PrototypePVTAdapter(HydroPVT):
     def Rs_eq(self, p):
         return self._pvt.rs_sat(self._to_bar(p))
 
-    def dRs_eq_dp(self, p):
-        p_bar = self._to_bar(p)
-        h_bar = np.maximum(1e-4, 1e-6 * np.abs(p_bar))
-        return (self._pvt.rs_sat(p_bar + h_bar) - self._pvt.rs_sat(p_bar)) / (h_bar * BAR_TO_PA)
-
     # --- Bo ---
     def Bo(self, p, Rs):
         return self._pvt.bo(self._to_bar(p), Rs)
-
-    def dBo_dp(self, p, Rs):
-        p_bar = self._to_bar(p)
-        h_bar = np.maximum(1e-4, 1e-6 * np.abs(p_bar))
-        return (self._pvt.bo(p_bar + h_bar, Rs) - self._pvt.bo(p_bar, Rs)) / (h_bar * BAR_TO_PA)
-
-    def dBo_dRs(self, p, Rs):
-        h = np.maximum(1e-5, 1e-6 * np.abs(Rs))
-        return (self._pvt.bo(self._to_bar(p), Rs + h) - self._pvt.bo(self._to_bar(p), Rs)) / h
 
     # --- Bg ---
     def Bg(self, p):
         return self._pvt.bg(self._to_bar(p))
 
-    def dBg_dp(self, p):
-        p_bar = self._to_bar(p)
-        h_bar = np.maximum(1e-4, 1e-6 * np.abs(p_bar))
-        return (self._pvt.bg(p_bar + h_bar) - self._pvt.bg(p_bar)) / (h_bar * BAR_TO_PA)
-
     # --- Вязкости (сП → Па·с) ---
     def mu_o(self, p, Rs):
         return self._pvt.mu_o(self._to_bar(p), Rs) * CP_TO_PA_S
 
-    def dmu_o_dp(self, p, Rs):
-        p_bar = self._to_bar(p)
-        h_bar = np.maximum(1e-4, 1e-6 * np.abs(p_bar))
-        mu_plus = self._pvt.mu_o(p_bar + h_bar, Rs) * CP_TO_PA_S
-        mu_0 = self._pvt.mu_o(p_bar, Rs) * CP_TO_PA_S
-        return (mu_plus - mu_0) / (h_bar * BAR_TO_PA)
-
     def mu_g(self, p):
         return self._pvt.mu_g(self._to_bar(p)) * CP_TO_PA_S
-
-    def dmu_g_dp(self, p):
-        p_bar = self._to_bar(p)
-        h_bar = np.maximum(1e-4, 1e-6 * np.abs(p_bar))
-        mu_plus = self._pvt.mu_g(p_bar + h_bar) * CP_TO_PA_S
-        mu_0 = self._pvt.mu_g(p_bar) * CP_TO_PA_S
-        return (mu_plus - mu_0) / (h_bar * BAR_TO_PA)
 
     # --- Давление насыщения ---
     def pb(self, Rs):
         return self._pvt.pb_of_rs(Rs) * BAR_TO_PA
 ```
 
-### Размерности производных: проверка
-
-`dBo_dp`: Bo безразмерный, p в Па. Единицы: 1/Па.
-Вычисление: `(Bo(p+h) - Bo(p)) / h`, где h в **бар**, но делить нужно на h в **Па** = h_bar * BAR_TO_PA.
-Итого: `ΔBo / (h_bar * BAR_TO_PA)` → 1/Па. ✓
-
-`dmu_o_dp`: μ в Па·с, p в Па. Единицы: Па·с/Па = с.
-Вычисление: `(μ(p+h) - μ(p))` в Па·с, делим на `h_bar * BAR_TO_PA` в Па → с. ✓
+Производные (dBo_dp, dBg_dp, dmu_o_dp, dmu_g_dp) — в будущем DifferentiablePrototypePVTAdapter (конечные разности с конвертацией единиц). Сейчас не реализованы.
 
 ## FullPVT: расширение для температуры
 
@@ -265,16 +211,10 @@ class TableFullPVT(FullPVT):
     @property
     def rho_g_std(self): return self._hydro.rho_g_std
     def Rs_eq(self, p): return self._hydro.Rs_eq(p)
-    def dRs_eq_dp(self, p): return self._hydro.dRs_eq_dp(p)
     def Bo(self, p, Rs): return self._hydro.Bo(p, Rs)
-    def dBo_dp(self, p, Rs): return self._hydro.dBo_dp(p, Rs)
-    def dBo_dRs(self, p, Rs): return self._hydro.dBo_dRs(p, Rs)
     def Bg(self, p): return self._hydro.Bg(p)
-    def dBg_dp(self, p): return self._hydro.dBg_dp(p)
     def mu_o(self, p, Rs): return self._hydro.mu_o(p, Rs)
-    def dmu_o_dp(self, p, Rs): return self._hydro.dmu_o_dp(p, Rs)
     def mu_g(self, p): return self._hydro.mu_g(p)
-    def dmu_g_dp(self, p): return self._hydro.dmu_g_dp(p)
     def pb(self, Rs): return self._hydro.pb(Rs)
 
     # --- Тепловые свойства (скалярные) ---

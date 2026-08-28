@@ -29,12 +29,12 @@ metadata:
 ```python
 from abc import ABC, abstractmethod
 
-class PVTModel(ABC):
+class HydroPVT(ABC):
     @abstractmethod
-    def Bo(self, p: np.ndarray) -> np.ndarray: ...
+    def Bo(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
 
     @abstractmethod
-    def dBo_dp(self, p: np.ndarray) -> np.ndarray: ...
+    def mu_o(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
 ```
 
 - `ABC` + `@abstractmethod` — аналог чисто виртуальных методов C++.
@@ -108,18 +108,20 @@ numerical_solver/
 
 Контракт из problem_statement.tex §2.1 (таблица требований к PVT-модели):
 
-| Метод | Аргументы | Возврат | Производные |
-|---|---|---|---|
-| `Rs_eq(p)` | p | м³ст/м³ст | `dRs_eq_dp(p)` |
-| `Bo(p, Rs)` | p, Rs | м³пл/м³ст | `dBo_dp(p, Rs)`, `dBo_dRs(p, Rs)` |
-| `Bg(p)` | p | м³пл/м³ст | `dBg_dp(p)` |
-| `rho_o(p, Rs)` | p, Rs | кг/м³ | через Bo, Rs |
-| `rho_g(p)` | p | кг/м³ | `drho_g_dp(p)` |
-| `mu_o(p)` | p | Па·с | `dmu_o_dp(p)` |
-| `mu_g(p)` | p | Па·с | `dmu_g_dp(p)` |
-| `pb()` | — | Па | — |
+| Метод | Аргументы | Возврат |
+|---|---|---|
+| `Rs_eq(p)` | p | м³ст/м³ст |
+| `Bo(p, Rs)` | p, Rs | м³пл/м³ст |
+| `Bg(p)` | p | м³пл/м³ст |
+| `mu_o(p, Rs)` | p, Rs | Па·с |
+| `mu_g(p)` | p | Па·с |
+| `pb(Rs)` | Rs | Па |
+| `rho_o(p, Rs)` | p, Rs | кг/м³ |
+| `rho_g(p)` | p | кг/м³ |
 
-Допущение splitting: в гидродинамике PVT зависят только от p (T=T_пл=const).
+Производные (dBo_dp, dBg_dp, dmu_o_dp, ...) — в отдельном ABC `DifferentiableHydroPVT`. Физика и метод решения разделены. См. [[P5-pvt-архитектура]].
+
+Допущение splitting: в гидродинамике PVT зависят от p и Rs, но не от T (T=T_пл=const).
 
 Тепловые свойства (расширение в `FullPVT`, наследуемом от `HydroPVT`, см. [[P5-pvt-архитектура]]):
 - `c_p_o(p, T)`, `c_p_g(p, T)` — теплоёмкости

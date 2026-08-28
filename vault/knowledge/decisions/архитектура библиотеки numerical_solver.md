@@ -73,7 +73,7 @@ numerical_solver/
 │   │   ├── base.py             # ABC: EnergySolver
 │   │   └── tridiag.py          # TridiagEnergySolver
 │   │
-│   ├── fluxes.py               # Вычисление потоков: G, Q, u, m + upstream
+│   ├── fluxes.py               # Вычисление потоков: G, Q, u, m, Gm + upstream
 │   ├── bc.py                   # Граничные условия: ABC WellControl, PressureControl
 │   ├── simulator.py            # 6. Оркестратор (Mediator)
 │   ├── factory.py              # 7.1. Фабрика: JSON → Simulator
@@ -304,4 +304,5 @@ class SimulationState:
 - [[модули-pvt-контракт]] — детальный контракт PVT
 - [[модули-hydro-newton]] — детали блочного Ньютона
 - [[модули-energy-tridiag]] — детали тепловой прогонки
-- [[json-config-schema]] — полная схема JSON
+- [[P8-формат-ввода-json]] — актуальная схема JSON
+- [[json-config-schema]] — предыдущая версия (superseded)

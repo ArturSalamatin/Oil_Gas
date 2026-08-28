@@ -123,16 +123,29 @@ def create_well_control(interval_config) -> WellControl:
     ...
 ```
 
-## TimeSchedule — обновление
+## Два уровня представления интервала
+
+### Уровень данных (config.py → HistoryInterval)
 
 ```python
 @dataclass
 class HistoryInterval:
-    dt: float                   # длительность, с
-    well_control: WellControl   # стратегия управления
+    dt: float                        # длительность, с
+    control: str = "pressure"        # тип управления
+    p_wf: Optional[float] = None     # для control="pressure"
 ```
 
-Вместо `p_wf: float` — `well_control: WellControl`. Simulator вызывает `interval.well_control.boundary_pressure(...)`.
+Хранит сырые данные из JSON. Не знает про WellControl.
+
+### Уровень runtime (Factory создаёт WellControl)
+
+Factory (фаза 6) преобразует `HistoryInterval` → `WellControl`:
+```python
+if interval.control == "pressure":
+    well_ctrl = PressureControl(interval.p_wf)
+```
+
+Simulator вызывает `well_ctrl.boundary_pressure(state, grid, pvt, relperm)`.
 
 ## Граничные условия на контуре
 
@@ -145,5 +158,5 @@ class HistoryInterval:
 - [[architecture-numerical-solver]]
 - [[модули-simulator-оркестратор]]
 - [[временная-сетка-и-история]]
-- [[json-config-schema]]
+- [[P8-формат-ввода-json]] — структура JSON, секция time
 - [[вопросы-реализации-2]] — п. 9

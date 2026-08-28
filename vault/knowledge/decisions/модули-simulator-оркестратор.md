@@ -21,7 +21,7 @@ class Simulator:
                  grid: Grid,
                  hydro: HydroSolver,
                  energy: EnergySolver,
-                 schedule: WellSchedule,
+                 schedule: TimeSchedule,
                  config: NumericsConfig,
                  output_config: OutputConfig):
         self.grid = grid
@@ -121,17 +121,17 @@ def run(self) -> SimulationHistory:
 
 SimulationHistory хранит состояния, потоки и скважинные данные. Частота сохранения — save_every (из JSON). Подробности: [[контейнер-simulation-history]].
 
-## TimeSchedule — история + шаг интегрирования
+## TimeSchedule — runtime-обёртка над TimeConfig
 
 Аналог InjectorGPN: `t_minor_step` + `t_major_step`.
 
-```python
-@dataclass
-class HistoryInterval:
-    """Один интервал истории."""
-    dt: float        # длительность интервала (шаг истории), с
-    p_wf: float      # забойное давление на интервале, Па
+**Данные** хранятся в `TimeConfig` (io/config.py): `dt_integration`, `start_day`, `history: list[HistoryInterval]`.
+`HistoryInterval` (config.py) содержит `dt`, `control`, `p_wf` — сырые данные из JSON.
 
+**Runtime**: Factory (фаза 6) создаёт `TimeSchedule` из `TimeConfig`, преобразуя
+каждый `HistoryInterval.control + p_wf` → `WellControl` (см. [[модули-bc-граничные-условия]]).
+
+```python
 class TimeSchedule:
     """Расписание: разбивка по интервалам истории + шаг интегрирования.
 
@@ -212,7 +212,7 @@ class SimulatorFactory:
         hydro = NewtonHydroSolver(grid, pvt, relperm, config.numerics)
         energy = TridiagEnergySolver(grid, pvt, config.rock, config.thermal)
 
-        schedule = WellSchedule(config.boundary_conditions.schedule)
+        schedule = TimeSchedule.from_config(config.time)  # TimeConfig → TimeSchedule
 
         return Simulator(grid, hydro, energy, schedule,
                          config.numerics, config.output)
@@ -240,5 +240,5 @@ def create_pvt(pvt_config, thermal_config):
 - [[architecture-numerical-solver]]
 - [[модули-hydro-newton]] — HydroResult, HydroSolver
 - [[модули-energy-tridiag]] — EnergySolver
-- [[json-config-schema]] — WellSchedule из boundary_conditions
+- [[P8-формат-ввода-json]] — структура JSON, секция time
 - [[модули-io-вывод]] — сохранение и визуализация SimulationHistory

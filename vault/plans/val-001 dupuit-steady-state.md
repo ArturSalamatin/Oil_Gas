@@ -7,7 +7,7 @@ date: 2026-08-29
 issue: VAL-001
 github: 16
 branch: val/val-001/dupuit-steady-state
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-08-29
   found: 0

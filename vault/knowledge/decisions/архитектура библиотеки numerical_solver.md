@@ -75,8 +75,8 @@ numerical_solver/
 │   │
 │   ├── fluxes.py               # Вычисление потоков: G, Q, u, m, Gm + upstream
 │   ├── bc.py                   # Граничные условия: ABC WellControl, PressureControl
-│   ├── simulator.py            # 6. Оркестратор (Mediator)
-│   ├── factory.py              # 7.1. Фабрика: JSON → Simulator
+│   ├── simulator.py            # 6. Оркестратор: Simulator, TimeSchedule, ScheduleInterval
+│   ├── factory.py              # 7.1. Фабрика: SimulatorFactory.from_config()
 │   ├── log.py                  # Логирование: user + dev уровни
 │   │
 │   ├── io/                     # Ввод/вывод
@@ -185,7 +185,7 @@ class Simulator:
 ```python
 class SimulatorFactory:
     @staticmethod
-    def from_json(path: str) -> Simulator:
+    def from_config(path: str) -> Simulator:
         config = load_config(path)
         grid = LogRadialGrid(config.grid)
         pvt = StandingPVT(config.pvt)
@@ -293,7 +293,7 @@ class SimulationState:
 |---|---|---|
 | Полиморфизм | Шаблоны + специализации | ABC + наследование |
 | Указатели | `cptr<const T>` (shared_ptr) | Обычные ссылки (GC) |
-| Сборка объектов | Шаблонные фабрики | `SimulatorFactory.from_json()` |
+| Сборка объектов | Шаблонные фабрики | `SimulatorFactory.from_config()` |
 | Размерность | 2D (Z×R) | 1D (R) — осесимметричная задача |
 | СЛАУ | Eigen SparseLU | numpy/scipy (блочная прогонка вручную) |
 | Конфиг | nlohmann::json | json (стандартная библиотека Python) |

@@ -7,65 +7,48 @@ metadata:
 
 # Simulator — оркестратор (Mediator)
 
-## Класс Simulator
+## Класс Simulator (реализовано: simulator.py)
 
 ```python
 class Simulator:
     """Координирует гидродинамику и теплоперенос.
 
-    Зависит только от абстракций: Grid, HydroSolver, EnergySolver.
-    Конкретные реализации передаются через конструктор (Dependency Injection).
+    Зависит только от абстракций: Grid, HydroSolver, EnergySolver, HydroPVT.
+    Конкретные реализации передаются через конструктор (DI).
     """
 
-    def __init__(self,
-                 grid: Grid,
-                 hydro: HydroSolver,
-                 energy: EnergySolver,
+    def __init__(self, grid: Grid, hydro: HydroSolver,
+                 energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 config: NumericsConfig,
-                 output_config: OutputConfig):
-        self.grid = grid
-        self.hydro = hydro
-        self.energy = energy
-        self.schedule = schedule
-        self.config = config
-        self.output_config = output_config
+                 output_config: OutputConfig | None = None):
+        ...
 
-    def run(self) -> SimulationHistory:
-        """Основной цикл по времени. Template Method."""
+    def run(self, initial_state: SimulationState) -> SimulationHistory:
+        """Основной цикл по времени."""
         ...
 ```
 
-## SimulationState — состояние системы
+pvt нужен для WellData (rho_o_std, rho_g_std → массовые дебиты).
+initial_state передаётся в run() — Factory создаёт его отдельно.
+
+## SimulationState — состояние системы (реализовано: state.py)
 
 ```python
 @dataclass
 class SimulationState:
-    p: np.ndarray        # давление, [N], Па
-    Sg: np.ndarray       # газонасыщенность, [N]
-    Rs: np.ndarray       # фактическое газосодержание, [N], м³ст/м³ст
-    T: np.ndarray        # температура, [N], К
-    regime: np.ndarray   # режим ячейки: 1 или 2, [N], int
+    p: np.ndarray        # [N] давление, Па
+    Sg: np.ndarray       # [N] газонасыщенность
+    Rs: np.ndarray       # [N] газосодержание, м³ст/м³ст
+    T: np.ndarray        # [N] температура, К
+    regime: np.ndarray   # [N] int: 1=двухфазная, 2=однофазная
     t: float             # текущее время, с
-
-    def copy(self) -> 'SimulationState':
-        """Глубокая копия (numpy-массивы копируются)."""
-        return SimulationState(
-            p=self.p.copy(), Sg=self.Sg.copy(), Rs=self.Rs.copy(),
-            T=self.T.copy(), regime=self.regime.copy(), t=self.t)
 ```
 
-Начальное состояние (eq. 3 problem_statement.tex):
+Начальное состояние создаётся в Factory (не в Simulator):
 ```python
-def initial_state(self) -> SimulationState:
-    N = self.grid.N
-    return SimulationState(
-        p=np.full(N, self.config.p0),
-        Sg=np.zeros(N),
-        Rs=np.full(N, self.config.Rs0),
-        T=np.full(N, self.config.T0),
-        regime=np.full(N, 2, dtype=int),  # все ячейки однофазные
-        t=0.0)
+initial_state = SimulationState(
+    p=np.full(N, ic.p0), Sg=np.zeros(N), Rs=np.full(N, ic.Rs0),
+    T=np.full(N, ic.T0), regime=np.full(N, 2, dtype=int), t=0.0)
 ```
 
 ## Цикл по времени
@@ -73,53 +56,46 @@ def initial_state(self) -> SimulationState:
 Двухуровневый цикл: внешний — по интервалам истории, внутренний — по подшагам интегрирования.
 
 ```python
-def run(self) -> SimulationHistory:
-    state = self.initial_state()
+def run(self, initial_state: SimulationState) -> SimulationHistory:
     history = SimulationHistory()
-    history.append(state, well_data=None)  # начальное состояние
+    state = initial_state
+    history.append(t=0, state=state, hydro=zero_hydro, well=zero_well)
+    global_step = 0
 
-    t = 0.0
+    for k, interval in enumerate(self._schedule.intervals):
+        n_sub, dt = self._schedule.substeps(k)
 
-    # Внешний цикл: по интервалам истории
-    for k, interval in enumerate(self.schedule.history):
-        p_wf = interval.p_wf
-        n_sub, dt = self.schedule.substeps(k)
-
-        # Внутренний цикл: подшаги интегрирования
         for step in range(n_sub):
-            # 1. Гидродинамика → p, Sg, Rs + потоки G, Q
-            hydro_result = self.hydro.solve(
-                state, dt, p_wf, self.config.p0, self.config.Rs0)
+            global_step += 1
 
-            # 2. Температура (на известных p, Sg, Rs, Q, G)
-            T_new = self.energy.solve(
-                hydro_result, state, dt, self.config.T0)
+            # 1. Гидродинамика (splitting: T заморожена)
+            hydro_result = self._hydro.solve(state, dt, interval.bc)
+
+            # 2. Температура (splitting: p, Sg, Rs заморожены)
+            T_new = self._energy.solve(hydro_result, state, dt, interval.bc.T_ext)
 
             # 3. Обновить состояние
-            t += dt
             state = SimulationState(
-                p=hydro_result.state.p,
-                Sg=hydro_result.state.Sg,
-                Rs=hydro_result.state.Rs,
-                T=T_new,
-                regime=hydro_result.state.regime,
-                t=t)
+                p=hydro_result.state.p, Sg=hydro_result.state.Sg,
+                Rs=hydro_result.state.Rs, T=T_new,
+                regime=hydro_result.state.regime, t=hydro_result.state.t)
 
-        # Сохранить результат (каждый save_every-й шаг + конец интервала)
-        well_data = WellData(
-            q_o_std=-hydro_result.G_o[0],
-            q_g_std=-hydro_result.G_g[0],
-            m_o_well=pvt.rho_o_std * (-hydro_result.G_o[0]),
-            m_g_well=pvt.rho_g_std * (-hydro_result.G_g[0]),
-            p_wf=p_wf,
-            T_wf=state.T[0])
-        history.append(t=state.t, state=state,
-                       hydro=hydro_result, well=well_data)
+            # 4. Сохранить (save_every или конец интервала)
+            is_last = (step == n_sub - 1)
+            if is_last or (global_step % self._save_every == 0):
+                history.append(t=state.t, state=state,
+                               hydro=hydro_result, well=WellData(...))
 
     return history
 ```
 
-SimulationHistory хранит состояния, потоки и скважинные данные. Частота сохранения — save_every (из JSON). Подробности: [[контейнер-simulation-history]].
+Ключевые отличия от плана:
+- `run(initial_state)` — initial_state передаётся извне (Factory создаёт)
+- `interval.bc` — полный BoundaryConditions (WellControl + p_ext + T_ext + Rs_ext)
+- `interval.bc.T_ext` — T_ext берётся из BC, не из config (может меняться)
+- save_every — внутри внутреннего цикла, не только конец интервала
+
+Подробности: [[контейнер-simulation-history]].
 
 ## TimeSchedule — runtime-обёртка над TimeConfig
 
@@ -132,108 +108,67 @@ SimulationHistory хранит состояния, потоки и скважи�
 каждый `HistoryInterval.control + p_wf` → `WellControl` (см. [[модули-bc-граничные-условия]]).
 
 ```python
+@dataclass
+class ScheduleInterval:
+    """Один интервал (runtime-уровень)."""
+    dt: float                  # длительность, с
+    bc: BoundaryConditions     # WellControl + p_ext + T_ext + Rs_ext + Sg_ext
+
 class TimeSchedule:
-    """Расписание: разбивка по интервалам истории + шаг интегрирования.
+    def __init__(self, dt_integration: float,
+                 intervals: list[ScheduleInterval]):
+        ...
 
-    Аналог InjectorGPN: t_major_step + t_minor_step.
-    """
+    def substeps(self, k: int) -> tuple[int, float]:
+        """n_sub = ceil(dt/dt_int), dt_actual = dt/n_sub."""
+        ...
 
-    def __init__(self, dt_integration: float, history: list[HistoryInterval]):
-        self.dt_integration = dt_integration
-        self.history = history
-
-    def substeps(self, interval_idx: int) -> tuple[int, float]:
-        """Число подшагов и фактический шаг для интервала k.
-
-        n_sub = ceil(dt_hist / dt_integration)
-        dt_actual = dt_hist / n_sub
-
-        Гарантии:
-        - dt_actual ≤ dt_integration
-        - n_sub · dt_actual = dt_hist ровно
-        """
-        dt_hist = self.history[interval_idx].dt
-        n_sub = int(np.ceil(dt_hist / self.dt_integration))
-        n_sub = max(n_sub, 1)
-        dt_actual = dt_hist / n_sub
-        return n_sub, dt_actual
-
-    def total_time(self) -> float:
-        return sum(iv.dt for iv in self.history)
+    def total_time(self) -> float: ...
+    def n_intervals(self) -> int: ...
 ```
 
-Ключевое свойство: `n_sub · dt_actual = dt_hist` **точно**, без накопления ошибки округления. Каждый интервал истории покрывается целым числом одинаковых подшагов.
+Ключевое свойство: `n_sub · dt_actual = dt_hist` **точно**.
 
-## SimulationHistory — накопление результатов
+Factory создаёт TimeSchedule из TimeConfig, преобразуя `HistoryInterval` (данные: control, p_wf) → `ScheduleInterval` (runtime: BoundaryConditions с WellControl).
+
+## SimulationHistory — контейнер результатов (реализовано: state.py)
 
 ```python
+@dataclass
 class SimulationHistory:
-    def __init__(self):
-        self.times: list[float] = []
-        self.states: list[SimulationState] = []
+    times: list[float]
+    states: list[SimulationState]
+    hydro_results: list[HydroResult]
+    well_data: list[WellData]
 
-    def append(self, state: SimulationState):
-        self.times.append(state.t)
-        self.states.append(state.copy())  # глубокая копия!
-
-    def to_arrays(self) -> dict:
-        """Упаковка в numpy-массивы для сохранения/визуализации."""
-        n_steps = len(self.times)
-        N = self.states[0].p.shape[0]
-        return {
-            'times': np.array(self.times),             # [n_steps]
-            'p': np.array([s.p for s in self.states]),  # [n_steps, N]
-            'T': np.array([s.T for s in self.states]),
-            'Sg': np.array([s.Sg for s in self.states]),
-            'Rs': np.array([s.Rs for s in self.states]),
-        }
+    def append(self, t, state, hydro, well): ...
+    def n_saved(self) -> int: ...
 ```
 
-Глубокая копия при append — обязательна! Иначе все записи будут ссылаться на последнее состояние (мутабельные numpy-массивы).
+Simulator создаёт новый SimulationState на каждом шаге (не мутирует старый), поэтому глубокая копия при append не нужна. Подробности: [[контейнер-simulation-history]].
 
-## SimulatorFactory — фабрика
+## SimulatorFactory — фабрика (реализовано: factory.py)
 
 ```python
 class SimulatorFactory:
     @staticmethod
-    def from_json(path: str) -> Simulator:
-        config = load_config(path)
-
-        grid = LogRadialGrid(
-            r_well=config.geometry.r_well,
-            R_ext=config.geometry.R_ext,
-            h=config.geometry.h,
-            N=config.grid.N,
-            k=config.rock.permeability)
-
-        pvt = create_pvt(config)  # FullPVT (гидро + тепловые), см. [[P5-pvt-архитектура]]
-        relperm = create_relperm(config.relperm)       # RelPermModel
-
-        hydro = NewtonHydroSolver(grid, pvt, relperm, config.numerics)
-        energy = TridiagEnergySolver(grid, pvt, config.rock, config.thermal)
-
-        schedule = TimeSchedule.from_config(config.time)  # TimeConfig → TimeSchedule
-
-        return Simulator(grid, hydro, energy, schedule,
-                         config.numerics, config.output)
+    def from_config(config: SimulationConfig) -> tuple[Simulator, SimulationState]:
+        grid = LogRadialGrid(...)
+        pvt = _create_pvt(config)         # "standing" → StandingFullPVT
+        relperm = _create_relperm(config)  # "corey" → CoreyRP
+        hydro = AnalyticalHydroSolver(grid, pvt, relperm)
+        energy = TridiagEnergySolver(grid, pvt, config.rock)
+        schedule = _create_schedule(config)
+        simulator = Simulator(grid, hydro, energy, pvt, schedule, config.output)
+        initial_state = SimulationState(p=p0, Sg=0, Rs=Rs0, T=T0, regime=2, t=0)
+        return simulator, initial_state
 ```
 
 Фабрика — единственное место, где создаются конкретные классы. Остальной код работает с абстракциями.
 
-Функции `create_pvt`, `create_relperm` — внутри фабрики, выбирают конкретный класс по `config.pvt.model`:
-```python
-def create_pvt(pvt_config, thermal_config):
-    if pvt_config.model == "standing":
-        return StandingPVT(pvt_config, thermal_config)
-    elif pvt_config.model == "table":
-        return TablePVT(pvt_config, thermal_config)
-    elif pvt_config.model == "custom":
-        module = importlib.import_module(pvt_config.module_path)
-        cls = getattr(module, pvt_config.class_name)
-        return cls(pvt_config, thermal_config)
-    else:
-        raise ValueError(f"Unknown PVT model: {pvt_config.model}")
-```
+Помощники `_create_pvt`, `_create_relperm`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py.
+
+Сейчас поддерживаются: PVT = "standing", RelPerm = "corey", HydroSolver = AnalyticalHydroSolver. При интеграции прототипа — добавить `from_config_with_prototype()`.
 
 ## Связанные заметки
 

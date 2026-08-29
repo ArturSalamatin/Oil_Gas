@@ -5,7 +5,7 @@ tags:
   - интеграция
 id: FEAT-012
 date: 2026-08-29
-status: в процессе
+status: реализован
 branch: feat/prototype-factory
 audit:
   date: 2026-08-29

@@ -165,6 +165,7 @@ class SimulationConfig:
     time: TimeConfig
     numerics: NumericsConfig = field(default_factory=NumericsConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
+    config_dir: Path = field(default_factory=lambda: Path("."))
 
 
 # ── Загрузка ─────────────────────────────────────────────────
@@ -206,6 +207,7 @@ def load_config(path: str | Path) -> SimulationConfig:
         geometry=geometry, grid=grid, rock=rock, pvt=pvt,
         relperm=relperm, thermal=thermal, initial_conditions=initial,
         time=time_cfg, numerics=numerics, output=output,
+        config_dir=path.parent,
     )
 
     _validate(config)

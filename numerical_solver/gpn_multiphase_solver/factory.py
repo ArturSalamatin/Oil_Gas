@@ -6,17 +6,24 @@
 from_config(config) → (Simulator, initial_state)
 """
 
+import csv
+from pathlib import Path
+
 import numpy as np
 
 from .grid.log_radial import LogRadialGrid
 from .pvt.standing import StandingFullPVT
 from .pvt.relperm import CoreyRP
+from .pvt.table_full import TableFullPVT
+from .pvt.prototype_adapter import PrototypePVTAdapter, PrototypeRPAdapter
 from .hydro.analytical import AnalyticalHydroSolver
+from .hydro.prototype_adapter import PrototypeHydroAdapter
 from .energy.tridiag import TridiagEnergySolver
 from .state import SimulationState, BoundaryConditions
 from .bc import PressureControl
 from .simulator import Simulator, TimeSchedule, ScheduleInterval
 from .io.config import SimulationConfig
+from .units import BAR_TO_PA, CP_TO_PA_S, M2_TO_MD
 from .log import setup_logging
 
 
@@ -49,7 +56,10 @@ class SimulatorFactory:
         relperm = _create_relperm(config)
 
         # 4. HydroSolver
-        hydro = AnalyticalHydroSolver(grid, pvt, relperm)
+        if config.pvt.model == "table":
+            hydro = _create_prototype_hydro(config, grid, pvt, relperm)
+        else:
+            hydro = AnalyticalHydroSolver(grid, pvt, relperm)
 
         # 5. EnergySolver
         energy = TridiagEnergySolver(grid, pvt, config.rock)
@@ -97,9 +107,26 @@ def _create_pvt(config: SimulationConfig):
             mu_JT_gas_val=tc.mu_JT_gas,
             L_degas_val=tc.L_degas,
         )
+    elif pc.model == "table":
+        # CSV → BlackOilPVT (прототип) → PrototypePVTAdapter → TableFullPVT
+        oil_rows = _read_oil_pvt_csv(config.config_dir / pc.oil_pvt_file)
+        gas_rows = _read_gas_pvt_csv(config.config_dir / pc.gas_pvt_file)
+
+        from radial_blackoil.pvt import BlackOilPVT
+        proto_pvt = BlackOilPVT(oil_rows, gas_rows)
+
+        proto_adapter = PrototypePVTAdapter(proto_pvt, pc.rho_o_std, pc.rho_g_std)
+        return TableFullPVT(
+            hydro=proto_adapter,
+            c_p_oil=tc.c_p_oil,
+            c_p_gas=tc.c_p_gas,
+            mu_JT_oil=tc.mu_JT_oil,
+            mu_JT_gas=tc.mu_JT_gas,
+            L_degas=tc.L_degas,
+        )
     else:
         raise ValueError(f"PVT model '{pc.model}' не поддерживается. "
-                         f"Доступные: 'standing'.")
+                         f"Доступные: 'standing', 'table'.")
 
 
 def _create_relperm(config: SimulationConfig):
@@ -112,9 +139,145 @@ def _create_relperm(config: SimulationConfig):
             n_o=rc.n_o, n_g=rc.n_g,
             kro_max=rc.kro_max, krg_max=rc.krg_max,
         )
+    elif rc.model == "table":
+        # CSV → TabulatedRelPerm (прототип) → PrototypeRPAdapter
+        Sg, kro, krg = _read_relperm_csv(config.config_dir / rc.file)
+
+        from radial_blackoil.relperm import TabulatedRelPerm
+        proto_rp = TabulatedRelPerm(Sg, kro, krg)
+        return PrototypeRPAdapter(proto_rp)
     else:
         raise ValueError(f"RelPerm model '{rc.model}' не поддерживается. "
-                         f"Доступные: 'corey'.")
+                         f"Доступные: 'corey', 'table'.")
+
+
+def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
+    """Создать PrototypeHydroAdapter из табличных PVT и ОФП.
+
+    Ленивые импорты radial_blackoil — чтобы factory не падал при отсутствии
+    прототипа в PYTHONPATH (когда pvt.model = "standing").
+    """
+    from radial_blackoil.grid import RadialGrid
+    from radial_blackoil.rock import CompressibleRock
+    from radial_blackoil.blackoil import RadialBlackOilModel
+
+    # proto_pvt и proto_rp — извлекаем из наших обёрток
+    # pvt: TableFullPVT → _hydro: PrototypePVTAdapter → _pvt: BlackOilPVT
+    proto_pvt = pvt._hydro._pvt
+    # relperm: PrototypeRPAdapter → _rp: TabulatedRelPerm
+    proto_rp = relperm._rp
+
+    gc = config.geometry
+    rc = config.rock
+    ic = config.initial_conditions
+    nc = config.numerics
+
+    # Сетка прототипа (k в мД)
+    proto_grid = RadialGrid(gc.r_well, gc.R_ext, gc.h, config.grid.N,
+                            rc.permeability * M2_TO_MD)
+
+    # Порода прототипа (p_ref в бар, cr в 1/бар)
+    proto_rock = CompressibleRock(
+        phi_ref=rc.porosity,
+        p_ref_bar=ic.p0 / BAR_TO_PA,
+        cr_per_bar=rc.compressibility * BAR_TO_PA,
+    )
+
+    # p_bhp: первый интервал, p_outer: начальное пластовое
+    p_bhp_bar = config.time.history[0].p_wf / BAR_TO_PA
+    p_outer_bar = ic.p0 / BAR_TO_PA
+
+    model = RadialBlackOilModel(
+        grid=proto_grid, rock=proto_rock,
+        pvt=proto_pvt, relperm=proto_rp,
+        p_bhp_bar=p_bhp_bar, p_outer_bar=p_outer_bar,
+        outer_rs_sm3_sm3=ic.Rs0,
+        skin=nc.skin,
+        jacobian_mode=nc.jacobian_mode,
+        linear_solver=nc.linear_solver,
+    )
+
+    # our_pvt для PrototypeHydroAdapter — PrototypePVTAdapter (HydroPVT)
+    return PrototypeHydroAdapter(model, grid, pvt._hydro)
+
+
+# ── CSV-ридеры ──────────────────────────────────────────────
+
+def _read_oil_pvt_csv(csv_path: Path) -> list[tuple]:
+    """Прочитать oil_pvt.csv (SI) → [(Rs, p_bar, Bo, mu_cP), ...].
+
+    CSV: Rs_sm3_sm3, pressure_Pa, Bo, mu_o_Pa_s.
+    Конвертация: p Па→бар, μ Па·с→сП.
+    """
+    if not csv_path.exists():
+        raise ValueError(f"Файл oil PVT не найден: {csv_path}")
+
+    rows = []
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)  # заголовок
+        for line in reader:
+            if len(line) < 4:
+                continue
+            try:
+                Rs = float(line[0])
+                p_bar = float(line[1]) / BAR_TO_PA
+                Bo = float(line[2])
+                mu_cP = float(line[3]) / CP_TO_PA_S
+            except ValueError:
+                continue
+            rows.append((Rs, p_bar, Bo, mu_cP))
+    return rows
+
+
+def _read_gas_pvt_csv(csv_path: Path) -> list[tuple]:
+    """Прочитать gas_pvt.csv (SI) → [(p_bar, Bg, mu_cP), ...].
+
+    CSV: pressure_Pa, Bg, mu_g_Pa_s.
+    Конвертация: p Па→бар, μ Па·с→сП.
+    """
+    if not csv_path.exists():
+        raise ValueError(f"Файл gas PVT не найден: {csv_path}")
+
+    rows = []
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)  # заголовок
+        for line in reader:
+            if len(line) < 3:
+                continue
+            try:
+                p_bar = float(line[0]) / BAR_TO_PA
+                Bg = float(line[1])
+                mu_cP = float(line[2]) / CP_TO_PA_S
+            except ValueError:
+                continue
+            rows.append((p_bar, Bg, mu_cP))
+    return rows
+
+
+def _read_relperm_csv(csv_path: Path) -> tuple[list, list, list]:
+    """Прочитать relperm.csv → (Sg, kro, krg).
+
+    CSV: Sg, kro, krg. Безразмерные, конвертация не нужна.
+    """
+    if not csv_path.exists():
+        raise ValueError(f"Файл relperm не найден: {csv_path}")
+
+    Sg, kro, krg = [], [], []
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)  # заголовок
+        for line in reader:
+            if len(line) < 3:
+                continue
+            try:
+                Sg.append(float(line[0]))
+                kro.append(float(line[1]))
+                krg.append(float(line[2]))
+            except ValueError:
+                continue
+    return Sg, kro, krg
 
 
 def _create_schedule(config: SimulationConfig) -> TimeSchedule:

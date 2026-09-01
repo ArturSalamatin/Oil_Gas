@@ -16,15 +16,9 @@ PrototypeHydroAdapter выполняет 8 шагов:
 с ручной инверсией знаков. Это тестирует шаги 5–8.
 """
 
-import sys
 from pathlib import Path
 import numpy as np
 import pytest
-
-# Прототип — в sys.path для импорта
-_PROTO_ROOT = Path(__file__).parent.parent / "HydroSolverPrototype" / "Prototype_1.0.3"
-if str(_PROTO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROTO_ROOT))
 
 from radial_blackoil.grid import RadialGrid
 from radial_blackoil.rock import CompressibleRock

@@ -6,7 +6,7 @@ date: 2026-09-01
 issue: FEAT-014
 github: null
 branch: feat/feat-014/hydro-to-blackoil-adapter
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-01
   found: 0

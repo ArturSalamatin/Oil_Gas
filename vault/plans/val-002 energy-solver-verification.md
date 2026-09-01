@@ -8,7 +8,7 @@ date: 2026-08-29
 issue: VAL-002
 github: 18
 branch: val/val-002/energy-solver-verification
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-01
   found: 2

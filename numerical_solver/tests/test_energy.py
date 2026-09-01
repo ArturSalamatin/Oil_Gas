@@ -619,13 +619,10 @@ class TestComputeConductiveTransmissibility:
 
         Q_T_int, _ = solver.compute_conductive_transmissibility(lambda_eff, N_cells)
 
-        # При однородном lambda: lambda_face = lam / (w_L + w_R)
+        # Последовательные сопротивления: Q_T = 2πh / (w_L/λ + w_R/λ) = 2πhλ / (w_L + w_R)
         w_L = grid.log_weights_left
         w_R = grid.log_weights_right
-        lambda_face = lam_val / (w_L + w_R)
-        geom = 2.0 * np.pi * grid.h / np.log(
-            grid.r_centers[1:] / grid.r_centers[:-1])
-        expected = geom * lambda_face
+        expected = 2.0 * np.pi * grid.h * lam_val / (w_L + w_R)
         np.testing.assert_allclose(Q_T_int, expected, rtol=1e-12)
 
     def test_Q_T_ext(self):

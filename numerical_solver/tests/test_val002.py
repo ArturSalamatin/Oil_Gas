@@ -293,20 +293,9 @@ class TestCaseD_PureConduction:
         Q_analyt_0 = 2 * np.pi * H * lambda_eff_val / np.log(r_c[1] / r_c[0])
         ratio = Q_T_internal[0] / Q_analyt_0
 
-        # Если один ln → ratio ≈ 1. Если двойной ln → ratio ≈ 1/ln(r_c[1]/r_c[0]).
-        # На log-сетке ln(r_c[1]/r_c[0]) ≈ ln(R_ext/r_w)/N ≈ 6.21/50 ≈ 0.124.
-        # Поэтому при двойном ln ratio ≈ 8.0.
-        # Записываем ожидаемое значение — тест документирует текущее поведение.
-        # При исправлении BUG-002: заменить assert на rtol ≈ 1.
-        ln_ratio = np.log(r_c[1] / r_c[0])
-        if abs(ratio - 1.0) < 0.1:
-            # Один ln — правильное поведение
-            pass
-        else:
-            # Двойной ln — BUG-002 подтверждён
-            np.testing.assert_allclose(ratio, 1.0 / ln_ratio, rtol=0.1,
-                err_msg=f"BUG-002: двойной ln в Q_T. ratio={ratio:.4f}, "
-                        f"ожидалось 1/ln={1/ln_ratio:.4f}")
+        # После исправления BUG-002: один ln → ratio ≈ 1
+        np.testing.assert_allclose(ratio, 1.0, rtol=0.05,
+            err_msg=f"Q_T / Q_analyt = {ratio:.4f}, ожидалось ≈ 1.0")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -439,13 +428,8 @@ class TestCaseC_MeshConvergence:
                 f"Ошибка не убывает: N={self.N_LIST[i-1]}→{self.N_LIST[i]}, "
                 f"err={errors[i-1]:.2e}→{errors[i]:.2e}")
 
-    def test_convergence_order_positive(self, solutions):
-        """Порядок сходимости > 0 (ошибка убывает степенным законом).
-
-        Ожидается ≥ 2 для FVM 2-го порядка, но BUG-002 (двойной ln
-        в кондуктивной проводимости) может снижать порядок при Pe ~ 1.
-        После исправления BUG-002 — ужесточить до ≥ 1.8.
-        """
+    def test_convergence_order_ge_1(self, solutions):
+        """Порядок сходимости ≥ 1. Upstream-конвекция на log-сетке даёт ~1, не 2."""
         r_ref, T_ref = solutions[self.N_REF]
         errors = []
         for N in self.N_LIST:
@@ -458,7 +442,7 @@ class TestCaseC_MeshConvergence:
         e1, e2 = errors[-2], errors[-1]
         N1, N2 = self.N_LIST[-2], self.N_LIST[-1]
         order = np.log(e1 / e2) / np.log(N2 / N1)
-        assert order > 0, f"Порядок сходимости {order:.2f} ≤ 0 — ошибка не убывает"
+        assert order >= 1.0, f"Порядок сходимости {order:.2f} < 1.0"
 
     def test_T_bounded(self, solutions):
         """T в пределах [T_ext + μ_JT·Δp, T_ext] при стационаре (или наоборот)."""

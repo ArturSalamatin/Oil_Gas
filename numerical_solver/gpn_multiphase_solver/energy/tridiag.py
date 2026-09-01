@@ -150,22 +150,21 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def compute_conductive_transmissibility(self, lambda_eff, N):
-        """Q_T[f] = (2πh / ln(r_c[f]/r_c[f-1])) · λ_face (eq. 21, 25).
+        """Кондуктивная проводимость: Q_T = 2πh / (w_L/λ_L + w_R/λ_R).
+
+        Последовательные кольцевые сопротивления R_α = ln(r_face/r_center_α) / (2πh·λ_α).
         Возвращает Q_T_internal [N-1] и Q_T_ext (скаляр).
         """
         grid = self._grid
 
         # Внутренние грани
         if N > 1:
-            w_L = grid.log_weights_left
-            w_R = grid.log_weights_right
+            w_L = grid.log_weights_left    # ln(r_face / r_center_left)
+            w_R = grid.log_weights_right   # ln(r_center_right / r_face)
             lam_L = lambda_eff[:-1]
             lam_R = lambda_eff[1:]
-            # Гармоническое среднее с логарифмическими весами (eq. 21)
-            lambda_face = 1.0 / (w_L / lam_L + w_R / lam_R)
-            geom = 2.0 * np.pi * grid.h / np.log(
-                grid.r_centers[1:] / grid.r_centers[:-1])
-            Q_T_internal = geom * lambda_face
+            # Последовательные кольцевые сопротивления: R = w/λ, Q_T = 2πh / ΣR
+            Q_T_internal = 2.0 * np.pi * grid.h / (w_L / lam_L + w_R / lam_R)
         else:
             Q_T_internal = np.empty(0)
 

@@ -4,7 +4,23 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && .venv/Scripts/python -m pytest tests/ -v`.
+**Рабочая директория зависит от направления задачи.** Определи её до начала работы:
+
+| Направление | Каталог | Пакет / исходники | Тесты | Конфиги | Базовая ветка |
+|---|---|---|---|---|---|
+| **PDE-солвер** (текущая разработка) | `numerical_solver/` | `gpn_multiphase_solver/` | `tests/` | `configs/` | `numerical_scheme/implementation` |
+| **Метод моментов** (завершён, только справка) | `method_of_moments/` | `src/` | `tests/` | `configs/` | `master` |
+
+Все пути в планах и отчётах — от корня проекта (например `numerical_solver/gpn_multiphase_solver/factory.py`).
+
+Команды pytest — из соответствующего каталога:
+```powershell
+cd numerical_solver ; .venv\Scripts\python -m pytest tests/ -v
+```
+
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+
+По умолчанию новые задачи относятся к `numerical_solver/`. Если задача явно про метод моментов — использовать вторую строку таблицы.
 
 ---
 
@@ -55,8 +71,8 @@ ls vault/plans/<id-lowercase>*
 ### 1.6. Исследовать код
 
 1. **Солвер:** какой модуль/функция вычисляет то, что валидируем?
-2. **Конфиги:** есть ли `method_of_moments/configs/baseline.json` или аналог? Какие параметры фиксируются?
-3. **Существующие тесты:** есть ли в `method_of_moments/tests/` тесты, близкие к целевому кейсу?
+2. **Конфиги:** есть ли `<рабочий каталог>/configs/baseline.json` или аналог? Какие параметры фиксируются?
+3. **Существующие тесты:** есть ли в `<рабочий каталог>/tests/` тесты, близкие к целевому кейсу?
 4. **Визуализация:** есть ли `scripts/` для построения графиков?
 5. **Формула→код:** для эталонной формулы — есть ли уже реализация?
 
@@ -209,7 +225,7 @@ ls vault/plans/<id-lowercase>*
 
 ```
 **Тест:** <test_function_name>
-**Файл:** method_of_moments/tests/<файл>.py (существующий / новый)
+**Файл:** <рабочий каталог>/tests/<файл>.py (существующий / новый)
 **Подтип:** <analytical / convergence / cross-simulator / invariant>
 **Сценарий:** <что проверяем — физический смысл>
 **Setup:** <параметры: p0, T0, Sg0, rw, rb, t_end, ...>

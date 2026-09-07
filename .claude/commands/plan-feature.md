@@ -4,7 +4,23 @@
 
 Результат: подробный, самодостаточный план в `vault/plans/`, готовый к автономной реализации в отдельной сессии без контекста.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`: `cd method_of_moments && .venv/Scripts/python -m pytest tests/ -v`.
+**Рабочая директория зависит от направления задачи.** Определи её до начала работы:
+
+| Направление | Каталог | Пакет / исходники | Тесты | Конфиги | Базовая ветка |
+|---|---|---|---|---|---|
+| **PDE-солвер** (текущая разработка) | `numerical_solver/` | `gpn_multiphase_solver/` | `tests/` | `configs/` | `numerical_scheme/implementation` |
+| **Метод моментов** (завершён, только справка) | `method_of_moments/` | `src/` | `tests/` | `configs/` | `master` |
+
+Все пути в планах и отчётах — от корня проекта (например `numerical_solver/gpn_multiphase_solver/factory.py`).
+
+Команды pytest — из соответствующего каталога:
+```powershell
+cd numerical_solver ; .venv\Scripts\python -m pytest tests/ -v
+```
+
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+
+По умолчанию новые задачи относятся к `numerical_solver/`. Если задача явно про метод моментов — использовать вторую строку таблицы.
 
 ---
 
@@ -73,7 +89,7 @@ ls vault/plans/<id-lowercase>*
 
 | Формула | Уравнение в tex | Python-функция | Модуль | Тест |
 |---|---|---|---|---|
-| ... | `\eqref{eq:...}` | `func_name()` | `method_of_moments/src/module.py` | `test_func()` |
+| ... | `\eqref{eq:...}` | `func_name()` | `<рабочий каталог>/<пакет>/module.py` | `test_func()` |
 
 Проверь:
 - Все ли формулы из tex учтены?
@@ -192,7 +208,7 @@ ls vault/plans/<id-lowercase>*
 Ссылки: [[vault-заметка]], `moments_method.tex` `\eqref{eq:...}`.
 
 **Что сделать:**
-1. В файле `method_of_moments/src/X.py`: создать функцию `Y(args) -> result`
+1. В файле `<рабочий каталог>/<пакет>/X.py`: создать функцию `Y(args) -> result`
 2. Docstring: ссылка на `\eqref{eq:...}`, входы/выходы, единицы измерения
 3. ...
 
@@ -220,7 +236,7 @@ ls vault/plans/<id-lowercase>*
 
 ```
 **Тест:** <test_function_name>
-**Файл:** method_of_moments/tests/<файл>.py (существующий / новый)
+**Файл:** <рабочий каталог>/tests/<файл>.py (существующий / новый)
 **Сценарий:** <что проверяем — на уровне физики/математики>
 **Setup:** <параметры: p, T, Sg, rb, rw, ...>
 **Ожидание:** <конкретные числа/неравенства с единицами измерения>

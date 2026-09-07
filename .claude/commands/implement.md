@@ -4,7 +4,23 @@
 
 Результат: реализованный план — код, тесты, обновлённый vault, комментарий к GitHub issue.
 
-**Рабочая директория:** код, тесты и конфиги находятся в `method_of_moments/` (не в корне проекта). Все пути к коду — от корня проекта: `method_of_moments/src/`, `method_of_moments/tests/`, `method_of_moments/configs/`. Команды pytest — из `method_of_moments/`.
+**Рабочая директория зависит от направления задачи.** Определи её до начала работы:
+
+| Направление | Каталог | Пакет / исходники | Тесты | Конфиги | Базовая ветка |
+|---|---|---|---|---|---|
+| **PDE-солвер** (текущая разработка) | `numerical_solver/` | `gpn_multiphase_solver/` | `tests/` | `configs/` | `numerical_scheme/implementation` |
+| **Метод моментов** (завершён, только справка) | `method_of_moments/` | `src/` | `tests/` | `configs/` | `master` |
+
+Все пути в планах и отчётах — от корня проекта (например `numerical_solver/gpn_multiphase_solver/factory.py`).
+
+Команды pytest — из соответствующего каталога:
+```powershell
+cd numerical_solver ; .venv\Scripts\python -m pytest tests/ -v
+```
+
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+
+По умолчанию новые задачи относятся к `numerical_solver/`. Если задача явно про метод моментов — использовать вторую строку таблицы.
 
 ---
 
@@ -78,11 +94,13 @@ git checkout <branch-from-plan>
 ### 1.6. Baseline тестов
 
 ```powershell
-cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-.venv\Scripts\python -m pytest tests/ -v
+cd d:\Lessons\Grants\2026\GPN\Oil_Gas\<рабочий каталог>
+.venv\Scripts\python -m pytest tests/ -q
 ```
 
-Запомни: количество тестов, pass/fail, время. Это baseline.
+`<рабочий каталог>` — из таблицы в шапке (`numerical_solver` для задач PDE-солвера).
+
+Запомни: количество тестов, pass/fail, время. Это baseline — с ним сверяется регрессия после каждого шага. Если план указывает baseline и он **не совпал** с фактическим — не игнорируй: план мог устареть, сверь и зафиксируй факт.
 
 ---
 
@@ -211,8 +229,8 @@ cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
 ### 3.1. Полный прогон тестов
 
 ```powershell
-cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-.venv\Scripts\python -m pytest tests/ -v
+cd d:\Lessons\Grants\2026\GPN\Oil_Gas\<рабочий каталог>
+.venv\Scripts\python -m pytest tests/ -q
 ```
 
 Сравни с baseline:

@@ -44,6 +44,7 @@ numerical_solver/results/*.csv
 numerical_solver/results/*.npz
 numerical_solver/results/*.png
 numerical_solver/results/*.xlsx
+numerical_solver/examples/**/output/
 
 # OS
 Thumbs.db

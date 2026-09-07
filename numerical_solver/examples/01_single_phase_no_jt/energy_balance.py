@@ -8,6 +8,13 @@
 
 Строит 2 графика: (a) все компоненты, (b) относительная невязка.
 
+Две функции:
+  compute_balance()      — считает компоненты, возвращает dict с массивами
+  plot_energy_balance()  — строит график поверх compute_balance()
+
+Расчётная часть вынесена отдельно, чтобы energy_balance_convergence.py
+использовал те же формулы, а не свою копию.
+
 Запуск автономно:
     cd numerical_solver
     .venv\\Scripts\\python examples\\01_single_phase_no_jt\\energy_balance.py
@@ -27,8 +34,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-def plot_energy_balance(history, grid, config, output_dir: Path):
-    """Построить график баланса энергии и вернуть финальную относительную невязку."""
+def compute_balance(history, grid, config):
+    """Покомпонентный баланс энергии по сохранённой истории.
+
+    Возвращает dict с массивами длины n_steps:
+      t, delta_E, cum_adiab, cum_conv, total, residual, rel_residual
+
+    Формулы повторяют то, что собирает TridiagEnergySolver.assemble_tridiag.
+    Вынесено отдельной функцией, чтобы plot_energy_balance и
+    energy_balance_convergence.py считали баланс одним и тем же кодом.
+    """
     from gpn_multiphase_solver.factory import SimulatorFactory
 
     # Нужны pvt и rock для вычисления (ρcp)_eff и конвективных коэффициентов.
@@ -95,10 +110,37 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
         cum_conv[n] = cum_conv[n - 1] + net_conv_step
         cum_adiab[n] = cum_adiab[n - 1] + adiab_step
 
-    residual = delta_E - (cum_conv + cum_adiab)
+    total = cum_conv + cum_adiab
+    residual = delta_E - total
+
+    # Относительная невязка: нормируем на больший из масштабов, чтобы
+    # не делить на ноль на первых шагах, когда ΔE ещё мало.
+    scale = np.maximum(np.abs(delta_E), np.abs(total))
+    scale = np.where(scale < 1e-10, 1.0, scale)
+
+    return dict(
+        t=t_arr,
+        delta_E=delta_E,
+        cum_adiab=cum_adiab,
+        cum_conv=cum_conv,
+        total=total,
+        residual=residual,
+        rel_residual=np.abs(residual) / scale,
+    )
+
+
+def plot_energy_balance(history, grid, config, output_dir: Path):
+    """Построить график баланса энергии и вернуть финальную относительную невязку."""
+    bal = compute_balance(history, grid, config)
+    delta_E = bal["delta_E"]
+    cum_adiab = bal["cum_adiab"]
+    cum_conv = bal["cum_conv"]
+    total = bal["total"]
+    residual = bal["residual"]
+    rel_residual = bal["rel_residual"]
 
     # ── Перевод в часы ──
-    t_hours = t_arr / 3600.0
+    t_hours = bal["t"] / 3600.0
 
     # ── Графики ──
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 8), sharex=True,
@@ -108,7 +150,7 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     ax1.plot(t_hours, delta_E, 'k-', linewidth=2, label=r"$\Delta E$ (накопление)")
     ax1.plot(t_hours, cum_adiab, 'b--', linewidth=1.5, label="адиабатика (кумул.)")
     ax1.plot(t_hours, cum_conv, 'r--', linewidth=1.5, label="чистая конвекция (кумул.)")
-    ax1.plot(t_hours, cum_conv + cum_adiab, 'g:', linewidth=1.5,
+    ax1.plot(t_hours, total, 'g:', linewidth=1.5,
              label="адиабатика + конвекция")
     ax1.set_ylabel("Энергия, Дж")
     ax1.legend(fontsize=9)
@@ -117,10 +159,6 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
     # (b) Относительная невязка
-    scale = np.maximum(np.abs(delta_E), np.abs(cum_conv + cum_adiab))
-    scale = np.where(scale < 1e-10, 1.0, scale)
-    rel_residual = np.abs(residual) / scale
-
     ax2.plot(t_hours, rel_residual, 'k-', linewidth=1)
     ax2.set_xlabel("Время, ч")
     ax2.set_ylabel(r"|невязка| / |$\Delta E$|")

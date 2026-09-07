@@ -1,12 +1,24 @@
 """Сходимость невязки баланса энергии при уменьшении шага по времени.
 
-Два прогона примера 01: dt=3600 с и dt=360 с.
-График: относительная невязка для обоих на одних осях.
+Три прогона примера 01: dt = 3600, 900 и 360 с.
 Ожидаемый порядок сходимости: O(Δt) — ошибка расщепления (splitting).
+Гидро-шаг замораживает T, тепловой шаг замораживает p; рассогласование
+между ними и есть невязка.
+
+Порядок определяется по логарифмической регрессии, а не постулируется:
+третья точка нужна, чтобы отличить первый порядок от случайного
+совпадения двух чисел.
+
+Строит 2 графика:
+  (a) относительная невязка во времени для трёх Δt
+  (b) финальная невязка vs Δt в log-log с эталонной прямой O(Δt)
+
+Расчёт баланса берётся из energy_balance.compute_balance — те же формулы,
+что и в основном скрипте, без копии.
 
 Запуск:
     cd numerical_solver
-    .venv\Scripts\python examples\01_single_phase_no_jt\energy_balance_convergence.py
+    .venv\\Scripts\\python examples\\01_single_phase_no_jt\\energy_balance_convergence.py
 """
 
 import sys
@@ -18,6 +30,7 @@ HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
 sys.path.insert(0, str(SOLVER_ROOT / "examples"))
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
 
 import matplotlib
@@ -27,113 +40,96 @@ import matplotlib.pyplot as plt
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
 
+from energy_balance import compute_balance
 
-def compute_balance(config):
-    """Прогон + баланс энергии. Возвращает (t_hours, rel_residual, max_rel, final_rel)."""
+# Шаги по времени, с. Отношения 4 и 2.5 — вместе дают 10,
+# так что первый порядок читается и по краям, и по каждой паре.
+DT_LIST = [3600, 900, 360]
+
+
+def run_one(config_base, dt: int) -> dict:
+    """Прогон примера с заданным dt + баланс энергии."""
+    config = deepcopy(config_base)
+    config.time.dt_integration = dt
+    # save_every = 1: невязка нужна на каждом шаге, иначе кривая (a)
+    # прореживается по-разному для разных dt и графики несопоставимы.
+    config.output.save_every = 1
+
     sim, initial_state = SimulatorFactory.from_config(config)
-    grid = sim._grid
-    pvt = sim._energy._pvt
-    rock = sim._energy._rock
-
     history = sim.run(initial_state)
 
-    N = grid.N
-    V = grid.volumes
-    phi = rock.porosity
-    T_ext = config.initial_conditions.T0
+    bal = compute_balance(history, sim._grid, config)
 
-    p0_arr = np.array([config.initial_conditions.p0])
-    T0_arr = np.array([T_ext])
-    Rs0_arr = np.array([0.0])
-    c_p_o = pvt.c_p_oil(p0_arr, T0_arr)[0]
-    rho_o_val = pvt.rho_o(p0_arr, Rs0_arr)[0]
-    rho_cp_eff = (1 - phi) * rock.rho_cp_solid + phi * rho_o_val * c_p_o
-
-    T_init = history.states[0].T.copy()
-    n_steps = len(history.times)
-    t_arr = np.array(history.times)
-
-    delta_E = np.zeros(n_steps)
-    cum_conv = np.zeros(n_steps)
-    cum_adiab = np.zeros(n_steps)
-
-    for n in range(n_steps):
-        T_n = history.states[n].T
-        delta_E[n] = np.sum(rho_cp_eff * V * (T_n - T_init))
-
-        if n == 0:
-            continue
-
-        dt_step = t_arr[n] - t_arr[n - 1]
-        state_prev = history.states[n - 1]
-        state_curr = history.states[n]
-        hydro = history.hydro_results[n]
-
-        Q_o = hydro.Q_o
-        p = state_curr.p
-        Rs = state_curr.Rs
-        rho_o_cells = pvt.rho_o(p, Rs)
-        c_p_o_cells = pvt.c_p_oil(p, state_prev.T)
-
-        Phi_well = rho_o_cells[0] * c_p_o_cells[0] * Q_o[0]
-        Phi_ext = rho_o_cells[-1] * c_p_o_cells[-1] * Q_o[N]
-
-        conv_well_step = Phi_well * state_prev.T[0] * dt_step
-        conv_ext_step = Phi_ext * T_ext * dt_step
-        net_conv_step = -(conv_ext_step - conv_well_step)
-
-        dp = state_curr.p - state_prev.p
-        adiab_step = phi * np.sum(V * dp)
-
-        cum_conv[n] = cum_conv[n - 1] + net_conv_step
-        cum_adiab[n] = cum_adiab[n - 1] + adiab_step
-
-    residual = delta_E - (cum_conv + cum_adiab)
-    scale = np.maximum(np.abs(delta_E), np.abs(cum_conv + cum_adiab))
-    scale = np.where(scale < 1e-10, 1.0, scale)
-    rel_residual = np.abs(residual) / scale
-
-    t_hours = t_arr / 3600.0
-    max_rel = np.max(rel_residual[1:]) if n_steps > 1 else 0.0
-    final_rel = rel_residual[-1]
-
-    return t_hours, rel_residual, max_rel, final_rel
+    # Максимум берётся с 1-го шага: на нулевом ΔE = 0 и невязка не определена.
+    bal["max_rel"] = float(np.max(bal["rel_residual"][1:])) if len(bal["t"]) > 1 else 0.0
+    bal["final_rel"] = float(bal["rel_residual"][-1])
+    bal["dt"] = dt
+    return bal
 
 
-# ── Два прогона ──
-config_base = load_config(HERE / "config.json")
+if __name__ == "__main__":
+    config_base = load_config(HERE / "config.json")
 
-config_1 = deepcopy(config_base)
-config_1.time.dt_integration = 3600
-config_1.output.save_every = 1
-print("── Прогон 1: dt = 3600 с ──")
-t1, r1, max1, fin1 = compute_balance(config_1)
-print(f"   max rel = {max1:.2e}, final rel = {fin1:.2e}")
+    results = []
+    for dt in DT_LIST:
+        print(f"── Прогон: dt = {dt} с ──")
+        bal = run_one(config_base, dt)
+        print(f"   max rel = {bal['max_rel']:.2e}, final rel = {bal['final_rel']:.2e}")
+        results.append(bal)
 
-config_2 = deepcopy(config_base)
-config_2.time.dt_integration = 360
-config_2.output.save_every = 1
-print("── Прогон 2: dt = 360 с ──")
-t2, r2, max2, fin2 = compute_balance(config_2)
-print(f"   max rel = {max2:.2e}, final rel = {fin2:.2e}")
+    dt_arr = np.array([r["dt"] for r in results], dtype=float)
+    fin_arr = np.array([r["final_rel"] for r in results])
+    max_arr = np.array([r["max_rel"] for r in results])
 
-# ── График ──
-fig, ax = plt.subplots(figsize=(9, 5))
-ax.plot(t1, r1, 'b-', linewidth=1.5, label=f"Δt = 3600 с (max {max1:.1e})")
-ax.plot(t2, r2, 'r-', linewidth=1.5, label=f"Δt = 360 с  (max {max2:.1e})")
-ax.set_xlabel("Время, ч")
-ax.set_ylabel(r"|невязка| / |$\Delta E$|")
-ax.set_title("Сходимость невязки баланса энергии по Δt")
-ax.legend()
-ax.grid(True, alpha=0.3)
+    # Наблюдаемый порядок: наклон log(невязка) по log(dt).
+    order_fin = np.polyfit(np.log(dt_arr), np.log(fin_arr), 1)[0]
+    order_max = np.polyfit(np.log(dt_arr), np.log(max_arr), 1)[0]
 
-fig.tight_layout()
-output_dir = HERE / "output"
-output_dir.mkdir(parents=True, exist_ok=True)
-out_path = output_dir / "energy_balance_convergence.png"
-fig.savefig(out_path, dpi=130)
-plt.close(fig)
+    # ── Графики ──
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 
-print(f"\nСохранён: {out_path}")
-print(f"\nОтношение max невязок: {max1 / max2:.1f}x  (ожидаем ~10 при O(Δt))")
-print(f"Отношение fin невязок: {fin1 / fin2:.1f}x")
+    # (a) Невязка во времени
+    colors = ['b', 'g', 'r']
+    for bal, col in zip(results, colors):
+        ax1.plot(bal["t"] / 3600.0, bal["rel_residual"], col, linewidth=1.3,
+                 label=f"Δt = {bal['dt']} с (max {bal['max_rel']:.1e})")
+    ax1.set_xlabel("Время, ч")
+    ax1.set_ylabel(r"|невязка| / |$\Delta E$|")
+    ax1.set_title("Невязка баланса энергии во времени")
+    ax1.legend(fontsize=9)
+    ax1.grid(True, alpha=0.3)
+
+    # (b) Порядок сходимости в log-log
+    ax2.loglog(dt_arr, fin_arr, 'ko-', linewidth=1.5, markersize=7,
+               label=f"финальная (порядок {order_fin:.2f})")
+    ax2.loglog(dt_arr, max_arr, 'ks--', linewidth=1.2, markersize=6,
+               markerfacecolor='none', label=f"максимальная (порядок {order_max:.2f})")
+
+    # Эталон O(Δt), привязанный к самой мелкой точке.
+    ref = fin_arr[-1] * (dt_arr / dt_arr[-1])
+    ax2.loglog(dt_arr, ref, 'r:', linewidth=1.5, label=r"эталон $O(\Delta t)$")
+
+    ax2.set_xlabel("Δt, с")
+    ax2.set_ylabel("относительная невязка")
+    ax2.set_title("Порядок сходимости по Δt")
+    ax2.legend(fontsize=9)
+    ax2.grid(True, alpha=0.3, which="both")
+
+    fig.tight_layout()
+    output_dir = HERE / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = output_dir / "energy_balance_convergence.png"
+    fig.savefig(out_path, dpi=130)
+    plt.close(fig)
+
+    print(f"\nСохранён: {out_path}")
+
+    # ── Сводка ──
+    print("\n  Δt, с   финальная    максимальная")
+    for bal in results:
+        print(f"  {bal['dt']:6d}   {bal['final_rel']:.3e}    {bal['max_rel']:.3e}")
+
+    print(f"\nОтношение по краям: {fin_arr[0] / fin_arr[-1]:.1f}x "
+          f"при Δt/{dt_arr[0] / dt_arr[-1]:.0f}  (ожидаем совпадения при O(Δt))")
+    print(f"Наблюдаемый порядок: {order_fin:.3f} (финальная), "
+          f"{order_max:.3f} (максимальная)")

@@ -656,14 +656,14 @@ cd numerical_solver
 - [ ] Vault обновлён
 
 
-## Новые задачи (зафиксировать после реализации)
+## Новые задачи (зарегистрированы 2026-09-07)
 
-1. **DEBT-NNN: Удалить AnalyticalHydroSolver** — после FEAT-014 он больше не нужен
+1. **DEBT-005: Удалить AnalyticalHydroSolver** — после FEAT-014 он больше не нужен
    в production-коде (Factory его не использует). Остаётся только в тестах. Перевести
    тесты на `PrototypeHydroAdapter` и удалить заглушку. Обновить `hydro/base.py` docstring.
 
-2. **DEBT-NNN: Убрать `hasattr` duck-typing в Factory** — ввести метод
-   `get_proto_pvt()` или property в ABC, чтобы не полагаться на `hasattr(pvt, '_hydro')`.
+2. **DEBT-006: Убрать `hasattr` duck-typing в Factory** — ввести метод
+   `as_blackoil_pvt()` в ABC, чтобы не полагаться на `hasattr(pvt, '_hydro')`.
 
 
 ## Оценка

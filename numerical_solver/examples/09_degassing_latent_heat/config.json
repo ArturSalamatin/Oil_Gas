@@ -1,0 +1,62 @@
+{
+    "geometry": {
+        "r_well": 0.1,
+        "R_ext": 50.0,
+        "h": 10.0
+    },
+    "grid": {
+        "N": 50,
+        "type": "log_radial"
+    },
+    "rock": {
+        "porosity": 0.2,
+        "permeability": 1e-13,
+        "rho_cp_solid": 1250000.0,
+        "lambda_solid": 1.5,
+        "lambda_oil": 0.14,
+        "lambda_gas": 0.04
+    },
+    "pvt": {
+        "model": "table",
+        "rho_o_std": 850.0,
+        "rho_g_std": 0.85,
+        "oil_pvt_file": "oil_pvt.csv",
+        "gas_pvt_file": "gas_pvt.csv"
+    },
+    "relperm": {
+        "model": "table",
+        "file": "relperm.csv"
+    },
+    "thermal": {
+        "c_p_oil": 2000.0,
+        "c_p_gas": 1000.0,
+        "mu_JT_oil": 0.0,
+        "mu_JT_gas": 0.0,
+        "L_degas": 168000.0
+    },
+    "initial_conditions": {
+        "p0": 20000000.0,
+        "T0": 350.0,
+        "Rs0": 30.0
+    },
+    "time": {
+        "start_day": 0.0,
+        "dt_integration": 3600,
+        "history": [
+            {
+                "dt": 259200,
+                "control": "pressure",
+                "p_wf": 8000000.0
+            }
+        ]
+    },
+    "numerics": {
+        "dt_min": 1.0,
+        "dt_max": 86400,
+        "skin": 0.0
+    },
+    "output": {
+        "log_level": "INFO",
+        "save_every": 1
+    }
+}

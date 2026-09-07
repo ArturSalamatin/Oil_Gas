@@ -16,7 +16,7 @@ from .pvt.standing import StandingFullPVT
 from .pvt.relperm import CoreyRP
 from .pvt.table_full import TableFullPVT
 from .pvt.prototype_adapter import PrototypePVTAdapter, PrototypeRPAdapter
-from .hydro.analytical import AnalyticalHydroSolver
+from .pvt.hydro_to_blackoil_adapter import HydroPVTtoBlackOilAdapter
 from .hydro.prototype_adapter import PrototypeHydroAdapter
 from .energy.tridiag import TridiagEnergySolver
 from .state import SimulationState, BoundaryConditions
@@ -55,11 +55,8 @@ class SimulatorFactory:
         # 3. RelPerm
         relperm = _create_relperm(config)
 
-        # 4. HydroSolver
-        if config.pvt.model == "table":
-            hydro = _create_prototype_hydro(config, grid, pvt, relperm)
-        else:
-            hydro = AnalyticalHydroSolver(grid, pvt, relperm)
+        # 4. HydroSolver — всегда PrototypeHydroAdapter (Newton-солвер прототипа)
+        hydro = _create_prototype_hydro(config, grid, pvt, relperm)
 
         # 5. EnergySolver
         energy = TridiagEnergySolver(grid, pvt, config.rock)
@@ -152,24 +149,27 @@ def _create_relperm(config: SimulationConfig):
 
 
 def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
-    """Создать PrototypeHydroAdapter из табличных PVT и ОФП.
+    """Создать PrototypeHydroAdapter из любого PVT (табличного или аналитического).
 
-    Ленивые импорты radial_blackoil — чтобы factory не падал при отсутствии
-    прототипа в PYTHONPATH (когда pvt.model = "standing").
+    Для табличного PVT (TableFullPVT) — извлекает BlackOilPVT из обёрток.
+    Для аналитического (StandingFullPVT) — оборачивает через HydroPVTtoBlackOilAdapter.
+    Согласованность: один объект HydroPVT разделяется между прототипом и нашими модулями
+    (см. vault/knowledge/decisions/согласованность-pvt-hydro.md).
     """
     from radial_blackoil.grid import RadialGrid
     from radial_blackoil.rock import CompressibleRock
     from radial_blackoil.blackoil import RadialBlackOilModel
 
-    # proto_pvt и proto_rp — извлекаем из наших обёрток
-    # pvt: TableFullPVT → _hydro: PrototypePVTAdapter → _pvt: BlackOilPVT
-    proto_pvt = pvt._hydro._pvt
-    # relperm: PrototypeRPAdapter → _rp: TabulatedRelPerm
-    proto_rp = relperm._rp
+    ic = config.initial_conditions
+
+    # proto_pvt: BlackOilPVT для RadialBlackOilModel
+    proto_pvt = _get_or_create_proto_pvt(pvt, ic.p0)
+
+    # proto_rp: TabulatedRelPerm для RadialBlackOilModel
+    proto_rp = _get_or_create_proto_rp(relperm)
 
     gc = config.geometry
     rc = config.rock
-    ic = config.initial_conditions
     nc = config.numerics
 
     # Сетка прототипа (k в мД)
@@ -197,8 +197,37 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
         linear_solver=nc.linear_solver,
     )
 
-    # our_pvt для PrototypeHydroAdapter — PrototypePVTAdapter (HydroPVT)
-    return PrototypeHydroAdapter(model, grid, pvt._hydro)
+    # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
+    our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt
+    return PrototypeHydroAdapter(model, grid, our_pvt)
+
+
+def _get_or_create_proto_pvt(pvt, p0: float):
+    """Получить BlackOilPVT для RadialBlackOilModel.
+
+    Табличный путь: TableFullPVT → PrototypePVTAdapter → BlackOilPVT (извлечь).
+    Аналитический путь (Standing и др.): обернуть HydroPVT через адаптер.
+    """
+    if hasattr(pvt, '_hydro') and hasattr(pvt._hydro, '_pvt'):
+        return pvt._hydro._pvt
+
+    return HydroPVTtoBlackOilAdapter(pvt, p_max_pa=p0)
+
+
+def _get_or_create_proto_rp(relperm):
+    """Получить TabulatedRelPerm для RadialBlackOilModel.
+
+    PrototypeRPAdapter — извлечь TabulatedRelPerm.
+    CoreyRP — протабулировать на сетке Sg.
+    """
+    if hasattr(relperm, '_rp'):
+        return relperm._rp
+
+    from radial_blackoil.relperm import TabulatedRelPerm
+    Sg = np.linspace(0.0, 1.0, 101)
+    kro = relperm.kro(Sg)
+    krg = relperm.krg(Sg)
+    return TabulatedRelPerm(Sg, kro, krg)
 
 
 # ── CSV-ридеры ──────────────────────────────────────────────

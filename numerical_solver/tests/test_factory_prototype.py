@@ -8,16 +8,10 @@
 - Ошибки: отсутствие CSV файла
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
-
-# Прототип — в sys.path для импорта
-_PROTO_ROOT = Path(__file__).parent.parent / "HydroSolverPrototype" / "Prototype_1.0.3"
-if str(_PROTO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROTO_ROOT))
 
 from gpn_multiphase_solver.io.config import load_config, SimulationConfig
 from gpn_multiphase_solver.factory import (

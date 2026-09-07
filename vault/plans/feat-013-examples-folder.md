@@ -2,7 +2,7 @@
 id: feat-013-examples-folder
 title: "FEAT-013: Папка examples — сценарии использования и единый запуск"
 type: plan
-status: готов к реализации
+status: в процессе
 created: 2026-09-01
 updated: 2026-09-07
 branch: feat/feat-013/examples-folder

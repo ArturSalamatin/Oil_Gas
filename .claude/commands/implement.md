@@ -43,7 +43,24 @@
 
 ### 1.5. Создать ветку
 
+Сначала определи **базовую** ветку. Если план её указывает (секция «Ветка») — использовать её. Если нет — определить по факту, а не по имени:
+
 ```powershell
+# содержит ли ветка каталог, который правит план?
+git ls-tree <кандидат> --name-only | Select-String <рабочий каталог>
+```
+
+Базовая ветка проекта зависит от направления работы:
+
+| Направление | Базовая ветка |
+|---|---|
+| `numerical_solver/` (PDE-солвер) | `numerical_scheme/implementation` |
+| `method_of_moments/` | `master` |
+
+⚠️ `master` **не содержит** `numerical_solver/` — ветвление от него для задач солвера даст дерево без библиотеки. Ветки `main` в репозитории нет.
+
+```powershell
+git checkout <базовая-ветка>
 git checkout -b <branch-from-plan>
 ```
 
@@ -51,6 +68,8 @@ git checkout -b <branch-from-plan>
 ```powershell
 git checkout <branch-from-plan>
 ```
+
+Если план зависит от другой задачи, ещё не влитой в базовую (поле «Зависит от»), — ветвиться от ветки этой задачи и указать это в отчёте.
 
 После создания/переключения:
 1. Обнови frontmatter плана: `status: в процессе`
@@ -179,7 +198,7 @@ cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
 Если сессия оборвалась (контекст потерян, пользователь вернулся позже):
 
 1. Прочитай план — frontmatter покажет `status: в процессе`
-2. `git log --oneline main..HEAD` — какие шаги уже реализованы
+2. `git log --oneline <базовая-ветка>..HEAD` — какие шаги уже реализованы
 3. Сопоставь изменённые файлы с шагами плана — определи последний завершённый шаг
 4. Проверь `git status` — есть ли незакоммиченные изменения (прерванный шаг)
 5. Прогони тесты — убедись что текущее состояние зелёное
@@ -217,8 +236,8 @@ cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
 ### 3.4. Обзор изменений
 
 ```powershell
-git log --oneline main..HEAD
-git diff --stat main..HEAD
+git log --oneline <базовая-ветка>..HEAD
+git diff --stat <базовая-ветка>..HEAD
 ```
 
 Проверь:
@@ -247,7 +266,7 @@ git diff --stat main..HEAD
 ### 4.2. Прокомментировать GitHub issue
 
 Если у задачи есть GitHub issue — создай комментарий.
-**Не закрывай issue** — issue закрывается при merge ветки в main.
+**Не закрывай issue** — issue закрывается при merge ветки в базовую.
 
 1. Сохрани текст комментария во временный файл (scratchpad)
 2. Формат:
@@ -256,7 +275,7 @@ git diff --stat main..HEAD
 
 **Ветка:** `<branch>`
 **План:** `vault/plans/<файл>`
-**Коммиты:** `git log --oneline main..HEAD`
+**Коммиты:** `git log --oneline <базовая-ветка>..HEAD`
 
 ### Изменения
 - <файл 1>: <что изменено>
@@ -301,9 +320,9 @@ gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-
 - <ID>: <краткое описание>
 
 Следующие шаги:
-- Проверь изменения: `git log --oneline main..HEAD`, `git diff --stat main..HEAD`
+- Проверь изменения: `git log --oneline <базовая-ветка>..HEAD`, `git diff --stat <базовая-ветка>..HEAD`
 - Push: пользователь пушит сам
-- Merge: `git checkout main && git merge --no-ff <branch>`
+- Merge: `git checkout <базовая-ветка> && git merge --no-ff <branch>` (в ту же ветку, от которой ответвлялись)
 ```
 
 ---
@@ -326,6 +345,6 @@ gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-
 ## Следующий шаг
 
 После завершения — предложи:
-1. `git log --oneline main..HEAD` и `git diff --stat main..HEAD` — для обзора
+1. `git log --oneline <базовая-ветка>..HEAD` и `git diff --stat <базовая-ветка>..HEAD` — для обзора
 2. Push (пользователь пушит сам)
 3. Если есть новые проблемы — `/issue <описание>`

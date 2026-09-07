@@ -326,7 +326,24 @@ def compute_Cp(p, T, Sg, fluid, rock):
 - Vault-изменения — отдельным коммитом от кода
 - Stage по имени файла, не `git add .` или `git add -A`
 - Не пропускай хуки (`--no-verify`) без явной просьбы
-- Рабочие ветки стартуют от `main` и мёржатся в `main` (`--no-ff`)
+- Рабочие ветки стартуют от **базовой ветки своего направления** и мёржатся обратно в неё (`--no-ff`)
+
+### Базовые ветки
+
+Ветки `main` в репозитории нет. Базовая ветка зависит от направления работы:
+
+| Направление работы | Базовая ветка |
+|---|---|
+| `numerical_solver/` — PDE-солвер (текущая разработка) | `numerical_scheme/implementation` |
+| `method_of_moments/` — метод моментов (завершён) | `master` |
+| Только vault / LaTeX без кода | `numerical_scheme/implementation` |
+
+⚠️ **`master` не содержит каталога `numerical_solver/`.** Ветка `numerical_scheme/implementation` опережает `master` на десятки коммитов и содержит всю разработку солвера. Ветвление задачи солвера от `master` даст дерево без библиотеки.
+
+Проверка перед созданием ветки:
+```powershell
+git ls-tree <кандидат> --name-only | Select-String numerical_solver
+```
 
 ## Что не коммитить
 

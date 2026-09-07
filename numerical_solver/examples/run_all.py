@@ -29,6 +29,17 @@ def find_examples() -> list[Path]:
     )
 
 
+def _print_safe(text: str) -> None:
+    """Напечатать текст, не падая на кодировке консоли.
+
+    Сообщения об ошибках содержат кириллицу, а консоль Windows по умолчанию
+    работает в cp1251 — прямой print роняет сам run_all.py с UnicodeEncodeError
+    вместо того, чтобы показать пользователю причину отказа примера.
+    """
+    encoding = sys.stdout.encoding or "utf-8"
+    print(text.encode(encoding, errors="replace").decode(encoding, errors="replace"))
+
+
 def main() -> int:
     examples = find_examples()
     if not examples:
@@ -72,7 +83,7 @@ def main() -> int:
               + ", ".join(name for name, _ in failed))
         for name, tail in failed:
             print(f"\n--- {name} ---")
-            print(tail)
+            _print_safe(tail)
     else:
         print(f"Итог: все {total} примеров успешно.")
     print(f"Суммарное время: {elapsed:.1f} с")

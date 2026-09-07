@@ -48,10 +48,14 @@ from gpn_multiphase_solver.io.output import (  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
-                title: str) -> float:
+                title: str) -> tuple:
     """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
 
-    Возвращает время расчёта в секундах.
+    Возвращает (elapsed, history, grid, config):
+      elapsed  — время расчёта, с
+      history  — SimulationHistory
+      grid     — Grid (сетка)
+      config   — SimulatorConfig (разобранный JSON)
     Все выходные файлы кладутся в output_dir (создаётся при необходимости).
     """
     config_path = Path(config_path)
@@ -111,7 +115,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     plt.close(fig)
 
     _print_summary(history, elapsed, output_dir)
-    return elapsed
+    return elapsed, history, grid, config
 
 
 def _plot_field(history, grid, times_to_plot, field: str,

@@ -1,5 +1,5 @@
 {
-  "model": "claude-opus-4-6[1M]",
+  "model": "claude-opus-5[1M]",
   "effortLevel": "max",
   "permissions": {
     "allow": [

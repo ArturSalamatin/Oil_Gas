@@ -1,0 +1,18 @@
+"""Сценарий 01: однофазная фильтрация несжимаемой нефти без эффекта Джоуля-Томсона."""
+
+import sys
+from pathlib import Path
+
+# examples/ в sys.path — для импорта example_runner.
+# Сам gpn_multiphase_solver ставится через pip install -e . из numerical_solver/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from example_runner import run_example  # noqa: E402
+
+if __name__ == "__main__":
+    here = Path(__file__).parent
+    run_example(
+        config_path=here / "config.json",
+        output_dir=here / "output",
+        title="01: однофазная фильтрация без JT",
+    )

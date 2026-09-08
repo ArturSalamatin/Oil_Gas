@@ -66,7 +66,12 @@ def compute_balance(history, grid, config):
     phi = rock.porosity
     T_ext = config.initial_conditions.T0
 
-    # (ρcp)_eff — в однофазном случае постоянна (Sg ≡ 0, Bo = const)
+    # (ρcp)_eff — в однофазном случае постоянна (Sg ≡ 0, Bo = const),
+    # поэтому считается один раз скаляром. Дефект накопления BUG-004 в этом
+    # упрощении НЕ возникает — измерено: расхождение со схемой ~2e-6 Дж при
+    # невязке ~2e+7 Дж, доля 0.0000. В двухфазных примерах (03, 05) так
+    # делать НЕЛЬЗЯ: там (ρcp)_eff дрейфует, и накопление надо считать по
+    # приращениям.
     p0_arr = np.array([config.initial_conditions.p0])
     T0_arr = np.array([T_ext])
     Rs0_arr = np.array([0.0])

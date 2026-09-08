@@ -19,6 +19,15 @@
 В отличие от 02 здесь (ρcp)_eff НЕ постоянна: она зависит от S_g и от PVT,
 поэтому ΔE считается с поячеечными свойствами на каждом шаге.
 
+НАКОПЛЕНИЕ СЧИТАЕТСЯ ПО ПРИРАЩЕНИЯМ, а не как разность запасов от t=0
+(BUG-004). Схема дискретизует Σ V (ρcp)^{n} (T^{n} - T^{n-1}): множитель
+cap_j = V_j (ρcp)^{n}_j / dt стоит и в матрице, и в правой части. Разность
+запасов Σ V [(ρcp)^K T^K - (ρcp)^0 T^0] отличается от неё на член
+Σ_n Σ_j V T^{n-1} [(ρcp)^n - (ρcp)^{n-1}] — дрейф свойств, умноженный на
+абсолютную температуру. На табличном PVT этот дрейф систематичен (B_g там
+кусочно-линеен по трём узлам вместо гладкой гиперболы) и давал 20 %
+невязки, не убывающей с шагом по времени.
+
 КОНДУКТИВНОГО ЧЛЕНА В БАЛАНСЕ НЕТ. Он и не нужен: в конфиге примера
 lambda = 0, проводимость граней тождественно нулевая. Если вернуть
 физические lambda, через контур пойдёт неучтённый кондуктивный поток и
@@ -72,16 +81,18 @@ def compute_balance(history, grid, config):
     pvt = sim._energy._pvt
     rock = sim._energy._rock
 
+    # Накопление суммируется по сохранённым шагам: пропуск шагов
+    # (save_every > 1) сделал бы сумму приращений неполной.
+    if getattr(config.output, "save_every", 1) != 1:
+        raise ValueError(
+            "compute_balance требует save_every = 1: баланс суммирует "
+            "приращения по шагам, пропущенные шаги нарушают сумму")
+
     N = grid.N
     V = grid.volumes
     phi = rock.porosity
     T_ext = config.initial_conditions.T0
     rho_g_std = pvt.rho_g_std
-
-    st0 = history.states[0]
-    _, _, _, _, rho_cp_0 = _cell_properties(
-        pvt, rock, st0.p, st0.Sg, st0.Rs, st0.T)
-    E_init = np.sum(rho_cp_0 * V * st0.T)
 
     n_steps = len(history.times)
     t_arr = np.array(history.times)
@@ -94,14 +105,33 @@ def compute_balance(history, grid, config):
 
     for n in range(n_steps):
         st = history.states[n]
-        _, _, _, _, rho_cp_n = _cell_properties(
-            pvt, rock, st.p, st.Sg, st.Rs, st.T)
-        # Запас энергии считается с текущими свойствами: (ρcp)_eff зависит
-        # от S_g, и в двухфазной зоне заметно отличается от начального.
-        delta_E[n] = np.sum(rho_cp_n * V * st.T) - E_init
 
         if n == 0:
+            # На нулевом шаге приращения ещё нет: ΔE(0) = 0 по определению.
+            # PVT здесь не считаем — результат всё равно не используется.
+            delta_E[n] = 0.0
             continue
+
+        _, _, _, _, rho_cp_n = _cell_properties(
+            pvt, rock, st.p, st.Sg, st.Rs, st.T)
+
+        # Накопление берётся ТОЧНО так, как его дискретизует схема
+        # (eq. 33-36): cap_j = V_j (ρcp)^{n}_j / dt стоит в матрице и в
+        # правой части ОДНИМ И ТЕМ ЖЕ множителем, поэтому шаговый вклад —
+        # это V (ρcp)^{n} (T^{n} - T^{n-1}), а НЕ разность запасов
+        # V[(ρcp)^n T^n - (ρcp)^{n-1} T^{n-1}].
+        # Разница между ними — член Σ V T^{n-1} [(ρcp)^n - (ρcp)^{n-1}],
+        # который на табличном PVT давал 20 % невязки (BUG-004): свойства
+        # дрейфуют систематически, и дрейф умножается на абсолютную
+        # T ~ 350 K, а не на приращение ΔT ~ 1 K.
+        #
+        # (ρcp)_eff берём на st.T, решатель — на T_old (tridiag.py:51).
+        # Сейчас это эквивалентно: c_p и μ_JT в обоих PVT — константы
+        # (standing.py:160-173, table_full.py:38-42), ρ от T не зависит.
+        # Если тепловые свойства станут функциями T, здесь надо будет
+        # перейти на st_prev.T, иначе баланс разойдётся с решателем.
+        delta_E[n] = delta_E[n - 1] + np.sum(
+            rho_cp_n * V * (st.T - history.states[n - 1].T))
 
         dt_step = t_arr[n] - t_arr[n - 1]
         st_prev = history.states[n - 1]
@@ -119,24 +149,42 @@ def compute_balance(history, grid, config):
 
         # ── Конвекция (обе фазы) ──
         # Φ_α = ρ_α cp_α Q_α (eq. 23). Знак: Q < 0 (поток к скважине) ⇒ Φ < 0.
-        # Upstream забоя — ячейка 0, upstream контура — ячейка N-1
-        # (для Φ; вносимая температура на контуре — T_ext, см. ниже).
-        Phi_o_well = rho_o[0] * cp_o[0] * Q_o[0]
-        Phi_g_well = rho_g[0] * cp_g[0] * Q_g[0]
-        Phi_o_ext = rho_o[-1] * cp_o[-1] * Q_o[N]
-        Phi_g_ext = rho_g[-1] * cp_g[-1] * Q_g[N]
+        # Φ на ВСЕХ гранях, upstream раздельно по каждой фазе — как в
+        # tridiag.compute_convective_coefficients. Телескопировать по двум
+        # крайним граням нельзя: при противотоке фаз (Φ_o и Φ_g разных
+        # знаков на одной грани) сумма Φ⁺/Φ⁻ не сводится к разности
+        # крайних потоков.
+        Phi_o = np.zeros(N + 1)
+        Phi_g = np.zeros(N + 1)
+        for f in range(1, N):
+            up_o = f - 1 if Q_o[f] >= 0 else f
+            Phi_o[f] = rho_o[up_o] * cp_o[up_o] * Q_o[f]
+            up_g = f - 1 if Q_g[f] >= 0 else f
+            Phi_g[f] = rho_g[up_g] * cp_g[up_g] * Q_g[f]
+        # Забой (f=0): upstream — ячейка 0. Контур (f=N): upstream — N-1.
+        Phi_o[0] = rho_o[0] * cp_o[0] * Q_o[0]
+        Phi_g[0] = rho_g[0] * cp_g[0] * Q_g[0]
+        Phi_o[N] = rho_o[-1] * cp_o[-1] * Q_o[N]
+        Phi_g[N] = rho_g[-1] * cp_g[-1] * Q_g[N]
 
-        # На забое выносится T ближней ячейки, на контуре вносится T_ext.
-        conv_well = (Phi_o_well + Phi_g_well) * T_prev[0] * dt_step
-        conv_ext = (Phi_o_ext + Phi_g_ext) * T_ext * dt_step
-        # Чистая конвекция в FVM: -(поток_out - поток_in)
-        net_conv = -(conv_ext - conv_well)
+        Phi_plus = np.maximum(Phi_o, 0.0) + np.maximum(Phi_g, 0.0)
+        Phi_minus = np.minimum(Phi_o, 0.0) + np.minimum(Phi_g, 0.0)
+
+        # Поток энтальпии через грань f: Φ⁺ несёт T ячейки слева (f-1),
+        # Φ⁻ — T ячейки справа (f). За контуром (f=N) справа — T_ext,
+        # за забоем (f=0) слева — та же ячейка 0 (ГУ Неймана, ∂T/∂r = 0).
+        T_left = np.concatenate(([T_prev[0]], T_prev))          # [N+1]
+        T_right = np.concatenate((T_prev, [T_ext]))             # [N+1]
+        flux = Phi_plus * T_left + Phi_minus * T_right
+        # Чистая конвекция в область: -(поток через контур - через забой).
+        net_conv = -(flux[N] - flux[0]) * dt_step
 
         # ── Джоуль–Томсон (обе фазы) ──
         # J_face = Σ_α μ_JT,α Φ_α p_up; сумма по ячейкам телескопируется
-        # до J_face[N] - J_face[0].
-        J_well = (mu_JT_o[0] * Phi_o_well + mu_JT_g[0] * Phi_g_well) * p[0]
-        J_ext = (mu_JT_o[-1] * Phi_o_ext + mu_JT_g[-1] * Phi_g_ext) * p[-1]
+        # до J_face[N] - J_face[0]. Φ теперь массивы по граням: забой —
+        # индекс 0, контур — индекс N.
+        J_well = (mu_JT_o[0] * Phi_o[0] + mu_JT_g[0] * Phi_g[0]) * p[0]
+        J_ext = (mu_JT_o[-1] * Phi_o[N] + mu_JT_g[-1] * Phi_g[N]) * p[-1]
         jt_step = (J_ext - J_well) * dt_step
 
         # ── Адиабатика (обе фазы) ──

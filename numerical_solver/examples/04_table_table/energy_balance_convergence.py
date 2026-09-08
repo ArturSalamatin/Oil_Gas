@@ -27,9 +27,8 @@ HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
 sys.path.insert(0, str(SOLVER_ROOT / "examples"))
-# У примера 04 своего energy_balance.py нет — берём полную (двухфазную)
-# версию из примера 03. НЕ str(HERE), как в шаблонах 03/05.
-sys.path.insert(0, str(SOLVER_ROOT / "examples" / "03_standing_corey"))
+# energy_balance.py — общий модуль в examples/ (FEAT-016). До выноса он
+# лежал у примера 03, и здесь стоял путь на его папку.
 sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
 
 import matplotlib

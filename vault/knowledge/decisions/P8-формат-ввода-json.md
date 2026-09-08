@@ -180,12 +180,14 @@ Schedule прототипа — более общий формат (абсолю
     "rs_switch_tol": 1e-5,
     "sg_switch_tol": 1e-9,
     "jacobian_mode": "grouped",
-    "linear_solver": "sparse"
+    "linear_solver": "sparse",
+    "max_retries": 9
 }
 ```
 
 - `dt_integration` — шаг интегрирования (= dt_initial для прототипа). Дублируется из секции time.
-- `dt_min`, `dt_max` — для A-retry в Adapter и для информации прототипа
+- `dt_min`, `dt_max` — ⚠️ объявлены в `NumericsConfig`, но **никакой модуль их не читает** (проверено grep при DEBT-007). A-retry их не использует: глубина дробления задаётся `max_retries`, а не нижней границей подшага. Учтено в DEBT-008
+- `max_retries` — глубина дробления шага в A-retry: при расходимости Newton шаг дробится на `2**attempt` подшагов, `attempt` не превышает `max_retries`. Допустимо 0…20, по умолчанию 9 (512 подшагов). Значение — измеренный порог DEBT-007; порог немонотонен по сетке, для отдельных конфигураций нужно 10–11
 - `newton_*`, `max_active_set_iter`, `*_switch_tol`, `jacobian_mode`, `linear_solver` — передаются в RadialBlackOilModel и advance()
 - Если параметр не задан в JSON — берётся default из прототипа
 
@@ -310,7 +312,8 @@ Grid не изменяется после создания. Модули тол�
         "dt_max": 86400,
         "skin": 0.0,
         "jacobian_mode": "grouped",
-        "linear_solver": "sparse"
+        "linear_solver": "sparse",
+        "max_retries": 9
     },
     "output": {
         "log_level": "INFO",

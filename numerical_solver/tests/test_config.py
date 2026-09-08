@@ -173,6 +173,14 @@ class TestBaselineNumerics:
     def test_skin(self, cfg):
         assert cfg.numerics.skin == 0.0
 
+    def test_max_retries_default(self, cfg):
+        """max_retries не задан в baseline → default = 9.
+
+        Значение — измеренный порог примера 03 при двух отягчающих
+        факторах (N = 75, p_wf = 6 МПа); см. DEBT-007.
+        """
+        assert cfg.numerics.max_retries == 9
+
 
 class TestBaselineOutput:
     def test_log_level(self, cfg):
@@ -235,6 +243,7 @@ class TestOptionalSections:
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.numerics.newton_max_iter == 15
         assert cfg.numerics.dt_min == 1.0
+        assert cfg.numerics.max_retries == 9
 
     def test_no_output_uses_defaults(self, tmp_path):
         raw = _minimal_raw()
@@ -380,6 +389,64 @@ class TestValidationTime:
         raw = _minimal_raw()
         raw["time"]["history"][0]["p_wf"] = -5e6
         with pytest.raises(ValueError, match="p_wf"):
+            load_config(_write_json(tmp_path, raw))
+
+
+class TestMaxRetriesValidation:
+    """Валидация numerics.max_retries — граница и тип (DEBT-007, BUG-003).
+
+    Лимит попадает в показатель степени (2**max_retries), поэтому
+    нецелые и отрицательные значения обязаны отсекаться при загрузке,
+    а не падать позже внутри адаптера.
+    """
+
+    def test_explicit_value_read(self, tmp_path):
+        """Значение из JSON доходит до конфига без изменений."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": 7}
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.max_retries == 7
+
+    def test_zero_allowed(self, tmp_path):
+        """0 осмыслен: одна попытка без дробления, дробить запрещено."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": 0}
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.max_retries == 0
+
+    def test_upper_bound_allowed(self, tmp_path):
+        """20 — верхняя допустимая граница, ещё принимается."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": 20}
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.max_retries == 20
+
+    def test_negative_rejected(self, tmp_path):
+        """Отрицательное дало бы range(0) — цикл не выполнится ни разу."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": -1}
+        with pytest.raises(ValueError, match="max_retries"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_too_large_rejected(self, tmp_path):
+        """2**100 подшагов недостижимо — защита от опечатки."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": 100}
+        with pytest.raises(ValueError, match="max_retries"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_float_rejected(self, tmp_path):
+        """Дробное дало бы float в range() — TypeError вдали от причины."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": 9.5}
+        with pytest.raises(ValueError, match="max_retries"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_bool_rejected(self, tmp_path):
+        """bool — подкласс int, но True как лимит бессмыслен."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"max_retries": True}
+        with pytest.raises(ValueError, match="max_retries"):
             load_config(_write_json(tmp_path, raw))
 
 

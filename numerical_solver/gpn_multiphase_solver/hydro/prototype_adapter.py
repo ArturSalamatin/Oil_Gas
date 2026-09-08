@@ -13,7 +13,8 @@
 Знаки: инверсия ТОЛЬКО well-потоков (прототип: outflow+, мы: outflow−).
 Internal и outer — без инверсии.
 
-A-retry: при расходимости Newton автоматически дробит dt (до 32 подшагов).
+A-retry: при расходимости Newton автоматически дробит dt.
+Глубина дробления — numerics.max_retries (2**max_retries подшагов).
 См. P1-адаптер-единицы.md, P4-адаптивный-шаг.md.
 """
 
@@ -32,12 +33,13 @@ class PrototypeHydroAdapter(HydroSolver):
     """Adapter: RadialBlackOilModel (бар) → HydroSolver (Па)."""
 
     def __init__(self, model, grid: Grid, pvt: HydroPVT,
-                 max_retries: int = 5):
+                 max_retries: int = 9):
         """
         model       — RadialBlackOilModel, уже сконфигурированный
         grid        — наш Grid (LogRadialGrid)
         pvt         — наш HydroPVT (PrototypePVTAdapter, обёртка того же BlackOilPVT)
-        max_retries — максимум удвоений подшагов при расходимости (5 → до 32 подшагов)
+        max_retries — максимум удвоений подшагов при расходимости
+                      (9 → до 512 подшагов); задаётся через numerics.max_retries
         """
         self._model = model
         self._grid = grid
@@ -112,10 +114,16 @@ class PrototypeHydroAdapter(HydroSolver):
                 # Шаг 5–8: потоки и сборка HydroResult
                 return self._build_result(current_state, new_proto, bc)
 
+        # Подсказка называет обе известные первопричины (DEBT-007, BUG-003).
+        # Про dt_integration намеренно не пишем: при высокой Sg уменьшение dt
+        # не помогает — A-retry уже дробит шаг внутри с тем же лимитом.
         raise RuntimeError(
             f"HydroSolver не сошёлся после {2**self._max_retries} подшагов "
             f"(dt_sub={dt / 2**self._max_retries:.2e} s). "
-            f"Уменьшите dt_integration.")
+            f"Увеличьте numerics.max_retries (сейчас {self._max_retries}). "
+            f"Более мелкие подшаги требуются при корреляционном PVT "
+            f"(нелинейность B_g) и при высокой газонасыщенности "
+            f"(обе фазы малоподвижны одновременно).")
 
     def _build_result(self, new_state: SimulationState,
                       new_proto, bc: BoundaryConditions) -> HydroResult:

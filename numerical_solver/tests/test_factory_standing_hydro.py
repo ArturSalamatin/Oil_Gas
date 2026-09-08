@@ -21,6 +21,8 @@ from gpn_multiphase_solver.units import BAR_TO_PA
 
 
 BASELINE = Path(__file__).parent.parent / "configs" / "baseline.json"
+EXAMPLE_03 = (Path(__file__).parent.parent / "examples"
+              / "03_standing_corey" / "config.json")
 
 # baseline.json параметры: p0=20e6, p_wf=15e6, Rs0=50
 # pb(Rs0=50) ≈ 9.43 МПа < p_wf → нет разгазирования → однофазный
@@ -75,6 +77,61 @@ class TestFactoryStandingHydro:
         p_exact = p_wf_last + (P0 - p_wf_last) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         np.testing.assert_allclose(
             history.states[-1].p, p_exact, rtol=1e-2)
+
+
+class TestStandingDeepDrawdownDenseGrid:
+    """Сценарий DEBT-007: два отягчающих фактора сразу.
+
+    У Стендинга B_g(p) — гипербола с d²B_g/dp² ≠ 0, поэтому линейная
+    модель Newton неточна и поиск вдоль направления берёт очень малые
+    шаги. Сгущение сетки и рост депрессии усиливают это независимо:
+    по отдельности (N = 75 при p_wf = 8 МПа, либо p_wf = 6 МПа при
+    N = 50) хватает 7 удвоений, вместе — нужно ровно 9.
+
+    Именно этот сценарий обосновывает numerics.max_retries = 9 по
+    умолчанию: он воспроизводим на конфиге, уже лежащем в репозитории,
+    в отличие от сценария BUG-003 (пример 04a ещё не создан, FEAT-015).
+    """
+
+    def _config(self):
+        """Пример 03 с обоими отягчающими факторами."""
+        config = load_config(EXAMPLE_03)
+        config.grid.N = 75                      # фактор 1: сгущение сетки
+        config.time.history[0].p_wf = 6e6       # фактор 2: глубокая депрессия
+        return config
+
+    def test_converges_at_default_limit(self):
+        """При штатном max_retries = 9 расчёт проходит без правки dt."""
+        simulator, initial = SimulatorFactory.from_config(self._config())
+        history = simulator.run(initial)
+        state = history.states[-1]
+
+        # Результат бит-в-бит устойчив по лимиту (mr = 9, 10, 12 дают одно
+        # и то же), поэтому фиксируем жёстко — это регрессионная привязка,
+        # а не проверка «примерно сошлось».
+        assert state.p[0] == pytest.approx(6.126106e6, rel=1e-4)
+
+        # Сценарий обязан быть двухфазным: p_wf = 6 МПа ниже p_b = 9.43 МПа,
+        # газ выделяется. Без этого тест проверял бы однофазный режим,
+        # где лимит дробления ни при чём.
+        assert state.Sg.max() == pytest.approx(0.0996, rel=1e-2)
+
+        # Расчёт дошёл до конца истории, а не оборвался раньше
+        assert history.n_saved == 73
+
+    def test_fails_one_below_threshold(self):
+        """При max_retries = 8 тот же расчёт падает — порог равен 9.
+
+        Тест фиксирует, что значение по умолчанию не завышено произвольно:
+        уменьшение лимита на единицу возвращает отказ. Без этой проверки
+        default = 9 выглядел бы догадкой.
+        """
+        config = self._config()
+        config.numerics.max_retries = 8
+        simulator, initial = SimulatorFactory.from_config(config)
+
+        with pytest.raises(RuntimeError, match="не сошёлся"):
+            simulator.run(initial)
 
 
 # ═══════════════════════════════════════════════════════════

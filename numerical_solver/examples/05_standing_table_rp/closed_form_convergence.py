@@ -46,17 +46,24 @@ from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
 
-# (N, dt): здесь, в отличие от ode_grid_convergence, ОДУ по времени не
-# решается — нужен только стационар гидродинамики. Но шаг всё равно
-# приходится уменьшать вместе с сеткой: на мелких сетках Newton не сходится
-# с крупным dt (DEBT-007), падая с "HydroSolver не сошёлся после 32 подшагов".
-# Стационар при этом достигается всё равно, просто за большее число шагов.
+# (N, dt, max_retries): здесь, в отличие от ode_grid_convergence, ОДУ по
+# времени не решается — нужен только стационар гидродинамики.
+#
+# До DEBT-007 шаг приходилось уменьшать вместе с сеткой: (100, 600),
+# (200, 300), (400, 120), иначе Newton падал с жёстко зашитым лимитом
+# в 32 подшага. Теперь dt везде штатный, а глубина дробления задаётся
+# через numerics.max_retries.
+#
+# ⚠️ Порог по сетке НЕМОНОТОНЕН: N = 100 требует 11 удвоений, N = 200
+# обходится девятью, N = 400 нужно 10 (измерено при DEBT-007). Сходимость
+# Newton зависит от расположения узлов относительно фронта разгазирования,
+# а не только от мелкости сетки.
 GRIDS = [
-    (25, 3600),
-    (50, 3600),
-    (100, 600),
-    (200, 300),
-    (400, 120),
+    (25, 3600, 9),
+    (50, 3600, 9),
+    (100, 3600, 11),
+    (200, 3600, 9),
+    (400, 3600, 10),
 ]
 
 # Достаточно для выхода гидродинамики на стационар (p и Sg перестают
@@ -64,11 +71,14 @@ GRIDS = [
 DURATION_S = 12 * 3600.0
 
 
-def run_one(N: int, dt: float) -> dict:
+def run_one(N: int, dt: float, max_retries: int = 9) -> dict:
     """Расчёт на сетке N с шагом dt + замкнутое решение на её узлах."""
     config = load_config(HERE / "config.json")
     config.grid.N = N
     config.time.dt_integration = dt
+    # Глубина дробления шага в A-retry (DEBT-007); порог по сетке
+    # немонотонен, значения подобраны перебором — см. GRIDS.
+    config.numerics.max_retries = max_retries
     config.time.history[0].dt = DURATION_S
     config.output.log_level = "ERROR"
     config.output.save_every = 1000000
@@ -103,8 +113,8 @@ def main():
           f"{'откл. q, %':>11} {'откл. p, %':>11} {'Sg расч.':>10} {'Sg анал.':>10}")
 
     res = []
-    for N, dt in GRIDS:
-        r = run_one(N, dt)
+    for N, dt, max_retries in GRIDS:
+        r = run_one(N, dt, max_retries)
         res.append(r)
         print(f"{r['N']:5d} {r['dt']:6.0f} {r['q_num']:14.6e} {r['q_ana']:14.6e} "
               f"{r['d_q']*100:11.4f} {r['d_p']*100:11.4f} "

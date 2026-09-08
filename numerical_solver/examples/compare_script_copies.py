@@ -28,6 +28,23 @@ from collections import defaultdict
 EXAMPLES = Path(__file__).resolve().parent
 
 # Группы, за которыми следим. Пополнять при появлении новых копий.
+#
+# После FEAT-016 четыре группы вынесены в общие модули examples/ и копий
+# не имеют: energy_balance, energy_balance_convergence,
+# temperature_asymptotics, two_phase_analytics. Они остаются в списке
+# СОЗНАТЕЛЬНО — как сигнал, если копия появится снова (структурную защиту
+# даёт tests/test_examples.py::TestSharedChecks::test_no_duplicate_helper_scripts,
+# а этот инструмент показывает, ЧТО именно разошлось).
+#
+# Реально дублируются две группы, и обе оставлены осознанно:
+#   temperature_ode      — у примера 04 своя реализация: там гидродинамика
+#                          релаксирует постепенно, и заморозка коэффициентов
+#                          по конечному состоянию давала 0.45 К против
+#                          0.017 К с пошаговыми. Копии 03 и 05 между собой
+#                          идентичны — их свести можно, кандидат в DEBT.
+#   ode_grid_convergence — зависит от temperature_ode, поэтому вынести его
+#                          нельзя: общий модуль подтянул бы для примера 04
+#                          чужую реализацию ОДУ.
 GROUPS = [
     "energy_balance.py",
     "energy_balance_convergence.py",

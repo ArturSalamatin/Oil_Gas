@@ -180,7 +180,7 @@ $|G^o|\mu_oB_o/(2\pi kh)$ — это проверка согласованнос
 ### 4. Точная стационарная формула
 
 При $\lambda = 0$ и $dp/dt = 0$ уравнение схемы телескопируется, давая
-температуру на грани явно. `check_stationary_T.py` подтверждает, что
+температуру на грани явно. `check_asymptotics_relaxation.py` подтверждает, что
 формула точна:
 
 | Длительность | $T(r_w)$, К | $\max\|T_{форм}-T_{чис}\|$, К |
@@ -236,12 +236,12 @@ $9.7\cdot10^{-4}$, наблюдаемый порядок **0.999**. Уменьш
 | `main.py` | расчёт + аналитика T на графике |
 | `config.json` | параметры сценария |
 | `relperm.csv` | табличные ОФП (единственный внешний файл) |
-| `two_phase_analytics.py` | GOR по граням, Дюпюи из потока, две оценки фронта |
+| ~~`two_phase_analytics.py`~~ | вынесен в [`../two_phase_analytics.py`](../two_phase_analytics.py) |
 | `temperature_ode.py` | ОДУ-аналитика температуры |
-| `temperature_asymptotics.py` | телескопическая формула, разложение перепада |
-| `energy_balance.py` | баланс энергии во времени |
-| `energy_balance_convergence.py` | порядок невязки по $\Delta t$ |
-| `check_stationary_T.py` | сходимость к стационару |
+| ~~`temperature_asymptotics.py`~~ | вынесен в [`../temperature_asymptotics.py`](../temperature_asymptotics.py) |
+| ~~`energy_balance.py`~~ | вынесен в [`../energy_balance.py`](../energy_balance.py) |
+| ~~`energy_balance_convergence.py`~~ | вынесен в [`../energy_balance_convergence.py`](../energy_balance_convergence.py) |
+| `check_asymptotics_relaxation.py` | сходимость к стационару |
 | `closed_form_convergence.py` | сходимость расчёта к замкнутому решению |
 | `ode_grid_convergence.py` | сходимость ОДУ-аналитики по сетке |
 | `compare_with_corey.py` | прямое сравнение с примером 03 |
@@ -297,9 +297,9 @@ cd numerical_solver
 
 ```powershell
 .venv\Scripts\python examples\05_standing_table_rp\compare_with_corey.py
-.venv\Scripts\python examples\05_standing_table_rp\check_stationary_T.py
+.venv\Scripts\python examples\05_standing_table_rp\check_asymptotics_relaxation.py
 .venv\Scripts\python examples\05_standing_table_rp\closed_form_convergence.py
-.venv\Scripts\python examples\05_standing_table_rp\energy_balance_convergence.py
+.venv\Scripts\python examples\energy_balance_convergence.py 05
 .venv\Scripts\python examples\05_standing_table_rp\ode_grid_convergence.py
 ```
 

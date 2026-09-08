@@ -23,7 +23,7 @@ T выводится при lambda = 0, иначе задача становит
 
 Дополнительные проверки запускаются отдельными скриптами — они делают свои
 прогоны (до 1000 суток либо на мелких сетках) и потому небыстрые:
-compare_with_corey, check_stationary_T, closed_form_convergence,
+compare_with_corey, check_asymptotics_relaxation, closed_form_convergence,
 energy_balance_convergence, ode_grid_convergence.
 """
 
@@ -48,7 +48,6 @@ from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 import two_phase_analytics as tpa  # noqa: E402
 import temperature_asymptotics as ta  # noqa: E402
 import temperature_ode as tode  # noqa: E402
-from energy_balance import plot_energy_balance  # noqa: E402
 
 
 def _times_to_plot(history):
@@ -61,7 +60,7 @@ def _times_to_plot(history):
 def _add_temperature_analytics(history, grid, config, pvt, energy_solver,
                                output_dir: Path, title: str):
     """Перестроить temperature_profiles.png: ОДУ на каждом моменте + асимптотика."""
-    T_as = ta.single_phase_asymptote(history, config)
+    T_as = ta.single_phase_asymptote(config, history)
     fr = tpa.degassing_front(history, grid, config, pvt)
     r = grid.r_centers
     Sg = history.states[-1].Sg
@@ -138,12 +137,11 @@ if __name__ == "__main__":
     print()
     tpa.report(history, grid, config, pvt)
 
+    # report_asymptotics вызывает run_example (FEAT-016) — здесь не дублируем.
     print()
-    ta.report(history, config, pvt, grid)
-
     _add_temperature_analytics(history, grid, config, pvt, sim._energy,
                                here / "output", TITLE)
     print("\nГрафик T перестроен с ОДУ-аналитикой.")
 
-    print()
-    plot_energy_balance(history, grid, config, here / "output")
+    # Баланс энергии считает run_example — общей проверкой для всех
+    # примеров (FEAT-016).

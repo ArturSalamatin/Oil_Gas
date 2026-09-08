@@ -53,6 +53,8 @@ from relperm_plot import plot_relperm  # noqa: E402
 from rs_analytics import make_overlay_rs, report_rs  # noqa: E402
 from closed_form import (  # noqa: E402
     make_overlay_pressure, make_overlay_saturation, report_closed)
+from energy_balance import plot_energy_balance  # noqa: E402
+from temperature_asymptotics import report_asymptotics  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
@@ -155,6 +157,24 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # примеров, аналитических и табличных.
     plot_relperm(config, history, output_dir, title)
 
+    # ── Баланс энергии ──
+    # Интегральная проверка: схема не должна терять и создавать энергию.
+    # Считается ВСЕГДА, включая однофазные сценарии — там просто часть
+    # членов тождественно нулевая (см. докстринг energy_balance.py).
+    # До FEAT-016 баланс имели только 01, 02, 03, 05 (своими копиями
+    # скрипта), а 04 и 06-10 не проверялись ничем — именно поэтому BUG-004
+    # на шести конфигурациях из десяти прожил незамеченным.
+    #
+    # Требует save_every = 1: баланс суммирует приращения по шагам.
+    # run_example значение не меняет, а во всех конфигах примеров стоит 1.
+    if getattr(config.output, "save_every", 1) == 1:
+        print()
+        plot_energy_balance(history, grid, config, output_dir)
+    else:
+        print(f"\nБаланс энергии не считается: save_every = "
+              f"{config.output.save_every}, нужен 1 (сумма приращений по "
+              f"шагам требует всех шагов)")
+
     _print_summary(history, elapsed, output_dir)
 
     # ── Проверка Rs ──
@@ -166,6 +186,15 @@ def run_example(config_path: str | Path, output_dir: str | Path,
         report_rs(config, history, simulator._energy._pvt)
         print()
         report_closed(config, history, grid, simulator)
+
+    # ── Стационарная асимптотика температуры ──
+    # Телескопическая формула выведена при λ = 0; при λ ≠ 0 она неверна
+    # как таковая, и report_asymptotics сам об этом сообщает (единственный
+    # такой пример — 10_deep_degassing). Расхождение на штатных 3 сутках
+    # отражает незавершённую релаксацию T, а не дефект — за 400 суток оно
+    # падает до 1e-11 К.
+    print()
+    report_asymptotics(config, history, grid, simulator)
 
     return elapsed, history, grid, config
 

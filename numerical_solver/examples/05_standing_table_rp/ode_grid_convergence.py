@@ -53,6 +53,7 @@ from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 
 import temperature_ode as tode  # noqa: E402
 from two_phase_analytics import SG_EPS  # noqa: E402
+from convergence import fit_order  # noqa: E402
 
 # (N, dt) — наибольший dt, при котором Newton сходится на этой сетке.
 # Найдено перебором; при большем шаге падает с
@@ -134,10 +135,11 @@ if __name__ == "__main__":
     e_tot = np.array([r["err_total"] for r in results])
     e_one = np.array([r["err_single"] for r in results])
 
-    # Наблюдаемый порядок: наклон log(ошибка) по log(N), со знаком минус
-    # (ошибка убывает с ростом N).
-    order_tot = -np.polyfit(np.log(N_arr), np.log(e_tot), 1)[0]
-    order_one = -np.polyfit(np.log(N_arr), np.log(e_one), 1)[0]
+    # Регрессия — общая механика (examples/convergence.py). inverse=True:
+    # параметр N обратен шагу сетки, знак наклона меняется, чтобы порядок
+    # читался положительным.
+    order_tot = fit_order(N_arr, e_tot, inverse=True)
+    order_one = fit_order(N_arr, e_one, inverse=True)
 
     print(f"\nНаблюдаемый порядок по N: {order_tot:.3f} (полная область), "
           f"{order_one:.3f} (однофазная зона)")

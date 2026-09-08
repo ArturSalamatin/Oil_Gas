@@ -13,7 +13,7 @@ S_g стационарны уже через час. Если расхожден
 
 Запуск:
     cd numerical_solver
-    .venv\\Scripts\\python examples\\05_standing_table_rp\\check_stationary_T.py
+    .venv\\Scripts\\python examples\\05_standing_table_rp\\check_asymptotics_relaxation.py
 """
 
 import sys
@@ -55,7 +55,8 @@ def main():
         pvt = sim._energy._pvt
         grid = sim._grid
 
-        T_pred, T_num = ta.stationary_face_temperature(history, config, pvt, grid)
+        T_pred, T_num = ta.stationary_face_temperature(config, history, grid,
+                                                       sim)
         # Сравниваем только внутренние грани: на контуре T_num = T_ext по ГУ
         err = float(np.max(np.abs(T_pred[:grid.N] - T_num[:grid.N])))
         print(f"{days:8.0f}  {history.states[-1].T[0]:12.5f}  {err:22.3e}")

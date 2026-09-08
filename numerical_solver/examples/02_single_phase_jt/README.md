@@ -266,7 +266,8 @@ $T(r_w) = 348.04$ К, расчёт на 72-м часе — 348.31 К. Отста
 
 ### Баланс энергии
 
-Скрипт `energy_balance.py` считает покомпонентный баланс. По сравнению с
+Общий модуль [`../energy_balance.py`](../energy_balance.py) считает
+покомпонентный баланс (до FEAT-016 у примера была своя копия). По сравнению с
 01 добавлен четвёртый компонент — JT:
 
 | Компонент | Значение (финал) | Комментарий |
@@ -282,7 +283,8 @@ JT-сток ($-1.68 \times 10^9$ Дж) по модулю больше конве
 
 ### Сходимость невязки
 
-Скрипт `energy_balance_convergence.py` прогоняет пример при трёх шагах
+Общий модуль [`../energy_balance_convergence.py`](../energy_balance_convergence.py)
+прогоняет пример при трёх шагах
 по времени и определяет порядок логарифмической регрессией
 $\log(\text{невязка})$ по $\log(\Delta t)$:
 
@@ -317,13 +319,13 @@ $T$, тепловой шаг замораживает $p$. Рассогласо�
 | Файл | Назначение |
 |---|---|
 | `main.py` | Расчёт + графики + Дюпюи + ОДУ-аналитика T + JT-асимптотика + баланс энергии |
-| `energy_balance.py` | Покомпонентный баланс энергии с JT (вызывается из `main.py` или автономно) |
-| `energy_balance_convergence.py` | Порядок сходимости невязки по $\Delta t$ (автономный) |
+| ~~`energy_balance.py`~~ | вынесен в [`../energy_balance.py`](../energy_balance.py) |
+| ~~`energy_balance_convergence.py`~~ | вынесен в [`../energy_balance_convergence.py`](../energy_balance_convergence.py) |
 | `check_jt_terms.py` | Диагностика: проверка необходимости обоих JT-членов в ОДУ (автономный) |
 | `check_slopes.py` | Диагностика: наклоны двух участков $T(\ln r)$, прогон с удвоенным $\mu_{JT}$ (автономный) |
 | `config.json` | Конфигурация задачи |
 
-`energy_balance.py` разделён на две функции: `compute_balance()` считает
+`../energy_balance.py` разделён на функции: `compute_balance()` считает
 компоненты, `plot_energy_balance()` строит график. Скрипт сходимости
 импортирует первую, поэтому формулы баланса живут в одном месте.
 
@@ -388,8 +390,8 @@ cd numerical_solver
 Автономный запуск отдельных скриптов:
 
 ```powershell
-.venv\Scripts\python examples\02_single_phase_jt\energy_balance.py
-.venv\Scripts\python examples\02_single_phase_jt\energy_balance_convergence.py
+.venv\Scripts\python examples\energy_balance.py 02
+.venv\Scripts\python examples\energy_balance_convergence.py 02
 .venv\Scripts\python examples\02_single_phase_jt\check_jt_terms.py
 .venv\Scripts\python examples\02_single_phase_jt\check_slopes.py
 ```

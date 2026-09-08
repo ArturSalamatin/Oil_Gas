@@ -63,6 +63,9 @@ def _run(name: str) -> dict:
     return {
         "history": history,
         "grid": simulator._grid,
+        # config нужен балансу энергии: compute_balance(history, grid, config)
+        # пересобирает по нему PVT и rock (FEAT-016).
+        "config": cfg,
         "Rs0": cfg.initial_conditions.Rs0,
         "p": final.p,
         "T": final.T,
@@ -431,8 +434,163 @@ def test_pipeline_writes_output(tmp_path):
         "well_history.csv", "profiles.csv",
         "pressure_profiles.png", "temperature_profiles.png",
         "saturation_profiles.png", "well_rates.png", "wellbore_dynamics.png",
+        # FEAT-016: баланс энергии подключён к run_example для всех примеров
+        "energy_balance.png",
     ]
     for fname in expected:
         path = tmp_path / fname
         assert path.is_file(), f"не создан {fname}"
         assert path.stat().st_size > 0, f"пустой файл {fname}"
+
+
+# ═══════════════════════════════════════════════════════════
+# I. Общие проверки: баланс энергии у всех примеров (FEAT-016)
+# ═══════════════════════════════════════════════════════════
+
+# Модули проверок, вынесенные в examples/ (FEAT-016). Ни один из них не
+# должен снова появиться в папке примера: копия в папке ПЕРЕКРЫВАЕТ общий
+# модуль молча, без ошибки импорта (main.py делает sys.path.insert(0, ...)
+# сначала для examples/, затем для папки примера, поэтому папка примера
+# оказывается впереди). Именно так четыре копии energy_balance.py
+# разошлись и породили BUG-004.
+SHARED_CHECK_MODULES = [
+    "energy_balance.py",
+    "energy_balance_convergence.py",
+    "temperature_asymptotics.py",
+    "two_phase_analytics.py",
+]
+
+
+class TestSharedChecks:
+    def test_energy_balance_all_examples(self, results):
+        """Баланс энергии сходится у ВСЕХ десяти примеров.
+
+        До BUG-004 невязка была 0.18-0.29 на шести конфигурациях из десяти,
+        и на пяти из них это никем не проверялось: свой energy_balance.py
+        имели только 01, 02, 03, 05. Порог 1e-2 отделяет ошибку расщепления
+        O(dt) (~1e-3 на штатных конфигах) от пропущенного члена.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from energy_balance import compute_balance
+
+        bad = {}
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            bal = compute_balance(r["history"], r["grid"], r["config"])
+            rel = abs(float(bal["rel_residual"][-1]))
+            if rel >= 1e-2:
+                bad[name] = rel
+        assert not bad, f"невязка баланса >= 1e-2: {bad}"
+
+    def test_conduction_term_always_computed(self, results):
+        """Кондуктивный член считается безусловно, а не при lambda != 0.
+
+        Ключевая защита FEAT-016. Пропуск члена у примера 10 (единственного
+        с lambda != 0) маскировался девятью примерами с lambda = 0: у них он
+        тождественно нулевой, поэтому отсутствие члена было незаметно.
+        Проверяем ОБА случая: ключ присутствует всегда, при lambda = 0 член
+        строго нулевой, при lambda != 0 — ненулевой.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from energy_balance import compute_balance
+
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            cfg = r["config"]
+            bal = compute_balance(r["history"], r["grid"], cfg)
+
+            assert "cum_cond" in bal, f"{name}: нет ключа cum_cond"
+            cond = bal["cum_cond"]
+            assert np.all(np.isfinite(cond)), f"{name}: cum_cond не конечен"
+
+            has_lambda = (cfg.rock.lambda_solid or cfg.rock.lambda_oil
+                          or cfg.rock.lambda_gas)
+            if has_lambda:
+                # Пример 10: член реально считается, а не занулён ветвлением.
+                assert abs(float(cond[-1])) > 0.0, (
+                    f"{name}: lambda != 0, но cum_cond = 0 — член не считается")
+            else:
+                # Q_T_ext = geom * lambda_eff[-1] при lambda = 0 даёт ровно
+                # 0.0, без NaN и inf (tridiag.py:179).
+                assert np.all(cond == 0.0), (
+                    f"{name}: lambda = 0, но cum_cond != 0: {cond[-1]}")
+
+    def test_full_key_set_always_returned(self, results):
+        """Набор ключей compute_balance полный независимо от конфига.
+
+        Прежние копии для однофазных примеров не возвращали cum_jt (01) и
+        cum_deg (01, 02) — отсутствующие ключи ломали бы вызывающий код.
+        Физически отсутствующие члены приходят нулевыми массивами.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from energy_balance import compute_balance
+
+        required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
+                    "cum_deg", "cum_cond", "total", "residual",
+                    "rel_residual"}
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            bal = compute_balance(r["history"], r["grid"], r["config"])
+            missing = required - set(bal)
+            assert not missing, f"{name}: отсутствуют ключи {sorted(missing)}"
+
+    @pytest.mark.parametrize("module", SHARED_CHECK_MODULES)
+    def test_no_duplicate_helper_scripts(self, module):
+        """Вынесенный модуль не вернулся копией в папку примера.
+
+        Защита от того самого механизма, которым возникла FEAT-016: скрипт
+        пишется под один пример, копируется в другой, копии правятся
+        независимо и расходятся. Копия в папке примера при этом молча
+        перекрывает общий модуль.
+        """
+        copies = sorted(
+            p.parent.name for p in EXAMPLES_DIR.glob(f"*/{module}"))
+        assert not copies, (
+            f"{module} снова скопирован в папки примеров: {copies}. "
+            f"Общий модуль examples/{module} будет молча перекрыт.")
+
+    def test_shared_modules_exist(self):
+        """Общие модули на месте — иначе примеры не считают проверки."""
+        for module in SHARED_CHECK_MODULES + ["convergence.py"]:
+            path = EXAMPLES_DIR / module
+            assert path.is_file(), f"нет общего модуля examples/{module}"
+
+    def test_energy_balance_reported_for_all_examples(self, tmp_path):
+        """run_example печатает баланс энергии — проверка подключения.
+
+        Отличается от test_energy_balance_all_examples: тот проверяет, что
+        баланс СХОДИТСЯ, а этот — что он вообще ВЫЗЫВАЕТСЯ из run_example.
+        Без этого общий модуль мог бы существовать, но не быть подключён, и
+        примеры 06-10 снова остались бы без проверки.
+
+        Берётся пример 10: у него lambda != 0, поэтому в выводе должна быть
+        и ненулевая строка теплопроводности.
+        """
+        import contextlib
+        import io
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from example_runner import run_example
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            run_example(
+                config_path=EXAMPLES_DIR / "10_deep_degassing" / "config.json",
+                output_dir=tmp_path,
+                title="тест подключения баланса",
+            )
+        out = buf.getvalue()
+
+        assert "Невязка финал" in out, (
+            "run_example не печатает невязку баланса энергии")
+        assert "Теплопроводность" in out, (
+            "в выводе баланса нет кондуктивного члена")
+        assert (tmp_path / "energy_balance.png").is_file(), (
+            "run_example не сохранил график баланса")
+        # Асимптотика у примера 10 неприменима (lambda != 0) — должна быть
+        # сказана причина, а не напечатано большое расхождение.
+        assert "не проверяется" in out, (
+            "асимптотика не сообщила о неприменимости при lambda != 0")

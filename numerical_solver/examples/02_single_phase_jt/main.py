@@ -45,7 +45,6 @@ from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 
 # energy_balance.py лежит рядом с main.py — добавляем папку примера в sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from energy_balance import plot_energy_balance  # noqa: E402
 
 
 def _times_to_plot(history):
@@ -302,5 +301,5 @@ if __name__ == "__main__":
     print(f"  Отставание от JT-асимптотики: {gap:.3f} К "
           f"(релаксация не завершена за {history.times[-1] / 86400:.0f} сут)")
 
-    # Баланс энергии: ΔE = адиабатика + конвекция + JT
-    plot_energy_balance(history, grid, config, here / "output")
+    # Баланс энергии (ΔE = адиабатика + конвекция + JT) считает
+    # run_example — общей проверкой для всех примеров (FEAT-016).

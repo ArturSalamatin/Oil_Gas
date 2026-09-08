@@ -1,9 +1,10 @@
-"""Стационарная асимптотика температуры — пример 05 (Standing PVT + табличная ОФП).
+"""Стационарная асимптотика температуры — общая проверка для всех примеров.
 
-Выкладки полностью повторяют пример 03: они опираются на структуру
-уравнения энергии и не используют вид k_r(S_g) вообще. Отличие примера 05
-только в конфиге — здесь λ = 0 (все три теплопроводности обнулены), и
-телескопическая формула ниже становится ТОЧНОЙ, а не приближённой.
+Проверка опирается на структуру уравнения энергии и НЕ использует ни вид
+k_r(S_g), ни источник PVT — поэтому применима к любому примеру. Различия
+между примерами (Кори или таблица, Standing или таблица) в результат не
+входят вообще: формула ниже собирается из численных Φ, J, R, которые
+берутся у того же решателя, что считал задачу.
 
 В примере 02 (однофазном) стационарный предел имел замкнутый вид
     T(r) = T_ext + mu_JT·[p(r) - p_ext],
@@ -41,13 +42,21 @@ mdot = -ρ_g,ст·(R_{j+1} - R_j)/V_j, R_f = <G^o·Rs>_f. Значит
 
     T(r) = T_ext + mu_JT,o·[p(r) - p_ext].
 
-ЧЕМ 05 ОТЛИЧАЕТСЯ ОТ 03 ЗДЕСЬ. В примере 03 конфиг задавал λ ≠ 0, и
-телескопирование не учитывало кондуктивный поток — оставалась поправка
-~0.003 К. В 05 теплопроводности обнулены, кондуктивная проводимость
-Q_T = 2πh/(w_L/λ_L + w_R/λ_R) обращается в ноль тождественно, и формула
-воспроизводит схему до машинной точности. Это делает пример 05 более
-чистой проверкой: расхождение, если оно появится, указывает на ошибку
-в сборке уравнения, а не на отброшенную физику.
+ГРАНИЦЫ ПРИМЕНИМОСТИ — ДВА УСЛОВИЯ, И ОБА ПРОВЕРЯЕМЫ.
+
+  1. λ = 0. Телескопирование не учитывает кондуктивный поток. При λ ≠ 0
+     остаётся поправка, и расхождение формулы со схемой не убывает с
+     сеткой. Из десяти примеров λ ≠ 0 только у 10_deep_degassing
+     (λ_solid = 1.5, λ_oil = 0.14, λ_gas = 0.04) — там эта проверка не
+     применима, и report_asymptotics это сообщает, а не молча печатает
+     большое расхождение.
+
+  2. Стационар. На штатных 3 сутках релаксация T не завершена, и
+     расхождение формулы с расчётом отражает именно это, а не дефект
+     вывода. Проверено прогоном на длинных временах (см.
+     05_standing_table_rp/check_asymptotics_relaxation.py): 3.889e-01 К
+     на 3 сутках → 5.064e-02 на 30 → 1.231e-03 на 100 → 7.3e-11 на 400.
+     Падение до машинного нуля и подтверждает точность формулы.
 
 ПОЧЕМУ ПРОФИЛЬ T В ДВУХФАЗНОЙ ЗОНЕ ПОЧТИ ПЛОСКИЙ. Разложение перепада
 между забоем и фронтом даёт три вклада, два охлаждающих и один греющий:
@@ -55,19 +64,49 @@ Q_T = 2πh/(w_L/λ_L + w_R/λ_R) обращается в ноль тождест
 По мере разгазирования часть массы переходит в газ, у которого cp вдвое
 меньше, поэтому |Φ| падает, и та же энергия соответствует более высокой
 температуре. Плоский профиль — не признак слабости эффектов, а результат
-их взаимного погашения. Конкретные числа для 05 печатает report();
-они близки к 03, потому что зависят от PVT и потоков, а не от ОФП.
+их взаимного погашения. Конкретные числа печатает report_asymptotics();
+для примера 03 на стационаре они таковы: ДТ -0.6607 К, скрытая теплота
+-0.6348 К, изменение Φ +1.3066 К, итог +0.0112 К.
+
+Запуск для конкретного примера:
+    cd numerical_solver
+    .venv\\Scripts\\python examples\\temperature_asymptotics.py 03
 """
+
+import sys
+from pathlib import Path
 
 import numpy as np
 
+_EXAMPLES = Path(__file__).resolve().parent
+_ROOT = _EXAMPLES.parent
+for _p in (str(_ROOT), str(_EXAMPLES),
+           str(_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-def _face_coefficients(history, config, pvt, grid):
+# Порог «в ячейке есть газ». Тот же, что в two_phase_analytics.SG_EPS,
+# но импортировать оттуда нельзя: эта проверка применима и к однофазным
+# примерам 01/02, где two_phase_analytics не используется вовсе.
+SG_EPS = 1e-12
+
+
+def _pvt_of(simulator):
+    """PVT-объект, которым считалась задача (конвенция closed_form._prepare).
+
+    Берём у решателя, а не создаём заново: проверка обязана видеть ровно
+    те свойства, что стояли в расчёте.
+    """
+    return simulator._energy._pvt
+
+
+def _face_coefficients(config, history, grid, simulator):
     """Φ, J, R на всех гранях — ровно как их собирает tridiag.py.
 
     Возвращает (Phi, Phi_o, Phi_g, J, R_conv), все [N+1].
     Upstream: при потоке к скважине (Q < 0) upstream грани f — ячейка f.
     """
+    pvt = _pvt_of(simulator)
     N = grid.N
     st = history.states[-1]
     hr = history.hydro_results[-1]
@@ -119,23 +158,24 @@ def _face_coefficients(history, config, pvt, grid):
     return Phi_o + Phi_g, Phi_o, Phi_g, J, R_conv
 
 
-def stationary_face_temperature(history, config, pvt, grid):
+def stationary_face_temperature(config, history, grid, simulator):
     """Точная стационарная T на гранях по телескопической формуле.
 
     Возвращает (T_pred, T_num) — оба [N+1].
     T_num — численная температура на грани по upwind: при потоке к скважине
     это T правой ячейки, на контуре — T_ext.
 
-    ВАЖНО: формула верна только при λ = 0 и на стационаре. В конфиге 05
-    теплопроводности обнулены, поэтому первое условие выполнено точно;
-    остаточное расхождение отражает лишь незавершённость релаксации T.
+    ВАЖНО: формула верна только при λ = 0 и на стационаре (см. докстринг
+    модуля, «Границы применимости»). Расхождение на штатных 3 сутках
+    отражает незавершённую релаксацию T, а не дефект вывода.
     """
+    pvt = _pvt_of(simulator)
     N = grid.N
     T_ext = config.initial_conditions.T0
     L = config.thermal.L_degas
     rho_g_std = pvt.rho_g_std
 
-    Phi, _, _, J, R = _face_coefficients(history, config, pvt, grid)
+    Phi, _, _, J, R = _face_coefficients(config, history, grid, simulator)
 
     T_pred = np.empty(N + 1)
     for f in range(N + 1):
@@ -148,7 +188,7 @@ def stationary_face_temperature(history, config, pvt, grid):
     return T_pred, T_num
 
 
-def single_phase_asymptote(history, config):
+def single_phase_asymptote(config, history):
     """Асимптотика примера 02: T = T_ext + mu_JT,o·(p - p_ext), [N].
 
     Опорная точка — центр последней ячейки, а не r = R_e: ГУ Дирихле держит
@@ -159,10 +199,12 @@ def single_phase_asymptote(history, config):
     return config.initial_conditions.T0 + config.thermal.mu_JT_oil * (p - p[-1])
 
 
-def decompose_two_phase(history, config, pvt, grid, f_well=0, f_front=None):
+def decompose_two_phase(config, history, grid, simulator,
+                        f_well=0, f_front=None):
     """Разложить перепад T между забоем и фронтом на физические вклады.
 
-    Возвращает dict с ключами jt, latent, phi_change, sum, actual (все К).
+    Возвращает dict с ключами jt, latent, phi_change, sum, actual (все К),
+    либо None, если газа в области нет (однофазный пример).
 
     Перепад dT = T(забой) - T(фронт) получается из телескопической формулы
     делением на Φ(забой):
@@ -170,6 +212,7 @@ def decompose_two_phase(history, config, pvt, grid, f_well=0, f_front=None):
              -L·ρ_g,ст·(R_фронт - R_забой)/Φ_забой — скрытая теплота
              + T_фронт·(Φ_фронт - Φ_забой)/Φ_забой — изменение Φ
     """
+    pvt = _pvt_of(simulator)
     T = history.states[-1].T
     Sg = history.states[-1].Sg
     L = config.thermal.L_degas
@@ -178,12 +221,12 @@ def decompose_two_phase(history, config, pvt, grid, f_well=0, f_front=None):
     if f_front is None:
         # Последняя грань, за которой ещё есть газ: индекс последней
         # двухфазной ячейки. Sg > 0 только в зоне разгазирования.
-        gas_cells = np.where(Sg > 1e-12)[0]
+        gas_cells = np.where(Sg > SG_EPS)[0]
         if len(gas_cells) == 0:
             return None
         f_front = int(gas_cells[-1])
 
-    Phi, _, _, J, R = _face_coefficients(history, config, pvt, grid)
+    Phi, _, _, J, R = _face_coefficients(config, history, grid, simulator)
 
     dJ = J[f_front] - J[f_well]
     dDeg = L * rho_g_std * (R[f_front] - R[f_well])
@@ -199,56 +242,94 @@ def decompose_two_phase(history, config, pvt, grid, f_well=0, f_front=None):
                 f_front=f_front)
 
 
-def report(history, config, pvt, grid) -> dict:
+def has_conduction(config) -> bool:
+    """Включена ли теплопроводность — формула её не учитывает.
+
+    Не ветвление «считать или нет член», а признак применимости всей
+    проверки: телескопирование выведено при λ = 0, при λ ≠ 0 оно неверно
+    как таковое. Из десяти примеров это только 10_deep_degassing.
+    """
+    rock = config.rock
+    return bool(rock.lambda_solid or rock.lambda_oil or rock.lambda_gas)
+
+
+def report_asymptotics(config, history, grid, simulator) -> dict:
     """Печать стационарных проверок. Возвращает сводку."""
+    if has_conduction(config):
+        rock = config.rock
+        print("── Стационарная асимптотика температуры ──")
+        print(f"  не проверяется: в конфиге λ ≠ 0 "
+              f"(solid={rock.lambda_solid}, oil={rock.lambda_oil}, "
+              f"gas={rock.lambda_gas}) — телескопическая формула выведена "
+              f"при λ = 0 и здесь неприменима")
+        return dict(applicable=False, err_face=np.nan, err_1ph=np.nan,
+                    decomposition=None, T_asymptote=None)
+
     Sg = history.states[-1].Sg
     T = history.states[-1].T
-    mask1 = Sg <= 1e-12
+    mask1 = Sg <= SG_EPS
 
     print("── Стационарная асимптотика температуры ──")
 
-    T_pred, T_num = stationary_face_temperature(history, config, pvt, grid)
+    T_pred, T_num = stationary_face_temperature(config, history, grid,
+                                                simulator)
     err_face = float(np.max(np.abs(T_pred[:grid.N] - T_num[:grid.N])))
     print(f"  телескопическая формула на гранях: max|T_форм - T_числ| = "
           f"{err_face:.3e} К")
-    print(f"    (λ=0 задано в конфиге, поэтому формула точна для схемы; "
-          f"остаток — незавершённая релаксация T за 3 сут)")
+    print(f"    (λ=0 в конфиге, поэтому формула точна для схемы; остаток — "
+          f"незавершённая релаксация T, убывает до 1e-11 К за 400 сут)")
 
-    T_as = single_phase_asymptote(history, config)
-    err_1ph = float(np.max(np.abs(T[mask1] - T_as[mask1]))) if mask1.any() else np.nan
+    T_as = single_phase_asymptote(config, history)
+    err_1ph = (float(np.max(np.abs(T[mask1] - T_as[mask1]))) if mask1.any()
+               else np.nan)
     print(f"  однофазная асимптотика T = T_ext + μ_JT(p - p_ext): "
           f"max|ΔT| = {err_1ph:.4f} К")
     print(f"    (за 3 суток релаксация не завершена — как в примере 02)")
 
-    dec = decompose_two_phase(history, config, pvt, grid)
+    dec = decompose_two_phase(config, history, grid, simulator)
     if dec is not None:
-        print(f"  разложение перепада T (забой ↔ фронт, грань {dec['f_front']}):")
+        print(f"  разложение перепада T (забой ↔ фронт, грань "
+              f"{dec['f_front']}):")
         print(f"    Джоуль–Томсон    {dec['jt']:+8.4f} К")
         print(f"    скрытая теплота  {dec['latent']:+8.4f} К")
         print(f"    изменение Φ      {dec['phi_change']:+8.4f} К")
         print(f"    сумма            {dec['sum']:+8.4f} К   "
               f"фактически {dec['actual']:+8.4f} К")
 
-    return dict(err_face=err_face, err_1ph=err_1ph, decomposition=dec,
-                T_asymptote=T_as)
+    return dict(applicable=True, err_face=err_face, err_1ph=err_1ph,
+                decomposition=dec, T_asymptote=T_as)
+
+
+def _resolve_example(name_or_prefix: str) -> Path:
+    """examples/<имя>/ по полному имени или числовому префиксу ('03').
+
+    Пользователю не нужно печатать '03_standing_corey' целиком.
+    Ошибка при отсутствии или неоднозначности префикса.
+    """
+    exact = _EXAMPLES / name_or_prefix
+    if exact.is_dir():
+        return exact
+    matches = sorted(d for d in _EXAMPLES.iterdir()
+                     if d.is_dir() and d.name.startswith(name_or_prefix))
+    if not matches:
+        raise SystemExit(f"нет примера '{name_or_prefix}'")
+    if len(matches) > 1:
+        raise SystemExit(f"неоднозначно: {[m.name for m in matches]}")
+    return matches[0]
 
 
 # ── Автономный запуск ──
 if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-
-    HERE = Path(__file__).resolve().parent
-    SOLVER_ROOT = HERE.parents[1]
-    sys.path.insert(0, str(SOLVER_ROOT))
-    sys.path.insert(0, str(SOLVER_ROOT / "examples"))
-    sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
-
     from gpn_multiphase_solver.io.config import load_config
     from gpn_multiphase_solver.factory import SimulatorFactory
 
-    config = load_config(HERE / "config.json")
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "укажите пример: python examples\\temperature_asymptotics.py 03")
+
+    folder = _resolve_example(sys.argv[1])
+    config = load_config(folder / "config.json")
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)
 
-    report(history, config, sim._energy._pvt, sim._grid)
+    report_asymptotics(config, history, sim._grid, sim)

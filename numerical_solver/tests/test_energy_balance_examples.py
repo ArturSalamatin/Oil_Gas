@@ -21,9 +21,10 @@ import pytest
 # путь до самого скрипта примеров — в conftest его не тащим, это код
 # примеров, а не пакета.
 _EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
-_BALANCE_SRC = _EXAMPLES / "03_standing_corey"
-if str(_BALANCE_SRC) not in sys.path:
-    sys.path.insert(0, str(_BALANCE_SRC))
+# Модуль общий для всех примеров (FEAT-016): до выноса он лежал в папке
+# 03_standing_corey, и путь указывал туда.
+if str(_EXAMPLES) not in sys.path:
+    sys.path.insert(0, str(_EXAMPLES))
 
 from energy_balance import compute_balance  # noqa: E402
 

@@ -8,10 +8,12 @@
 регрессионным ориентиром: расхождение больше 2 % означает, что что-то
 изменилось в решателе или в самом балансе.
 
-Почему у примеров разные источники скрипта: свою копию energy_balance.py
-имеют только 01, 02, 03 и 05. Примеры 04 и 06-10 её не имеют (их main.py
-идёт через example_runner, который баланс не считает), поэтому для них
-берётся полная двухфазная версия из примера 03.
+Все примеры считаются ОДНИМ кодом — общим examples/energy_balance.py
+(FEAT-016). До выноса своя копия была у 01, 02, 03 и 05, а для остальных
+приходилось брать версию примера 03; тогда этот скрипт грузил копии через
+importlib под разными именами, потому что обычный import вернул бы первую
+из них для всех (все копии назывались одинаково). Теперь копий нет, и
+обходной путь не нужен.
 
 Запуск:
     cd numerical_solver
@@ -19,7 +21,6 @@
 """
 
 import sys
-import importlib.util
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -30,21 +31,23 @@ sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3")
 
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
+from energy_balance import compute_balance  # noqa: E402
 
-# (папка примера, откуда брать energy_balance, эталонная отн. невязка)
-#   "self" — своя копия в папке примера
-#   "03"   — полная двухфазная версия из 03_standing_corey
+# (папка примера, эталонная отн. невязка)
 EXAMPLES = [
-    ("01_single_phase_no_jt",       "self", 5.67e-4),
-    ("02_single_phase_jt",          "self", 1.87e-3),
-    ("03_standing_corey",           "self", 9.65e-3),
-    ("04_table_table",              "03",   4.03e-3),
-    ("05_standing_table_rp",        "self", 9.64e-3),
-    ("06_table_corey_rp",           "03",   4.55e-3),
-    ("07_degassing_adiabatic_only", "03",   5.76e-3),
-    ("08_degassing_jt",             "03",   1.84e-3),
-    ("09_degassing_latent_heat",    "03",   2.26e-3),
-    ("10_deep_degassing",           "03",   4.74e-3),
+    ("01_single_phase_no_jt",       5.67e-4),
+    ("02_single_phase_jt",          1.87e-3),
+    ("03_standing_corey",           9.65e-3),
+    ("04_table_table",              4.03e-3),
+    ("05_standing_table_rp",        9.64e-3),
+    ("06_table_corey_rp",           4.55e-3),
+    ("07_degassing_adiabatic_only", 5.76e-3),
+    ("08_degassing_jt",             1.84e-3),
+    ("09_degassing_latent_heat",    2.26e-3),
+    # Единственный пример с λ ≠ 0. Эталон 4.74e-3 относился к версии без
+    # кондуктивного члена; с ним (FEAT-016, шаг 4а) невязка 4.33e-3, а
+    # порядок сходимости по dt восстановился с 0.751 до 0.980.
+    ("10_deep_degassing",           4.33e-3),
 ]
 
 # Порог приёмки: невязка баланса — ошибка расщепления O(dt), на штатных
@@ -55,23 +58,7 @@ TOL_ABSOLUTE = 1e-2
 TOL_REFERENCE = 0.02
 
 
-def _load_balance_module(folder_path: Path, alias: str):
-    """Загрузить копию energy_balance.py под уникальным именем модуля.
-
-    Обычный import кэширует первую копию в sys.modules и возвращает её для
-    всех последующих (все копии называются одинаково), из-за чего таблица
-    считалась бы одним и тем же кодом. Поэтому загружаем явно, каждую под
-    своим alias.
-    """
-    spec = importlib.util.spec_from_file_location(
-        alias, folder_path / "energy_balance.py")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[alias] = module          # должно стоять до exec_module
-    spec.loader.exec_module(module)
-    return module
-
-
-def check_one(folder: str, source: str, expected: float | None) -> dict:
+def check_one(folder: str, expected: float | None) -> dict:
     """Прогон одного примера + баланс энергии.
 
     Возвращает {name, rel_residual, expected, status}. Падение примера не
@@ -79,10 +66,8 @@ def check_one(folder: str, source: str, expected: float | None) -> dict:
     чтобы сводная таблица собралась целиком.
     """
     example_dir = HERE / folder
-    src_dir = example_dir if source == "self" else HERE / "03_standing_corey"
 
     try:
-        balance = _load_balance_module(src_dir, f"eb_{folder}")
         config = load_config(example_dir / "config.json")
         config.output.log_level = "WARNING"
         # Баланс суммирует приращения по шагам — нужны все шаги.
@@ -91,7 +76,7 @@ def check_one(folder: str, source: str, expected: float | None) -> dict:
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
 
-        bal = balance.compute_balance(history, simulator._grid, config)
+        bal = compute_balance(history, simulator._grid, config)
         rel = abs(float(bal["rel_residual"][-1]))
 
         if rel > TOL_ABSOLUTE:
@@ -110,17 +95,15 @@ def check_one(folder: str, source: str, expected: float | None) -> dict:
 
 
 if __name__ == "__main__":
-    results = [check_one(folder, source, expected)
-               for folder, source, expected in EXAMPLES]
+    results = [check_one(folder, expected) for folder, expected in EXAMPLES]
 
     print()
-    print(f"{'пример':32s} {'источник':9s} {'невязка':>11s} "
-          f"{'эталон':>11s}  статус")
-    print("-" * 82)
-    for (folder, source, _), res in zip(EXAMPLES, results):
+    print(f"{'пример':32s} {'невязка':>11s} {'эталон':>11s}  статус")
+    print("-" * 72)
+    for res in results:
         exp = res["expected"]
         exp_str = f"{exp:11.2e}" if exp is not None else f"{'—':>11s}"
-        print(f"{res['name']:32s} {source:9s} "
+        print(f"{res['name']:32s} "
               f"{res['rel_residual']:11.4e} {exp_str}  {res['status']}")
 
     bad = [r for r in results if r["status"] != "OK"]

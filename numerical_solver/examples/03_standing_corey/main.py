@@ -17,11 +17,14 @@
        Единственная аналитика, специфичная для этого примера: температура в
        общий модуль не входит, потому что зависит от тепловых параметров.
 
-Вывод формул — в docstring temperature_ode.py и temperature_asymptotics.py,
+Вывод формул — в docstring temperature_ode.py и ../temperature_asymptotics.py,
 а также ../closed_form.py; численные подтверждения — в README.md.
-Модуль two_phase_analytics.py остаётся: он проверяет то, чего нет в общей
-части — постоянство GOR по граням, наклон Дюпюи из потока, совпадение
-двух оценок фронта.
+
+Баланс энергии, асимптотику температуры и аналитику двухфазного стационара
+считает example_runner общими модулями из examples/ (FEAT-016). Здесь
+вызывается только ../two_phase_analytics.report — сводка проверок, которых
+нет в графиках: постоянство GOR по граням, наклон Дюпюи из потока,
+совпадение двух оценок фронта.
 """
 
 import sys
@@ -35,9 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from example_runner import run_example  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
-import temperature_asymptotics as ta  # noqa: E402
 from temperature_ode import overlay_temperature  # noqa: E402
-from energy_balance import plot_energy_balance  # noqa: E402
 
 if __name__ == "__main__":
     here = Path(__file__).parent
@@ -64,8 +65,6 @@ if __name__ == "__main__":
     print()
     tpa.report(history, grid, config, pvt)
 
-    print()
-    ta.report(history, config, pvt, grid)
-
-    print()
-    plot_energy_balance(history, grid, config, here / "output")
+    # Асимптотику температуры и баланс энергии считает run_example —
+    # общими проверками для всех примеров (FEAT-016). Прежде этот пример
+    # вызывал их сам, своими копиями скриптов.

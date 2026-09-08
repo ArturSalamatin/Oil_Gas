@@ -62,7 +62,7 @@ R = <G^o Rs> — поток растворённого газа. Разреша�
 порядок проседал с 1.02 до 0.70. С нулевой теплопроводностью порядок ровно
 первый — 1.065. Само обнуление стоит недорого: на стационаре разница с
 физическими lambda составляет 0.0002 К на забое при эффекте ~4 К
-(check_stationary.py). Таблицы — README, п. 5в и 7.
+(check_asymptotics_long_run.py). Таблицы — README, п. 5в и 7.
 
 ТОЧНОСТЬ. Шаг 24 (t = 24 ч), N = 50:
 
@@ -342,7 +342,7 @@ def overlay_temperature(ax, history, grid, simulator):
 
     # JT-асимптотика рисуется только там, где она выведена, — в однофазной
     # зоне. В двухфазной работают ещё скрытая теплота и изменение Φ.
-    T_as = ta.single_phase_asymptote(history, config)
+    T_as = ta.single_phase_asymptote(config, history)
     Sg = history.states[-1].Sg
     mask1 = Sg <= tpa.SG_EPS
     ax.semilogx(grid.r_centers[mask1], T_as[mask1], color='gray',

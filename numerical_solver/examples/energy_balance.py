@@ -1,23 +1,53 @@
-"""Баланс энергии во времени для примера 03_standing_corey.
+"""Баланс энергии во времени — общая проверка для всех примеров.
 
-Отличие от примера 02: расчёт двухфазный, поэтому добавлены два вклада —
-скрытая теплота дегазации и газовая фаза во всех остальных членах.
-Компоненты (кумулятивные, от t=0 до t_n):
+Проверка интегральная: она не зависит ни от вида ОФП, ни от источника PVT,
+ни от того, какие тепловые эффекты включены в конфиге. Смысл один — схема
+не должна терять и создавать энергию. Компоненты (кумулятивные, от t=0 до
+t_n):
 
   ΔE(t)     — изменение запаса тепловой энергии в области
   adiab(t)  — адиабатический источник, φ·Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt
   conv(t)   — чистая конвекция через забой и контур (обе фазы)
   jt(t)     — источник Джоуля–Томсона (обе фазы)
   deg(t)    — скрытая теплота дегазации, -L·mdot
-  невязка   — ΔE - (adiab + conv + jt + deg)
+  cond(t)   — кондуктивный поток через контур
+  невязка   — ΔE - (adiab + conv + jt + deg + cond)
 
 Формулы повторяют то, что собирает TridiagEnergySolver.assemble_tridiag.
 Суммирование по всем ячейкам телескопирует дивергентные члены (JT и
 конвекцию) до разности потоков на забое и контуре; недивергентные
 (адиабатика, дегазация) суммируются по объёму.
 
-В отличие от 02 здесь (ρcp)_eff НЕ постоянна: она зависит от S_g и от PVT,
-поэтому ΔE считается с поячеечными свойствами на каждом шаге.
+ВСЕ ЧЛЕНЫ СЧИТАЮТСЯ БЕЗУСЛОВНО. Никаких ветвлений «этот член нужен только
+если в конфиге λ ≠ 0 / L ≠ 0 / μ_JT ≠ 0»: член входит в формулу всегда и
+обнуляется арифметикой, когда соответствующий коэффициент равен нулю.
+Возвращаемый dict тоже всегда содержит ПОЛНЫЙ набор ключей — нулевые
+массивы вместо отсутствующих.
+
+Это не стилистика, а следствие BUG-004/FEAT-016. Копия этого скрипта у
+примера 03 утверждала: «кондуктивного члена нет, он и не нужен — в конфиге
+λ = 0». Для 03 это верно, но проверка применяется ко всем десяти примерам,
+а у 10_deep_degassing λ ≠ 0. Девять примеров с λ = 0 маскировали пропуск
+члена у десятого. Измерено после добавления члена:
+
+    пример 10, dt   без кондукции   с кондукцией
+    3600 с          4.7439e-03      4.3311e-03
+     900 с          1.5098e-03      1.1095e-03
+     360 с          8.5474e-04      4.5396e-04
+    порядок         +0.751          +0.980
+
+При штатном шаге выигрыш скромный (8.6 %), но `cum_cond` почти не зависит
+от dt (1.286 / 1.323 / 1.323 ·10⁷ Дж) — член систематический, и при
+измельчении шага он доминирует над убывающей ошибкой расщепления. Ценность
+правки в том, что остаток примера 10 становится чистой ошибкой расщепления
+O(Δt), как у остальных девяти. Проверка «нужен ли член» не должна зависеть
+от того, посмотрел ли автор скрипта в конфиг.
+
+(ρcp)_eff НЕ считается постоянной: она зависит от S_g и от PVT, поэтому ΔE
+считается с поячеечными свойствами на каждом шаге. В однофазных примерах
+01 и 02 величина действительно постоянна, и прежние копии там пользовались
+скаляром — но поячеечный расчёт даёт тот же результат (расхождение ~1e-6 Дж
+при невязке ~3e+6 Дж, измерено в BUG-004), а условного упрощения не требует.
 
 НАКОПЛЕНИЕ СЧИТАЕТСЯ ПО ПРИРАЩЕНИЯМ, а не как разность запасов от t=0
 (BUG-004). Схема дискретизует Σ V (ρcp)^{n} (T^{n} - T^{n-1}): множитель
@@ -28,19 +58,14 @@ cap_j = V_j (ρcp)^{n}_j / dt стоит и в матрице, и в право�
 кусочно-линеен по трём узлам вместо гладкой гиперболы) и давал 20 %
 невязки, не убывающей с шагом по времени.
 
-КОНДУКТИВНОГО ЧЛЕНА В БАЛАНСЕ НЕТ. Он и не нужен: в конфиге примера
-lambda = 0, проводимость граней тождественно нулевая. Если вернуть
-физические lambda, через контур пойдёт неучтённый кондуктивный поток и
-невязка перестанет убывать как O(dt) — проверено, порядок падает с 1.109
-до 0.967. Тогда сюда надо будет добавить Q_T_ext*(T_ext - T[N-1])*dt.
+Три функции:
+  compute_balance()        — считает компоненты, возвращает dict
+  plot_energy_balance()    — строит график поверх compute_balance()
+  report_energy_balance()  — обёртка для run_example (конвенция общих модулей)
 
-Две функции:
-  compute_balance()     — считает компоненты, возвращает dict
-  plot_energy_balance() — строит график поверх compute_balance()
-
-Запуск автономно:
+Запуск для конкретного примера:
     cd numerical_solver
-    .venv\\Scripts\\python examples\\03_standing_corey\\energy_balance.py
+    .venv\\Scripts\\python examples\\energy_balance.py 03
 """
 
 import sys
@@ -51,6 +76,13 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+
+_EXAMPLES = Path(__file__).resolve().parent
+_ROOT = _EXAMPLES.parent
+for _p in (str(_ROOT), str(_EXAMPLES),
+           str(_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 def _cell_properties(pvt, rock, p, Sg, Rs, T):
@@ -70,8 +102,11 @@ def compute_balance(history, grid, config):
     """Покомпонентный баланс энергии по сохранённой истории.
 
     Возвращает dict с массивами длины n_steps:
-      t, delta_E, cum_adiab, cum_conv, cum_jt, cum_deg,
+      t, delta_E, cum_adiab, cum_conv, cum_jt, cum_deg, cum_cond,
       total, residual, rel_residual
+
+    Набор ключей ПОЛНЫЙ всегда, независимо от конфига: члены, физически
+    отсутствующие в сценарии, приходят нулевыми массивами.
     """
     from gpn_multiphase_solver.factory import SimulatorFactory
 
@@ -80,6 +115,9 @@ def compute_balance(history, grid, config):
     sim, _ = SimulatorFactory.from_config(config)
     pvt = sim._energy._pvt
     rock = sim._energy._rock
+    # Решатель энергии нужен для кондуктивной проводимости: берём её его
+    # же методом, а не пересчитываем формулу (см. блок кондукции ниже).
+    energy = sim._energy
 
     # Накопление суммируется по сохранённым шагам: пропуск шагов
     # (save_every > 1) сделал бы сумму приращений неполной.
@@ -102,6 +140,7 @@ def compute_balance(history, grid, config):
     cum_adiab = np.zeros(n_steps)
     cum_jt = np.zeros(n_steps)
     cum_deg = np.zeros(n_steps)
+    cum_cond = np.zeros(n_steps)
 
     for n in range(n_steps):
         st = history.states[n]
@@ -183,6 +222,7 @@ def compute_balance(history, grid, config):
         # J_face = Σ_α μ_JT,α Φ_α p_up; сумма по ячейкам телескопируется
         # до J_face[N] - J_face[0]. Φ теперь массивы по граням: забой —
         # индекс 0, контур — индекс N.
+        # При μ_JT = 0 (примеры 01, 07, 09) член обнуляется сам.
         J_well = (mu_JT_o[0] * Phi_o[0] + mu_JT_g[0] * Phi_g[0]) * p[0]
         J_ext = (mu_JT_o[-1] * Phi_o[N] + mu_JT_g[-1] * Phi_g[N]) * p[-1]
         jt_step = (J_ext - J_well) * dt_step
@@ -196,6 +236,7 @@ def compute_balance(history, grid, config):
 
         # ── Скрытая теплота дегазации ──
         # Q_deg = -L·mdot, mdot = временная + конвективная части (eq. 31).
+        # При L = 0 (примеры 01, 02, 07, 08) член обнуляется сам.
         # Временная: газ, вышедший из раствора в самой ячейке за шаг.
         mdot_time = (-rho_g_std * phi * So / pvt.Bo(p, Rs)
                      * (Rs - st_prev.Rs) / dt_step)
@@ -211,12 +252,35 @@ def compute_balance(history, grid, config):
         mdot = mdot_time + mdot_conv
         deg_step = np.sum(-L * mdot * V) * dt_step
 
+        # ── Кондуктивный поток через контур ──
+        # Внутренние грани телескопируются: поток из ячейки в ячейку
+        # сокращается при суммировании по объёму. Остаётся только контур,
+        # где стоит ГУ Дирихле T = T_ext:
+        #     E_cond = Σ_n Q_T_ext (T_ext - T^n_{N-1}) Δt_n
+        # T берётся НОВАЯ (T^n): схема неявная, в СЛАУ Q_T_ext·T^n_{N-1}
+        # стоит в диагонали b[N-1], а Q_T_ext·T_ext — в правой части d[N-1]
+        # (tridiag.py:305-308).
+        #
+        # Проводимость берём У РЕШАТЕЛЯ тем же методом, что он использует
+        # сам, а не пересчитываем формулу заново: иначе баланс разойдётся
+        # со схемой — ровно так возник BUG-004. Здесь это ещё и защита от
+        # повторения BUG-002 (двойной ln в кондуктивной проводимости).
+        #
+        # При λ = 0 (девять примеров из десяти) Q_T_ext = geom·λ_eff[-1]
+        # тождественно ноль (tridiag.py:179), и член обнуляется сам —
+        # без ветвлений по конфигу.
+        props = energy.compute_cell_properties(p, Sg, Rs, So, T_prev)
+        _, Q_T_ext = energy.compute_conductive_transmissibility(
+            props["lambda_eff"], N)
+        cond_step = Q_T_ext * (T_ext - st.T[N - 1]) * dt_step
+
         cum_conv[n] = cum_conv[n - 1] + net_conv
         cum_adiab[n] = cum_adiab[n - 1] + adiab_step
         cum_jt[n] = cum_jt[n - 1] + jt_step
         cum_deg[n] = cum_deg[n - 1] + deg_step
+        cum_cond[n] = cum_cond[n - 1] + cond_step
 
-    total = cum_conv + cum_adiab + cum_jt + cum_deg
+    total = cum_conv + cum_adiab + cum_jt + cum_deg + cum_cond
     residual = delta_E - total
 
     # Нормируем на больший из масштабов: на первых шагах ΔE ещё мало,
@@ -227,7 +291,7 @@ def compute_balance(history, grid, config):
     return dict(
         t=t_arr, delta_E=delta_E,
         cum_adiab=cum_adiab, cum_conv=cum_conv,
-        cum_jt=cum_jt, cum_deg=cum_deg,
+        cum_jt=cum_jt, cum_deg=cum_deg, cum_cond=cum_cond,
         total=total, residual=residual,
         rel_residual=np.abs(residual) / scale,
     )
@@ -251,10 +315,17 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
              label="Джоуль–Томсон (кумул.)")
     ax1.plot(t_hours, bal["cum_deg"], 'c--', linewidth=1.5,
              label="скрытая теплота (кумул.)")
-    ax1.plot(t_hours, bal["total"], 'g:', linewidth=1.5, label="сумма источников")
+    # Кондукция рисуется всегда: при λ = 0 кривая лежит на нуле, и это
+    # наглядно показывает, что член учтён, а не забыт.
+    ax1.plot(t_hours, bal["cum_cond"], color='olive', linestyle='--',
+             linewidth=1.5, label="теплопроводность (кумул.)")
+    ax1.plot(t_hours, bal["total"], 'g:', linewidth=1.5,
+             label="сумма источников")
     ax1.set_ylabel("Энергия, Дж")
     ax1.legend(fontsize=9)
-    ax1.set_title(r"Баланс энергии — пример 03 (двухфазный, $L \neq 0$)")
+    # Имя примера берём из пути к конфигу: жёстко прописанный номер
+    # в общем модуле был бы неверен для девяти примеров из десяти.
+    ax1.set_title(f"Баланс энергии — {Path(config.config_dir).name}")
     ax1.grid(True, alpha=0.3)
     ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
@@ -279,23 +350,60 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     print(f"  Конвекция финал   = {bal['cum_conv'][-1]:+.4e} Дж")
     print(f"  Джоуль-Томсон     = {bal['cum_jt'][-1]:+.4e} Дж")
     print(f"  Скрытая теплота   = {bal['cum_deg'][-1]:+.4e} Дж")
-    print(f"  Невязка финал     = {bal['residual'][-1]:+.4e} Дж  ({final_rel:.2e})")
+    print(f"  Теплопроводность  = {bal['cum_cond'][-1]:+.4e} Дж")
+    print(f"  Невязка финал     = {bal['residual'][-1]:+.4e} Дж  "
+          f"({final_rel:.2e})")
     return final_rel
+
+
+def report_energy_balance(config, history, grid, simulator) -> dict:
+    """Баланс энергии для run_example — конвенция общих модулей.
+
+    simulator в расчёте не участвует: compute_balance пересобирает нужные
+    объекты сам по config (фабрика дешёвая, прогон не повторяется).
+    Аргумент принимается ради единообразия вызова из run_example.
+    """
+    bal = compute_balance(history, grid, config)
+
+    print("── Баланс энергии ──")
+    print(f"  ΔE финал = {bal['delta_E'][-1]:+.4e} Дж, "
+          f"сумма источников = {bal['total'][-1]:+.4e} Дж")
+    print(f"  относительная невязка = {bal['rel_residual'][-1]:.4e}")
+    print(f"    (остаток — ошибка расщепления O(Δt): гидро-шаг замораживает "
+          f"T, тепловой шаг — p и S_g)")
+    return bal
+
+
+def _resolve_example(name_or_prefix: str) -> Path:
+    """examples/<имя>/ по полному имени или числовому префиксу ('03').
+
+    Пользователю не нужно печатать '03_standing_corey' целиком.
+    Ошибка при отсутствии или неоднозначности префикса.
+    """
+    exact = _EXAMPLES / name_or_prefix
+    if exact.is_dir():
+        return exact
+    matches = sorted(d for d in _EXAMPLES.iterdir()
+                     if d.is_dir() and d.name.startswith(name_or_prefix))
+    if not matches:
+        raise SystemExit(f"нет примера '{name_or_prefix}'")
+    if len(matches) > 1:
+        raise SystemExit(f"неоднозначно: {[m.name for m in matches]}")
+    return matches[0]
 
 
 # ── Автономный запуск ──
 if __name__ == "__main__":
-    HERE = Path(__file__).resolve().parent
-    SOLVER_ROOT = HERE.parents[1]
-    sys.path.insert(0, str(SOLVER_ROOT))
-    sys.path.insert(0, str(SOLVER_ROOT / "examples"))
-    sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
-
     from gpn_multiphase_solver.io.config import load_config
     from gpn_multiphase_solver.factory import SimulatorFactory
 
-    config = load_config(HERE / "config.json")
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "укажите пример: python examples\\energy_balance.py 03")
+
+    folder = _resolve_example(sys.argv[1])
+    config = load_config(folder / "config.json")
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)
 
-    plot_energy_balance(history, sim._grid, config, HERE / "output")
+    plot_energy_balance(history, sim._grid, config, folder / "output")

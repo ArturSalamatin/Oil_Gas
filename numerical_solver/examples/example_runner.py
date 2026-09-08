@@ -31,6 +31,7 @@ if str(_PROTO_ROOT) not in sys.path:
 # ── Графики без интерактивного окна ──────────────────────────
 # Agg — backend без GUI. Задаётся до импорта pyplot, иначе matplotlib
 # успевает выбрать интерактивный backend и падает в консоли/CI.
+import numpy as np  # noqa: E402
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
@@ -46,6 +47,10 @@ from gpn_multiphase_solver.io.output import (  # noqa: E402
     save_well_csv,
 )
 
+# Модуль лежит рядом, в examples/; путь к этой папке добавляют сами main.py
+# примеров перед импортом example_runner, поэтому импорт по имени работает.
+from relperm_plot import plot_relperm  # noqa: E402
+
 
 def run_example(config_path: str | Path, output_dir: str | Path,
                 title: str, overlays: dict | None = None) -> tuple:
@@ -59,9 +64,10 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     Все выходные файлы кладутся в output_dir (создаётся при необходимости).
 
     overlays — необязательные дополнительные кривые на профильных графиках:
-    {"p": func(ax, history, grid), "T": ..., "Sg": ...}. Функция вызывается
-    после отрисовки численных профилей и может добавить на те же оси, например,
-    аналитическое решение. Примеры без аналитики просто не передают overlays.
+    {"p": func(ax, history, grid), "T": ..., "Sg": ..., "Rs": ...}. Функция
+    вызывается после отрисовки численных профилей и может добавить на те же
+    оси, например, аналитическое решение. Примеры без аналитики просто не
+    передают overlays.
     """
     config_path = Path(config_path)
     output_dir = Path(output_dir)
@@ -106,6 +112,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
                 f"{title}\nПрофили газонасыщенности",
                 output_dir / "saturation_profiles.png", overlays.get("Sg"), simulator)
 
+    # Профиль Rs строим только для сценариев с растворённым газом.
+    # При Rs0 = 0 (примеры 01, 02) он тождественно нулевой — рисовать нечего.
+    if np.max(history.states[0].Rs) > 0.0:
+        _plot_field(history, grid, times_to_plot, "Rs",
+                    f"{title}\nПрофили газосодержания",
+                    output_dir / "rs_profiles.png", overlays.get("Rs"), simulator)
+
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_well_rate(history, ax=ax)
     ax.set_title(f"{title}\nДебиты скважины")
@@ -119,6 +132,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     fig.tight_layout()
     fig.savefig(output_dir / "wellbore_dynamics.png", dpi=110)
     plt.close(fig)
+
+    # ── ОФП ──
+    # Замыкающие кривые k_r(S_g) в остальных графиках не видны, хотя именно
+    # они определяют насыщенность в стационаре (условие GOR = Rs0). Рисуем
+    # их вместе с рабочим диапазоном расчёта — общий модуль для всех
+    # примеров, аналитических и табличных.
+    plot_relperm(config, history, output_dir, title)
 
     _print_summary(history, elapsed, output_dir)
     return elapsed, history, grid, config
@@ -146,8 +166,6 @@ def _plot_field(history, grid, times_to_plot, field: str,
 
 def _print_summary(history, elapsed: float, output_dir: Path) -> None:
     """Краткая сводка результатов в консоль."""
-    import numpy as np
-
     last = history.states[-1]
     well = history.well_data[-1]
 

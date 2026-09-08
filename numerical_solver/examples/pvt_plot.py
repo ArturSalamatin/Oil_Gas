@@ -219,18 +219,20 @@ def _plot_mu_o_spatial(ax, pvt, history, grid, Rs0: float) -> None:
 
 
 def plot_pvt(config, history, output_dir: Path, title: str,
-             simulator=None) -> Path:
+             simulator=None, grid=None) -> Path:
     """Построить pvt.png: свойства PVT по давлению + вязкость по радиусу.
 
     config    — SimulatorConfig (Rs0 и подпись модели)
     history   — SimulationHistory; из последнего состояния берётся рабочий
                 диапазон давлений и вязкость в ячейках
-    simulator — решатель; PVT и сетка берутся у него. Если None, PVT
-                собирается фабрикой, а пространственная панель не строится
-                (сетки взять неоткуда).
+    simulator — решатель; PVT берётся у него, чтобы график показывал ровно
+                то, что видел решатель. Если None, PVT собирается фабрикой
+    grid      — сетка для пространственной панели mu_o(r); если None,
+                берётся у simulator, а без обоих панель не строится
 
-    Само построение кривых делегируется ядру (plot_pvt_properties); здесь
-    только оформление, компоновка и сохранение.
+    Само построение кривых по давлению делегируется ядру
+    (gpn_multiphase_solver.io.output.plot_pvt_properties); здесь только
+    оформление, пространственная панель, компоновка и сохранение.
 
     Возвращает путь к сохранённому PNG.
     """
@@ -243,7 +245,8 @@ def plot_pvt(config, history, output_dir: Path, title: str,
     p_state = history.states[-1].p
     p_lo, p_hi = float(p_state.min()), float(p_state.max())
 
-    grid = getattr(simulator, "_grid", None) if simulator is not None else None
+    if grid is None and simulator is not None:
+        grid = getattr(simulator, "_grid", None)
     n_cols = 4 if grid is not None else 3
     fig, axes = plt.subplots(2, n_cols, figsize=(4.6 * n_cols, 9))
 

@@ -24,6 +24,7 @@ from gpn_multiphase_solver.io.config import load_config, RockConfig, OutputConfi
 from gpn_multiphase_solver.io.output import (
     history_to_arrays, save_npz, save_csv, save_well_csv,
     plot_profiles, plot_wellbore_dynamics, plot_well_rate, plot_2d_map,
+    plot_pvt_properties,
 )
 from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
@@ -354,3 +355,67 @@ class TestEndToEnd:
         assert data['times'][-1] == pytest.approx(345600.0)
         assert data['p'].shape[1] == config.grid.N
         assert data['q_o_std'][-1] > 0
+
+
+# ═══════════════════════════════════════════════════════════
+# G. plot_pvt_properties: слой ядра (FEAT-017)
+# ═══════════════════════════════════════════════════════════
+
+class TestPvtPropertiesCore:
+    """Ядерная функция графика PVT.
+
+    Смысл слоя (FEAT-017, §4.0): examples/ не входит в дистрибутив
+    (pyproject.toml: include = ["gpn_multiphase_solver*"]), поэтому функция,
+    лежащая только там, недоступна тому, кто поставил пакет через pip.
+    Ядерная версия обязана работать от одного объекта PVT — без config,
+    без фабрики, без SimulationHistory.
+    """
+
+    def test_core_pvt_plot_standalone(self):
+        """Функция работает от вручную собранного PVT, без config и прогона.
+
+        Это ровно тот сценарий, ради которого слой ядра и вводится:
+        пользователь пакета собрал PVT сам и хочет посмотреть свойства.
+        Rs0 = 50 м³ст/м³ст → расчёт двухфазный, на панели mu_o должны быть
+        три КРИВЫЕ (физическая + две ветви); вертикаль p_b в счёт не идёт,
+        она рисуется через axvline и в get_lines() тоже попадает, поэтому
+        считаем линии с двумя и более точками по оси x.
+        """
+        pvt = StandingFullPVT(rho_o_std=850.0, rho_g_std=0.9,
+                              T0=350.0, Rs0=50.0)
+        axes = plot_pvt_properties(pvt, 50.0, (8e6, 20e6))
+
+        assert axes.shape == (2, 3)
+        curves = [ln for ln in axes[0, 0].get_lines()
+                  if len(ln.get_xdata()) > 2]
+        assert len(curves) >= 3, (
+            f"на панели mu_o ожидались физическая кривая и две ветви, "
+            f"нашлось {len(curves)}")
+
+    def test_core_pvt_plot_has_no_config_dependency(self):
+        """io/output.py не импортирует factory и io.config.
+
+        Структурная защита границы слоёв: стоит ядру начать тянуть config
+        «ради одной подписи» — и функция перестанет решать задачу
+        пользователя пакета, ради которой она в ядро и вынесена.
+        Подпись модели приходит готовой строкой в параметре label.
+        """
+        import ast
+
+        src = (Path(__file__).parent.parent / "gpn_multiphase_solver"
+               / "io" / "output.py")
+        tree = ast.parse(src.read_text(encoding="utf-8"))
+
+        imported = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported += [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                # Относительные импорты: '..state' -> level=2, module='state'
+                imported.append("." * node.level + (node.module or ""))
+
+        forbidden = [m for m in imported
+                     if "factory" in m or "config" in m]
+        assert not forbidden, (
+            f"io/output.py тянет сборку моделей: {forbidden}. "
+            f"Ядро обязано принимать готовый объект PVT, а не собирать его")

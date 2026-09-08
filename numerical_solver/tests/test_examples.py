@@ -436,6 +436,8 @@ def test_pipeline_writes_output(tmp_path):
         "saturation_profiles.png", "well_rates.png", "wellbore_dynamics.png",
         # FEAT-016: баланс энергии подключён к run_example для всех примеров
         "energy_balance.png",
+        # FEAT-017: свойства PVT — общий модуль для всех примеров
+        "pvt.png",
     ]
     for fname in expected:
         path = tmp_path / fname
@@ -458,6 +460,7 @@ SHARED_CHECK_MODULES = [
     "energy_balance_convergence.py",
     "temperature_asymptotics.py",
     "two_phase_analytics.py",
+    "pvt_plot.py",
 ]
 
 
@@ -594,3 +597,441 @@ class TestSharedChecks:
         # сказана причина, а не напечатано большое расхождение.
         assert "не проверяется" in out, (
             "асимптотика не сообщила о неприменимости при lambda != 0")
+
+
+# ═══════════════════════════════════════════════════════════
+# J. Графики PVT: слой оформителя (FEAT-017)
+# ═══════════════════════════════════════════════════════════
+
+# Ключи, которые report_pvt обязан возвращать ВСЕГДА, независимо от конфига.
+# У однофазных примеров значения вырождены (two_phase=False,
+# nodes_in_range=0), но ключи присутствуют: отсутствующий ключ роняет
+# вызывающий код ровно на тех сценариях, где он и не проверялся.
+PVT_REPORT_KEYS = {
+    "pb", "p_lo", "p_hi", "Rs0", "model", "two_phase", "nodes_in_range",
+    "mu_o_lo", "mu_o_hi", "Bo_lo", "Bo_hi", "Rs_lo", "Rs_hi",
+}
+
+# PVT задан таблицами (узлы есть) против аналитических корреляций (узлов нет).
+TABLE_PVT = ["04_table_table", "06_table_corey_rp",
+             "07_degassing_adiabatic_only", "08_degassing_jt",
+             "09_degassing_latent_heat", "10_deep_degassing"]
+ANALYTIC_PVT = [n for n in ALL_EXAMPLES if n not in TABLE_PVT]
+
+
+def _pvt_module():
+    """Общий модуль examples/pvt_plot.py."""
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import pvt_plot
+    return pvt_plot
+
+
+def _pvt_of_config(cfg):
+    """PVT, собранный фабрикой по конфигу (эталон для сверки)."""
+    from gpn_multiphase_solver.factory import _create_pvt
+    return _create_pvt(cfg)
+
+
+class TestPvtPlot:
+    """Оформитель графика PVT: pvt.png, сводка, узлы таблиц.
+
+    Приоритет по постановке задачи — вязкость mu_o и газосодержание Rs
+    нефтяной фазы: первая входит в подвижность lambda_o = k*k_ro/mu_o,
+    второе — в замыкание GOR = Rs0.
+    """
+
+    def test_plot_pvt_all_examples(self, results, tmp_path):
+        """Модуль отрабатывает на всех десяти примерах и пишет непустой PNG.
+
+        Покрывает обе PVT-модели (standing: 01, 02, 03, 05; table: 04,
+        06-10) и оба режима (однофазный Rs0 = 0: 01, 02; двухфазный —
+        остальные). Граничный случай Rs0 = 0 опасен: p_b = -0.176 МПа,
+        и наивный код рисует вертикаль за пределами оси или падает.
+        """
+        pvt_plot = _pvt_module()
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            out = pvt_plot.plot_pvt(r["config"], r["history"],
+                                    tmp_path / name, name, grid=r["grid"])
+            assert out.is_file(), f"{name}: pvt.png не создан"
+            assert out.stat().st_size > 0, f"{name}: pvt.png пустой"
+
+    def test_report_pb_matches_pvt(self, results):
+        """report_pvt сообщает то же p_b, что и сам объект PVT.
+
+        Эталон — вызов pvt.pb(Rs0). Допуск 1e-6 Па: обе стороны обязаны
+        считать ОДНИМ вызовом, а не своей формулой. Заодно покрывается
+        ветка simulator=None (fallback на factory._create_pvt): fixture
+        results симулятор не хранит.
+        """
+        pvt_plot = _pvt_module()
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            rep = pvt_plot.report_pvt(r["config"], r["history"])
+            pb_ref = float(_pvt_of_config(r["config"]).pb(
+                np.array([r["Rs0"]]))[0])
+            assert abs(rep["pb"] - pb_ref) < 1e-6, (
+                f"{name}: p_b сводки {rep['pb']} != {pb_ref} у PVT")
+
+    def test_full_key_set_always_returned(self, results):
+        """Набор ключей полный при любом конфиге — конвенция общих модулей.
+
+        Ловушка «этот ключ не нужен, у нас однофазный сценарий» — ровно
+        та, что дала BUG-004: девять примеров с lambda = 0 маскировали
+        пропуск кондуктивного члена у десятого.
+        """
+        pvt_plot = _pvt_module()
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            rep = pvt_plot.report_pvt(r["config"], r["history"])
+            assert PVT_REPORT_KEYS <= set(rep), (
+                f"{name}: не хватает ключей "
+                f"{PVT_REPORT_KEYS - set(rep)}")
+            assert rep["two_phase"] == (name not in SINGLE_PHASE), (
+                f"{name}: two_phase не соответствует Rs0")
+            if name in ANALYTIC_PVT:
+                assert rep["nodes_in_range"] == 0, (
+                    f"{name}: у аналитического PVT узлов быть не может")
+
+    def test_saturated_branch_hidden_when_single_phase(self, results,
+                                                       tmp_path):
+        """При Rs0 = 0 насыщенная ветвь не рисуется — иначе ось растянута.
+
+        Измерено на 01: Rs_eq доходит до 138 м³ст/м³ст при физическом
+        Rs ≡ 0. Если ветвь нарисовать, ось Rs растянется до 140, а
+        физический ноль прижмётся к краю и станет нечитаем. Пометка
+        «недостижимо» тут не помогает: масштаб задаёт сама кривая.
+        """
+        import matplotlib.pyplot as plt
+        from gpn_multiphase_solver.io.output import plot_pvt_properties
+
+        for name in SINGLE_PHASE:
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            p = r["p"]
+            fig, axes = plt.subplots(2, 3)
+            plot_pvt_properties(pvt, 0.0, (float(p.min()), float(p.max())),
+                                axes=axes)
+            ylim = axes[0, 1].get_ylim()      # панель Rs
+            plt.close(fig)
+            assert ylim[1] < 1.0, (
+                f"{name}: ось Rs растянута до {ylim[1]:.1f} — значит "
+                f"нарисована нефизичная насыщенная ветвь")
+
+    def test_physical_branch_matches_rs_analytics(self, results):
+        """Физическая кривая совпадает с rs_analytics.rs_expected побитово.
+
+        Обе стороны считают min(Rs_eq(p), Rs0). Расхождение двух
+        реализаций одной формулы — тот самый класс дефектов, ради
+        которого FEAT-016 сводил четыре копии energy_balance.py, поэтому
+        допуск нулевой.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from rs_analytics import rs_expected
+        pvt_plot = _pvt_module()
+
+        p = np.linspace(5e6, 25e6, 50)
+        for name in TWO_PHASE:
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            mine = pvt_plot._physical_rs(pvt, p, r["Rs0"])
+            ref = rs_expected(r["config"], pvt, p)
+            assert np.array_equal(mine, ref), (
+                f"{name}: физическая кривая разошлась с rs_analytics")
+
+    def test_rho_matches_formula(self, results):
+        """Плотности сводки равны \\eqref{eq:rho_oil}, а не своей формуле.
+
+        rho_o = (rho_o_ст + Rs*rho_g_ст)/Bo,  rho_g = rho_g_ст/Bg
+        (problem_statement.tex, строки 1838-1840 и таблица обозначений).
+        Проверка ловит попытку пересчитать плотность в модуле вместо
+        вызова pvt.rho_o / pvt.rho_g.
+        """
+        pvt_plot = _pvt_module()
+        for name in ALL_EXAMPLES:
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            p_mid = np.array([0.5 * (float(r["p"].min())
+                                     + float(r["p"].max()))])
+            Rs = pvt_plot._physical_rs(pvt, p_mid, r["Rs0"])
+
+            rho_o_ref = ((r["config"].pvt.rho_o_std
+                          + Rs * r["config"].pvt.rho_g_std) / pvt.Bo(p_mid, Rs))
+            rho_g_ref = r["config"].pvt.rho_g_std / pvt.Bg(p_mid)
+
+            assert abs(float(pvt.rho_o(p_mid, Rs)[0])
+                       - float(rho_o_ref[0])) < 1e-9, f"{name}: rho_o"
+            assert abs(float(pvt.rho_g(p_mid)[0])
+                       - float(rho_g_ref[0])) < 1e-9, f"{name}: rho_g"
+
+    def test_nodes_units(self, results):
+        """Узлы таблиц возвращаются в Па, а не в барах прототипа.
+
+        В BlackOilPVT прототипа давления лежат в БАРАХ. Пропуск
+        конвертации — ошибка в 1e5 раз; на графике узлы уедут за пределы
+        оси и просто не отрисуются, поэтому глазами это не ловится.
+        Эталон примера 04 известен точно: газовая таблица и нефтяные узлы
+        стоят на 5, 15, 30 МПа, ветки заданы при Rs = 0 и 30 м³ст/м³ст.
+        """
+        pvt_plot = _pvt_module()
+        r = results["04_table_table"]
+        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+                                          r["Rs0"])
+        assert nodes is not None, "у табличного PVT узлы обязаны быть"
+        assert np.allclose(nodes["p_gas"], [5e6, 15e6, 30e6])
+        assert np.allclose(nodes["p_oil"], [5e6, 15e6, 30e6])
+        assert np.allclose(nodes["rs_values"], [0.0, 30.0])
+
+    def test_nodes_none_for_analytical_pvt(self, results):
+        """У аналитического PVT узлов нет — маркеры вводили бы в заблуждение.
+
+        Корреляция Стендинга гладкая, выделенных точек в ней не существует.
+        """
+        pvt_plot = _pvt_module()
+        for name in ANALYTIC_PVT:
+            r = results[name]
+            nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+                                              r["Rs0"])
+            assert nodes is None, f"{name}: у корреляции узлов быть не может"
+
+    def test_table_nodes_in_working_range(self, results):
+        """В рабочий диапазон примера 04 попадает ровно один узел.
+
+        Демонстрационные таблицы грубы: рабочий диапазон 8.17…19.89 МПа,
+        а узлы стоят на 5, 15 и 30 МПа — внутрь попадает только p_b = 15.
+        Вся кривая между краями получена интерполяцией через две точки,
+        и график обязан делать это видимым. Тест ловит и 0 (фильтр
+        «внутри диапазона» слишком строг), и 3 (фильтра нет вовсе).
+        """
+        pvt_plot = _pvt_module()
+        r = results["04_table_table"]
+        rep = pvt_plot.report_pvt(r["config"], r["history"])
+        assert rep["nodes_in_range"] == 1, (
+            f"ожидался ровно один узел в диапазоне, получено "
+            f"{rep['nodes_in_range']}")
+
+    def test_single_phase_no_bubble_point_line(self, results, tmp_path):
+        """При Rs0 = 0 p_b отрицательно и на график попасть не должно.
+
+        Формула Стендинга при Rs = 0 даёт p_b = -0.176 МПа (скобка
+        (Rs/gamma_g)^0.83 * 10^a - 1.4 обращается в -1.4). Это вне
+        физической области; вертикаль там бессмысленна, а падения быть
+        не должно — примеры 01 и 02 входят в штатный прогон run_all.py.
+        """
+        pvt_plot = _pvt_module()
+        for name in SINGLE_PHASE:
+            r = results[name]
+            rep = pvt_plot.report_pvt(r["config"], r["history"])
+            assert rep["pb"] < 0, f"{name}: ожидалось p_b < 0"
+            assert rep["two_phase"] is False
+            out = pvt_plot.plot_pvt(r["config"], r["history"],
+                                    tmp_path / name, name, grid=r["grid"])
+            assert out.is_file()
+
+    def test_no_phantom_legend_entries(self, results):
+        """Легенда не обещает кривых, которых на панели нет.
+
+        У табличного PVT выше p_b выполняется Rs_eq == Rs0, поэтому
+        насыщенная ветвь совпадает с физической ТОЖДЕСТВЕННО (измерено
+        на 04: max|Bo_sat - Bo_phys| = 0.000e+00 против 2.341e-01 у
+        Стендинга). Рисовать её нельзя — в легенде висела бы запись без
+        линии, и график читался бы как дефект отрисовки.
+        """
+        import matplotlib.pyplot as plt
+        from gpn_multiphase_solver.io.output import plot_pvt_properties
+
+        n_entries = {}
+        for name in ("03_standing_corey", "04_table_table"):
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            p = r["p"]
+            fig, axes = plt.subplots(2, 3)
+            plot_pvt_properties(pvt, r["Rs0"],
+                                (float(p.min()), float(p.max())), axes=axes)
+            ax = axes[0, 2]                       # панель Bo
+            labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            # Линии с >2 точками — настоящие кривые; axvline даёт 2 точки.
+            curves = [ln for ln in ax.get_lines() if len(ln.get_xdata()) > 2]
+            plt.close(fig)
+            assert len(labels) <= len(curves), (
+                f"{name}: записей легенды {len(labels)} при {len(curves)} "
+                f"кривых — легенда обещает несуществующую линию")
+            n_entries[name] = len(labels)
+
+        assert n_entries["04_table_table"] < n_entries["03_standing_corey"], (
+            "у табличного PVT насыщенная ветвь совпадает с физической и "
+            "не должна попадать в легенду")
+
+    def test_table_nodes_split_by_phase(self, results):
+        """Узлы раздельны по фазам: газовые и нефтяные идут на разные панели.
+
+        Наборы разные по природе: газовая таблица proto.gp против точек
+        насыщения веток proto.pb вместе с узлами рисуемой ветки. Если
+        подать их одним массивом, маркеры попадут не на те панели —
+        в прототипе при аудите это дало пустые mu_o и Bo при заполненных
+        mu_g и Bg.
+        """
+        pvt_plot = _pvt_module()
+        r = results["04_table_table"]
+        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+                                          r["Rs0"])
+        assert set(nodes) >= {"p_gas", "p_oil"}, "ключи должны быть раздельны"
+        assert "p_all" not in nodes, (
+            "объединение делает _nodes_in_range, а не сам сборщик узлов")
+
+    def test_mu_o_spatial_localization(self, results):
+        """Пространственная панель даёт верный радиус локализации вязкости.
+
+        Величина, ради которой панель и вводится: у примера 03 ВСЯ
+        вариация вязкости укладывается в r < 0.20 м при радиусе
+        дренирования 47 м, то есть в 5 ячеек из 50. Панель mu_o(p) этого
+        не показывает — она отвечает на другой вопрос.
+
+        Заодно проверяется источник вязкости: mu_o берётся из состояния
+        (p_j, Rs_j). Пересчёт по Rs_eq(p) вместо st.Rs дал бы другую
+        кривую в зоне разгазирования.
+        """
+        # Ожидания измерены прогоном; допуск — соседняя ячейка
+        # логарифмической сетки.
+        expected = {
+            "03_standing_corey": (0.20, 5, 1.09),
+            "04_table_table": (2.11, 24, 1.68),
+            "10_deep_degassing": (2.70, 26, 1.88),
+        }
+        for name, (r90_ref, k_ref, ratio_ref) in expected.items():
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            st = r["history"].states[-1]
+            rr = r["grid"].r_centers
+            mu = pvt.mu_o(st.p, st.Rs)
+
+            var = np.abs(np.diff(mu))
+            tot = float(var.sum())
+            assert tot > 0, f"{name}: вязкость обязана меняться"
+            k90 = min(int(np.searchsorted(np.cumsum(var) / tot, 0.9)) + 1,
+                      len(rr) - 1)
+            assert abs(k90 - k_ref) <= 1, (
+                f"{name}: 90 % вариации накоплено к ячейке {k90}, "
+                f"ожидалось ~{k_ref}")
+            assert rr[k90] == pytest.approx(r90_ref, rel=0.15), (
+                f"{name}: радиус 90 % вариации {rr[k90]:.2f} м, "
+                f"ожидалось ~{r90_ref} м")
+            assert mu.max() / mu.min() == pytest.approx(ratio_ref, rel=0.05)
+
+    def test_mu_o_spatial_single_phase(self, results, tmp_path):
+        """На однофазных примерах панель не падает и не делит на ноль.
+
+        Измерено: mu_o ≡ 2.4770e-03 Па·с во всех 50 ячейках, полная
+        вариация ровно 0.000e+00, ячеек с p < p_b нет (p_b < 0). Обе
+        защиты в _plot_mu_o_spatial (if tot > 0, if below.any()) написаны
+        условиями именно поэтому: на двухфазных примерах эта ветка
+        никогда не исполняется и осталась бы непроверенной.
+        """
+        pvt_plot = _pvt_module()
+        for name in SINGLE_PHASE:
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            st = r["history"].states[-1]
+            mu = pvt.mu_o(st.p, st.Rs)
+            assert float(mu.max() - mu.min()) == 0.0, (
+                f"{name}: у однофазного примера вязкость обязана быть "
+                f"постоянной")
+            out = pvt_plot.plot_pvt(r["config"], r["history"],
+                                    tmp_path / name, name, grid=r["grid"])
+            assert out.is_file()
+
+    def test_formatter_delegates_drawing_to_core(self):
+        """Оформитель не дублирует построение, а вызывает ядро.
+
+        Стоит построению расползтись обратно в examples/ — и ядерная
+        функция перестанет отражать то, что видит пользователь пакета,
+        а расслоение слоёв (FEAT-017, §4.0) потеряет смысл. Единственное,
+        что оформитель рисует сам, — панель mu_o(r): ей нужны history
+        и grid, которых ядро по контракту не знает.
+
+        Порог различим надёжно: у relperm_plot.py, который рисует сам,
+        таких вызовов 10; у rs_analytics.py, который лишь дорисовывает
+        оверлей, — 1.
+        """
+        import ast
+
+        src = EXAMPLES_DIR / "pvt_plot.py"
+        tree = ast.parse(src.read_text(encoding="utf-8"))
+
+        drawing = {"plot", "semilogx", "loglog", "scatter"}
+        spatial = next(n for n in ast.walk(tree)
+                       if isinstance(n, ast.FunctionDef)
+                       and n.name == "_plot_mu_o_spatial")
+        inside = {id(n) for n in ast.walk(spatial)}
+
+        stray = []
+        calls_core = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Name) and func.id == "plot_pvt_properties":
+                calls_core = True
+            if (isinstance(func, ast.Attribute) and func.attr in drawing
+                    and id(node) not in inside):
+                stray.append(func.attr)
+
+        assert calls_core, "оформитель не вызывает ядерную plot_pvt_properties"
+        assert not stray, (
+            f"построение продублировано вне _plot_mu_o_spatial: {stray}")
+
+    def test_module_signatures_follow_convention(self, results):
+        """Сигнатуры следуют конвенции общих модулей, а не выбросу.
+
+        Конвенция: config первым аргументом, simulator последним со
+        значением по умолчанию, report_* печатает и возвращает dict.
+        report_relperm возвращает None и является единственным выбросом
+        среди шести общих модулей — копировать надо конвенцию.
+
+        Ядро при этом не должно знать ни config, ни history, ни grid,
+        ни simulator: подпись приходит готовой строкой в label.
+        """
+        import inspect
+        from gpn_multiphase_solver.io.output import plot_pvt_properties
+        pvt_plot = _pvt_module()
+
+        pars = list(inspect.signature(pvt_plot.plot_pvt).parameters)
+        assert pars[0] == "config", "config обязан быть первым аргументом"
+        assert pars[:4] == ["config", "history", "output_dir", "title"]
+        assert "simulator" in pars, "модуль обязан принимать simulator"
+        sim_par = inspect.signature(pvt_plot.plot_pvt).parameters["simulator"]
+        assert sim_par.default is None, "simulator — необязательный"
+
+        rep_pars = list(inspect.signature(pvt_plot.report_pvt).parameters)
+        assert rep_pars == ["config", "history", "simulator"]
+
+        r = results["03_standing_corey"]
+        assert isinstance(pvt_plot.report_pvt(r["config"], r["history"]), dict)
+
+        core_pars = set(inspect.signature(plot_pvt_properties).parameters)
+        forbidden = core_pars & {"config", "history", "grid", "simulator"}
+        assert not forbidden, (
+            f"ядро не должно знать про {forbidden} — оно принимает готовый "
+            f"объект PVT")
+
+    def test_density_panel_uses_twinx(self):
+        """Панель плотностей — на двух осях.
+
+        Измерено на примере 04: нефть 730…800, газ 40…140 кг/м³. На одной
+        шкале газовая кривая прижата к низу и её форма нечитаема, а
+        именно форма rho_g(p) различает PVT-модели.
+        """
+        import ast
+
+        core = (Path(__file__).parent.parent / "gpn_multiphase_solver"
+                / "io" / "output.py")
+        tree = ast.parse(core.read_text(encoding="utf-8"))
+        has_twinx = any(isinstance(n, ast.Call)
+                        and isinstance(n.func, ast.Attribute)
+                        and n.func.attr == "twinx"
+                        for n in ast.walk(tree))
+        assert has_twinx, (
+            "панель плотностей обязана использовать twinx: нефть ~800, "
+            "газ ~100 кг/м³, на одной оси газовая кривая нечитаема")

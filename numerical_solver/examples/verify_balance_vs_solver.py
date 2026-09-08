@@ -1,8 +1,9 @@
-"""Диагностика BUG-004: покомпонентная сверка баланса энергии со решателем.
+"""Покомпонентная сверка баланса энергии с тем, что реально собирает решатель.
 
-Цель — отделить два случая:
-  (а) дефект в скрипте energy_balance.py (пропущен/неверен член),
-  (б) дефект в TridiagEnergySolver (схема не сохраняет энергию).
+Инструмент диагностики: когда невязка баланса энергии велика, он однозначно
+отвечает на вопрос, где дефект:
+  (а) в диагностическом скрипте energy_balance.py (пропущен/неверен член),
+  (б) в TridiagEnergySolver (схема не сохраняет энергию).
 
 Метод: инструментируем TridiagEnergySolver.solve через monkey-patch, собираем
 за каждый шаг ИМЕННО ТЕ суммы, которые фактически попадают в СЛАУ:
@@ -11,19 +12,23 @@
     E_jt   = Σ_j J_jt_j · dt
     E_ad   = Σ_j V_j Q_ad_j · dt
     E_deg  = Σ_j V_j Q_deg_j · dt
-и сравниваем с тем, что считает compute_balance по истории.
+и сравниваем с тем, что считает compute_balance по истории. Невязка схемы
+на уровне 1e-12 означает, что решатель самосогласован и искать надо в
+скрипте; почленное расхождение показывает, в каком именно члене.
+
+Так был найден BUG-004: невязка схемы 2.7e-12 при невязке скрипта 0.20, и
+всё расхождение сидело в члене накопления (-7.5e+09 Дж из -7.4e+09).
 
 Запуск:
     cd numerical_solver
-    .venv\\Scripts\\python examples\\04_table_table\\diag_bug004.py
+    .venv\\Scripts\\python examples\\verify_balance_vs_solver.py
 """
 
 import sys
 from pathlib import Path
 import numpy as np
 
-_HERE = Path(__file__).resolve().parent
-_EXAMPLES = _HERE.parent
+_EXAMPLES = Path(__file__).resolve().parent
 _ROOT = _EXAMPLES.parent
 # Прототип radial_blackoil подключается conftest-ом только под pytest,
 # автономному скрипту приходится делать это самому.
@@ -160,7 +165,8 @@ def report(config_path, label):
 
 
 if __name__ == "__main__":
-    r04 = report(_HERE / "config.json", "Пример 04 (табличный PVT)")
+    r04 = report(_EXAMPLES / "04_table_table" / "config.json",
+                 "Пример 04 (табличный PVT)")
     r03 = report(_EXAMPLES / "03_standing_corey" / "config.json",
                  "Пример 03 (Standing)")
 

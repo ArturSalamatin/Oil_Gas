@@ -101,19 +101,19 @@ if __name__ == "__main__":
           f"{dT_last:.2e} К  (стационар достигнут)")
 
     # 1. Однофазная асимптотика примера 02
-    T_as = ta.single_phase_asymptote(hist0, cfg0)
+    T_as = ta.single_phase_asymptote(cfg0, hist0)
     err_1ph = float(np.max(np.abs(T[mask1] - T_as[mask1])))
     print(f"\n  1. однофазная зона ({mask1.sum()} ячеек):")
     print(f"     max|T - (T_ext + μ_JT·(p - p_ext))| = {err_1ph:.3e} К")
 
     # 2. Телескопическая формула на всех гранях
-    T_pred, T_num = ta.stationary_face_temperature(hist0, cfg0, pvt, grid)
+    T_pred, T_num = ta.stationary_face_temperature(cfg0, hist0, grid, sim0)
     err_face = float(np.max(np.abs(T_pred[:grid.N] - T_num[:grid.N])))
     print(f"\n  2. телескопическая формула, все {grid.N} граней:")
     print(f"     max|T_форм - T_числ| = {err_face:.3e} К")
 
     # Разложение перепада на стационаре
-    dec = ta.decompose_two_phase(hist0, cfg0, pvt, grid)
+    dec = ta.decompose_two_phase(cfg0, hist0, grid, sim0)
     print(f"\n  разложение перепада T (забой ↔ фронт, грань {dec['f_front']}):")
     print(f"     Джоуль–Томсон    {dec['jt']:+8.4f} К")
     print(f"     скрытая теплота  {dec['latent']:+8.4f} К")

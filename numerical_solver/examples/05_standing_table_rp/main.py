@@ -61,7 +61,7 @@ def _times_to_plot(history):
 def _add_temperature_analytics(history, grid, config, pvt, energy_solver,
                                output_dir: Path, title: str):
     """Перестроить temperature_profiles.png: ОДУ на каждом моменте + асимптотика."""
-    T_as = ta.single_phase_asymptote(history, config)
+    T_as = ta.single_phase_asymptote(config, history)
     fr = tpa.degassing_front(history, grid, config, pvt)
     r = grid.r_centers
     Sg = history.states[-1].Sg
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     tpa.report(history, grid, config, pvt)
 
     print()
-    ta.report(history, config, pvt, grid)
+    ta.report_asymptotics(config, history, grid, sim)
 
     _add_temperature_analytics(history, grid, config, pvt, sim._energy,
                                here / "output", TITLE)

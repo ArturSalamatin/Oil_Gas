@@ -65,7 +65,7 @@ if __name__ == "__main__":
     tpa.report(history, grid, config, pvt)
 
     print()
-    ta.report(history, config, pvt, grid)
+    ta.report_asymptotics(config, history, grid, sim)
 
     print()
     plot_energy_balance(history, grid, config, here / "output")

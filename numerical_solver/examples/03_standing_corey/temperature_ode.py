@@ -342,7 +342,7 @@ def overlay_temperature(ax, history, grid, simulator):
 
     # JT-асимптотика рисуется только там, где она выведена, — в однофазной
     # зоне. В двухфазной работают ещё скрытая теплота и изменение Φ.
-    T_as = ta.single_phase_asymptote(history, config)
+    T_as = ta.single_phase_asymptote(config, history)
     Sg = history.states[-1].Sg
     mask1 = Sg <= tpa.SG_EPS
     ax.semilogx(grid.r_centers[mask1], T_as[mask1], color='gray',

@@ -4,7 +4,7 @@ date: 2026-09-08
 issue: DEBT-007, BUG-003
 github: ["https://github.com/ArturSalamatin/Oil_Gas/issues/23", "https://github.com/ArturSalamatin/Oil_Gas/issues/24"]
 branch: refactor/debt-007/configurable-hydro-retries
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-08
   round: 5

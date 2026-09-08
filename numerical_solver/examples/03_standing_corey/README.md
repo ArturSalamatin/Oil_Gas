@@ -28,7 +28,7 @@ $\lambda = 0$ кондуктивная проводимость граней т�
 уравнение энергии перестаёт быть краевым и для $T(r)$ существует
 ОДУ-аналитика первого порядка. Так же сделано в примерах 04, 05, 07–09.
 Кондукция при этих параметрах всё равно сдвигает $T$ на тысячные доли К
-против ~4 К полного эффекта — проверка в `check_stationary.py`.
+против ~4 К полного эффекта — проверка в `check_asymptotics_long_run.py`.
 
 ## Комбинация модулей (A: Standing + Corey)
 
@@ -232,7 +232,7 @@ $$\frac{dp}{d\ln r} = \frac{|G^o|\,\mu_o B_o}{2\pi k h}$$
 
 $$T(r) = T_{ext} + \mu_{JT,o}\,[p(r) - p_{ext}]$$
 
-Прогон на 600 суток (`check_stationary.py`):
+Прогон на 600 суток (`check_asymptotics_long_run.py`):
 
 | проверка | ошибка |
 |---|---|
@@ -453,7 +453,7 @@ $$T_f = \frac{\Phi_N T_{ext} - J_N + J_f - L\rho_{g,\text{ст}}\bigl[R_N - R_f\
 Совпадение с численным стационаром — $2.2\cdot10^{-12}$ К.
 
 Её ценность — в разложении перепада между забоем и фронтом (на стационаре,
-`check_stationary.py`):
+`check_asymptotics_long_run.py`):
 
 | вклад | Δ$T$, К |
 |---|---|
@@ -476,7 +476,7 @@ $c_p$ вдвое меньше, поэтому $|\Phi|$ падает и та же
 ### 7. Сколько стоит обнуление теплопроводности
 
 В конфиге $\lambda = 0$ — иначе уравнение энергии краевое и ОДУ-аналитики
-не существует. Проверка, что это допустимо (`check_stationary.py`, прогон
+не существует. Проверка, что это допустимо (`check_asymptotics_long_run.py`, прогон
 до стационара):
 
 | | $T(r_w)$, К |
@@ -568,7 +568,7 @@ $Q_T \approx 6.2\cdot10^2$ Вт/К — в 31 раз меньше.
 | `energy_balance.py` | Пятикомпонентный баланс энергии |
 | `energy_balance_convergence.py` | Порядок сходимости невязки по $\Delta t$ (автономный) |
 | `ode_grid_convergence.py` | Сходимость ОДУ по сетке, $N = 50\ldots200$ (автономный, ~7 мин) |
-| `check_stationary.py` | Длинный прогон 600 сут: проверка асимптотик при $\lambda = 0$ (автономный) |
+| `check_asymptotics_long_run.py` | Длинный прогон 600 сут: проверка асимптотик при $\lambda = 0$ (автономный) |
 | `config.json` | Конфигурация задачи |
 
 Аналитика $p$, $S_g$ и $R_s$ живёт не здесь, а в общих модулях
@@ -705,7 +705,7 @@ cd numerical_solver
 .venv\Scripts\python examples\03_standing_corey\temperature_ode.py
 .venv\Scripts\python examples\03_standing_corey\energy_balance.py
 .venv\Scripts\python examples\03_standing_corey\energy_balance_convergence.py
-.venv\Scripts\python examples\03_standing_corey\check_stationary.py
+.venv\Scripts\python examples\03_standing_corey\check_asymptotics_long_run.py
 
 # ~7 минут: ряд сеток до N = 200, 1416 шагов ОДУ суммарно
 .venv\Scripts\python examples\03_standing_corey\ode_grid_convergence.py

@@ -21,7 +21,7 @@
 
 Запуск:
     cd numerical_solver
-    .venv\\Scripts\\python examples\\03_standing_corey\\check_stationary.py
+    .venv\\Scripts\\python examples\\03_standing_corey\\check_asymptotics_long_run.py
 """
 
 import sys

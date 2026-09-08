@@ -62,6 +62,7 @@ from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 
 import temperature_ode as tode  # noqa: E402
 from two_phase_analytics import SG_EPS  # noqa: E402
+from convergence import fit_order, pairwise_orders  # noqa: E402
 
 # (N, dt) — наибольший dt, при котором Newton сходится на этой сетке.
 # Найдено перебором; при большем шаге падает с
@@ -95,23 +96,13 @@ GRIDS = [
 T_COMPARE = 24 * 3600.0
 
 
-def run_one(N: int, dt: int, lambda_zero: bool = False) -> dict:
-    """Прогон на сетке N с шагом dt + решение ОДУ + сравнение.
-
-    lambda_zero принудительно обнуляет теплопроводность. В конфиге примера
-    она и так нулевая, но параметр оставлен для обратной проверки: если
-    вернуть lambda != 0, видно, как неубывающий кондуктивный вклад
-    (≈0.0025 К при любом N) портит порядок сходимости.
-    """
+def run_one(N: int, dt: int) -> dict:
+    """Прогон на сетке N с шагом dt + решение ОДУ + сравнение."""
     config = load_config(HERE / "config.json")
     config.grid.N = N
     config.time.dt_integration = dt
     config.time.history[0].dt = T_COMPARE
     config.output.log_level = "ERROR"
-    if lambda_zero:
-        config.rock.lambda_solid = 0.0
-        config.rock.lambda_oil = 0.0
-        config.rock.lambda_gas = 0.0
     # save_every = 1: ОДУ решается рекуррентно по сохранённым шагам,
     # прореживание истории сломало бы соответствие шаг ↔ момент времени.
     config.output.save_every = 1
@@ -162,10 +153,11 @@ if __name__ == "__main__":
     e_tot = np.array([r["err_total"] for r in results])
     e_one = np.array([r["err_single"] for r in results])
 
-    # Наблюдаемый порядок: наклон log(ошибка) по log(N), со знаком минус
-    # (ошибка убывает с ростом N).
-    order_tot = -np.polyfit(np.log(N_arr), np.log(e_tot), 1)[0]
-    order_one = -np.polyfit(np.log(N_arr), np.log(e_one), 1)[0]
+    # Регрессия и попарные порядки — общая механика (examples/convergence.py).
+    # inverse=True: параметр N обратен шагу сетки, знак наклона меняется,
+    # чтобы порядок читался положительным.
+    order_tot = fit_order(N_arr, e_tot, inverse=True)
+    order_one = fit_order(N_arr, e_one, inverse=True)
 
     print(f"\nНаблюдаемый порядок по N: {order_tot:.3f} (полная область), "
           f"{order_one:.3f} (однофазная зона)")
@@ -175,9 +167,9 @@ if __name__ == "__main__":
     # Попарные порядки: регрессия усредняет и скрыла бы деградацию, если бы
     # она была. Здесь они должны держаться около единицы на всём ряду.
     print("\nПопарные порядки:")
-    for i in range(len(N_arr) - 1):
-        k = -np.log(e_tot[i + 1] / e_tot[i]) / np.log(N_arr[i + 1] / N_arr[i])
-        print(f"  {N_arr[i]:3.0f}→{N_arr[i+1]:3.0f}: {k:.3f}")
+    for n1, n2, k in zip(N_arr[:-1], N_arr[1:],
+                         pairwise_orders(N_arr, e_tot, inverse=True)):
+        print(f"  {n1:3.0f}→{n2:3.0f}: {k:.3f}")
 
     # ── График ──
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))

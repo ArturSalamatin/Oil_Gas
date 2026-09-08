@@ -13,7 +13,7 @@ S_g стационарны уже через час. Если расхожден
 
 Запуск:
     cd numerical_solver
-    .venv\\Scripts\\python examples\\05_standing_table_rp\\check_stationary_T.py
+    .venv\\Scripts\\python examples\\05_standing_table_rp\\check_asymptotics_relaxation.py
 """
 
 import sys

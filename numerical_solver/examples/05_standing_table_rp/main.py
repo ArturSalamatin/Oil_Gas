@@ -23,7 +23,7 @@ T выводится при lambda = 0, иначе задача становит
 
 Дополнительные проверки запускаются отдельными скриптами — они делают свои
 прогоны (до 1000 суток либо на мелких сетках) и потому небыстрые:
-compare_with_corey, check_stationary_T, closed_form_convergence,
+compare_with_corey, check_asymptotics_relaxation, closed_form_convergence,
 energy_balance_convergence, ode_grid_convergence.
 """
 
@@ -137,9 +137,8 @@ if __name__ == "__main__":
     print()
     tpa.report(history, grid, config, pvt)
 
-    print()
     # report_asymptotics вызывает run_example (FEAT-016) — здесь не дублируем.
-
+    print()
     _add_temperature_analytics(history, grid, config, pvt, sim._energy,
                                here / "output", TITLE)
     print("\nГрафик T перестроен с ОДУ-аналитикой.")

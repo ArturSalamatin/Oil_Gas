@@ -497,7 +497,8 @@ $Q_T \approx 6.2\cdot10^2$ Вт/К — в 31 раз меньше.
 
 ### 8. Баланс энергии
 
-`energy_balance.py` считает пять компонент (в 02 их было четыре — здесь
+Общий модуль [`../energy_balance.py`](../energy_balance.py) считает шесть
+компонент (в 02 их было четыре — здесь
 добавлена скрытая теплота):
 
 | Компонент | Значение (финал) |
@@ -562,11 +563,11 @@ $Q_T \approx 6.2\cdot10^2$ Вт/К — в 31 раз меньше.
 | Файл | Назначение |
 |---|---|
 | `main.py` | Расчёт + баланс энергии; из своих overlay передаёт только $T$ |
-| `two_phase_analytics.py` | Проверки, которых нет в общей части: постоянство GOR по граням, наклон Дюпюи из потока, две независимые оценки фронта |
+| ~~`two_phase_analytics.py`~~ | вынесен в [`../two_phase_analytics.py`](../two_phase_analytics.py) — общий модуль (FEAT-016) |
 | `temperature_ode.py` | ОДУ первого порядка для $T$ (двухфазный аналог примера 02); overlay для $T$; контроль вклада JT и дегазации |
-| `temperature_asymptotics.py` | Стационарные формулы $T$ и разложение перепада (модуль, автономно не запускается) |
-| `energy_balance.py` | Пятикомпонентный баланс энергии |
-| `energy_balance_convergence.py` | Порядок сходимости невязки по $\Delta t$ (автономный) |
+| ~~`temperature_asymptotics.py`~~ | вынесен в [`../temperature_asymptotics.py`](../temperature_asymptotics.py) |
+| ~~`energy_balance.py`~~ | вынесен в [`../energy_balance.py`](../energy_balance.py) |
+| ~~`energy_balance_convergence.py`~~ | вынесен в [`../energy_balance_convergence.py`](../energy_balance_convergence.py) |
 | `ode_grid_convergence.py` | Сходимость ОДУ по сетке, $N = 50\ldots200$ (автономный, ~7 мин) |
 | `check_asymptotics_long_run.py` | Длинный прогон 600 сут: проверка асимптотик при $\lambda = 0$ (автономный) |
 | `config.json` | Конфигурация задачи |
@@ -701,10 +702,10 @@ cd numerical_solver
 Автономный запуск отдельных скриптов:
 
 ```powershell
-.venv\Scripts\python examples\03_standing_corey\two_phase_analytics.py
+.venv\Scripts\python examples\two_phase_analytics.py 03
 .venv\Scripts\python examples\03_standing_corey\temperature_ode.py
-.venv\Scripts\python examples\03_standing_corey\energy_balance.py
-.venv\Scripts\python examples\03_standing_corey\energy_balance_convergence.py
+.venv\Scripts\python examples\energy_balance.py 03
+.venv\Scripts\python examples\energy_balance_convergence.py 03
 .venv\Scripts\python examples\03_standing_corey\check_asymptotics_long_run.py
 
 # ~7 минут: ряд сеток до N = 200, 1416 шагов ОДУ суммарно

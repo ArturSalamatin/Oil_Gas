@@ -136,7 +136,8 @@ $\Delta p(r) = p_{Dupuit}(r) - p_0$. Каждое ОДУ решается рек
 
 ### Баланс энергии
 
-Скрипт `energy_balance.py` считает покомпонентный баланс:
+Общий модуль [`../energy_balance.py`](../energy_balance.py) считает
+покомпонентный баланс (до FEAT-016 у примера была своя копия):
 
 | Компонент | Значение (финал) | Комментарий |
 |---|---|---|
@@ -150,7 +151,8 @@ $\Delta p(r) = p_{Dupuit}(r) - p_0$. Каждое ОДУ решается рек
 
 ### Сходимость невязки
 
-Скрипт `energy_balance_convergence.py` прогоняет пример при трёх шагах
+Общий модуль [`../energy_balance_convergence.py`](../energy_balance_convergence.py)
+прогоняет пример при трёх шагах
 по времени и определяет порядок логарифмической регрессией
 $\log(\text{невязка})$ по $\log(\Delta t)$:
 
@@ -187,12 +189,12 @@ $\log(\text{невязка})$ по $\log(\Delta t)$:
 | Файл | Назначение |
 |---|---|
 | `main.py` | Расчёт + графики профилей + Дюпюи + ОДУ-аналитика $T$ + баланс энергии |
-| `energy_balance.py` | Покомпонентный баланс энергии (вызывается из `main.py` или автономно) |
-| `energy_balance_convergence.py` | Порядок сходимости невязки по $\Delta t$ (автономный) |
+| ~~`energy_balance.py`~~ | вынесен в [`../energy_balance.py`](../energy_balance.py) |
+| ~~`energy_balance_convergence.py`~~ | вынесен в [`../energy_balance_convergence.py`](../energy_balance_convergence.py) |
 | `spatial_convergence.py` | Пространственная сходимость $T$: $N = 50$ vs $N = 200$ (автономный) |
 | `config.json` | Конфигурация задачи |
 
-`energy_balance.py` разделён на две функции: `compute_balance()` считает
+`../energy_balance.py` разделён на функции: `compute_balance()` считает
 компоненты, `plot_energy_balance()` строит график. Скрипт сходимости
 импортирует первую, поэтому формулы баланса живут в одном месте.
 
@@ -238,8 +240,8 @@ cd numerical_solver
 Автономный запуск отдельных скриптов:
 
 ```powershell
-.venv\Scripts\python examples\01_single_phase_no_jt\energy_balance.py
-.venv\Scripts\python examples\01_single_phase_no_jt\energy_balance_convergence.py
+.venv\Scripts\python examples\energy_balance.py 01
+.venv\Scripts\python examples\energy_balance_convergence.py 01
 .venv\Scripts\python examples\01_single_phase_no_jt\spatial_convergence.py
 ```
 

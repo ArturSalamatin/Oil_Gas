@@ -7,7 +7,7 @@ issue: FEAT-016
 github: 22
 branch: feat/feat-016/unify-example-checks
 model_level: —
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-08
   round: 4

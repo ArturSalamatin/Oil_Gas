@@ -55,6 +55,7 @@ from closed_form import (  # noqa: E402
     make_overlay_pressure, make_overlay_saturation, report_closed)
 from energy_balance import plot_energy_balance  # noqa: E402
 from temperature_asymptotics import report_asymptotics  # noqa: E402
+from pvt_plot import plot_pvt, report_pvt  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
@@ -157,6 +158,15 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # примеров, аналитических и табличных.
     plot_relperm(config, history, output_dir, title)
 
+    # ── PVT ──
+    # Свойства флюида в штатных графиках не видны, хотя определяют и профиль
+    # давления, и насыщенность: смена PVT-модели в паре 03<->04 меняет дебит
+    # на 46 % и фронт разгазирования в 12 раз, а смена ОФП — почти ничего.
+    # Передаём simulator целиком (конвенция общих модулей): модуль сам возьмёт
+    # у него тот PVT, которым считалась задача, — график обязан показывать
+    # ровно то, что видел решатель, а не пересобранную фабрикой копию.
+    plot_pvt(config, history, output_dir, title, simulator)
+
     # ── Баланс энергии ──
     # Интегральная проверка: схема не должна терять и создавать энергию.
     # Считается ВСЕГДА, включая однофазные сценарии — там просто часть
@@ -186,6 +196,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
         report_rs(config, history, simulator._energy._pvt)
         print()
         report_closed(config, history, grid, simulator)
+
+    # ── PVT: числовая сводка ──
+    # Безусловно, в отличие от report_rs: у однофазных примеров (Rs0 = 0)
+    # B_o и mu_o тоже осмысленны, там вырождена лишь вторая ветвь, и
+    # report_pvt сам сообщает об этом вместо того, чтобы молчать.
+    print()
+    report_pvt(config, history, simulator)
 
     # ── Стационарная асимптотика температуры ──
     # Телескопическая формула выведена при λ = 0; при λ ≠ 0 она неверна

@@ -205,6 +205,20 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     p_final = history.states[-1].p
     T_asymp = T0 + mu_JT * (p_final - p_final[-1])
 
+    # ── Наклоны двух линейных участков ──
+    # В логарифмической шкале профиль состоит из двух линейных участков
+    # с плавным переходом. Оба наклона следуют из того, что давление
+    # Дюпюи линейно по ln r с постоянным C = dp/dlnr.
+    C_slope = C_dup   # (p0 - p_wf)/ln(R_e/r_w), Па на единицу ln r
+
+    # Ближняя зона: конвекция уже вывела приствольную область на
+    # JT-стационар dT/dr = mu_JT·dp/dr.
+    slope_near = mu_JT * C_slope
+
+    # Дальняя зона: конвекция ещё не дошла, держится профиль от
+    # адиабатического импульса 1-го шага (с тем же множителем adiab_factor).
+    slope_far = phi * adiab_factor * C_slope / rho_cp_eff
+
     # ── График ──
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_profiles(history, grid, times_to_plot, field="T", ax=ax)
@@ -221,7 +235,32 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     ax.semilogx(grid.r_centers, T_asymp, color='gray', linestyle=':',
                 linewidth=1.5,
                 label=r"JT-асимптотика: $T_{ext} + \mu_{JT}(p - p_{ext})$")
-    ax.legend(fontsize=8)
+
+    # Опорные прямые с наклонами двух участков — короткие отрезки,
+    # смещённые вниз от профилей, чтобы наклон читался, а не сливался
+    # с кривыми. Ближний участок берём у забоя, дальний — у контура.
+    r_c = grid.r_centers
+    T_fin = history.states[-1].T
+    span = T_fin.max() - T_fin.min()
+
+    # Ближний: отрезок r ∈ [r_w, 1] м, смещён на 12% размаха вниз
+    r_left = np.array([r_c[0], 1.0])
+    T_left = T_fin[0] - 0.12 * span + slope_near * np.log(r_left / r_c[0])
+    ax.semilogx(r_left, T_left, color='tab:green', linestyle='-',
+                linewidth=2.2, alpha=0.85,
+                label=fr"наклон $\mu_{{JT}} C$ = {slope_near:.3f} К (JT-стационар)")
+
+    # Дальний: отрезок r ∈ [8, R_e], смещён на 25% размаха вниз —
+    # иначе упирается в верхний край области рисования
+    r_right = np.array([8.0, r_c[-1]])
+    T_right = (T_fin[-1] - 0.25 * span
+               + slope_far * np.log(r_right / r_c[-1]))
+    ax.semilogx(r_right, T_right, color='tab:purple', linestyle='-',
+                linewidth=2.2, alpha=0.85,
+                label=fr"наклон $\varphi(1{{+}}\rho c_p\mu_{{JT}})C/(\rho c_p)_{{eff}}$"
+                      fr" = {slope_far:.3f} К (адиабат. след)")
+
+    ax.legend(fontsize=7, loc="lower right")
     ax.set_title(f"{title}\nПрофили температуры")
     fig.tight_layout()
     fig.savefig(output_dir / "temperature_profiles.png", dpi=110)
@@ -239,6 +278,9 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
         err = np.max(np.abs(T_num - T_ode_centers))
         print(f"  t = {times[idx_n]:8.0f} с (шаг {idx_n:3d}): "
               f"max|T_num - T_ode| = {err:.4f} К")
+
+    print(f"Наклоны dT/dlnr: ближний {slope_near:.4f} К (JT-стационар), "
+          f"дальний {slope_far:.4f} К (адиабатический след)")
 
     return float(np.max(np.abs(history.states[-1].T - T_asymp)))
 

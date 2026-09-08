@@ -21,7 +21,6 @@ from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 
 # energy_balance.py лежит рядом с main.py — добавляем папку примера в sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from energy_balance import plot_energy_balance  # noqa: E402
 
 
 def _add_dupuit_curve(history, grid, config, output_dir: Path, title: str):
@@ -204,5 +203,5 @@ if __name__ == "__main__":
         title="01: однофазная фильтрация без JT",
     )
 
-    # Баланс энергии
-    plot_energy_balance(history, grid, config, here / "output")
+    # Баланс энергии считает run_example — общей проверкой для всех
+    # примеров (FEAT-016). Прежде каждый пример вызывал его сам.

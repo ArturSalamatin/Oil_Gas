@@ -48,7 +48,6 @@ from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 import two_phase_analytics as tpa  # noqa: E402
 import temperature_asymptotics as ta  # noqa: E402
 import temperature_ode as tode  # noqa: E402
-from energy_balance import plot_energy_balance  # noqa: E402
 
 
 def _times_to_plot(history):
@@ -139,11 +138,11 @@ if __name__ == "__main__":
     tpa.report(history, grid, config, pvt)
 
     print()
-    ta.report_asymptotics(config, history, grid, sim)
+    # report_asymptotics вызывает run_example (FEAT-016) — здесь не дублируем.
 
     _add_temperature_analytics(history, grid, config, pvt, sim._energy,
                                here / "output", TITLE)
     print("\nГрафик T перестроен с ОДУ-аналитикой.")
 
-    print()
-    plot_energy_balance(history, grid, config, here / "output")
+    # Баланс энергии считает run_example — общей проверкой для всех
+    # примеров (FEAT-016).

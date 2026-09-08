@@ -35,9 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from example_runner import run_example  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
-import temperature_asymptotics as ta  # noqa: E402
 from temperature_ode import overlay_temperature  # noqa: E402
-from energy_balance import plot_energy_balance  # noqa: E402
 
 if __name__ == "__main__":
     here = Path(__file__).parent
@@ -64,8 +62,6 @@ if __name__ == "__main__":
     print()
     tpa.report(history, grid, config, pvt)
 
-    print()
-    ta.report_asymptotics(config, history, grid, sim)
-
-    print()
-    plot_energy_balance(history, grid, config, here / "output")
+    # Асимптотику температуры и баланс энергии считает run_example —
+    # общими проверками для всех примеров (FEAT-016). Прежде этот пример
+    # вызывал их сам, своими копиями скриптов.

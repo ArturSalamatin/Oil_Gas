@@ -48,7 +48,7 @@ from gpn_multiphase_solver.io.output import (  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
-                title: str) -> tuple:
+                title: str, overlays: dict | None = None) -> tuple:
     """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
 
     Возвращает (elapsed, history, grid, config):
@@ -57,6 +57,11 @@ def run_example(config_path: str | Path, output_dir: str | Path,
       grid     — Grid (сетка)
       config   — SimulatorConfig (разобранный JSON)
     Все выходные файлы кладутся в output_dir (создаётся при необходимости).
+
+    overlays — необязательные дополнительные кривые на профильных графиках:
+    {"p": func(ax, history, grid), "T": ..., "Sg": ...}. Функция вызывается
+    после отрисовки численных профилей и может добавить на те же оси, например,
+    аналитическое решение. Примеры без аналитики просто не передают overlays.
     """
     config_path = Path(config_path)
     output_dir = Path(output_dir)
@@ -90,15 +95,16 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
     times_to_plot = [times[i] for i in sorted(set(idx))]
 
+    overlays = overlays or {}
     _plot_field(history, grid, times_to_plot, "p",
                 f"{title}\nПрофили давления",
-                output_dir / "pressure_profiles.png")
+                output_dir / "pressure_profiles.png", overlays.get("p"), simulator)
     _plot_field(history, grid, times_to_plot, "T",
                 f"{title}\nПрофили температуры",
-                output_dir / "temperature_profiles.png")
+                output_dir / "temperature_profiles.png", overlays.get("T"), simulator)
     _plot_field(history, grid, times_to_plot, "Sg",
                 f"{title}\nПрофили газонасыщенности",
-                output_dir / "saturation_profiles.png")
+                output_dir / "saturation_profiles.png", overlays.get("Sg"), simulator)
 
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_well_rate(history, ax=ax)
@@ -119,10 +125,19 @@ def run_example(config_path: str | Path, output_dir: str | Path,
 
 
 def _plot_field(history, grid, times_to_plot, field: str,
-                title: str, path: Path) -> None:
-    """Сохранить профиль одного поля в PNG."""
+                title: str, path: Path, overlay=None, simulator=None) -> None:
+    """Сохранить профиль одного поля в PNG.
+
+    overlay — необязательная функция (ax, history, grid, simulator),
+    дорисовывающая на те же оси дополнительную кривую (например,
+    аналитическое решение). simulator передаётся потому, что аналитике
+    бывают нужны внутренние модули решателя (energy solver, PVT).
+    """
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_profiles(history, grid, times_to_plot, field=field, ax=ax)
+    if overlay is not None:
+        overlay(ax, history, grid, simulator)
+        ax.legend(fontsize=8)
     ax.set_title(title)
     fig.tight_layout()
     fig.savefig(path, dpi=110)

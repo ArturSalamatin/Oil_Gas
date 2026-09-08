@@ -6,7 +6,7 @@ github: https://github.com/ArturSalamatin/Oil_Gas/issues/21
 branch: fix/bug-004/energy-balance-table-pvt
 base_branch: numerical_scheme/implementation
 base_branch_precondition: FEAT-013 должна быть смёржена в базу (решение пользователя от 2026-09-08)
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-08
   round: 3

@@ -138,6 +138,13 @@ class NumericsConfig:
     sg_switch_tol: float = 1e-9
     jacobian_mode: str = "grouped"
     linear_solver: str = "sparse"
+    # Лимит дробления шага в A-retry (PrototypeHydroAdapter): при
+    # расходимости Newton шаг дробится на 2**attempt подшагов, attempt
+    # не превышает max_retries. Значение 9 (512 подшагов) — измеренный
+    # порог для примера 03 при двух отягчающих факторах сразу (N = 75 и
+    # p_wf = 6 МПа): при 8 расчёт ещё падает. Одного фактора хватает 7.
+    # Столько же требует BUG-003 (Sg ≈ 0.7, обе фазы малоподвижны).
+    max_retries: int = 9
 
 
 # ── Секция output ────────────────────────────────────────────
@@ -253,3 +260,13 @@ def _validate(cfg: SimulationConfig) -> None:
             raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
         if h.control == "pressure" and h.p_wf is not None and h.p_wf <= 0:
             raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
+
+    # max_retries управляет числом попыток A-retry (2**max_retries подшагов).
+    # bool исключается явно: в Python bool — подкласс int, а True как лимит бессмыслен.
+    mr = cfg.numerics.max_retries
+    if isinstance(mr, bool) or not isinstance(mr, int):
+        raise ValueError(f"numerics.max_retries должен быть целым, получено {mr!r}")
+    if mr < 0 or mr > 20:
+        raise ValueError(
+            f"numerics.max_retries должен быть в [0, 20], получено {mr}. "
+            f"Верхняя граница защищает от опечатки: 2**20 подшагов недостижимо.")

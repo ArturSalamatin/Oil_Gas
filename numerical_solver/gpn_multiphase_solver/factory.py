@@ -199,7 +199,8 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
 
     # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
     our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt
-    return PrototypeHydroAdapter(model, grid, our_pvt)
+    return PrototypeHydroAdapter(model, grid, our_pvt,
+                                 max_retries=nc.max_retries)
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):

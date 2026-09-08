@@ -1,8 +1,9 @@
 """Сохранение результатов и визуализация.
 
 Сериализация:
-  save_npz — SimulationHistory → .npz (numpy)
-  save_csv — SimulationHistory → .csv (tidy format)
+  save_npz      — SimulationHistory → .npz (numpy)
+  save_csv      — SimulationHistory → .csv (tidy format, профили по ячейкам)
+  save_well_csv — SimulationHistory → .csv (скважинная история, шаг = строка)
 
 Визуализация (matplotlib):
   plot_profiles        — p(r), T(r), Sg(r) на выбранных моментах (semilogx)
@@ -94,6 +95,38 @@ def save_csv(history: SimulationHistory, grid: Grid,
                     f"{state.p[j]:.6e},{state.T[j]:.6e},"
                     f"{state.Sg[j]:.6e},{state.Rs[j]:.6e}\n"
                 )
+
+
+# ═══════════════════════════════════════════════════════════
+# Сохранение: скважинная история (CSV)
+# ═══════════════════════════════════════════════════════════
+
+def save_well_csv(history: SimulationHistory, path: str | Path) -> None:
+    """Скважинные данные: одна строка на сохранённый шаг.
+
+    Столбцы: time_s, time_day, q_o_m3st_s, q_g_m3st_s,
+             m_o_kg_s, m_g_kg_s, p_wf_Pa, T_wf_K, GOR_m3st_m3st.
+
+    Знак: дебиты > 0 при добыче (q = -G[0], см. WellData).
+    GOR = q_g_std / q_o_std; при q_o_std <= 0 записывается пустое поле
+    (не NaN — Excel и pandas читают пустое как NaN сами).
+    """
+    path = Path(path)
+    day = 86400.0
+
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("time_s,time_day,q_o_m3st_s,q_g_m3st_s,"
+                "m_o_kg_s,m_g_kg_s,p_wf_Pa,T_wf_K,GOR_m3st_m3st\n")
+        for t, w in zip(history.times, history.well_data):
+            # GOR не определён при нулевом/отрицательном дебите нефти —
+            # пустое поле вместо деления на ноль.
+            gor = f"{w.q_g_std / w.q_o_std:.6e}" if w.q_o_std > 0.0 else ""
+            f.write(
+                f"{t:.6e},{t / day:.6e},"
+                f"{w.q_o_std:.6e},{w.q_g_std:.6e},"
+                f"{w.m_o_well:.6e},{w.m_g_well:.6e},"
+                f"{w.p_wf:.6e},{w.T_wf:.6e},{gor}\n"
+            )
 
 
 # ═══════════════════════════════════════════════════════════

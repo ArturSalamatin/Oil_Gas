@@ -163,8 +163,13 @@ class TridiagEnergySolver(EnergySolver):
             w_R = grid.log_weights_right   # ln(r_center_right / r_face)
             lam_L = lambda_eff[:-1]
             lam_R = lambda_eff[1:]
-            # Последовательные кольцевые сопротивления: R = w/λ, Q_T = 2πh / ΣR
-            Q_T_internal = 2.0 * np.pi * grid.h / (w_L / lam_L + w_R / lam_R)
+            # Последовательные кольцевые сопротивления: R = w/λ, Q_T = 2πh / ΣR.
+            # При λ = 0 (конфиг без теплопроводности) сопротивление бесконечно,
+            # а проводимость — ноль. Считаем через errstate, чтобы промежуточные
+            # inf не печатали предупреждение: 2πh/inf = 0 — верный ответ.
+            with np.errstate(divide='ignore'):
+                R_series = w_L / lam_L + w_R / lam_R
+                Q_T_internal = 2.0 * np.pi * grid.h / R_series
         else:
             Q_T_internal = np.empty(0)
 

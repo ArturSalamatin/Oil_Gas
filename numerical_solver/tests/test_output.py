@@ -22,7 +22,7 @@ from gpn_multiphase_solver.state import (
 )
 from gpn_multiphase_solver.io.config import load_config, RockConfig, OutputConfig
 from gpn_multiphase_solver.io.output import (
-    history_to_arrays, save_npz, save_csv,
+    history_to_arrays, save_npz, save_csv, save_well_csv,
     plot_profiles, plot_wellbore_dynamics, plot_well_rate, plot_2d_map,
 )
 from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
@@ -182,6 +182,95 @@ class TestSaveCsv:
         assert float(row[1]) == 0.0       # time
         assert float(row[2]) == pytest.approx(grid.r_centers[0], rel=1e-5)
         assert float(row[3]) == pytest.approx(P0, rel=1e-5)  # p
+
+
+# ═══════════════════════════════════════════════════════════
+# C2. save_well_csv — скважинная история (одна строка на шаг)
+# ═══════════════════════════════════════════════════════════
+
+WELL_HEADER = ("time_s,time_day,q_o_m3st_s,q_g_m3st_s,"
+               "m_o_kg_s,m_g_kg_s,p_wf_Pa,T_wf_K,GOR_m3st_m3st")
+
+
+class TestSaveWellCsv:
+    def test_header(self, small_history, tmp_path):
+        """Заголовок содержит все 6 полей WellData + time_day + GOR."""
+        history, _ = small_history
+        path = tmp_path / "well.csv"
+        save_well_csv(history, path)
+
+        with open(path, encoding='utf-8') as f:
+            header = f.readline().strip()
+        assert header == WELL_HEADER
+
+    def test_row_count(self, small_history, tmp_path):
+        """Одна строка на сохранённый шаг (в отличие от save_csv — без ячеек)."""
+        history, _ = small_history
+        path = tmp_path / "well.csv"
+        save_well_csv(history, path)
+
+        with open(path, encoding='utf-8') as f:
+            lines = f.readlines()
+        assert len(lines) == 1 + history.n_saved
+
+    def test_values_match_well_data(self, small_history, tmp_path):
+        """Значения последней строки совпадают с WellData последнего шага."""
+        history, _ = small_history
+        path = tmp_path / "well.csv"
+        save_well_csv(history, path)
+
+        with open(path, encoding='utf-8') as f:
+            rows = f.readlines()
+        row = rows[-1].strip().split(',')
+        w = history.well_data[-1]
+
+        assert float(row[0]) == pytest.approx(history.times[-1], rel=1e-9)
+        assert float(row[1]) == pytest.approx(history.times[-1] / 86400.0, rel=1e-9)
+        assert float(row[2]) == pytest.approx(w.q_o_std, rel=1e-5)
+        assert float(row[3]) == pytest.approx(w.q_g_std, rel=1e-5)
+        assert float(row[4]) == pytest.approx(w.m_o_well, rel=1e-5)
+        assert float(row[5]) == pytest.approx(w.m_g_well, rel=1e-5)
+        assert float(row[6]) == pytest.approx(w.p_wf, rel=1e-5)
+        assert float(row[7]) == pytest.approx(w.T_wf, rel=1e-5)
+
+    def test_gor_value(self, small_history, tmp_path):
+        """GOR = q_g_std / q_o_std при добыче (q_o > 0)."""
+        history, _ = small_history
+        path = tmp_path / "well.csv"
+        save_well_csv(history, path)
+
+        with open(path, encoding='utf-8') as f:
+            rows = f.readlines()
+        row = rows[-1].strip().split(',')
+        w = history.well_data[-1]
+
+        assert w.q_o_std > 0.0, "фикстура должна давать добычу на последнем шаге"
+        assert float(row[8]) == pytest.approx(w.q_g_std / w.q_o_std, rel=1e-5)
+
+    def test_gor_empty_when_no_oil_rate(self, tmp_path):
+        """При q_o_std <= 0 поле GOR пустое (деления на ноль не происходит)."""
+        # Первый (начальный) шаг: скважина ещё не работает, q_o_std = 0.
+        history = SimulationHistory()
+        state = SimulationState(
+            p=np.full(N, P0), Sg=np.zeros(N), Rs=np.full(N, RS0),
+            T=np.full(N, T0), regime=np.full(N, 2, dtype=int), t=0.0)
+        zeros = np.zeros(N + 1)
+        hydro = HydroResult(
+            state=state,
+            G_o=zeros, G_g=zeros, G_free_gas=zeros,
+            Q_o=zeros, Q_g=zeros, u_o=zeros, u_g=zeros,
+            m_o=zeros, m_g=zeros, Gm_o=zeros, Gm_g=zeros)
+        well = WellData(q_o_std=0.0, q_g_std=0.0, m_o_well=0.0,
+                        m_g_well=0.0, p_wf=P0, T_wf=T0)
+        history.append(0.0, state, hydro, well)
+
+        path = tmp_path / "well.csv"
+        save_well_csv(history, path)
+
+        with open(path, encoding='utf-8') as f:
+            f.readline()
+            row = f.readline().rstrip('\n').split(',')
+        assert row[8] == "", "GOR при нулевом дебите нефти должен быть пустым"
 
 
 # ═══════════════════════════════════════════════════════════

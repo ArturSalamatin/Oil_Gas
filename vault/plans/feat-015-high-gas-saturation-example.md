@@ -2,7 +2,7 @@
 id: feat-015-high-gas-saturation-example
 title: "FEAT-015: Пример 04a — высокая газонасыщенность (Sg = 0.7 на забое)"
 type: plan
-status: в процессе
+status: реализован
 created: 2026-09-08
 issue: FEAT-015
 github: 20

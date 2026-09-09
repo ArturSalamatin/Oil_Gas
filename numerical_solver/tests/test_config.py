@@ -143,23 +143,32 @@ class TestBaselineTime:
     def test_start_day(self, cfg):
         assert cfg.time.start_day == 0.0
 
+    # Сценарий baseline: сутки при 15 МПа, затем трое суток при 10 МПа.
+    # После DEBT-013 он записан 96 интервалами по 3600 с (24 + 72), потому
+    # что частоту вывода задаёт только структура истории. Проверяем сам
+    # сценарий — длительность и режим каждого этапа, а не разбиение:
+    # число интервалов зависит от желаемого шага записи и может меняться.
+
     def test_history_count(self, cfg):
-        assert len(cfg.time.history) == 2
+        """24 часа при 15 МПа + 72 часа при 10 МПа."""
+        assert len(cfg.time.history) == 96
 
-    def test_history_0_dt(self, cfg):
-        assert cfg.time.history[0].dt == 86400
+    def test_history_step_uniform(self, cfg):
+        """Шаг записи одинаков во всех интервалах — 1 час."""
+        assert {h.dt for h in cfg.time.history} == {3600.0}
 
-    def test_history_0_control(self, cfg):
-        assert cfg.time.history[0].control == "pressure"
+    def test_history_control_is_pressure(self, cfg):
+        assert {h.control for h in cfg.time.history} == {"pressure"}
 
-    def test_history_0_p_wf(self, cfg):
-        assert cfg.time.history[0].p_wf == 15e6
+    def test_history_stage_1(self, cfg):
+        """Первый этап: сутки при p_wf = 15 МПа."""
+        stage = [h for h in cfg.time.history if h.p_wf == 15e6]
+        assert sum(h.dt for h in stage) == 86400
 
-    def test_history_1_dt(self, cfg):
-        assert cfg.time.history[1].dt == 259200
-
-    def test_history_1_p_wf(self, cfg):
-        assert cfg.time.history[1].p_wf == 10e6
+    def test_history_stage_2(self, cfg):
+        """Второй этап: трое суток при p_wf = 10 МПа."""
+        stage = [h for h in cfg.time.history if h.p_wf == 10e6]
+        assert sum(h.dt for h in stage) == 259200
 
 
 class TestBaselineNumerics:
@@ -189,8 +198,18 @@ class TestBaselineOutput:
     def test_format(self, cfg):
         assert cfg.output.format == "npz"
 
-    def test_save_every(self, cfg):
-        assert cfg.output.save_every == 1
+    def test_save_every_rejected(self, tmp_path):
+        """Старый конфиг с save_every отвергается с объяснением (DEBT-013).
+
+        Молча игнорировать поле нельзя: пользователь рассчитывает на
+        прореживание вывода, а его больше нет — состав истории изменился
+        бы без предупреждения. Без явной проверки строгая распаковка
+        dataclass дала бы невнятный TypeError про лишний аргумент.
+        """
+        raw = _minimal_raw()
+        raw["output"] = {"log_level": "INFO", "save_every": 12}
+        with pytest.raises(ValueError, match="save_every"):
+            load_config(_write_json(tmp_path, raw))
 
 
 class TestConfigTypes:
@@ -249,7 +268,7 @@ class TestOptionalSections:
         raw = _minimal_raw()
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.output.log_level == "INFO"
-        assert cfg.output.save_every == 1
+        assert cfg.output.format == "npz"
 
 
 class TestMinimalConfig:

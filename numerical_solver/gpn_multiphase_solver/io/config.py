@@ -154,7 +154,8 @@ class OutputConfig:
     """Параметры вывода."""
     log_level: str = "INFO"
     format: str = "npz"       # формат записи: "npz" или "csv"
-    save_every: int = 1       # сохранять каждый N-й шаг
+    # save_every удалён (DEBT-013): частоту вывода задаёт структура
+    # time.history — второго механизма отбора записей больше нет.
 
 
 # ── Полный конфиг ────────────────────────────────────────────
@@ -208,7 +209,22 @@ def load_config(path: str | Path) -> SimulationConfig:
 
     # ── Опциональные секции ──
     numerics = NumericsConfig(**raw["numerics"]) if "numerics" in raw else NumericsConfig()
-    output = OutputConfig(**raw["output"]) if "output" in raw else OutputConfig()
+    # save_every удалён (DEBT-013): частоту вывода задаёт структура
+    # time.history, а не счётчик подшагов. Старые конфиги отвергаем
+    # с объяснением — молча проглотить нельзя, состав вывода изменится.
+    # Проверка стоит ДО OutputConfig(**out_raw): иначе строгая распаковка
+    # dataclass упадёт раньше с невнятным TypeError про лишний аргумент.
+    if "output" in raw:
+        out_raw = dict(raw["output"])          # копия: не портим исходный словарь
+        if "save_every" in out_raw:
+            raise ValueError(
+                "output.save_every удалён (DEBT-013): частота записи "
+                "результатов задаётся структурой time.history. Чтобы "
+                "получить N моментов вывода, задайте N интервалов истории; "
+                "dt_integration отвечает только за точность схемы.")
+        output = OutputConfig(**out_raw)
+    else:
+        output = OutputConfig()
 
     config = SimulationConfig(
         geometry=geometry, grid=grid, rock=rock, pvt=pvt,

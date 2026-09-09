@@ -464,17 +464,11 @@ SHARED_CHECK_MODULES = [
     "pvt_plot.py",
 ]
 
-# Баланс энергии суммирует ПРИРАЩЕНИЯ по сохранённым шагам, поэтому
-# compute_balance требует save_every = 1 и бросает ValueError иначе
-# (energy_balance.py:124). Пример 04a — первый в наборе с save_every = 12:
-# его dt_integration = 300 даёт 864 подшага, и прореживание возвращает
-# число сохранённых состояний к тем же 73, что у остальных. Список строим
-# по конфигам, а не перечислением: следующий пример с прореживанием
-# попадёт сюда сам, без правки теста.
-BALANCE_EXAMPLES = [
-    name for name in ALL_EXAMPLES
-    if load_config(EXAMPLES_DIR / name / "config.json").output.save_every == 1
-]
+# Прежде здесь стоял отдельный список BALANCE_EXAMPLES: баланс суммировал
+# приращения по сохранённым шагам, поэтому пример 04a (save_every = 12,
+# запись раз в 12 подшагов) из проверки выпадал. После DEBT-013 члены
+# копятся на подшагах внутри решателя, баланс корректен при любой
+# структуре истории, и проверка идёт по ALL_EXAMPLES — включая 04a.
 
 
 class TestSharedChecks:
@@ -486,15 +480,16 @@ class TestSharedChecks:
         имели только 01, 02, 03, 05. Порог 1e-2 отделяет ошибку расщепления
         O(dt) (~1e-3 на штатных конфигах) от пропущенного члена.
 
-        Идёт по BALANCE_EXAMPLES, а не по ALL_EXAMPLES: у 04a save_every = 12,
-        и сумма приращений по прореженной истории заведомо неполна.
+        Идёт по ALL_EXAMPLES, включая 04a: после DEBT-013 члены баланса
+        копятся на подшагах, поэтому 12 подшагов на запись у 04a проверке
+        больше не мешают (замерено: невязка ~2e-3).
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
         from energy_balance import compute_balance
 
         bad = {}
-        for name in BALANCE_EXAMPLES:
+        for name in ALL_EXAMPLES:
             r = results[name]
             bal = compute_balance(r["history"], r["grid"], r["config"])
             rel = abs(float(bal["rel_residual"][-1]))
@@ -511,14 +506,14 @@ class TestSharedChecks:
         Проверяем ОБА случая: ключ присутствует всегда, при lambda = 0 член
         строго нулевой, при lambda != 0 — ненулевой.
 
-        BALANCE_EXAMPLES, а не ALL_EXAMPLES: compute_balance неприменим
-        к 04a с его save_every = 12 (см. комментарий к списку).
+        Идёт по ALL_EXAMPLES: после DEBT-013 баланс считается при любой
+        структуре истории, отдельного списка исключений больше нет.
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
         from energy_balance import compute_balance
 
-        for name in BALANCE_EXAMPLES:
+        for name in ALL_EXAMPLES:
             r = results[name]
             cfg = r["config"]
             bal = compute_balance(r["history"], r["grid"], cfg)
@@ -546,8 +541,8 @@ class TestSharedChecks:
         cum_deg (01, 02) — отсутствующие ключи ломали бы вызывающий код.
         Физически отсутствующие члены приходят нулевыми массивами.
 
-        BALANCE_EXAMPLES, а не ALL_EXAMPLES: compute_balance неприменим
-        к 04a с его save_every = 12 (см. комментарий к списку).
+        Идёт по ALL_EXAMPLES: после DEBT-013 баланс считается при любой
+        структуре истории, отдельного списка исключений больше нет.
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
@@ -556,7 +551,7 @@ class TestSharedChecks:
         required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
                     "cum_deg", "cum_cond", "total", "residual",
                     "rel_residual"}
-        for name in BALANCE_EXAMPLES:
+        for name in ALL_EXAMPLES:
             r = results[name]
             bal = compute_balance(r["history"], r["grid"], r["config"])
             missing = required - set(bal)
@@ -1165,17 +1160,23 @@ class TestHighGasSaturation:
         assert clo.Sg(p_well) == pytest.approx(Sg_well, rel=1e-2)
 
     def test_saved_steps_match_other_examples(self, results):
-        """Прореживание возвращает вывод к тем же 73 состояниям, что у 04.
+        """Расписание истории даёт те же 73 состояния, что у 04.
 
-        dt_integration = 300 даёт 864 подшага против 72 у остальных примеров,
-        и при save_every = 1 это дало бы 865 состояний и profiles.csv на
-        3.4 МБ вместо 0.28 МБ, а рекуррентная ОДУ-аналитика температуры
-        (863 последовательных solve_ivp) перестала бы завершаться за
-        разумное время. Множитель 12 выбран так, чтобы 864/12 = 72 подшага
-        плюс начальное состояние — формат вывода 04a неотличим от прочих.
+        dt_integration = 300 даёт 864 подшага против 72 у остальных примеров.
+        Записывать каждый подшаг нежелательно: это 865 состояний и
+        profiles.csv на 3.4 МБ вместо 0.28 МБ, а рекуррентная ОДУ-аналитика
+        температуры (863 последовательных solve_ivp) перестала бы
+        завершаться за разумное время.
+
+        Раньше вывод прореживал save_every = 12; после DEBT-013 частоту
+        задаёт структура истории — 72 интервала по 3600 с, по 12 подшагов
+        в каждом. Число записей то же, но теперь оно следствие расписания,
+        а не счётчика подшагов, и баланс энергии при этом считается
+        (члены копятся на подшагах).
         """
         cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
-        assert cfg.output.save_every == 12
+        assert len(cfg.time.history) == 72
+        assert cfg.time.dt_integration == 300
         n_04a = len(results[HIGH_SG]["history"].times)
         n_04 = len(results["04_table_table"]["history"].times)
         assert n_04a == n_04 == 73, f"04a: {n_04a}, 04: {n_04}"

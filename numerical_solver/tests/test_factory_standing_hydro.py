@@ -97,7 +97,11 @@ class TestStandingDeepDrawdownDenseGrid:
         """Пример 03 с обоими отягчающими факторами."""
         config = load_config(EXAMPLE_03)
         config.grid.N = 75                      # фактор 1: сгущение сетки
-        config.time.history[0].p_wf = 6e6       # фактор 2: глубокая депрессия
+        # Фактор 2: глубокая депрессия. Задаётся ВСЕМ интервалам истории:
+        # после DEBT-013 их 72, и правка одного лишь history[0] применила
+        # бы депрессию только к первому часу — молча, без исключения.
+        for h in config.time.history:
+            h.p_wf = 6e6
         return config
 
     def test_converges_at_default_limit(self):

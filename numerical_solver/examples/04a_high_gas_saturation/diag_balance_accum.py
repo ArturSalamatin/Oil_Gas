@@ -49,7 +49,15 @@ TERMS = ("cum_adiab", "cum_conv", "cum_jt", "cum_deg", "cum_cond")
 def full_history_balance():
     """Прогон 04a с записью каждого подшага + баланс по нему."""
     cfg = load_config(HERE / "config.json")
-    cfg.output.save_every = 1                       # все 864 подшага
+    # Все 864 подшага в истории. Раньше это давал save_every = 1; после
+    # DEBT-013 частоту вывода задаёт только структура history, поэтому
+    # интервал делаем равным dt_integration.
+    total = sum(h.dt for h in cfg.time.history)
+    n = int(round(total / cfg.time.dt_integration))
+    iv = copy.deepcopy(cfg.time.history[0])
+    cfg.time.history = [copy.deepcopy(iv) for _ in range(n)]
+    for h in cfg.time.history:
+        h.dt = total / n
     sim, st0 = SimulatorFactory.from_config(cfg)
     hist = sim.run(st0)
     bal = eb.compute_balance(hist, sim._grid, cfg)

@@ -7,7 +7,7 @@ A. TimeSchedule: substeps, total_time
 B. Simulator.run(): цикл по времени, сохранение, смена BC
 C. Factory: from_config(baseline.json) → run()
 D. Физика: T сходится к T_ext, JT-охлаждение, стационарность p(r)
-E. save_every: частота сохранения
+E. Состав истории: записи на концах интервалов time.history (DEBT-013)
 """
 
 from pathlib import Path
@@ -21,7 +21,7 @@ from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
 from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
-from gpn_multiphase_solver.io.config import load_config, OutputConfig, RockConfig
+from gpn_multiphase_solver.io.config import load_config, RockConfig
 from gpn_multiphase_solver.simulator import (
     Simulator, TimeSchedule, ScheduleInterval,
 )
@@ -48,7 +48,7 @@ BASELINE = Path(__file__).parent.parent / "configs" / "baseline.json"
 
 # ── Helpers ──────────────────────────────────────────────────
 
-def _make_simulator(n_cells=N, mu_JT_oil=0.0, save_every=1):
+def _make_simulator(n_cells=N, mu_JT_oil=0.0):
     """Создать Simulator с AnalyticalHydroSolver (без Factory)."""
     grid = LogRadialGrid(R_WELL, R_EXT, H, n_cells, K_PERM)
     pvt = StandingFullPVT(
@@ -59,7 +59,10 @@ def _make_simulator(n_cells=N, mu_JT_oil=0.0, save_every=1):
     hydro = AnalyticalHydroSolver(grid, pvt, rp)
     rock = RockConfig(porosity=PHI, permeability=K_PERM)
     energy = TridiagEnergySolver(grid, pvt, rock)
-    return grid, pvt, hydro, energy, save_every
+    # Пятый элемент — рудимент от save_every (удалён в DEBT-013). Оставлен
+    # None, чтобы не править распаковку в двух десятках тестов; все они
+    # принимают его как `_`.
+    return grid, pvt, hydro, energy, None
 
 
 def _initial_state(n_cells=N):
@@ -135,13 +138,17 @@ class TestTimeSchedule:
 
 class TestSimulatorRun:
     def test_single_interval_n_saved(self):
-        """1 интервал, 24 подшага, save_every=1 → n_saved = 1 + 24 = 25."""
+        """1 интервал, 24 подшага → n_saved = 2 (начальное + конец).
+
+        До DEBT-013 здесь было 25: save_every = 1 записывал каждый подшаг.
+        Теперь состав истории определяет только расписание, а 24 подшага
+        внутри интервала — вопрос точности, а не вывода.
+        """
         grid, pvt, hydro, energy, _ = _make_simulator()
         schedule = _single_interval_schedule(dt_hist=86400.0, dt_int=3600.0)
         sim = Simulator(grid, hydro, energy, pvt, schedule)
         history = sim.run(_initial_state())
-        # 1 начальный + 24 подшага
-        assert history.n_saved == 25
+        assert history.n_saved == 2
 
     def test_final_time(self):
         """t в конце = dt_hist."""
@@ -165,9 +172,10 @@ class TestSimulatorRun:
         sim = Simulator(grid, hydro, energy, pvt, schedule)
         history = sim.run(_initial_state())
 
-        # 1 начальный + 2 + 1 = 4
-        assert history.n_saved == 4
-        assert history.times[-1] == pytest.approx(10800.0)
+        # 1 начальный + по одной записи на конце каждого интервала = 3.
+        # Подшагов внутри (2 и 1) в истории больше не видно (DEBT-013).
+        assert history.n_saved == 3
+        np.testing.assert_allclose(history.times, [0.0, 7200.0, 10800.0])
 
     def test_initial_state_preserved(self):
         """Начальное состояние сохранено первым в history."""
@@ -334,40 +342,71 @@ class TestPhysics:
 
 
 # ═══════════════════════════════════════════════════════════
-# E. save_every
+# E. Состав истории задаёт только расписание (DEBT-013)
 # ═══════════════════════════════════════════════════════════
 
-class TestSaveEvery:
-    def test_save_every_1(self):
-        """save_every=1: все шаги + начальный."""
-        grid, pvt, hydro, energy, _ = _make_simulator()
-        schedule = _single_interval_schedule(dt_hist=36000.0)  # 10 подшагов
-        sim = Simulator(grid, hydro, energy, pvt, schedule,
-                        output_config=OutputConfig(save_every=1))
-        history = sim.run(_initial_state())
-        assert history.n_saved == 11  # 1 начальный + 10
+class TestHistoryComposition:
+    """Единственный механизм отбора записей — структура time.history.
 
-    def test_save_every_5(self):
-        """save_every=5: каждый 5-й шаг + конец интервала + начальный."""
-        grid, pvt, hydro, energy, _ = _make_simulator()
-        # 10 подшагов (36000/3600 = 10)
-        schedule = _single_interval_schedule(dt_hist=36000.0)
-        sim = Simulator(grid, hydro, energy, pvt, schedule,
-                        output_config=OutputConfig(save_every=5))
-        history = sim.run(_initial_state())
-        # Шаги 5 и 10 сохраняются (по save_every).
-        # Шаг 10 = конец интервала (тоже сохраняется).
-        # Итого: 1 начальный + шаг 5 + шаг 10 = 3.
-        assert history.n_saved == 3
+    Заменяет класс TestSaveEvery. Прежде частоту вывода задавали два
+    независимых механизма, и счётчик подшагов перебивал расписание: при
+    save_every = 1 запись шла на каждом подшаге независимо от того, какие
+    интервалы задал пользователь. Это трижды ломало постобработку
+    (BUG-004, BUG-005, FEAT-016).
+    """
 
-    def test_save_every_guarantees_interval_end(self):
-        """save_every=7, 10 подшагов: шаги 7 и 10 (конец) сохраняются."""
+    def test_history_records_interval_ends(self):
+        """Запись строго на концах интервалов, по одной на интервал.
+
+        3 интервала по 36 000 с при dt_integration = 3600 — это 10
+        подшагов внутри каждого. Записей должно быть 4: начальное
+        состояние плюс три конца, а не 31.
+        """
         grid, pvt, hydro, energy, _ = _make_simulator()
-        schedule = _single_interval_schedule(dt_hist=36000.0)  # 10 подшагов
-        sim = Simulator(grid, hydro, energy, pvt, schedule,
-                        output_config=OutputConfig(save_every=7))
+        bc = BoundaryConditions(
+            well=PressureControl(P_WF), p_ext=P0, T_ext=T0, Rs_ext=RS0)
+        schedule = TimeSchedule(3600.0, [
+            ScheduleInterval(dt=36000.0, bc=bc) for _ in range(3)
+        ])
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
         history = sim.run(_initial_state())
-        # Шаг 7 (по save_every) + шаг 10 (конец интервала) + начальный = 3
-        assert history.n_saved == 3
-        # Последний сохранённый = конец интервала
+
+        assert history.n_saved == 4
+        np.testing.assert_allclose(
+            history.times, [0.0, 36000.0, 72000.0, 108000.0])
+
+    def test_history_step_independent_of_dt_integration(self):
+        """Моменты записи не зависят от шага интегрирования.
+
+        Главный дефект DEBT-013: dt_integration отвечает за точность
+        схемы, а не за частоту вывода. Одно расписание при вчетверо
+        разном шаге обязано дать одни и те же моменты записи.
+        """
+        times = {}
+        for dt_int in (3600.0, 900.0):
+            grid, pvt, hydro, energy, _ = _make_simulator()
+            bc = BoundaryConditions(
+                well=PressureControl(P_WF), p_ext=P0, T_ext=T0, Rs_ext=RS0)
+            schedule = TimeSchedule(dt_int, [
+                ScheduleInterval(dt=7200.0, bc=bc) for _ in range(2)
+            ])
+            sim = Simulator(grid, hydro, energy, pvt, schedule)
+            times[dt_int] = sim.run(_initial_state()).times
+
+        assert len(times[3600.0]) == len(times[900.0]) == 3
+        np.testing.assert_allclose(times[3600.0], times[900.0])
+
+    def test_last_record_is_interval_end(self):
+        """Последняя запись — точно конец последнего интервала.
+
+        substeps() делит интервал так, что n_sub * dt_actual = dt_hist
+        ровно, поэтому кратность dt_hist шагу интегрирования не требуется.
+        Здесь 36 000 / 7000 = 5.14 подшага → 6 подшагов по 6000 с.
+        """
+        grid, pvt, hydro, energy, _ = _make_simulator()
+        schedule = _single_interval_schedule(dt_hist=36000.0, dt_int=7000.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        history = sim.run(_initial_state())
+
+        assert history.n_saved == 2          # начальное + конец интервала
         assert history.times[-1] == pytest.approx(36000.0)

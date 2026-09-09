@@ -11,6 +11,8 @@
 Splitting: p, Sg, Rs заморожены из hydro_result; T — единственная неизвестная.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy.linalg import solve_banded
 
@@ -19,6 +21,9 @@ from ..state import HydroResult, SimulationState
 from ..grid.base import Grid
 from ..pvt.base import FullPVT
 from ..io.config import RockConfig
+
+if TYPE_CHECKING:
+    from .balance import EnergyBalanceAccumulator
 
 
 class TridiagEnergySolver(EnergySolver):
@@ -31,7 +36,8 @@ class TridiagEnergySolver(EnergySolver):
 
     def solve(self, hydro_result: HydroResult,
               state_prev: SimulationState,
-              dt: float, T_ext: float) -> np.ndarray:
+              dt: float, T_ext: float,
+              collect: "EnergyBalanceAccumulator | None" = None) -> np.ndarray:
         N = self._grid.N
 
         # Состояние после гидро-шага (замороженные коэффициенты)
@@ -69,6 +75,17 @@ class TridiagEnergySolver(EnergySolver):
         Q_deg = self.compute_degassing(
             So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N)
 
+        # Баланс энергии накапливается здесь, а не постобработкой (DEBT-013):
+        # передаём ровно те коэффициенты, которые следующей строкой уходят
+        # в СЛАУ. Восстановить их по разреженной истории нельзя (см. шапку
+        # balance.py), а пересчитать заново — значит повторить BUG-004.
+        if collect is not None:
+            collect.add_substep(
+                hydro_result=hydro_result, state_prev=state_prev, dt=dt,
+                props=props, Phi_o=Phi_o, Phi_g=Phi_g,
+                Q_T_ext=Q_T_ext, J_jt=J_jt, Q_ad=Q_ad, Q_deg=Q_deg,
+                T_ext=T_ext)
+
         # Подшаг 6: сборка СЛАУ
         a, b, c, d = self.assemble_tridiag(
             N, dt, T_old, T_ext,
@@ -76,7 +93,16 @@ class TridiagEnergySolver(EnergySolver):
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
         # Подшаг 7: решение прогонкой
-        return self.solve_banded_system(a, b, c, d, N)
+        T_new = self.solve_banded_system(a, b, c, d, N)
+
+        # Накопление ΔE и кондуктивный член требуют T^{n+1}, поэтому
+        # считаются после решения СЛАУ. (ρcp)_eff — та же, что стоит
+        # в матрице как cap_j: баланс использует коэффициенты схемы,
+        # а не свою версию (DEBT-013).
+        if collect is not None:
+            collect.add_accumulation(T_new, T_old, props['rho_cp_eff'], dt)
+
+        return T_new
 
     # ──────────────────────────────────────────────────────
     # Подшаг 1–2: PVT + эффективные свойства в ячейках

@@ -76,6 +76,13 @@ def _interpolants_at(history, config, grid, es, n):
     Интерполируются ПОТОКИ (Phi, J, R), а не плотности источников:
     J_jt и Q_deg дивергентны и резко меняются у фронта разгазирования,
     поячеечная интерполяция плотностей даёт ошибку в целый градус.
+
+    Шаг берётся из истории (times[n] - times[n-1]), а НЕ из
+    config.time.dt_integration: рекурсия T^n <- T^{n-1} идёт по ЗАПИСЯМ,
+    и эти величины совпадают, только когда запись делается на каждом
+    подшаге. У примера 04a в интервал попадает 12 подшагов, и подстановка
+    dt_integration занижала бы шаг в 12 раз — исключения при этом не
+    возникает, кривая просто получается неверной (BUG-005).
     """
     N = grid.N
     x_c, x_f = np.log(grid.r_centers), np.log(grid.r_faces)
@@ -83,6 +90,7 @@ def _interpolants_at(history, config, grid, es, n):
     st, st_prev = history.states[n], history.states[n - 1]
     hr = history.hydro_results[n]
     p, Sg, Rs = st.p, st.Sg, st.Rs
+    dt_step = history.times[n] - history.times[n - 1]
 
     props = es.compute_cell_properties(p, Sg, Rs, 1.0 - Sg, st_prev.T)
     _, _, Phi_o, Phi_g = es.compute_convective_coefficients(
@@ -114,11 +122,11 @@ def _interpolants_at(history, config, grid, es, n):
     Q_ad = es.compute_adiabatic(
         1.0 - Sg, Sg, props['rho_o'], props['rho_g'],
         props['c_p_o'], props['c_p_g'], props['mu_JT_o'], props['mu_JT_g'],
-        p, st_prev.p, config.time.dt_integration)
+        p, st_prev.p, dt_step)
     ad_s = CubicSpline(x_c, Q_ad)
 
     return dict(
-        Phi=Phi_s, rcp=rcp_s, ad=ad_s,
+        Phi=Phi_s, rcp=rcp_s, ad=ad_s, dt=dt_step,
         # J(r) = sum_a mu_a Phi_a p_up — поток Джоуля–Томсона, Вт
         J=lambda x: (mu_o * Phi_o_s(x) + mu_g * Phi_g_s(x)) * p_s(x + dx_half),
         # R(r) = G^o Rs_up — поток растворённого газа, м³ст/с
@@ -161,6 +169,10 @@ def _build_interpolants(history, config, grid, energy_solver, n_steps):
         per_step[n] = ip
         if frozen:
             stationary = ip
+    # ⚠️ Переиспользуемый набор несёт и dt того шага, на котором был снят.
+    # При равномерном расписании (все примеры) это тот же шаг. Если
+    # появится история с переменным шагом, набор придётся пересобирать
+    # либо подменять в нём dt — иначе на стационаре kappa будет неверной.
 
     # Если запрошено больше шагов, чем есть в истории, — добиваем последним
     if n_steps > n_avail:
@@ -177,7 +189,10 @@ def _make_rhs(ip, config, energy_solver, with_jt, with_degassing, T_prev_f):
     ip — набор коэффициентов, замороженных на этом шаге.
     """
     h = config.geometry.h
-    dt = config.time.dt_integration
+    # Шаг между ЗАПИСЯМИ истории, а не dt_integration: рекурсия идёт по
+    # записям (BUG-005, см. _interpolants_at). Величина приходит вместе
+    # с остальными замороженными коэффициентами шага.
+    dt = ip['dt']
     L = config.thermal.L_degas
     rho_g_std = energy_solver._pvt.rho_g_std
 

@@ -22,6 +22,7 @@ from .state import (
 from .grid.base import Grid
 from .hydro.base import HydroSolver
 from .energy.base import EnergySolver
+from .energy.balance import EnergyBalanceAccumulator
 from .pvt.base import HydroPVT
 from .io.config import OutputConfig
 from .log import user_log
@@ -100,14 +101,16 @@ class Simulator:
         energy        — тепловой солвер (ABC: TridiagEnergySolver, ...)
         pvt           — PVT-модель (для rho_o_std, rho_g_std в WellData)
         schedule      — расписание: интервалы + шаг интегрирования
-        output_config — параметры вывода (save_every и др.), опционально
+        output_config — параметры вывода (log_level, format), опционально
         """
         self._grid = grid
         self._hydro = hydro
         self._energy = energy
         self._pvt = pvt
         self._schedule = schedule
-        self._save_every = output_config.save_every if output_config else 1
+        # save_every удалён (DEBT-013): состав истории определяет только
+        # структура time.history. output_config остаётся ради log_level
+        # и format, поэтому из сигнатуры не убирается.
 
     def run(self, initial_state: SimulationState) -> SimulationHistory:
         """Основной цикл по времени.
@@ -120,8 +123,12 @@ class Simulator:
         """
         history = SimulationHistory()
 
+        # Баланс энергии накапливается по ВСЕМ подшагам и считается всегда
+        # (DEBT-013): восстановить его по записям истории нельзя, а
+        # отключать по флагу нельзя по требованию к валидации схемы.
+        balance = EnergyBalanceAccumulator(self._grid)
+
         state = initial_state
-        global_step = 0  # счётчик шагов для save_every
 
         # Сохранить начальное состояние (нулевые потоки)
         history.append(
@@ -146,14 +153,16 @@ class Simulator:
 
             # ── Внутренний цикл: подшаги интегрирования ──
             for step in range(n_sub):
-                global_step += 1
-
                 # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
                 hydro_result = self._hydro.solve(state, dt, interval.bc)
 
-                # 2. Температура на замороженных p, Sg, Rs
+                # 2. Температура на замороженных p, Sg, Rs.
+                # Решатель попутно отдаёт накопителю коэффициенты, которые
+                # уходят в СЛАУ, — баланс считается по тем же величинам,
+                # что и схема (DEBT-013).
                 T_new = self._energy.solve(
-                    hydro_result, state, dt, interval.bc.T_ext)
+                    hydro_result, state, dt, interval.bc.T_ext,
+                    collect=balance)
 
                 # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
                 state = SimulationState(
@@ -165,9 +174,12 @@ class Simulator:
                     t=hydro_result.state.t,
                 )
 
-                # 4. Сохранить шаг (по save_every или последний шаг интервала)
-                is_last_substep = (step == n_sub - 1)
-                if is_last_substep or (global_step % self._save_every == 0):
+                # 4. Сохранить состояние на конце интервала истории.
+                # Единственный механизм отбора: моменты записи задаёт
+                # расписание, а не шаг интегрирования (DEBT-013).
+                # Члены баланса накоплены по ВСЕМ подшагам интервала,
+                # поэтому запись реже подшага их не портит.
+                if step == n_sub - 1:
                     p_wf = interval.bc.well.boundary_pressure(
                         state, self._grid, self._pvt, None)
                     well = WellData(
@@ -179,7 +191,8 @@ class Simulator:
                         T_wf=state.T[0],
                     )
                     history.append(t=state.t, state=state,
-                                   hydro=hydro_result, well=well)
+                                   hydro=hydro_result, well=well,
+                                   balance=balance.snapshot())
 
         user_log.info(
             f"Симуляция завершена: {history.n_saved} сохранённых шагов, "

@@ -39,6 +39,12 @@ EXAMPLES = [
     ("02_single_phase_jt",          1.87e-3),
     ("03_standing_corey",           9.65e-3),
     ("04_table_table",              4.03e-3),
+    # До DEBT-013 баланс на 04a не считался вовсе: dt_integration = 300 с
+    # (высокая газонасыщенность), в интервал истории попадает 12 подшагов,
+    # и восстановление вкладов по записям давало 2e-1 вместо 1e-3. После
+    # переноса накопления в ядро члены копятся на подшагах, и пример
+    # проверяется наравне с остальными.
+    ("04a_high_gas_saturation",     9.98e-4),
     ("05_standing_table_rp",        9.64e-3),
     ("06_table_corey_rp",           4.55e-3),
     ("07_degassing_adiabatic_only", 5.76e-3),
@@ -70,8 +76,10 @@ def check_one(folder: str, expected: float | None) -> dict:
     try:
         config = load_config(example_dir / "config.json")
         config.output.log_level = "WARNING"
-        # Баланс суммирует приращения по шагам — нужны все шаги.
-        config.output.save_every = 1
+        # Прежде здесь ставился save_every = 1: баланс суммировал
+        # приращения по сохранённым шагам, и пропуск шагов ломал сумму.
+        # После DEBT-013 члены копятся на подшагах внутри решателя,
+        # поэтому структура истории на баланс не влияет.
 
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)

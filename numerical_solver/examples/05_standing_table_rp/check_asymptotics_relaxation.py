@@ -36,10 +36,13 @@ import temperature_asymptotics as ta  # noqa: E402
 def run_days(days: float):
     """Прогнать конфиг примера на заданное время. Возвращает (history, sim, config)."""
     config = load_config(HERE / "config.json")
+    # Нужен один прогон заданной длительности, а не расписание примера:
+    # усекаем историю до одного интервала (DEBT-013). Он же даёт ровно
+    # то, ради чего раньше стоял обход save_every = 1000000 — только
+    # начало и конец: промежуточные шаги здесь не нужны, а история
+    # на 200 суток — это тысячи состояний.
+    config.time.history = config.time.history[:1]
     config.time.history[0].dt = days * 86400.0
-    # Хранить только начало и конец: промежуточные шаги здесь не нужны,
-    # а история на 200 суток — это тысячи состояний.
-    config.output.save_every = 1000000
 
     sim, initial_state = SimulatorFactory.from_config(config)
     return sim.run(initial_state), sim, config

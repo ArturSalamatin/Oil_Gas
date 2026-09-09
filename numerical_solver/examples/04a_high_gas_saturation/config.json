@@ -1,31 +1,421 @@
 {
-    "geometry": {"r_well": 0.1, "R_ext": 50.0, "h": 10.0},
-    "grid": {"N": 50, "type": "log_radial"},
-    "rock": {
-        "porosity": 0.2, "permeability": 1e-13,
-        "rho_cp_solid": 1.25e6,
-        "lambda_solid": 0.0, "lambda_oil": 0.0, "lambda_gas": 0.0
-    },
-    "pvt": {
-        "model": "table", "rho_o_std": 850.0, "rho_g_std": 0.85,
-        "oil_pvt_file": "oil_pvt.csv", "gas_pvt_file": "gas_pvt.csv"
-    },
-    "relperm": {
-        "model": "corey",
-        "S_or": 0.0, "S_gc": 0.0,
-        "n_o": 1.0, "n_g": 2.0,
-        "kro_max": 1.0, "krg_max": 0.0014
-    },
-    "thermal": {
-        "c_p_oil": 2000.0, "c_p_gas": 1000.0,
-        "mu_JT_oil": 4.0e-7, "mu_JT_gas": -4.0e-6, "L_degas": 168000.0
-    },
-    "initial_conditions": {"p0": 20e6, "T0": 350.0, "Rs0": 30.0},
-    "time": {
-        "start_day": 0.0,
-        "dt_integration": 300,
-        "history": [{"dt": 259200, "control": "pressure", "p_wf": 4e6}]
-    },
-    "numerics": {"dt_min": 1.0, "dt_max": 86400, "skin": 0.0},
-    "output": {"log_level": "INFO", "save_every": 12}
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 50.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 50,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-13,
+    "rho_cp_solid": 1250000.0,
+    "lambda_solid": 0.0,
+    "lambda_oil": 0.0,
+    "lambda_gas": 0.0
+  },
+  "pvt": {
+    "model": "table",
+    "rho_o_std": 850.0,
+    "rho_g_std": 0.85,
+    "oil_pvt_file": "oil_pvt.csv",
+    "gas_pvt_file": "gas_pvt.csv"
+  },
+  "relperm": {
+    "model": "corey",
+    "S_or": 0.0,
+    "S_gc": 0.0,
+    "n_o": 1.0,
+    "n_g": 2.0,
+    "kro_max": 1.0,
+    "krg_max": 0.0014
+  },
+  "thermal": {
+    "c_p_oil": 2000.0,
+    "c_p_gas": 1000.0,
+    "mu_JT_oil": 4e-07,
+    "mu_JT_gas": -4e-06,
+    "L_degas": 168000.0
+  },
+  "initial_conditions": {
+    "p0": 20000000.0,
+    "T0": 350.0,
+    "Rs0": 30.0
+  },
+  "time": {
+    "start_day": 0.0,
+    "dt_integration": 300,
+    "history": [
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      },
+      {
+        "dt": 3600.0,
+        "control": "pressure",
+        "p_wf": 4000000.0
+      }
+    ]
+  },
+  "numerics": {
+    "dt_min": 1.0,
+    "dt_max": 86400,
+    "skin": 0.0
+  },
+  "output": {
+    "log_level": "INFO"
+  }
 }

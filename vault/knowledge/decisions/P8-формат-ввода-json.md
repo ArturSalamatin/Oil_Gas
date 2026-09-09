@@ -317,8 +317,7 @@ Grid не изменяется после создания. Модули тол�
     },
     "output": {
         "log_level": "INFO",
-        "format": "npz",
-        "save_every": 1
+        "format": "npz"
     }
 }
 ```

@@ -7,7 +7,8 @@ date: 2026-09-09
 issue: DEBT-013
 github: 26
 branch: refactor/debt-013/unify-history-output-control
-status: готов к реализации
+status: реализован
+implemented: 2026-09-09
 audit:
   date: 2026-09-09
   round: 3

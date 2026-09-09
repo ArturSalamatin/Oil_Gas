@@ -80,11 +80,11 @@ def run(self, initial_state: SimulationState) -> SimulationHistory:
                 Rs=hydro_result.state.Rs, T=T_new,
                 regime=hydro_result.state.regime, t=hydro_result.state.t)
 
-            # 4. Сохранить (save_every или конец интервала)
-            is_last = (step == n_sub - 1)
-            if is_last or (global_step % self._save_every == 0):
+            # 4. Сохранить на конце интервала истории (DEBT-013)
+            if step == n_sub - 1:
                 history.append(t=state.t, state=state,
-                               hydro=hydro_result, well=WellData(...))
+                               hydro=hydro_result, well=WellData(...),
+                               balance=balance.snapshot())
 
     return history
 ```
@@ -93,7 +93,11 @@ def run(self, initial_state: SimulationState) -> SimulationHistory:
 - `run(initial_state)` — initial_state передаётся извне (Factory создаёт)
 - `interval.bc` — полный BoundaryConditions (WellControl + p_ext + T_ext + Rs_ext)
 - `interval.bc.T_ext` — T_ext берётся из BC, не из config (может меняться)
-- save_every — внутри внутреннего цикла, не только конец интервала
+- отбор записей — только конец интервала (DEBT-013); второго механизма
+  (`save_every`) больше нет, частоту вывода задаёт расписание
+- накопитель баланса энергии передаётся в `energy.solve(..., collect=)`
+  на **каждом** подшаге и вызывается безусловно: баланс должен считаться
+  всегда, при любой структуре истории. См. [[модули-energy-tridiag]]
 
 Подробности: [[контейнер-simulation-history]].
 

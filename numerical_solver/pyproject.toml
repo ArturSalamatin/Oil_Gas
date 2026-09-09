@@ -24,3 +24,8 @@ include = ["gpn_multiphase_solver*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# slow — проверки, требующие отдельного тяжёлого прогона (десятки секунд).
+# Считаются по умолчанию; для быстрой итерации: pytest -m "not slow".
+markers = [
+    "slow: тест с самостоятельным прогоном на сгущённой сетке (~60 с)",
+]

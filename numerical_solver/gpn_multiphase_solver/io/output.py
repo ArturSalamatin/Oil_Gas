@@ -10,6 +10,7 @@
   plot_wellbore_dynamics — p(rw,t), T(rw,t), Sg(rw,t)
   plot_well_rate       — q_o(t), q_g(t) из WellData
   plot_2d_map          — pcolormesh(r, t, field)
+  plot_pvt_properties  — mu_o, Rs, Bo, mu_g, Bg, плотности как функции p
 """
 
 from pathlib import Path
@@ -234,3 +235,182 @@ def plot_2d_map(history: SimulationHistory, grid: Grid,
     ax.set_xscale('log')
     plt.colorbar(c, ax=ax, label=labels.get(field, field))
     return ax
+
+
+# ═══════════════════════════════════════════════════════════
+# Визуализация: свойства PVT
+# ═══════════════════════════════════════════════════════════
+
+def _physical_rs(pvt, p: np.ndarray, Rs0: float) -> np.ndarray:
+    """Газосодержание, реально бывшее в расчёте: Rs(p) = min(Rs_eq(p), Rs0).
+
+    Две ветви минимума:
+      p >= pb — нефть недонасыщена, весь газ растворён, Rs держится на Rs0;
+      p <  pb — нефть насыщена, избыток газа выделился, Rs = Rs_eq(p).
+    То же выражение, что в аналитике примеров (rs_analytics.rs_expected).
+    """
+    return np.minimum(pvt.Rs_eq(p), Rs0)
+
+
+def _branch_visible(y_branch: np.ndarray, y_phys: np.ndarray,
+                    rtol: float = 1e-9) -> bool:
+    """Ветвь несёт информацию, только если отходит от физической кривой.
+
+    У табличного PVT выше p_b выполняется Rs_eq == Rs0, поэтому насыщенная
+    ветвь совпадает с физической тождественно (измерено: 0.000e+00) —
+    рисовать её незачем, а легенда с несуществующей линией вводит
+    в заблуждение. У Стендинга Rs_eq продолжает расти, и ветвь расходится
+    (измерено: 2.341e-01 по Bo выше p_b).
+    """
+    scale = float(np.max(np.abs(y_phys)))
+    return float(np.max(np.abs(y_branch - y_phys))) > rtol * max(scale, 1e-30)
+
+
+def plot_pvt_properties(pvt, Rs0: float, p_range, axes=None,
+                        table_nodes=None, label: str = ""):
+    """Свойства PVT как функции давления: mu_o, Rs, Bo, mu_g, Bg, плотности.
+
+    Показывает не результат расчёта, а СВОЙСТВА МОДЕЛИ, которой считали:
+    именно PVT определяет и профиль давления, и насыщенность.
+
+    pvt         — HydroPVT/FullPVT: нужны Rs_eq, Bo, mu_o, Bg, mu_g, pb,
+                  rho_o, rho_g
+    Rs0         — начальное газосодержание, м³ст/м³ст; при 0 расчёт
+                  однофазный и вторая ветвь вырождена
+    p_range     — (p_lo, p_hi), Па: диапазон, который подсветить как рабочий
+    axes        — сетка 2x3; создаётся, если None
+    table_nodes — узлы табличного PVT: словарь с ключами 'p_gas', 'p_oil'
+                  (давления в Па), или None для аналитического PVT
+    label       — подпись модели для заголовка первой панели
+
+    Плотности считаются вызовами pvt.rho_o / pvt.rho_g, а не своей формулой:
+    rho_o = (rho_o_ст + Rs*rho_g_ст)/Bo — \\eqref{eq:rho_oil}, rho_g = rho_g_ст/Bg.
+
+    Возвращает axes. Файл не пишет и не печатает — как остальные plot_*
+    этого модуля.
+    """
+    import matplotlib.pyplot as plt
+
+    p_lo, p_hi = float(p_range[0]), float(p_range[1])
+    if axes is None:
+        _, axes = plt.subplots(2, 3, figsize=(16, 9))
+    axes = np.asarray(axes)
+
+    # Ось шире рабочего диапазона: видно, куда кривые идут за его пределами.
+    p = np.linspace(0.8 * p_lo, 1.1 * p_hi, 800)
+    p_MPa = p / 1e6
+    pb = float(pvt.pb(np.array([Rs0]))[0])
+    two_phase = Rs0 > 0.0
+
+    Rs_phys = _physical_rs(pvt, p, Rs0)
+    Rs_sat = pvt.Rs_eq(p)                    # насыщенная ветвь: Rs = Rs_eq(p)
+    Rs_und = np.full_like(p, float(Rs0))     # недонасыщенная: Rs = Rs0 = const
+
+    # Ветви рисуются только на «чужой» половине от p_b: на «своей» их роль
+    # играет физическая кривая, которая по построению min(...) совпадает
+    # с одной из них и полностью перекрыла бы тонкий пунктир.
+    hi = p >= pb        # выше p_b: куда пошла бы насыщенная нефть
+    lo = p <= pb        # ниже p_b: куда пошла бы недонасыщенная
+
+    def _two_branch_panel(ax, func, ylabel):
+        """Панель величины, зависящей от (p, Rs): физическая кривая + ветви."""
+        y_phys = func(p, Rs_phys)
+        if two_phase:
+            # При Rs0 = 0 ветви не рисуются вовсе: физическая тождественно
+            # совпадает с недонасыщенной, а насыщенная нефизична (Rs_eq
+            # до 138 м³ст/м³ст при Rs = 0) и растянула бы ось.
+            y_sat = func(p, Rs_sat)
+            if hi.any() and _branch_visible(y_sat[hi], y_phys[hi]):
+                ax.plot(p_MPa[hi], y_sat[hi], "--", lw=1.0, color="C0",
+                        label="насыщенная (экстраполяция)")
+            y_und = func(p, Rs_und)
+            if lo.any() and _branch_visible(y_und[lo], y_phys[lo]):
+                ax.plot(p_MPa[lo], y_und[lo], "--", lw=1.0, color="C1",
+                        label="недонасыщенная (экстраполяция)")
+        ax.plot(p_MPa, y_phys, "-", lw=2.2, color="C2",
+                label=r"физическая: $R_s=\min(R_s^{eq},R_{s,0})$")
+        ax.set_ylabel(ylabel)
+        return y_phys
+
+    # ── Верхний ряд: приоритет задачи — вязкость и газосодержание нефти ──
+    _two_branch_panel(axes[0, 0], pvt.mu_o, r"$\mu_o$, Па·с")
+    axes[0, 0].set_title(label if label else r"$\mu_o(p)$", fontsize=8)
+
+    ax_rs = axes[0, 1]
+    if two_phase:
+        ax_rs.plot(p_MPa, Rs_sat, "--", lw=1.0, color="C0",
+                   label=r"$R_s^{eq}(p)$ (насыщение)")
+        ax_rs.axhline(float(Rs0), color="C1", ls="--", lw=1.0,
+                      label=r"$R_{s,0}$")
+    ax_rs.plot(p_MPa, Rs_phys, "-", lw=2.2, color="C2",
+               label=r"физическая: $\min(R_s^{eq},R_{s,0})$")
+    ax_rs.set_ylabel(r"$R_s$, м³ст/м³ст")
+    if not two_phase:
+        ax_rs.set_title(r"однофазный расчёт: $R_s \equiv 0$", fontsize=8)
+
+    _two_branch_panel(axes[0, 2], pvt.Bo, r"$B_o$")
+
+    # ── Нижний ряд: газовая фаза и плотности ──
+    axes[1, 0].plot(p_MPa, pvt.mu_g(p), "-", lw=2, color="C0", label="газ")
+    axes[1, 0].set_ylabel(r"$\mu_g$, Па·с")
+
+    axes[1, 1].plot(p_MPa, pvt.Bg(p), "-", lw=2, color="C0", label="газ")
+    axes[1, 1].set_ylabel(r"$B_g$")
+
+    # Плотности — на двух осях: нефть 730…800, газ 40…140 кг/м³ (измерено
+    # на примере 04), на одной оси форма газовой кривой нечитаема.
+    ax_rho = axes[1, 2]
+    ax_rho.plot(p_MPa, pvt.rho_o(p, Rs_phys), "-", lw=2, color="C3",
+                label=r"$\rho_o$")
+    ax_rho_g = ax_rho.twinx()
+    ax_rho_g.plot(p_MPa, pvt.rho_g(p), "-", lw=2, color="C0",
+                  label=r"$\rho_g$")
+    ax_rho.set_ylabel(r"$\rho_o$, кг/м³")
+    ax_rho_g.set_ylabel(r"$\rho_g$, кг/м³")
+
+    # ── Узлы табличного PVT ──
+    # Наборы разные по природе и идут на разные панели: газовая таблица —
+    # на mu_g/Bg, точки насыщения веток и узлы рисуемой ветки — на нефтяные.
+    # Ординаты вычисляются ВЫЗОВОМ PVT в точке узла, а не читаются из
+    # таблицы: недонасыщенная ветка интерполируется по dp = p - pb(Rs),
+    # поэтому маркер иначе не лёг бы на нарисованную кривую.
+    if table_nodes is not None:
+        p_gas = np.asarray(table_nodes.get("p_gas", []), float)
+        p_gas = p_gas[(p_gas >= p[0]) & (p_gas <= p[-1])]
+        if p_gas.size:
+            axes[1, 0].plot(p_gas / 1e6, pvt.mu_g(p_gas), "o", ms=5,
+                            color="C0", zorder=5, label="узлы таблицы")
+            axes[1, 1].plot(p_gas / 1e6, pvt.Bg(p_gas), "o", ms=5,
+                            color="C0", zorder=5, label="узлы таблицы")
+
+        p_oil = np.asarray(table_nodes.get("p_oil", []), float)
+        p_oil = p_oil[(p_oil >= p[0]) & (p_oil <= p[-1])]
+        if p_oil.size:
+            Rs_at_nodes = _physical_rs(pvt, p_oil, Rs0)
+            for ax, func in ((axes[0, 0], pvt.mu_o), (axes[0, 2], pvt.Bo)):
+                ax.plot(p_oil / 1e6, func(p_oil, Rs_at_nodes), "o", ms=5,
+                        color="C2", zorder=5, label="узлы таблицы")
+            ax_rs.plot(p_oil / 1e6, Rs_at_nodes, "o", ms=5, color="C2",
+                       zorder=5, label="узлы таблицы")
+
+    # ── Общее оформление всех панелей ──
+    for ax in axes.ravel():
+        ax.axvspan(p_lo / 1e6, p_hi / 1e6, color="C2", alpha=0.18)
+        # Вертикаль p_b — только если попадает в пределы оси. При Rs0 = 0
+        # у Стендинга pb = -0.176 МПа (измерено), условие ложно.
+        if p[0] <= pb <= p[-1]:
+            ax.axvline(pb / 1e6, color="k", ls=":", lw=1)
+        ax.set_xlabel("p, МПа")
+        ax.grid(True, alpha=0.3)
+
+    # Легенда панели плотностей собирается из обеих осей: кривая газа живёт
+    # на twinx и в легенду первой оси сама не попадает.
+    for ax in axes.ravel():
+        if ax is ax_rho:
+            h1, l1 = ax_rho.get_legend_handles_labels()
+            h2, l2 = ax_rho_g.get_legend_handles_labels()
+            ax_rho.legend(h1 + h2, l1 + l2, fontsize=7)
+        else:
+            ax.legend(fontsize=7)
+
+    return axes

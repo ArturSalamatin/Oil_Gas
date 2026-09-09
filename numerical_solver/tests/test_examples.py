@@ -30,6 +30,7 @@ ALL_EXAMPLES = [
     "02_single_phase_jt",
     "03_standing_corey",
     "04_table_table",
+    "04a_high_gas_saturation",
     "05_standing_table_rp",
     "06_table_corey_rp",
     "07_degassing_adiabatic_only",
@@ -463,22 +464,37 @@ SHARED_CHECK_MODULES = [
     "pvt_plot.py",
 ]
 
+# Баланс энергии суммирует ПРИРАЩЕНИЯ по сохранённым шагам, поэтому
+# compute_balance требует save_every = 1 и бросает ValueError иначе
+# (energy_balance.py:124). Пример 04a — первый в наборе с save_every = 12:
+# его dt_integration = 300 даёт 864 подшага, и прореживание возвращает
+# число сохранённых состояний к тем же 73, что у остальных. Список строим
+# по конфигам, а не перечислением: следующий пример с прореживанием
+# попадёт сюда сам, без правки теста.
+BALANCE_EXAMPLES = [
+    name for name in ALL_EXAMPLES
+    if load_config(EXAMPLES_DIR / name / "config.json").output.save_every == 1
+]
+
 
 class TestSharedChecks:
     def test_energy_balance_all_examples(self, results):
-        """Баланс энергии сходится у ВСЕХ десяти примеров.
+        """Баланс энергии сходится у всех примеров с полной историей.
 
         До BUG-004 невязка была 0.18-0.29 на шести конфигурациях из десяти,
         и на пяти из них это никем не проверялось: свой energy_balance.py
         имели только 01, 02, 03, 05. Порог 1e-2 отделяет ошибку расщепления
         O(dt) (~1e-3 на штатных конфигах) от пропущенного члена.
+
+        Идёт по BALANCE_EXAMPLES, а не по ALL_EXAMPLES: у 04a save_every = 12,
+        и сумма приращений по прореженной истории заведомо неполна.
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
         from energy_balance import compute_balance
 
         bad = {}
-        for name in ALL_EXAMPLES:
+        for name in BALANCE_EXAMPLES:
             r = results[name]
             bal = compute_balance(r["history"], r["grid"], r["config"])
             rel = abs(float(bal["rel_residual"][-1]))
@@ -494,12 +510,15 @@ class TestSharedChecks:
         тождественно нулевой, поэтому отсутствие члена было незаметно.
         Проверяем ОБА случая: ключ присутствует всегда, при lambda = 0 член
         строго нулевой, при lambda != 0 — ненулевой.
+
+        BALANCE_EXAMPLES, а не ALL_EXAMPLES: compute_balance неприменим
+        к 04a с его save_every = 12 (см. комментарий к списку).
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
         from energy_balance import compute_balance
 
-        for name in ALL_EXAMPLES:
+        for name in BALANCE_EXAMPLES:
             r = results[name]
             cfg = r["config"]
             bal = compute_balance(r["history"], r["grid"], cfg)
@@ -526,6 +545,9 @@ class TestSharedChecks:
         Прежние копии для однофазных примеров не возвращали cum_jt (01) и
         cum_deg (01, 02) — отсутствующие ключи ломали бы вызывающий код.
         Физически отсутствующие члены приходят нулевыми массивами.
+
+        BALANCE_EXAMPLES, а не ALL_EXAMPLES: compute_balance неприменим
+        к 04a с его save_every = 12 (см. комментарий к списку).
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
@@ -534,7 +556,7 @@ class TestSharedChecks:
         required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
                     "cum_deg", "cum_cond", "total", "residual",
                     "rel_residual"}
-        for name in ALL_EXAMPLES:
+        for name in BALANCE_EXAMPLES:
             r = results[name]
             bal = compute_balance(r["history"], r["grid"], r["config"])
             missing = required - set(bal)
@@ -613,9 +635,13 @@ PVT_REPORT_KEYS = {
 }
 
 # PVT задан таблицами (узлы есть) против аналитических корреляций (узлов нет).
-TABLE_PVT = ["04_table_table", "06_table_corey_rp",
-             "07_degassing_adiabatic_only", "08_degassing_jt",
-             "09_degassing_latent_heat", "10_deep_degassing"]
+# Строится по конфигам, а не перечислением имён: перечисление молча
+# относило бы новый табличный пример к аналитическим, и тест «узлов быть
+# не может» падал бы с сообщением, не указывающим на причину.
+TABLE_PVT = [
+    name for name in ALL_EXAMPLES
+    if load_config(EXAMPLES_DIR / name / "config.json").pvt.model == "table"
+]
 ANALYTIC_PVT = [n for n in ALL_EXAMPLES if n not in TABLE_PVT]
 
 
@@ -1035,3 +1061,121 @@ class TestPvtPlot:
         assert has_twinx, (
             "панель плотностей обязана использовать twinx: нефть ~800, "
             "газ ~100 кг/м³, на одной оси газовая кривая нечитаема")
+
+
+# ═══════════════════════════════════════════════════════════
+# K. Сценарий 04a: высокая газонасыщенность (FEAT-015)
+# ═══════════════════════════════════════════════════════════
+
+HIGH_SG = "04a_high_gas_saturation"
+
+
+class TestHighGasSaturation:
+    """Обратное проектирование ОФП: k_rg^max подобрана так, чтобы Sg(r_w)=0.7.
+
+    Смысл сценария — показать, что насыщенность управляется подвижностью газа.
+    Если эти тесты падают, значит либо изменилась PVT-таблица, либо замыкание
+    GOR = Rs0 перестало выполняться — и пример утратил смысл.
+    """
+
+    def test_target_saturation_reached(self, results):
+        """Sg на забое достигает проектных 0.70.
+
+        Значение вычислено обратной задачей из замыкания (README), а не
+        подобрано. Допуск 0.01 покрывает округление k_rg^max 0.0013994 -> 0.0014
+        и дискретизацию сетки.
+        """
+        Sg_well = float(results[HIGH_SG]["Sg"][0])
+        assert 0.69 <= Sg_well <= 0.71, f"Sg(r_w) = {Sg_well}, ожидалось ~0.70"
+
+    def test_gor_equals_Rs0(self, results):
+        """Газовый фактор скважины равен Rs0 — то самое условие замыкания.
+
+        На контуре свободного газа нет, весь газ приходит растворённым,
+        поэтому в стационаре GOR = Rs0 = 30 тождественно. Прогон даёт 30.006
+        (0.02 %); допуск 1 % с запасом на незавершённую релаксацию.
+        """
+        r = results[HIGH_SG]
+        gor = float(r["q_g"][-1] / r["q_o"][-1])
+        assert gor == pytest.approx(r["Rs0"], rel=1e-2), \
+            f"GOR = {gor}, Rs0 = {r['Rs0']}"
+
+    def test_full_degassing(self, results):
+        """Ниже 5 МПа ветка Rs = 0 таблицы -> растворённого газа не остаётся.
+
+        Именно полная дегазация даёт максимальный дефицит (Rs0 - Rs = 30)
+        и выводит Sg на плато 0.70.
+        """
+        assert float(results[HIGH_SG]["Rs"].min()) == pytest.approx(0.0, abs=1e-9)
+
+    def test_much_higher_than_example_04(self, results):
+        """Sg в 04a на порядок с лишним выше, чем в 04 при том же PVT.
+
+        Разница только в ОФП (Corey k_rg^max = 0.0014 против таблицы 04):
+        менее подвижный газ накапливается сильнее. Это главный вывод примера.
+
+        Порог 20x, а не 40x: измеренное отношение 47.6x (0.699965 / 0.014697),
+        и порог 40 оставлял бы всего 19 % запаса — тест падал бы первым при
+        любой правке демонстрационной relperm.csv примера 04, причём его
+        сообщение не подсказывало бы причину. Качественный вывод («на порядок
+        с лишним») держится с большим запасом.
+        """
+        sg_04a = float(results[HIGH_SG]["Sg"].max())
+        sg_04 = float(results["04_table_table"]["Sg"].max())
+        assert sg_04a > 20 * sg_04, f"04a: {sg_04a}, 04: {sg_04}"
+
+    def test_corey_relperm_used(self):
+        """Конфиг задаёт именно вычисленные параметры Кори.
+
+        Ловит случайную правку k_rg^max: при другом значении Sg перестанет
+        быть 0.70, и весь смысл обратного расчёта в README исчезнет.
+        """
+        cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
+        assert cfg.relperm.model == "corey"
+        assert cfg.relperm.krg_max == pytest.approx(0.0014)
+        assert cfg.relperm.n_o == pytest.approx(1.0)   # линейная k_ro -> точное табулирование
+        assert cfg.relperm.n_g == pytest.approx(2.0)
+
+    def test_matches_closure_at_well(self, results):
+        """Численная Sg у забоя совпадает с корнем уравнения замыкания.
+
+        Сверка ведётся ИМЕННО У ЗАБОЯ, а не по максимуму относительной ошибки:
+        у фронта численная схема даёт малые ненулевые Sg в ячейках, где
+        замыкание даёт строго 0 (размазывание корневой особенности
+        Sg ~ sqrt(pb - p)), и относительная метрика там вырождается в 100 %
+        при любой точности. Измерено: max|dSg| = 1.41e-2 по области, но у
+        забоя 0.699965 против 0.699933 — согласие 0.005 %.
+
+        Допуск 1 % с запасом на возможное измельчение сетки.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from closed_form import Closure
+        from gpn_multiphase_solver.factory import (
+            SimulatorFactory, _create_relperm)
+
+        cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
+        sim, _ = SimulatorFactory.from_config(cfg)
+        # Closure принимает объект ОФП напрямую — работает и с CoreyRP.
+        clo = Closure(sim._energy._pvt, _create_relperm(cfg),
+                      cfg.initial_conditions.Rs0)
+
+        p_well = float(results[HIGH_SG]["p"][0])
+        Sg_well = float(results[HIGH_SG]["Sg"][0])
+        assert clo.Sg(p_well) == pytest.approx(Sg_well, rel=1e-2)
+
+    def test_saved_steps_match_other_examples(self, results):
+        """Прореживание возвращает вывод к тем же 73 состояниям, что у 04.
+
+        dt_integration = 300 даёт 864 подшага против 72 у остальных примеров,
+        и при save_every = 1 это дало бы 865 состояний и profiles.csv на
+        3.4 МБ вместо 0.28 МБ, а рекуррентная ОДУ-аналитика температуры
+        (863 последовательных solve_ivp) перестала бы завершаться за
+        разумное время. Множитель 12 выбран так, чтобы 864/12 = 72 подшага
+        плюс начальное состояние — формат вывода 04a неотличим от прочих.
+        """
+        cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
+        assert cfg.output.save_every == 12
+        n_04a = len(results[HIGH_SG]["history"].times)
+        n_04 = len(results["04_table_table"]["history"].times)
+        assert n_04a == n_04 == 73, f"04a: {n_04a}, 04: {n_04}"

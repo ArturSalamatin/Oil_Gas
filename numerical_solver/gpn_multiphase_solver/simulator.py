@@ -22,6 +22,7 @@ from .state import (
 from .grid.base import Grid
 from .hydro.base import HydroSolver
 from .energy.base import EnergySolver
+from .energy.balance import EnergyBalanceAccumulator
 from .pvt.base import HydroPVT
 from .io.config import OutputConfig
 from .log import user_log
@@ -120,6 +121,11 @@ class Simulator:
         """
         history = SimulationHistory()
 
+        # Баланс энергии накапливается по ВСЕМ подшагам и считается всегда
+        # (DEBT-013): восстановить его по записям истории нельзя, а
+        # отключать по флагу нельзя по требованию к валидации схемы.
+        balance = EnergyBalanceAccumulator(self._grid)
+
         state = initial_state
         global_step = 0  # счётчик шагов для save_every
 
@@ -151,9 +157,13 @@ class Simulator:
                 # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
                 hydro_result = self._hydro.solve(state, dt, interval.bc)
 
-                # 2. Температура на замороженных p, Sg, Rs
+                # 2. Температура на замороженных p, Sg, Rs.
+                # Решатель попутно отдаёт накопителю коэффициенты, которые
+                # уходят в СЛАУ, — баланс считается по тем же величинам,
+                # что и схема (DEBT-013).
                 T_new = self._energy.solve(
-                    hydro_result, state, dt, interval.bc.T_ext)
+                    hydro_result, state, dt, interval.bc.T_ext,
+                    collect=balance)
 
                 # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
                 state = SimulationState(
@@ -179,7 +189,8 @@ class Simulator:
                         T_wf=state.T[0],
                     )
                     history.append(t=state.t, state=state,
-                                   hydro=hydro_result, well=well)
+                                   hydro=hydro_result, well=well,
+                                   balance=balance.snapshot())
 
         user_log.info(
             f"Симуляция завершена: {history.n_saved} сохранённых шагов, "

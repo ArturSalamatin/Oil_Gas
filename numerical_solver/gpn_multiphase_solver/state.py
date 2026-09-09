@@ -101,26 +101,50 @@ class BoundaryConditions:
 
 # ── История расчёта ──────────────────────────────────────────
 
+# Ключи снимка баланса энергии. Дублируют CUMULATIVE_KEYS из
+# energy/balance.py намеренно: импортировать оттуда нельзя — balance.py
+# сам импортирует state.py, получился бы цикл. Список короткий
+# и менялся бы только вместе с уравнением энергии.
+_BALANCE_KEYS = ("delta_E", "cum_adiab", "cum_conv",
+                 "cum_jt", "cum_deg", "cum_cond")
+
+
+def _zero_balance() -> dict:
+    """Нулевой снимок баланса — для начального состояния (DEBT-013)."""
+    return {k: 0.0 for k in _BALANCE_KEYS}
+
+
 @dataclass
 class SimulationHistory:
     """Контейнер результатов расчёта — сохранённые шаги.
 
     Simulator.run() наполняет через append(), возвращает целиком.
     I/O-модуль принимает для записи CSV/NPZ и визуализации.
-    Не все шаги сохраняются — частота определяется save_every (фаза 6).
+    Записи делаются на концах интервалов time.history — частоту вывода
+    задаёт только расписание (DEBT-013).
+
+    balance — накопленные члены баланса энергии на момент каждой записи
+    (снимок EnergyBalanceAccumulator, словарь скаляров). Считается
+    по ВСЕМ подшагам, а не по сохранённым состояниям, поэтому корректен
+    при любой структуре истории, включая неравномерную (DEBT-013).
     """
     times: list[float] = field(default_factory=list)
     states: list[SimulationState] = field(default_factory=list)
     hydro_results: list[HydroResult] = field(default_factory=list)
     well_data: list[WellData] = field(default_factory=list)
+    balance: list[dict] = field(default_factory=list)
 
     def append(self, t: float, state: SimulationState,
-               hydro: HydroResult, well: WellData) -> None:
+               hydro: HydroResult, well: WellData,
+               balance: dict | None = None) -> None:
         """Добавить один сохранённый шаг."""
         self.times.append(t)
         self.states.append(state)
         self.hydro_results.append(hydro)
         self.well_data.append(well)
+        # None → нулевой снимок: на начальном состоянии накоплений ещё нет.
+        self.balance.append(balance if balance is not None
+                            else _zero_balance())
 
     @property
     def n_saved(self) -> int:

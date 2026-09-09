@@ -184,6 +184,10 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     )
 
     # p_bhp: первый интервал, p_outer: начальное пластовое
+    # Режим первого интервала истории. Это оценка p_bhp для инициализации
+    # прототипа, а не управление скважиной по ходу расчёта (им занимается
+    # WellControl каждого интервала), поэтому первого интервала достаточно
+    # даже при расписании из десятков интервалов (DEBT-013).
     p_bhp_bar = config.time.history[0].p_wf / BAR_TO_PA
     p_outer_bar = ic.p0 / BAR_TO_PA
 

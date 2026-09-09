@@ -101,14 +101,16 @@ class Simulator:
         energy        — тепловой солвер (ABC: TridiagEnergySolver, ...)
         pvt           — PVT-модель (для rho_o_std, rho_g_std в WellData)
         schedule      — расписание: интервалы + шаг интегрирования
-        output_config — параметры вывода (save_every и др.), опционально
+        output_config — параметры вывода (log_level, format), опционально
         """
         self._grid = grid
         self._hydro = hydro
         self._energy = energy
         self._pvt = pvt
         self._schedule = schedule
-        self._save_every = output_config.save_every if output_config else 1
+        # save_every удалён (DEBT-013): состав истории определяет только
+        # структура time.history. output_config остаётся ради log_level
+        # и format, поэтому из сигнатуры не убирается.
 
     def run(self, initial_state: SimulationState) -> SimulationHistory:
         """Основной цикл по времени.
@@ -127,7 +129,6 @@ class Simulator:
         balance = EnergyBalanceAccumulator(self._grid)
 
         state = initial_state
-        global_step = 0  # счётчик шагов для save_every
 
         # Сохранить начальное состояние (нулевые потоки)
         history.append(
@@ -152,8 +153,6 @@ class Simulator:
 
             # ── Внутренний цикл: подшаги интегрирования ──
             for step in range(n_sub):
-                global_step += 1
-
                 # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
                 hydro_result = self._hydro.solve(state, dt, interval.bc)
 
@@ -175,9 +174,12 @@ class Simulator:
                     t=hydro_result.state.t,
                 )
 
-                # 4. Сохранить шаг (по save_every или последний шаг интервала)
-                is_last_substep = (step == n_sub - 1)
-                if is_last_substep or (global_step % self._save_every == 0):
+                # 4. Сохранить состояние на конце интервала истории.
+                # Единственный механизм отбора: моменты записи задаёт
+                # расписание, а не шаг интегрирования (DEBT-013).
+                # Члены баланса накоплены по ВСЕМ подшагам интервала,
+                # поэтому запись реже подшага их не портит.
+                if step == n_sub - 1:
                     p_wf = interval.bc.well.boundary_pressure(
                         state, self._grid, self._pvt, None)
                     well = WellData(

@@ -12,6 +12,7 @@ BUG-004 прожил незамеченным: скрипт energy_balance.py с
 Конфиги укорочены до 6 ч и N = 25, чтобы тесты шли доли секунды.
 """
 
+import copy
 import sys
 from pathlib import Path
 
@@ -36,18 +37,25 @@ def _run_balance(example: str, p_wf: float | None = None) -> dict:
     """Укороченный прогон конфига примера + баланс энергии.
 
     6 ч вместо 72 ч и N = 25 вместо 50 — тест должен идти доли секунды.
-    save_every = 1 обязателен: баланс суммирует приращения по шагам.
+
+    Конфиг примера содержит 72 интервала по 3600 с (DEBT-013), поэтому
+    длительность задаётся усечением истории до одного интервала: правка
+    history[0].dt без усечения укоротила бы только первый час из 72,
+    и прогон остался бы 72-часовым — молча, без исключения.
     """
     config = load_config(_EXAMPLES / example / "config.json")
     config.grid.N = 25
+    config.time.history = config.time.history[:1]
     config.time.history[0].dt = 21600.0        # 6 ч
-    config.output.save_every = 1
     config.output.log_level = "WARNING"
     if p_wf is not None:
         config.time.history[0].p_wf = p_wf
 
     simulator, initial_state = SimulatorFactory.from_config(config)
     history = simulator.run(initial_state)
+    # Длительность прогона — часть контракта теста: при неверном усечении
+    # истории тест считал бы другой сценарий и всё равно был бы зелёным.
+    assert history.times[-1] == pytest.approx(21600.0)
     return compute_balance(history, simulator._grid, config)
 
 
@@ -92,21 +100,42 @@ def test_energy_balance_no_degassing():
 
 
 @pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
-def test_compute_balance_rejects_sparse_history(example):
-    """save_every > 1 должен отвергаться, а не давать молча неверную сумму.
+def test_balance_independent_of_history_structure(example):
+    """Накопленные члены не зависят от того, как часто пишется история.
 
-    Баланс суммирует приращения (T^n - T^{n-1}) по сохранённым шагам:
-    при прореженной истории часть приращений выпадает и сумма занижается.
+    Ключевой тест части B (DEBT-013). Раньше на этом месте стоял тест
+    обратного смысла: compute_balance ОТВЕРГАЛ разреженную историю, потому
+    что суммировал приращения (T^n - T^{n-1}) по сохранённым шагам, и при
+    пропуске шагов сумма занижалась. Теперь члены копятся на подшагах
+    внутри решателя, поэтому структура истории на них не влияет вовсе.
+
+    Один и тот же сценарий (6 ч, dt_integration из конфига) считается
+    двумя способами: одной записью на весь прогон и шестью почасовыми.
+    Суммируются одни и те же вклады подшагов, поэтому финальные значения
+    обязаны совпасть с точностью до накопления ошибок сложения.
     """
-    config = load_config(_EXAMPLES / example / "config.json")
-    config.grid.N = 25
-    config.time.history[0].dt = 21600.0
-    config.output.save_every = 1
-    config.output.log_level = "WARNING"
+    def run(n_intervals: int):
+        config = load_config(_EXAMPLES / example / "config.json")
+        config.grid.N = 25
+        iv = copy.deepcopy(config.time.history[0])
+        config.time.history = [copy.deepcopy(iv) for _ in range(n_intervals)]
+        for h in config.time.history:
+            h.dt = 21600.0 / n_intervals
+        config.output.log_level = "WARNING"
 
-    simulator, initial_state = SimulatorFactory.from_config(config)
-    history = simulator.run(initial_state)
+        simulator, initial_state = SimulatorFactory.from_config(config)
+        history = simulator.run(initial_state)
+        assert history.n_saved == n_intervals + 1
+        return compute_balance(history, simulator._grid, config)
 
-    config.output.save_every = 5
-    with pytest.raises(ValueError, match="save_every"):
-        compute_balance(history, simulator._grid, config)
+    sparse = run(1)     # одна запись на весь прогон
+    dense = run(6)      # почасовые записи
+
+    for key in ("delta_E", "cum_adiab", "cum_conv",
+                "cum_jt", "cum_deg", "cum_cond"):
+        assert sparse[key][-1] == pytest.approx(dense[key][-1], rel=1e-10), key
+
+    # Невязка проходит порог при обеих структурах — раньше разреженная
+    # история давала на два-три порядка хуже.
+    assert abs(sparse["rel_residual"][-1]) < 2e-2
+    assert abs(dense["rel_residual"][-1]) < 2e-2

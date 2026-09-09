@@ -1179,3 +1179,42 @@ class TestHighGasSaturation:
         n_04a = len(results[HIGH_SG]["history"].times)
         n_04 = len(results["04_table_table"]["history"].times)
         assert n_04a == n_04 == 73, f"04a: {n_04a}, 04: {n_04}"
+
+    @pytest.mark.slow
+    def test_dense_grid_converges_at_default_retries(self):
+        """Сгущённая сетка N = 80 считается на ШТАТНОМ numerics.max_retries.
+
+        Отложенный критерий BUG-003: до его исправления лимит дробления шага
+        был жёстко зашит равным 5 (2^5 = 32 подшага), и этот сценарий при
+        N >= 80 падал с RuntimeError. Здесь нужно 9 (512 подшагов), потому
+        что при Sg ~ 0.7 обе фазы малоподвижны одновременно (kro = 0.30,
+        krg = 6.9e-4) и якобиан плохо обусловлен по обеим переменным.
+        Уменьшение dt_integration не помогает: A-retry дробит шаг внутри.
+
+        Тест проверяет ровно то, что нельзя было проверить до создания 04a:
+        значение по умолчанию 9 действительно достаточно для ЭТОГО класса
+        задач (табличный PVT, высокая Sg), а не только для сценария с
+        корреляциями Стендинга, на котором BUG-003 верифицировался косвенно.
+
+        Отдельный прогон, а не фикстура results: сетка другая. ~60 с, отсюда
+        маркер slow (pytest -m "not slow" его пропустит).
+        """
+        cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
+        cfg.grid.N = 80
+        # Приватные поля НЕ трогаем: смысл теста в том, что штатного
+        # значения из конфига достаточно.
+        assert cfg.numerics.max_retries == 9, (
+            "значение по умолчанию изменилось — пересмотреть BUG-003")
+
+        sim, initial = SimulatorFactory.from_config(cfg)
+        history = sim.run(initial)
+
+        Sg_well = float(history.states[-1].Sg[0])
+        assert Sg_well == pytest.approx(0.7000, abs=1e-3), (
+            f"N = 80: Sg(r_w) = {Sg_well}, ожидалось 0.7000")
+
+        # Дебит сходится по сетке: 4.9978e-3 при N = 50 против 4.9651e-3
+        # при N = 80 — 0.65 %. Допуск 1 % по записи BUG-003.
+        q_o = abs(float(history.hydro_results[-1].G_o[0]))
+        assert q_o == pytest.approx(4.9651e-3, rel=1e-2), (
+            f"N = 80: q_o = {q_o}, ожидалось 4.9651e-3")

@@ -13,10 +13,18 @@ t_n):
   cond(t)   — кондуктивный поток через контур
   невязка   — ΔE - (adiab + conv + jt + deg + cond)
 
-Формулы повторяют то, что собирает TridiagEnergySolver.assemble_tridiag.
-Суммирование по всем ячейкам телескопирует дивергентные члены (JT и
-конвекцию) до разности потоков на забое и контуре; недивергентные
-(адиабатика, дегазация) суммируются по объёму.
+ФИЗИКА ПЕРЕЕХАЛА В ЯДРО (DEBT-013):
+gpn_multiphase_solver/energy/balance.py. Здесь остались только сборка
+массивов, график и отчёт.
+
+Причина переезда: раньше вклады восстанавливались постфактум по записям
+истории — мгновенные потоки из hydro_results[n] умножались на шаг между
+записями. Это верно, только пока запись = подшаг схемы. При разреженной
+истории невязка росла на три порядка (04a: 9.98e-04 → 2.14e-01), и
+повышение порядка квадратуры не помогало: внутри интервала укладываются
+12–288 подшагов, интерполяция по концам этой информации не содержит.
+Теперь вклады накапливаются на каждом подшаге внутри решателя, и баланс
+корректен при любой структуре истории, включая неравномерную.
 
 ВСЕ ЧЛЕНЫ СЧИТАЮТСЯ БЕЗУСЛОВНО. Никаких ветвлений «этот член нужен только
 если в конфиге λ ≠ 0 / L ≠ 0 / μ_JT ≠ 0»: член входит в формулу всегда и
@@ -43,23 +51,8 @@ t_n):
 O(Δt), как у остальных девяти. Проверка «нужен ли член» не должна зависеть
 от того, посмотрел ли автор скрипта в конфиг.
 
-(ρcp)_eff НЕ считается постоянной: она зависит от S_g и от PVT, поэтому ΔE
-считается с поячеечными свойствами на каждом шаге. В однофазных примерах
-01 и 02 величина действительно постоянна, и прежние копии там пользовались
-скаляром — но поячеечный расчёт даёт тот же результат (расхождение ~1e-6 Дж
-при невязке ~3e+6 Дж, измерено в BUG-004), а условного упрощения не требует.
-
-НАКОПЛЕНИЕ СЧИТАЕТСЯ ПО ПРИРАЩЕНИЯМ, а не как разность запасов от t=0
-(BUG-004). Схема дискретизует Σ V (ρcp)^{n} (T^{n} - T^{n-1}): множитель
-cap_j = V_j (ρcp)^{n}_j / dt стоит и в матрице, и в правой части. Разность
-запасов Σ V [(ρcp)^K T^K - (ρcp)^0 T^0] отличается от неё на член
-Σ_n Σ_j V T^{n-1} [(ρcp)^n - (ρcp)^{n-1}] — дрейф свойств, умноженный на
-абсолютную температуру. На табличном PVT этот дрейф систематичен (B_g там
-кусочно-линеен по трём узлам вместо гладкой гиперболы) и давал 20 %
-невязки, не убывающей с шагом по времени.
-
 Три функции:
-  compute_balance()        — считает компоненты, возвращает dict
+  compute_balance()        — собирает массивы из накопленных в ядре вкладов
   plot_energy_balance()    — строит график поверх compute_balance()
   report_energy_balance()  — обёртка для run_example (конвенция общих модулей)
 
@@ -85,216 +78,52 @@ for _p in (str(_ROOT), str(_EXAMPLES),
         sys.path.insert(0, _p)
 
 
-def _cell_properties(pvt, rock, p, Sg, Rs, T):
-    """(ρcp)_eff и покомпонентные PVT в ячейках — как в tridiag.py (eq. 5)."""
-    phi = rock.porosity
-    So = 1.0 - Sg
-    rho_o = pvt.rho_o(p, Rs)
-    rho_g = pvt.rho_g(p)
-    cp_o = pvt.c_p_oil(p, T)
-    cp_g = pvt.c_p_gas(p, T)
-    rho_cp_eff = ((1 - phi) * rock.rho_cp_solid
-                  + phi * (So * rho_o * cp_o + Sg * rho_g * cp_g))
-    return rho_o, rho_g, cp_o, cp_g, rho_cp_eff
+# Шесть накапливаемых членов — их считает и складывает
+# gpn_multiphase_solver/energy/balance.py на каждом подшаге схемы.
+# Остальные три ключа (total, residual, rel_residual) производные:
+# они восстанавливаются из этих шести здесь, при сборке.
+_CUMULATIVE = ("delta_E", "cum_adiab", "cum_conv",
+               "cum_jt", "cum_deg", "cum_cond")
 
 
 def compute_balance(history, grid, config):
-    """Покомпонентный баланс энергии по сохранённой истории.
+    """Баланс энергии по накопленным на подшагах вкладам (DEBT-013).
 
-    Возвращает dict с массивами длины n_steps:
+    Возвращает dict с массивами длины len(history.times):
       t, delta_E, cum_adiab, cum_conv, cum_jt, cum_deg, cum_cond,
       total, residual, rel_residual
 
     Набор ключей ПОЛНЫЙ всегда, независимо от конфига: члены, физически
     отсутствующие в сценарии, приходят нулевыми массивами.
+
+    Физика живёт в gpn_multiphase_solver/energy/balance.py: вклады
+    считаются на каждом подшаге внутри решателя по тем же коэффициентам,
+    что уходят в СЛАУ. Восстановить их по записям истории нельзя —
+    при разреженной истории невязка вырастает на три порядка. Здесь
+    остаётся только сборка массивов для графика и отчёта.
+
+    grid и config в расчёте больше не участвуют — сохранены в сигнатуре
+    ради совместимости с четырьмя вызывающими (plot_energy_balance,
+    report_energy_balance и два теста).
     """
-    from gpn_multiphase_solver.factory import SimulatorFactory
+    del grid, config  # см. примечание о совместимости сигнатуры выше
 
-    # pvt и rock нужны для (ρcp)_eff, Φ, μ_JT и L. Пересобираем фабрикой —
-    # это дёшево, прогон не повторяется.
-    sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
-    rock = sim._energy._rock
-    # Решатель энергии нужен для кондуктивной проводимости: берём её его
-    # же методом, а не пересчитываем формулу (см. блок кондукции ниже).
-    energy = sim._energy
+    out = {k: np.array([s[k] for s in history.balance])
+           for k in _CUMULATIVE}
+    out["t"] = np.array(history.times)
 
-    # Накопление суммируется по сохранённым шагам: пропуск шагов
-    # (save_every > 1) сделал бы сумму приращений неполной.
-    if getattr(config.output, "save_every", 1) != 1:
-        raise ValueError(
-            "compute_balance требует save_every = 1: баланс суммирует "
-            "приращения по шагам, пропущенные шаги нарушают сумму")
-
-    N = grid.N
-    V = grid.volumes
-    phi = rock.porosity
-    T_ext = config.initial_conditions.T0
-    rho_g_std = pvt.rho_g_std
-
-    n_steps = len(history.times)
-    t_arr = np.array(history.times)
-
-    delta_E = np.zeros(n_steps)
-    cum_conv = np.zeros(n_steps)
-    cum_adiab = np.zeros(n_steps)
-    cum_jt = np.zeros(n_steps)
-    cum_deg = np.zeros(n_steps)
-    cum_cond = np.zeros(n_steps)
-
-    for n in range(n_steps):
-        st = history.states[n]
-
-        if n == 0:
-            # На нулевом шаге приращения ещё нет: ΔE(0) = 0 по определению.
-            # PVT здесь не считаем — результат всё равно не используется.
-            delta_E[n] = 0.0
-            continue
-
-        _, _, _, _, rho_cp_n = _cell_properties(
-            pvt, rock, st.p, st.Sg, st.Rs, st.T)
-
-        # Накопление берётся ТОЧНО так, как его дискретизует схема
-        # (eq. 33-36): cap_j = V_j (ρcp)^{n}_j / dt стоит в матрице и в
-        # правой части ОДНИМ И ТЕМ ЖЕ множителем, поэтому шаговый вклад —
-        # это V (ρcp)^{n} (T^{n} - T^{n-1}), а НЕ разность запасов
-        # V[(ρcp)^n T^n - (ρcp)^{n-1} T^{n-1}].
-        # Разница между ними — член Σ V T^{n-1} [(ρcp)^n - (ρcp)^{n-1}],
-        # который на табличном PVT давал 20 % невязки (BUG-004): свойства
-        # дрейфуют систематически, и дрейф умножается на абсолютную
-        # T ~ 350 K, а не на приращение ΔT ~ 1 K.
-        #
-        # (ρcp)_eff берём на st.T, решатель — на T_old (tridiag.py:51).
-        # Сейчас это эквивалентно: c_p и μ_JT в обоих PVT — константы
-        # (standing.py:160-173, table_full.py:38-42), ρ от T не зависит.
-        # Если тепловые свойства станут функциями T, здесь надо будет
-        # перейти на st_prev.T, иначе баланс разойдётся с решателем.
-        delta_E[n] = delta_E[n - 1] + np.sum(
-            rho_cp_n * V * (st.T - history.states[n - 1].T))
-
-        dt_step = t_arr[n] - t_arr[n - 1]
-        st_prev = history.states[n - 1]
-        hydro = history.hydro_results[n]
-
-        p, Sg, Rs, T_prev = st.p, st.Sg, st.Rs, st_prev.T
-        So = 1.0 - Sg
-        Q_o, Q_g, G_o = hydro.Q_o, hydro.Q_g, hydro.G_o
-
-        rho_o, rho_g, cp_o, cp_g, _ = _cell_properties(
-            pvt, rock, p, Sg, Rs, T_prev)
-        mu_JT_o = pvt.mu_JT_oil(p, T_prev)
-        mu_JT_g = pvt.mu_JT_gas(p, T_prev)
-        L = pvt.L_degas(p, T_prev)
-
-        # ── Конвекция (обе фазы) ──
-        # Φ_α = ρ_α cp_α Q_α (eq. 23). Знак: Q < 0 (поток к скважине) ⇒ Φ < 0.
-        # Φ на ВСЕХ гранях, upstream раздельно по каждой фазе — как в
-        # tridiag.compute_convective_coefficients. Телескопировать по двум
-        # крайним граням нельзя: при противотоке фаз (Φ_o и Φ_g разных
-        # знаков на одной грани) сумма Φ⁺/Φ⁻ не сводится к разности
-        # крайних потоков.
-        Phi_o = np.zeros(N + 1)
-        Phi_g = np.zeros(N + 1)
-        for f in range(1, N):
-            up_o = f - 1 if Q_o[f] >= 0 else f
-            Phi_o[f] = rho_o[up_o] * cp_o[up_o] * Q_o[f]
-            up_g = f - 1 if Q_g[f] >= 0 else f
-            Phi_g[f] = rho_g[up_g] * cp_g[up_g] * Q_g[f]
-        # Забой (f=0): upstream — ячейка 0. Контур (f=N): upstream — N-1.
-        Phi_o[0] = rho_o[0] * cp_o[0] * Q_o[0]
-        Phi_g[0] = rho_g[0] * cp_g[0] * Q_g[0]
-        Phi_o[N] = rho_o[-1] * cp_o[-1] * Q_o[N]
-        Phi_g[N] = rho_g[-1] * cp_g[-1] * Q_g[N]
-
-        Phi_plus = np.maximum(Phi_o, 0.0) + np.maximum(Phi_g, 0.0)
-        Phi_minus = np.minimum(Phi_o, 0.0) + np.minimum(Phi_g, 0.0)
-
-        # Поток энтальпии через грань f: Φ⁺ несёт T ячейки слева (f-1),
-        # Φ⁻ — T ячейки справа (f). За контуром (f=N) справа — T_ext,
-        # за забоем (f=0) слева — та же ячейка 0 (ГУ Неймана, ∂T/∂r = 0).
-        T_left = np.concatenate(([T_prev[0]], T_prev))          # [N+1]
-        T_right = np.concatenate((T_prev, [T_ext]))             # [N+1]
-        flux = Phi_plus * T_left + Phi_minus * T_right
-        # Чистая конвекция в область: -(поток через контур - через забой).
-        net_conv = -(flux[N] - flux[0]) * dt_step
-
-        # ── Джоуль–Томсон (обе фазы) ──
-        # J_face = Σ_α μ_JT,α Φ_α p_up; сумма по ячейкам телескопируется
-        # до J_face[N] - J_face[0]. Φ теперь массивы по граням: забой —
-        # индекс 0, контур — индекс N.
-        # При μ_JT = 0 (примеры 01, 07, 09) член обнуляется сам.
-        J_well = (mu_JT_o[0] * Phi_o[0] + mu_JT_g[0] * Phi_g[0]) * p[0]
-        J_ext = (mu_JT_o[-1] * Phi_o[N] + mu_JT_g[-1] * Phi_g[N]) * p[-1]
-        jt_step = (J_ext - J_well) * dt_step
-
-        # ── Адиабатика (обе фазы) ──
-        # Q_ad = φ Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt, Вт/м³ (eq. 29).
-        dp = st.p - st_prev.p
-        adiab_step = phi * np.sum(
-            V * (So * (1.0 + rho_o * cp_o * mu_JT_o)
-                 + Sg * (1.0 + rho_g * cp_g * mu_JT_g)) * dp)
-
-        # ── Скрытая теплота дегазации ──
-        # Q_deg = -L·mdot, mdot = временная + конвективная части (eq. 31).
-        # При L = 0 (примеры 01, 02, 07, 08) член обнуляется сам.
-        # Временная: газ, вышедший из раствора в самой ячейке за шаг.
-        mdot_time = (-rho_g_std * phi * So / pvt.Bo(p, Rs)
-                     * (Rs - st_prev.Rs) / dt_step)
-        # Конвективная: дивергенция потока растворённого газа <G^o·Rs>.
-        R_conv = np.zeros(N + 1)
-        for f in range(1, N):
-            Go_p, Go_m = max(G_o[f], 0.0), min(G_o[f], 0.0)
-            R_conv[f] = Go_p * Rs[f - 1] + Go_m * Rs[f]
-        R_conv[0] = G_o[0] * Rs[0]
-        R_conv[N] = (G_o[N] * Rs[N - 1] if G_o[N] >= 0
-                     else G_o[N] * st_prev.Rs[-1])
-        mdot_conv = -rho_g_std * (R_conv[1:] - R_conv[:-1]) / V
-        mdot = mdot_time + mdot_conv
-        deg_step = np.sum(-L * mdot * V) * dt_step
-
-        # ── Кондуктивный поток через контур ──
-        # Внутренние грани телескопируются: поток из ячейки в ячейку
-        # сокращается при суммировании по объёму. Остаётся только контур,
-        # где стоит ГУ Дирихле T = T_ext:
-        #     E_cond = Σ_n Q_T_ext (T_ext - T^n_{N-1}) Δt_n
-        # T берётся НОВАЯ (T^n): схема неявная, в СЛАУ Q_T_ext·T^n_{N-1}
-        # стоит в диагонали b[N-1], а Q_T_ext·T_ext — в правой части d[N-1]
-        # (tridiag.py:305-308).
-        #
-        # Проводимость берём У РЕШАТЕЛЯ тем же методом, что он использует
-        # сам, а не пересчитываем формулу заново: иначе баланс разойдётся
-        # со схемой — ровно так возник BUG-004. Здесь это ещё и защита от
-        # повторения BUG-002 (двойной ln в кондуктивной проводимости).
-        #
-        # При λ = 0 (девять примеров из десяти) Q_T_ext = geom·λ_eff[-1]
-        # тождественно ноль (tridiag.py:179), и член обнуляется сам —
-        # без ветвлений по конфигу.
-        props = energy.compute_cell_properties(p, Sg, Rs, So, T_prev)
-        _, Q_T_ext = energy.compute_conductive_transmissibility(
-            props["lambda_eff"], N)
-        cond_step = Q_T_ext * (T_ext - st.T[N - 1]) * dt_step
-
-        cum_conv[n] = cum_conv[n - 1] + net_conv
-        cum_adiab[n] = cum_adiab[n - 1] + adiab_step
-        cum_jt[n] = cum_jt[n - 1] + jt_step
-        cum_deg[n] = cum_deg[n - 1] + deg_step
-        cum_cond[n] = cum_cond[n - 1] + cond_step
-
-    total = cum_conv + cum_adiab + cum_jt + cum_deg + cum_cond
-    residual = delta_E - total
+    # Производные величины: считаются из накопленных, а не хранятся.
+    out["total"] = (out["cum_adiab"] + out["cum_conv"] + out["cum_jt"]
+                    + out["cum_deg"] + out["cum_cond"])
+    out["residual"] = out["delta_E"] - out["total"]
 
     # Нормируем на больший из масштабов: на первых шагах ΔE ещё мало,
     # и деление на него дало бы ложный всплеск невязки.
-    scale = np.maximum(np.abs(delta_E), np.abs(total))
+    scale = np.maximum(np.abs(out["delta_E"]), np.abs(out["total"]))
     scale = np.where(scale < 1e-10, 1.0, scale)
+    out["rel_residual"] = np.abs(out["residual"]) / scale
 
-    return dict(
-        t=t_arr, delta_E=delta_E,
-        cum_adiab=cum_adiab, cum_conv=cum_conv,
-        cum_jt=cum_jt, cum_deg=cum_deg, cum_cond=cum_cond,
-        total=total, residual=residual,
-        rel_residual=np.abs(residual) / scale,
-    )
+    return out
 
 
 def plot_energy_balance(history, grid, config, output_dir: Path):
@@ -359,9 +188,9 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
 def report_energy_balance(config, history, grid, simulator) -> dict:
     """Баланс энергии для run_example — конвенция общих модулей.
 
-    simulator в расчёте не участвует: compute_balance пересобирает нужные
-    объекты сам по config (фабрика дешёвая, прогон не повторяется).
-    Аргумент принимается ради единообразия вызова из run_example.
+    simulator, grid и config в расчёте не участвуют: члены баланса уже
+    накоплены решателем на подшагах и лежат в history.balance (DEBT-013).
+    Аргументы принимаются ради единообразия вызова из run_example.
     """
     bal = compute_balance(history, grid, config)
 

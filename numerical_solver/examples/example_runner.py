@@ -175,15 +175,11 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # скрипта), а 04 и 06-10 не проверялись ничем — именно поэтому BUG-004
     # на шести конфигурациях из десяти прожил незамеченным.
     #
-    # Требует save_every = 1: баланс суммирует приращения по шагам.
-    # run_example значение не меняет, а во всех конфигах примеров стоит 1.
-    if getattr(config.output, "save_every", 1) == 1:
-        print()
-        plot_energy_balance(history, grid, config, output_dir)
-    else:
-        print(f"\nБаланс энергии не считается: save_every = "
-              f"{config.output.save_every}, нужен 1 (сумма приращений по "
-              f"шагам требует всех шагов)")
+    # Считается безусловно и при любой структуре истории: члены копятся
+    # на подшагах внутри решателя (DEBT-013), а не восстанавливаются по
+    # записям. Прежнее ветвление по save_every исчезло вместе с параметром.
+    print()
+    plot_energy_balance(history, grid, config, output_dir)
 
     _print_summary(history, elapsed, output_dir)
 

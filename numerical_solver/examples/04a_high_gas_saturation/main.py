@@ -24,10 +24,16 @@ def overlay_temperature(ax, history, grid, simulator):
     """ОДУ-аналитика T на СВОЁМ конфиге.
 
     Готовый хук temperature_ode.overlay_temperature брать нельзя: он читает
-    config.json из своей папки (04), а там dt_integration = 3600 против 300
-    здесь. dt входит в kappa = (rho c_p)_eff / dt — коэффициент ОДУ, поэтому
-    подстановка чужого значения исказила бы кривую в 12 раз по kappa.
-    Всё остальное (solve_ode_at_steps) параметризовано и переиспользуется.
+    config.json из своей папки (04), а здесь нужны параметры 04a — своя
+    сетка, свои PVT и своё p_wf. Всё остальное (solve_ode_at_steps)
+    параметризовано и переиспользуется.
+
+    Прежде тут стояло другое обоснование: dt_integration = 3600 у 04
+    против 300 здесь, а dt входит в kappa = (rho c_p)_eff / dt. Оно
+    устарело — после DEBT-013 temperature_ode берёт шаг из истории
+    (times[n] - times[n-1]), а не из конфига, потому что рекурсия
+    T^n <- T^{n-1} идёт именно по записям (BUG-005). Разница в
+    dt_integration на kappa больше не влияет.
     """
     config = load_config(HERE / "config.json")
     # Те же 4 момента, что рисует run_example; нулевой шаг пропускаем —

@@ -79,9 +79,13 @@ def run_one(N: int, dt: float, max_retries: int = 9) -> dict:
     # Глубина дробления шага в A-retry (DEBT-007); порог по сетке
     # немонотонен, значения подобраны перебором — см. GRIDS.
     config.numerics.max_retries = max_retries
+    # Нужен один прогон длиной DURATION_S, а не расписание примера:
+    # усекаем историю до одного интервала (DEBT-013). Промежуточные
+    # состояния здесь не нужны — сравнивается только финальное, поэтому
+    # одна запись на конце и заменяет прежний обход save_every = 1000000.
+    config.time.history = config.time.history[:1]
     config.time.history[0].dt = DURATION_S
     config.output.log_level = "ERROR"
-    config.output.save_every = 1000000
 
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)

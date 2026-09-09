@@ -70,8 +70,10 @@ def check_one(folder: str, expected: float | None) -> dict:
     try:
         config = load_config(example_dir / "config.json")
         config.output.log_level = "WARNING"
-        # Баланс суммирует приращения по шагам — нужны все шаги.
-        config.output.save_every = 1
+        # Прежде здесь ставился save_every = 1: баланс суммировал
+        # приращения по сохранённым шагам, и пропуск шагов ломал сумму.
+        # После DEBT-013 члены копятся на подшагах внутри решателя,
+        # поэтому структура истории на баланс не влияет.
 
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)

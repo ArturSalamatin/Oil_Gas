@@ -76,9 +76,17 @@ def make_long_config(base, with_conduction: bool):
         cfg.rock.lambda_solid = LAMBDA_PHYS["solid"]
         cfg.rock.lambda_oil = LAMBDA_PHYS["oil"]
         cfg.rock.lambda_gas = LAMBDA_PHYS["gas"]
-    cfg.time.history[0].dt = T_LONG_DAYS * 86400.0
+    # Длительность задаётся структурой истории (DEBT-013): N_RECORDS
+    # интервалов покрывают T_LONG_DAYS суток. Прежде здесь стоял один
+    # интервал на весь прогон и save_every = 60, прореживавший подшаги;
+    # теперь состав вывода определяет только расписание. Шаг записи
+    # (60 суток) сохранён прежним, чтобы кривая осталась сопоставимой.
+    N_RECORDS = 10
+    iv = cfg.time.history[0]
+    cfg.time.history = [deepcopy(iv) for _ in range(N_RECORDS)]
+    for h in cfg.time.history:
+        h.dt = T_LONG_DAYS * 86400.0 / N_RECORDS
     cfg.time.dt_integration = 86400.0
-    cfg.output.save_every = 60
     cfg.output.log_level = "WARNING"
     return cfg
 

@@ -34,6 +34,7 @@ numerics.max_retries задаётся для каждой сетки отдел�
 
 import sys
 import time
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -92,11 +93,17 @@ def run_one(N: int, dt: int, max_retries: int = 9) -> dict:
     # Глубина дробления шага в A-retry (DEBT-007); порог по сетке
     # немонотонен, значения подобраны перебором — см. GRIDS.
     config.numerics.max_retries = max_retries
-    config.time.history[0].dt = T_COMPARE
+    # ОДУ решается рекуррентно по сохранённым шагам, поэтому запись нужна
+    # на каждом подшаге: интервал истории делаем равным dt_integration
+    # (DEBT-013 — частоту вывода задаёт только структура истории).
+    # Прогоны на разных dt дают разное число записей, как и раньше при
+    # save_every = 1.
+    n_records = int(round(T_COMPARE / dt))
+    iv = deepcopy(config.time.history[0])
+    config.time.history = [deepcopy(iv) for _ in range(n_records)]
+    for h in config.time.history:
+        h.dt = T_COMPARE / n_records
     config.output.log_level = "ERROR"
-    # save_every = 1: ОДУ решается рекуррентно по сохранённым шагам,
-    # прореживание истории сломало бы соответствие шаг ↔ момент времени.
-    config.output.save_every = 1
 
     t0 = time.perf_counter()
     sim, initial_state = SimulatorFactory.from_config(config)

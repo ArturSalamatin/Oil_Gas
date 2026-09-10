@@ -701,6 +701,91 @@ class TestComputeDegassing:
         # G_o = const, Rs = const -> R_conv[j+1] - R_conv[j] = 0 -> mdot_conv = 0
         np.testing.assert_allclose(Q_deg, 0.0, atol=1e-20)
 
+    def test_inflow_uses_boundary_composition(self):
+        """Приток с контура (G_o < 0): upstream = ГУ, а не ячейка N-1.
+
+        Физика: через контур поступает нефть с составом Rs^0
+        (eq. bc_Sg_ext, problem_statement.tex:1469-1472). Если в ячейке
+        N-1 началось разгазирование (Rs < Rs^0), схема обязана взять
+        на контурной грани состав ПРИТОКА, а не обеднённый состав
+        последней ячейки. DEBT-009.
+
+        Rs_old = Rs намеренно: это обнуляет временную часть mdot_time
+        и изолирует конвективный вклад — именно то, что чинит DEBT-009.
+        """
+        N_cells = 3
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+        pvt = _make_pvt(L_degas=168000.0)
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        So = np.ones(N_cells)
+        Sg = np.zeros(N_cells)
+        # Ячейка N-1 обеднена газом: разгазирование у контура
+        Rs = np.full(N_cells, RS0)
+        Rs[-1] = 0.8 * RS0
+        Rs_old = Rs.copy()          # mdot_time = 0
+        Bo = pvt.Bo(np.full(N_cells, P0), Rs)
+        G_o = np.full(N_cells + 1, -0.01)   # втекание на всех гранях
+        L = np.full(N_cells, 168000.0)
+
+        Q_deg = solver.compute_degassing(
+            So, Sg, Rs, Rs_old, Bo, G_o, L, DT, N_cells, RS0)
+
+        # Восстанавливаем ожидаемый Q_deg последней ячейки из формулы схемы:
+        #   mdot_time = 0  =>  Q_deg[-1] = -L * mdot_conv[-1]
+        #   mdot_conv[-1] = -rho_g_std * (R_conv[N] - R_conv[N-1]) / V[-1]
+        V = grid.volumes
+        rho_g_std = pvt.rho_g_std
+        # Внутренняя грань N-1 при G_o < 0: upstream — ячейка N-1
+        R_conv_inner = G_o[N_cells - 1] * Rs[N_cells - 1]
+        # Контурная грань при притоке: состав ГУ
+        R_conv_ext_expected = G_o[N_cells] * RS0
+
+        mdot_conv_expected = -rho_g_std * (
+            R_conv_ext_expected - R_conv_inner) / V[-1]
+        Q_deg_expected = -L[-1] * mdot_conv_expected
+
+        np.testing.assert_allclose(Q_deg[-1], Q_deg_expected, rtol=1e-12)
+
+        # Контроль невырожденности: со старым (дефектным) поведением на
+        # контуре стоял бы Rs[N-1] = 0.8*RS0, и Q_deg[-1] был бы другим.
+        # Без этой проверки тест мог бы проходить на обеих ветвях.
+        R_conv_ext_buggy = G_o[N_cells] * Rs[-1]
+        mdot_conv_buggy = -rho_g_std * (R_conv_ext_buggy - R_conv_inner) / V[-1]
+        Q_deg_buggy = -L[-1] * mdot_conv_buggy
+        assert not np.isclose(Q_deg_expected, Q_deg_buggy), \
+            "тест вырожден: дефектная и корректная ветви дают одно значение"
+
+    def test_outflow_ignores_boundary_composition(self):
+        """Отток через контур (G_o > 0): upstream = ячейка N-1, Rs_ext не влияет.
+
+        Симметричная проверка к test_inflow_uses_boundary_composition:
+        правка DEBT-009 не должна затрагивать ветвь оттока. Если реализация
+        «упростит» ветвление и подставит Rs_ext в обе ветви, этот тест упадёт.
+        """
+        N_cells = 3
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+        pvt = _make_pvt(L_degas=168000.0)
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        So = np.ones(N_cells)
+        Sg = np.zeros(N_cells)
+        Rs = np.full(N_cells, RS0)
+        Rs[-1] = 0.8 * RS0
+        Rs_old = Rs.copy()
+        Bo = pvt.Bo(np.full(N_cells, P0), Rs)
+        G_o = np.full(N_cells + 1, +0.01)   # отток наружу на всех гранях
+        L = np.full(N_cells, 168000.0)
+
+        # Два разных Rs_ext должны дать ОДИН результат: при оттоке
+        # выше по потоку лежит ячейка N-1, состав контура не участвует
+        Q_deg_a = solver.compute_degassing(
+            So, Sg, Rs, Rs_old, Bo, G_o, L, DT, N_cells, RS0)
+        Q_deg_b = solver.compute_degassing(
+            So, Sg, Rs, Rs_old, Bo, G_o, L, DT, N_cells, 0.5 * RS0)
+
+        np.testing.assert_allclose(Q_deg_a, Q_deg_b, rtol=1e-14)
+
 
 class TestAssembleTridiag:
     """assemble_tridiag: проверка диагонального преобладания b > |a| + |c|."""

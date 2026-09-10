@@ -160,7 +160,7 @@ class SimulatorFactory:
         grid = LogRadialGrid(...)
         pvt = _create_pvt(config)         # "standing" → StandingFullPVT
         relperm = _create_relperm(config)  # "corey" → CoreyRP
-        hydro = AnalyticalHydroSolver(grid, pvt, relperm)
+        hydro = PrototypeHydroAdapter(...)   # было AnalyticalHydroSolver до FEAT-014
         energy = TridiagEnergySolver(grid, pvt, config.rock)
         schedule = _create_schedule(config)
         simulator = Simulator(grid, hydro, energy, pvt, schedule, config.output)
@@ -172,7 +172,7 @@ class SimulatorFactory:
 
 Помощники `_create_pvt`, `_create_relperm`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py.
 
-Сейчас поддерживаются: PVT = "standing", RelPerm = "corey", HydroSolver = AnalyticalHydroSolver. При интеграции прототипа — добавить `from_config_with_prototype()`.
+Сейчас поддерживаются: PVT = "standing" / "table", RelPerm = "corey" / "table", HydroSolver = `PrototypeHydroAdapter` (с FEAT-014 — всегда он; заглушка `AnalyticalHydroSolver` удалена из пакета в DEBT-005 и живёт как тестовый двойник `LogProfileHydroStub` в `tests/_doubles.py`).
 
 ## Связанные заметки
 

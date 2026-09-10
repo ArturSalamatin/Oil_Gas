@@ -66,12 +66,20 @@ G_g[f] = Rs_up · Q_o[f] / Bo_up + Q_g[f] / Bg_up
 
 См. [[конвенции-знаков]].
 
-## Аналитическая заглушка (AnalyticalHydroSolver)
+## Аналитическая заглушка (AnalyticalHydroSolver → LogProfileHydroStub)
 
 Для тестирования EnergySolver и Simulator до получения модуля коллеги.
 
+> **DEBT-005 (2026-09-10):** класс удалён из пакета и вынесен в тестовую
+> оснастку — `numerical_solver/tests/_doubles.py`, имя `LogProfileHydroStub`.
+> Причина: заглушка не решает уравнение фильтрации (не учитывает
+> разгазирование и сжимаемость, не зависит от `dt`), но удовлетворяла ABC
+> `HydroSolver` и потому могла быть незаметно подставлена в production-расчёт.
+> Арифметика перенесена без изменений; листинг ниже актуален по существу,
+> изменились только имя класса и его местоположение.
+
 ```python
-class AnalyticalHydroSolver(HydroSolver):
+class LogProfileHydroStub(HydroSolver):   # было AnalyticalHydroSolver
     """Аналитические поля для тестирования."""
 
     def solve(self, state, dt, bc):

@@ -227,7 +227,7 @@ class TableFullPVT(FullPVT):
 
 ### Вариант 2: StandingFullPVT (корреляции)
 
-Самостоятельная реализация Bo, Bg, μ_o, μ_g через Standing/Beggs-Robinson + скалярные тепловые. Не использует PVT прототипа. Для случая, когда прототип не подключён (AnalyticalHydroSolver).
+Самостоятельная реализация Bo, Bg, μ_o, μ_g через Standing/Beggs-Robinson + скалярные тепловые. Не использует PVT прототипа. Для случая, когда прототип не подключён (AnalyticalHydroSolver — удалён в DEBT-005, ныне тестовый двойник `LogProfileHydroStub`).
 
 ## Как подключается
 

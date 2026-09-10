@@ -1,30 +1,31 @@
-"""AnalyticalHydroSolver — заглушка с аналитическим стационарным решением.
+"""Тестовые двойники для gpn_multiphase_solver.
 
-Однофазный стационарный поток нефти:
-  p(r) = p_wf + (p_ext - p_wf) · ln(r/rw) / ln(R/rw)
-  Sg = 0, Rs = Rs_ext, regime = 2 (однофазное)
+LogProfileHydroStub — НЕ решатель. Подставляет заранее известный
+стационарный логарифмический профиль давления вместо решения уравнения
+фильтрации. Существует только ради детерминированности: тесты энергии,
+Simulator и вывода нуждаются в точно известном p(r), чтобы изолировать
+проверяемый эффект от гидродинамики.
 
-Потоки вычисляются через compute_fluxes() — не дублирует логику.
-Не зависит от dt (стационар устанавливается мгновенно).
-Температуру не трогает (splitting: T обновляется в EnergySolver).
-
-Назначение:
-  - Тестирование EnergySolver на известном поле давления
-  - Тестирование Simulator (полный цикл)
-  - Валидация VAL-001 (аналитическое T(r) при известном p(r))
+Жил в gpn_multiphase_solver/hydro/analytical.py до DEBT-005. Вынесен в
+tests/, чтобы его нельзя было по ошибке подставить в production-расчёт
+(сигнатура совпадает с настоящим PrototypeHydroAdapter).
 """
 
 import numpy as np
 
-from .base import HydroSolver
-from ..state import SimulationState, HydroResult, BoundaryConditions
-from ..grid.base import Grid
-from ..pvt.base import HydroPVT, RelPermModel
-from ..fluxes import compute_fluxes
+from gpn_multiphase_solver.hydro.base import HydroSolver
+from gpn_multiphase_solver.state import (
+    SimulationState, HydroResult, BoundaryConditions)
+from gpn_multiphase_solver.grid.base import Grid
+from gpn_multiphase_solver.pvt.base import HydroPVT, RelPermModel
+from gpn_multiphase_solver.fluxes import compute_fluxes
 
 
-class AnalyticalHydroSolver(HydroSolver):
-    """Стационарный логарифмический профиль давления (однофазный)."""
+class LogProfileHydroStub(HydroSolver):
+    """Стационарный логарифмический профиль давления (однофазный).
+
+    Тестовый двойник, не решатель. См. модульный docstring.
+    """
 
     def __init__(self, grid: Grid, pvt: HydroPVT, relperm: RelPermModel):
         self._grid = grid

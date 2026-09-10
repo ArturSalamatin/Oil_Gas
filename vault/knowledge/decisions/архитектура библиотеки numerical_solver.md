@@ -65,7 +65,6 @@ numerical_solver/
 │   ├── hydro/                  # Гидродинамический модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: HydroSolver
-│   │   ├── analytical.py       # AnalyticalHydroSolver
 │   │   └── prototype_adapter.py # PrototypeHydroAdapter
 │   │
 │   ├── energy/                 # Тепловой модуль

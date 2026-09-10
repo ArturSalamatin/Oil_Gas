@@ -161,7 +161,7 @@ class Simulator:
                 # уходят в СЛАУ, — баланс считается по тем же величинам,
                 # что и схема (DEBT-013).
                 T_new = self._energy.solve(
-                    hydro_result, state, dt, interval.bc.T_ext,
+                    hydro_result, state, dt, interval.bc,
                     collect=balance)
 
                 # 3. Обновить состояние (splitting: T из energy, остальное из hydro)

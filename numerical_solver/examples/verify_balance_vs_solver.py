@@ -53,7 +53,13 @@ def run_instrumented(config_path):
     log = []
     orig_solve = TridiagEnergySolver.solve
 
-    def patched(self, hydro_result, state_prev, dt, T_ext):
+    def patched(self, hydro_result, state_prev, dt, bc, collect=None):
+        # bc вместо T_ext — новый контракт EnergySolver.solve (DEBT-009).
+        # collect — накопитель баланса (DEBT-013); simulator передаёт его
+        # всегда, поэтому подменяющая функция обязана его принимать
+        # и пробрасывать в оригинал.
+        T_ext = bc.T_ext
+        Rs_ext = bc.Rs_ext
         N = self._grid.N
         V = self._grid.volumes
         p = hydro_result.state.p
@@ -77,9 +83,9 @@ def run_instrumented(config_path):
             props['c_p_o'], props['c_p_g'],
             props['mu_JT_o'], props['mu_JT_g'], p, p_old, dt)
         Q_deg = self.compute_degassing(
-            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N)
+            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext)
 
-        T_new = orig_solve(self, hydro_result, state_prev, dt, T_ext)
+        T_new = orig_solve(self, hydro_result, state_prev, dt, bc, collect)
 
         cap = V * props['rho_cp_eff'] / dt
         # Накопление ровно так, как его дискретизует схема:

@@ -1,6 +1,6 @@
 """ABC EnergySolver — абстрактный тепловой солвер.
 
-Один шаг: (hydro_result, state_prev, dt, T_ext) → T_new[N].
+Один шаг: (hydro_result, state_prev, dt, bc) → T_new[N].
 Splitting: T решается при замороженных p, Sg, Rs из hydro_result.
 """
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ..state import HydroResult, SimulationState
+from ..state import BoundaryConditions, HydroResult, SimulationState
 
 if TYPE_CHECKING:
     # Только для аннотации: в рантайме base.py не импортирует balance.py,
@@ -26,7 +26,7 @@ class EnergySolver(ABC):
     @abstractmethod
     def solve(self, hydro_result: HydroResult,
               state_prev: SimulationState,
-              dt: float, T_ext: float,
+              dt: float, bc: BoundaryConditions,
               collect: "EnergyBalanceAccumulator | None" = None) -> np.ndarray:
         """Один шаг теплопереноса: T^n → T^{n+1}.
 
@@ -35,7 +35,9 @@ class EnergySolver(ABC):
                            потоки Q_o, Q_g, G_o на гранях [N+1]
             state_prev   — состояние на предыдущем шаге (T^n, p^n, Rs^n)
             dt           — шаг по времени, с
-            T_ext        — температура на контуре питания (Дирихле), К
+            bc           — граничные условия на контуре: T_ext (Дирихле по T)
+                           и Rs_ext (состав притока, eq. bc_Sg_ext). Передаётся
+                           объектом целиком — как в HydroSolver.solve (DEBT-009)
             collect      — накопитель баланса энергии (DEBT-013), опционально
 
         Возвращает:

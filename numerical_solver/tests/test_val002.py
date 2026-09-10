@@ -93,22 +93,33 @@ def _stationary_hydro_result(grid, pvt, relperm, p_wf, p_ext, T0, Rs0):
 
 
 def _run_energy_steps(solver, hydro, state_prev, dt, T_ext, n_steps,
-                      rtol_converge=None):
+                      rtol_converge=None, Rs_ext=None):
     """Прогнать energy solver n_steps шагов, обновляя только T.
 
     Если rtol_converge задан — остановиться при |T^{n+1} − T^n|/|ΔT| < rtol.
     Возвращает (T_final [N], T_history list[ndarray]).
+
+    Rs_ext — состав притока с контура (DEBT-009). По умолчанию берётся из
+    самого состояния: во всех кейсах VAL-002 контур насыщен и Rs однороден.
     """
     T = state_prev.T.copy()
     history = [T.copy()]
     delta_T_scale = max(np.ptp(T), abs(T[0] - T_ext), 1.0)
+
+    if Rs_ext is None:
+        Rs_ext = float(state_prev.Rs[-1])
+    # Энергетический решатель использует из bc только T_ext и Rs_ext;
+    # p_ext и well в его расчёт не входят (работает на замороженных полях)
+    bc = BoundaryConditions(
+        well=PressureControl(P_WF), p_ext=P_EXT,
+        T_ext=T_ext, Rs_ext=Rs_ext, Sg_ext=0.0)
 
     for _ in range(n_steps):
         # Обновить T в state_prev
         updated = SimulationState(
             p=state_prev.p, Sg=state_prev.Sg, Rs=state_prev.Rs,
             T=T, regime=state_prev.regime, t=state_prev.t)
-        T_new = solver.solve(hydro, updated, dt, T_ext)
+        T_new = solver.solve(hydro, updated, dt, bc)
 
         if rtol_converge is not None:
             resid = np.max(np.abs(T_new - T)) / delta_T_scale
@@ -149,8 +160,11 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
         props['mu_JT_o'], props['mu_JT_g'], p, state_prev.p, dt)
     p_old = state_prev.p
     Rs_old = state_prev.Rs
+    # Rs_ext = Rs[-1]: контур насыщен, состав притока совпадает с последней
+    # ячейкой, поэтому обе ветви контурной грани дают одно значение (DEBT-009)
     Q_deg = solver.compute_degassing(
-        So, Sg, Rs, Rs_old, props['Bo'], hydro.G_o, props['L'], dt, N)
+        So, Sg, Rs, Rs_old, props['Bo'], hydro.G_o, props['L'], dt, N,
+        float(Rs[-1]))
 
     a, b, c, d = solver.assemble_tridiag(
         N, dt, state_prev.T, T_ext,

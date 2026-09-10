@@ -8,7 +8,9 @@ Rs ≡ 30 — дегазации нет вовсе, а член скрытой �
   (2) телескопический остаток конвективной части: при Rs ≡ R сумма по
       объёму даёт -rho_g_std*R*(G_o[N] - G_o[0]) — это НЕ ноль, а чистый
       поток стандартного газа, втекающий с нефтью и уносимый через забой;
-  (3) асимметрия строки tridiag.py:258 (Rs_old[-1] вместо Rs[-1]).
+  (3) неверный upstream на контурной грани: при втекании схема брала
+      состав ячейки N-1 (Rs_old[-1]) вместо состава притока Rs_ext = Rs^0
+      (DEBT-009, исправлено).
 
 Запуск:
     cd numerical_solver
@@ -44,6 +46,8 @@ def check(config_path, label):
     rock = sim._energy._rock
     phi = rock.porosity
     rho_g_std = pvt.rho_g_std
+    # Состав притока с контура (eq. bc_Sg_ext): Rs|_ext = Rs^0
+    Rs_ext = cfg.initial_conditions.Rs0
     N = len(V)
 
     t_arr = np.array(history.times)
@@ -51,7 +55,7 @@ def check(config_path, label):
     cum_time = 0.0        # вклад временной части
     cum_conv = 0.0        # вклад конвективной части
     cum_tele = 0.0        # предсказание телескопирования при Rs = const
-    cum_line258 = 0.0     # вклад именно строки 258 (Rs_old[-1] vs Rs[-1])
+    cum_line258 = 0.0     # вклад дефекта DEBT-009 (Rs_old[-1] vs Rs_ext)
     max_dRs = 0.0
     max_Sg = 0.0
     n_inflow = 0          # шагов с втеканием через контур
@@ -84,7 +88,8 @@ def check(config_path, label):
         if G_o[N] >= 0:
             R_conv[N] = G_o[N] * Rs[N - 1]
         else:
-            R_conv[N] = G_o[N] * st_prev.Rs[-1]
+            # Приток: upstream = контур, состав задан ГУ (DEBT-009)
+            R_conv[N] = G_o[N] * Rs_ext
             n_inflow += 1
         mdot_conv = -rho_g_std * (R_conv[1:] - R_conv[:-1]) / V
         cum_conv += float(np.sum(V * (-L * mdot_conv))) * dt
@@ -95,9 +100,10 @@ def check(config_path, label):
         # L поячеечное, для оценки берём среднее — члены на границах
         cum_tele += float(-np.mean(L) * tele) * dt
 
-        # ── (3) вклад строки 258: разница вариантов Rs_old[-1] и Rs[-1] ──
+        # ── (3) вклад дефекта DEBT-009: контур брал состав ячейки N-1
+        # (Rs_old[-1]) вместо состава притока Rs_ext ──
         if G_o[N] < 0:
-            diff = G_o[N] * (st_prev.Rs[-1] - Rs[-1])
+            diff = G_o[N] * (st_prev.Rs[-1] - Rs_ext)
             # входит в mdot_conv последней ячейки со знаком -rho_g_std/V
             d_mdot = -rho_g_std * diff / V[-1]
             cum_line258 += float(V[-1] * (-L[-1] * d_mdot)) * dt
@@ -109,7 +115,7 @@ def check(config_path, label):
     print(f"  cum_deg: конвективная часть = {cum_conv:+.4e} Дж")
     print(f"  сумма                       = {cum_time + cum_conv:+.4e} Дж")
     print(f"  предсказание телескопа      = {cum_tele:+.4e} Дж")
-    print(f"  вклад строки 258            = {cum_line258:+.4e} Дж")
+    print(f"  вклад дефекта DEBT-009      = {cum_line258:+.4e} Дж")
     print(f"  шагов с втеканием (G_o[N]<0): {n_inflow} из {len(t_arr) - 1}")
 
 

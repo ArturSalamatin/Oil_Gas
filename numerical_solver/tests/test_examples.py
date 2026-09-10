@@ -37,6 +37,7 @@ ALL_EXAMPLES = [
     "08_degassing_jt",
     "09_degassing_latent_heat",
     "10_deep_degassing",
+    "11_degassing_at_boundary",
 ]
 
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
@@ -50,6 +51,7 @@ NEEDS_SG_SECTION = [
     "04_table_table", "06_table_corey_rp",
     "07_degassing_adiabatic_only", "08_degassing_jt",
     "09_degassing_latent_heat", "10_deep_degassing",
+    "11_degassing_at_boundary",
 ]
 
 

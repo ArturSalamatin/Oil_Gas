@@ -6,7 +6,7 @@ date: 2026-09-10
 issue: DEBT-009
 github: 29
 branch: refactor/debt-009/upstream-rs-outer-boundary
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-10
   round: 3

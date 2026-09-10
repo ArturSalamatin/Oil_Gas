@@ -4,7 +4,7 @@ date: 2026-09-10
 issue: BUG-006
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/27
 branch: fix/bug-006/ode-front-discretization
-status: выполнен частично (2026-09-10)
+status: закрыт (2026-09-10)
 outcome: >
   Временная составляющая устранена измельчением шага истории (3600 -> 300 с,
   один подшаг на запись): 0.281 -> 0.107 К, в однофазной зоне 0.175 -> 0.005 К.

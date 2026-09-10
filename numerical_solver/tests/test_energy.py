@@ -78,6 +78,19 @@ def _rock(lambda_solid=1.5, lambda_oil=0.14, lambda_gas=0.04):
         lambda_oil=lambda_oil, lambda_gas=lambda_gas)
 
 
+def _bc(T_ext, Rs_ext=RS0):
+    """Граничные условия для энергетического решателя (DEBT-009).
+
+    Rs_ext по умолчанию = RS0: во всех этих тестах контур насыщен,
+    поэтому состав притока совпадает с начальным (eq. bc_Sg_ext).
+    p_ext энергетическим решателем не используется — он работает на
+    замороженных полях из hydro_result, — но поле обязательное.
+    """
+    return BoundaryConditions(
+        well=PressureControl(P_WF), p_ext=P0,
+        T_ext=T_ext, Rs_ext=Rs_ext, Sg_ext=0.0)
+
+
 def _log_pressure_profile(grid, p_wf, p_ext):
     """Стационарный логарифмический профиль p(r)."""
     r = grid.r_centers
@@ -104,7 +117,7 @@ class TestABC:
         state = SimulationState(p=np.full(N, P0), Sg=np.zeros(N),
             Rs=np.full(N, RS0), T=np.full(N, T0),
             regime=np.full(N, 2, dtype=int), t=0.0)
-        T_new = solver.solve(_zero_hydro(state, N), state, DT, T_EXT)
+        T_new = solver.solve(_zero_hydro(state, N), state, DT, _bc(T_EXT))
         assert isinstance(T_new, np.ndarray)
         assert T_new.shape == (N,)
 
@@ -159,7 +172,7 @@ class TestPureAdiabatic:
         solver, hydro, state_prev, T_expected, N_cells = setup
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            T_new = solver.solve(hydro, state_prev, DT, T0)
+            T_new = solver.solve(hydro, state_prev, DT, _bc(T0))
         np.testing.assert_allclose(T_new, T_expected, rtol=1e-6)
 
     def test_T_uniform(self, setup):
@@ -167,7 +180,7 @@ class TestPureAdiabatic:
         solver, hydro, state_prev, _, N_cells = setup
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            T_new = solver.solve(hydro, state_prev, DT, T0)
+            T_new = solver.solve(hydro, state_prev, DT, _bc(T0))
         np.testing.assert_allclose(T_new, T_new[0], rtol=1e-12)
 
     def test_cooling_when_dp_negative(self, setup):
@@ -216,7 +229,7 @@ class TestPureConvection:
                 state_prev = SimulationState(p=p, Sg=np.zeros(N_cells),
                     Rs=np.full(N_cells, RS0), T=T,
                     regime=np.full(N_cells, 2, dtype=int), t=step * DT)
-                T = solver.solve(hydro, state_prev, DT, 350.0)
+                T = solver.solve(hydro, state_prev, DT, _bc(350.0))
 
         # Конвекция вымывает T_init = 340 → T_ext = 350
         np.testing.assert_allclose(T, 350.0, atol=0.01)
@@ -242,7 +255,7 @@ class TestPureConvection:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            T_new = solver.solve(hydro, state_prev, DT, 350.0)
+            T_new = solver.solve(hydro, state_prev, DT, _bc(350.0))
         assert T_new[-1] > 340.0
 
 
@@ -269,7 +282,7 @@ class TestPureConduction:
                 Rs=np.full(N_cells, RS0), T=T,
                 regime=np.full(N_cells, 2, dtype=int), t=step * 86400.0)
             hydro = _zero_hydro(state, N_cells)
-            T = solver.solve(hydro, state, 86400.0, 350.0)
+            T = solver.solve(hydro, state, 86400.0, _bc(350.0))
 
         np.testing.assert_allclose(T, 350.0, atol=0.5)
 
@@ -287,7 +300,7 @@ class TestEquilibrium:
         state = SimulationState(p=np.full(N, P0), Sg=np.zeros(N),
             Rs=np.full(N, RS0), T=np.full(N, T_EXT),
             regime=np.full(N, 2, dtype=int), t=0.0)
-        T_new = solver.solve(_zero_hydro(state, N), state, DT, T_EXT)
+        T_new = solver.solve(_zero_hydro(state, N), state, DT, _bc(T_EXT))
         np.testing.assert_allclose(T_new, T_EXT, atol=1e-10)
 
     def test_T_unchanged_with_flow_at_T_ext(self):
@@ -309,7 +322,7 @@ class TestEquilibrium:
             Rs=np.full(N, RS0), T=np.full(N, T_EXT),
             regime=np.full(N, 2, dtype=int), t=0.0)
 
-        T_new = solver.solve(hydro, state_prev, DT, T_EXT)
+        T_new = solver.solve(hydro, state_prev, DT, _bc(T_EXT))
         np.testing.assert_allclose(T_new, T_EXT, atol=1e-8)
 
 
@@ -326,7 +339,7 @@ class TestPositivity:
         state = SimulationState(p=np.full(N, P0), Sg=np.zeros(N),
             Rs=np.full(N, RS0), T=np.full(N, 300.0),
             regime=np.full(N, 2, dtype=int), t=0.0)
-        T_new = solver.solve(_zero_hydro(state, N), state, DT, 350.0)
+        T_new = solver.solve(_zero_hydro(state, N), state, DT, _bc(350.0))
         assert np.all(T_new > 0)
 
     def test_with_flow(self):
@@ -344,7 +357,7 @@ class TestPositivity:
         state_prev = SimulationState(p=p.copy(), Sg=np.zeros(N),
             Rs=np.full(N, RS0), T=np.full(N, T0),
             regime=np.full(N, 2, dtype=int), t=0.0)
-        T_new = solver.solve(hydro, state_prev, DT, T_EXT)
+        T_new = solver.solve(hydro, state_prev, DT, _bc(T_EXT))
         assert np.all(T_new > 0)
 
 
@@ -369,7 +382,7 @@ class TestJTCooling:
             regime=np.full(N, 2, dtype=int), t=DT)
         hydro = _zero_hydro(state_new, N)
 
-        T_new = solver.solve(hydro, state_prev, DT, T0)
+        T_new = solver.solve(hydro, state_prev, DT, _bc(T0))
         assert np.all(T_new < T0)
 
 
@@ -400,7 +413,7 @@ class TestConvectionPlusConduction:
         for step in range(50):
             sp = SimulationState(p=p, Sg=np.zeros(N_cells), Rs=np.full(N_cells, RS0),
                 T=T_both, regime=np.full(N_cells, 2, dtype=int), t=step * DT)
-            T_both = solver_both.solve(hydro, sp, DT, 350.0)
+            T_both = solver_both.solve(hydro, sp, DT, _bc(350.0))
 
         # Только теплопроводность (Q=0)
         solver_cond = TridiagEnergySolver(grid, pvt, _rock())
@@ -409,7 +422,8 @@ class TestConvectionPlusConduction:
             sp = SimulationState(p=np.full(N_cells, P0), Sg=np.zeros(N_cells),
                 Rs=np.full(N_cells, RS0), T=T_cond,
                 regime=np.full(N_cells, 2, dtype=int), t=step * DT)
-            T_cond = solver_cond.solve(_zero_hydro(sp, N_cells), sp, DT, 350.0)
+            T_cond = solver_cond.solve(_zero_hydro(sp, N_cells), sp, DT,
+                                       _bc(350.0))
 
         # Конвекция + теплопроводность ближе к T_ext, чем теплопроводность одна
         err_both = np.max(np.abs(T_both - 350.0))
@@ -440,7 +454,7 @@ class TestStability:
             Rs=np.full(N, RS0), T=T, regime=np.full(N, 2, dtype=int), t=0.0)
 
         for step in range(20):
-            T_new = solver.solve(hydro, state_prev, DT, T_EXT)
+            T_new = solver.solve(hydro, state_prev, DT, _bc(T_EXT))
             state_prev = SimulationState(p=p, Sg=np.zeros(N),
                 Rs=np.full(N, RS0), T=T_new,
                 regime=np.full(N, 2, dtype=int), t=(step + 1) * DT)
@@ -472,7 +486,8 @@ class TestZeroPhaseConduction:
             state = SimulationState(p=np.full(N_cells, P0), Sg=np.zeros(N_cells),
                 Rs=np.full(N_cells, RS0), T=T,
                 regime=np.full(N_cells, 2, dtype=int), t=step * 86400.0)
-            T = solver.solve(_zero_hydro(state, N_cells), state, 86400.0, 350.0)
+            T = solver.solve(_zero_hydro(state, N_cells), state, 86400.0,
+                             _bc(350.0))
 
         # lambda_eff = (1-0.2)*1.5 = 1.2 > 0 -> T -> T_ext
         np.testing.assert_allclose(T, 350.0, atol=1.0)
@@ -677,7 +692,10 @@ class TestComputeDegassing:
         G_o = np.full(N_cells + 1, -0.01)  # постоянный G_o -> R_conv = G_o*Rs = const
         L = np.full(N_cells, 168000.0)
 
-        Q_deg = solver.compute_degassing(So, Sg, Rs, Rs_old, Bo, G_o, L, DT, N_cells)
+        # Rs_ext = RS0: контур насыщен, состав притока совпадает с Rs в ячейках,
+        # поэтому обе ветви контурной грани дают одно значение (DEBT-009)
+        Q_deg = solver.compute_degassing(
+            So, Sg, Rs, Rs_old, Bo, G_o, L, DT, N_cells, RS0)
 
         # Rs[j] = Rs_old[j] -> mdot_time = 0
         # G_o = const, Rs = const -> R_conv[j+1] - R_conv[j] = 0 -> mdot_conv = 0

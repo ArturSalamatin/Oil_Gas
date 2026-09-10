@@ -17,7 +17,7 @@ import numpy as np
 from scipy.linalg import solve_banded
 
 from .base import EnergySolver
-from ..state import HydroResult, SimulationState
+from ..state import BoundaryConditions, HydroResult, SimulationState
 from ..grid.base import Grid
 from ..pvt.base import FullPVT
 from ..io.config import RockConfig
@@ -36,9 +36,14 @@ class TridiagEnergySolver(EnergySolver):
 
     def solve(self, hydro_result: HydroResult,
               state_prev: SimulationState,
-              dt: float, T_ext: float,
+              dt: float, bc: BoundaryConditions,
               collect: "EnergyBalanceAccumulator | None" = None) -> np.ndarray:
         N = self._grid.N
+
+        # Граничные условия на контуре: T_ext — Дирихле по температуре,
+        # Rs_ext — состав притока (eq. bc_Sg_ext: R_s|_ext = R_s^0)
+        T_ext = bc.T_ext
+        Rs_ext = bc.Rs_ext
 
         # Состояние после гидро-шага (замороженные коэффициенты)
         p = hydro_result.state.p
@@ -73,7 +78,7 @@ class TridiagEnergySolver(EnergySolver):
             props['c_p_o'], props['c_p_g'],
             props['mu_JT_o'], props['mu_JT_g'], p, p_old, dt)
         Q_deg = self.compute_degassing(
-            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N)
+            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext)
 
         # Баланс энергии накапливается здесь, а не постобработкой (DEBT-013):
         # передаём ровно те коэффициенты, которые следующей строкой уходят
@@ -258,9 +263,10 @@ class TridiagEnergySolver(EnergySolver):
     # Подшаг 5c: теплота дегазации (eq. 30–31)
     # ──────────────────────────────────────────────────────
 
-    def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N):
+    def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N, Rs_ext):
         """Q_deg[j] = -L · mdot[j], Вт/м³.
         mdot — из временной и конвективной частей (eq. 31).
+        Rs_ext — состав притока с контура (eq. bc_Sg_ext): R_s|_ext = R_s^0.
         """
         phi = self._rock.porosity
         V = self._grid.volumes
@@ -277,11 +283,17 @@ class TridiagEnergySolver(EnergySolver):
             R_conv[f] = Go_p * Rs[f - 1] + Go_m * Rs[f]
         # Забой
         R_conv[0] = G_o[0] * Rs[0]
-        # Контур
+        # Контур: upstream зависит от знака потока.
+        # Конвенция: G_o > 0 — от скважины (отток), G_o < 0 — приток к скважине.
         if G_o[N] >= 0:
+            # Отток наружу: выше по потоку — последняя внутренняя ячейка N-1
             R_conv[N] = G_o[N] * Rs[N - 1]
         else:
-            R_conv[N] = G_o[N] * Rs_old[-1]
+            # Приток с контура: выше по потоку — контур, состав задан ГУ
+            # (eq. bc_Sg_ext, problem_statement.tex:1469-1472).
+            # Брать здесь Rs[N-1] нельзя: при p_{N-1} < p_b это состав
+            # дегазированной нефти вместо состава притока (DEBT-009).
+            R_conv[N] = G_o[N] * Rs_ext
 
         mdot_conv = -rho_g_std * (R_conv[1:] - R_conv[:-1]) / V
         mdot = mdot_time + mdot_conv

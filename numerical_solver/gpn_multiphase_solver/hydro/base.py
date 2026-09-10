@@ -15,9 +15,12 @@ class HydroSolver(ABC):
 
     Один шаг: (state, dt, bc) → HydroResult.
     Конкретные реализации:
-      - AnalyticalHydroSolver (заглушка, стационарный профиль)
       - PrototypeHydroAdapter (обёртка прототипа коллеги)
       - NewtonHydroSolver (собственный блочный Ньютон, будущее)
+
+    Тестовый двойник LogProfileHydroStub (tests/_doubles.py) намеренно
+    держится вне пакета: он подставляет готовый лог-профиль вместо решения
+    уравнения фильтрации и не должен попадать в production-расчёт (DEBT-005).
     """
 
     @abstractmethod

@@ -97,7 +97,7 @@ class Simulator:
                  output_config: OutputConfig | None = None):
         """
         grid          — пространственная сетка (immutable, общая для всех модулей)
-        hydro         — гидродинамический солвер (ABC: AnalyticalHydroSolver, PrototypeHydroAdapter, ...)
+        hydro         — гидродинамический солвер (ABC: PrototypeHydroAdapter, ...)
         energy        — тепловой солвер (ABC: TridiagEnergySolver, ...)
         pvt           — PVT-модель (для rho_o_std, rho_g_std в WellData)
         schedule      — расписание: интервалы + шаг интегрирования

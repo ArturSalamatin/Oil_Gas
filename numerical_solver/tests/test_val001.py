@@ -24,7 +24,7 @@ from gpn_multiphase_solver.io.output import save_npz
 from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
-from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
+from ._doubles import LogProfileHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
@@ -171,7 +171,7 @@ class TestTemperature:
             co_undersaturated=0.0, mu_JT_oil_val=0.0,
             mu_JT_gas_val=0.0, L_degas_val=0.0)
         rp = CoreyRP(0.2, 0.05, 2.0, 2.0)
-        hydro = AnalyticalHydroSolver(grid, pvt, rp)
+        hydro = LogProfileHydroStub(grid, pvt, rp)
         rock = RockConfig(porosity=0.2, permeability=1e-13)
         energy = TridiagEnergySolver(grid, pvt, rock)
 

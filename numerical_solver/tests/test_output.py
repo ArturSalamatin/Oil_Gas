@@ -26,7 +26,7 @@ from gpn_multiphase_solver.io.output import (
     plot_profiles, plot_wellbore_dynamics, plot_well_rate, plot_2d_map,
     plot_pvt_properties,
 )
-from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
+from ._doubles import LogProfileHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.simulator import Simulator, TimeSchedule, ScheduleInterval
 from gpn_multiphase_solver.bc import PressureControl
@@ -56,7 +56,7 @@ def small_history():
     grid = LogRadialGrid(R_WELL, R_EXT, H, N, K_PERM)
     pvt = StandingFullPVT(850.0, 0.85, T0, RS0, 0.0, 2000.0, 1000.0)
     rp = CoreyRP(0.2, 0.05, 2.0, 2.0)
-    hydro = AnalyticalHydroSolver(grid, pvt, rp)
+    hydro = LogProfileHydroStub(grid, pvt, rp)
     rock = RockConfig(porosity=0.2, permeability=K_PERM)
     energy = TridiagEnergySolver(grid, pvt, rock)
 

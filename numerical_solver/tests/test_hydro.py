@@ -1,15 +1,29 @@
-"""Тесты для HydroSolver ABC и AnalyticalHydroSolver (фаза 4).
+"""Тесты для ABC HydroSolver и тестового двойника LogProfileHydroStub.
 
-AnalyticalHydroSolver выполняет 4 действия:
-  1. Вычисляет p_wf из bc.well.boundary_pressure()
-  2. Строит логарифмический профиль p(r)
-  3. Создаёт новый SimulationState (Sg=0, Rs=Rs_ext, T скопирована, t+=dt)
-  4. Вызывает compute_fluxes() → HydroResult
+Предмет теста двойной:
+  1. Контракт ABC HydroSolver — нельзя инстанцировать, реализация проходит
+     isinstance (класс A).
+  2. Сам двойник LogProfileHydroStub (tests/_doubles.py) — он используется
+     как опора в test_simulator.py, test_output.py и test_val001.py, поэтому
+     его собственная корректность должна быть проверена, иначе те тесты
+     опираются на непроверенный фундамент.
 
-Тесты проверяют каждое из этих действий.
-Свойства потоков (знаки, стационарность, баланс масс) покрыты в test_fluxes.py
-и здесь не дублируются — test_matches_compute_fluxes доказывает, что
-analytical.py делегирует fluxes.py.
+Двойник выполняет 4 действия, и на каждое есть блок тестов:
+  1. Вычисляет p_wf из bc.well.boundary_pressure()      → класс B
+  2. Строит логарифмический профиль p(r)                → класс B
+  3. Создаёт новый SimulationState (Sg=0, Rs=Rs_ext,
+     T скопирована, t+=dt)                              → класс C
+  4. Вызывает compute_fluxes() → HydroResult            → класс D
+
+Классы E и F (сквозной дебит, повторные шаги) проверяют композицию
+этих действий.
+
+Свойства потоков (знаки, стационарность, баланс масс) покрыты в
+test_fluxes.py и здесь не дублируются — test_all_fields_match_compute_fluxes
+доказывает, что двойник делегирует fluxes.py, а не дублирует его логику.
+
+До DEBT-005 двойник жил в gpn_multiphase_solver/hydro/analytical.py под
+именем AnalyticalHydroSolver.
 """
 
 import numpy as np
@@ -21,7 +35,7 @@ from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
 from gpn_multiphase_solver.hydro.base import HydroSolver
-from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
+from ._doubles import LogProfileHydroStub
 from gpn_multiphase_solver.fluxes import compute_fluxes
 
 
@@ -63,7 +77,7 @@ def relperm():
 
 @pytest.fixture
 def solver(grid, pvt, relperm):
-    return AnalyticalHydroSolver(grid, pvt, relperm)
+    return LogProfileHydroStub(grid, pvt, relperm)
 
 
 @pytest.fixture
@@ -101,7 +115,7 @@ class TestABC:
         with pytest.raises(TypeError):
             HydroSolver()
 
-    def test_analytical_is_hydro_solver(self, solver):
+    def test_stub_is_hydro_solver(self, solver):
         assert isinstance(solver, HydroSolver)
 
 
@@ -155,7 +169,7 @@ class TestStateConstruction:
     def test_T_copied_not_overwritten(self, solver, bc):
         """T из входного state копируется как есть, не перезаписывается на T0.
 
-        Входное T — неоднородный профиль. Проверяем, что analytical.py
+        Входное T — неоднородный профиль. Проверяем, что _doubles.py
         копирует его, а не подставляет T0.
         """
         # Неоднородный температурный профиль: 345..350 К
@@ -191,7 +205,7 @@ class TestDelegationToFluxes:
                                               relperm, bc):
         """Все 11 массивов HydroResult совпадают с compute_fluxes(new_state).
 
-        Это ключевой тест: доказывает, что analytical.py не дублирует
+        Это ключевой тест: доказывает, что _doubles.py не дублирует
         логику потоков, а делегирует fluxes.py.
         """
         ref = compute_fluxes(result.state, grid, pvt, relperm, bc)

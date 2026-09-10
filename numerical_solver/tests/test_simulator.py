@@ -1,7 +1,8 @@
 """Тесты для Simulator + Factory + TimeSchedule (фаза 6).
 
 Интеграционные тесты: полный цикл hydro → energy → state update.
-Используют AnalyticalHydroSolver + TridiagEnergySolver (реальные, не mock).
+Используют LogProfileHydroStub + TridiagEnergySolver (реальный энергетический
+солвер, гидродинамика — тестовый двойник с детерминированным p(r)).
 
 A. TimeSchedule: substeps, total_time
 B. Simulator.run(): цикл по времени, сохранение, смена BC
@@ -19,7 +20,7 @@ from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
-from gpn_multiphase_solver.hydro.analytical import AnalyticalHydroSolver
+from ._doubles import LogProfileHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.io.config import load_config, RockConfig
 from gpn_multiphase_solver.simulator import (
@@ -49,14 +50,14 @@ BASELINE = Path(__file__).parent.parent / "configs" / "baseline.json"
 # ── Helpers ──────────────────────────────────────────────────
 
 def _make_simulator(n_cells=N, mu_JT_oil=0.0):
-    """Создать Simulator с AnalyticalHydroSolver (без Factory)."""
+    """Создать Simulator с LogProfileHydroStub (без Factory)."""
     grid = LogRadialGrid(R_WELL, R_EXT, H, n_cells, K_PERM)
     pvt = StandingFullPVT(
         rho_o_std=850.0, rho_g_std=0.85, T0=T0, Rs0=RS0,
         co_undersaturated=0.0, c_p_oil=2000.0, c_p_gas=1000.0,
         mu_JT_oil_val=mu_JT_oil, mu_JT_gas_val=0.0, L_degas_val=0.0)
     rp = CoreyRP(0.2, 0.05, 2.0, 2.0)
-    hydro = AnalyticalHydroSolver(grid, pvt, rp)
+    hydro = LogProfileHydroStub(grid, pvt, rp)
     rock = RockConfig(porosity=PHI, permeability=K_PERM)
     energy = TridiagEnergySolver(grid, pvt, rock)
     # Пятый элемент — рудимент от save_every (удалён в DEBT-013). Оставлен
@@ -247,7 +248,7 @@ class TestPhysics:
         Выключенные эффекты:
           - JT: μ_JT_oil = μ_JT_gas = 0 (передаётся в StandingFullPVT)
           - Дегазация: L_degas = 0 (передаётся в StandingFullPVT)
-          - Адиабатический: AnalyticalHydroSolver даёт стационарный p(r),
+          - Адиабатический: LogProfileHydroStub даёт стационарный p(r),
             после первого шага dp/dt = 0 → Q_ad = 0 на всех последующих
           - Двухфазность: Sg = 0, krg = 0 → Q_g = 0 (только нефтяная фаза)
 
@@ -263,7 +264,7 @@ class TestPhysics:
         grid = LogRadialGrid(R_WELL, 5.0, H, n_cells, K_PERM)
         pvt = StandingFullPVT(850.0, 0.85, T0, RS0, 0.0, 2000.0, 1000.0)
         rp = CoreyRP(0.2, 0.05, 2.0, 2.0)
-        hydro = AnalyticalHydroSolver(grid, pvt, rp)
+        hydro = LogProfileHydroStub(grid, pvt, rp)
         rock = RockConfig(porosity=PHI, permeability=K_PERM)
         energy = TridiagEnergySolver(grid, pvt, rock)
 
@@ -321,14 +322,14 @@ class TestPhysics:
     def test_pressure_is_analytical_log_profile(self):
         """Splitting: Simulator не искажает профиль давления.
 
-        AnalyticalHydroSolver строит стационарный лог-профиль p(r) на каждом
+        LogProfileHydroStub строит стационарный лог-профиль p(r) на каждом
         шаге, не зависящий от входного state. EnergySolver обновляет только T.
         Проверяем, что после полного цикла (hydro → energy → state update)
         давление в state совпадает с аналитической формулой:
           p(r) = p_wf + (p_ext - p_wf) · ln(r/rw) / ln(R/rw).
 
         Выключенные эффекты: все тепловые (проверяется только p, не T).
-        Активные: гидродинамика (AnalyticalHydroSolver).
+        Активные: гидродинамика (LogProfileHydroStub).
         """
         grid, pvt, hydro, energy, _ = _make_simulator()
         schedule = _single_interval_schedule(dt_hist=3600.0)

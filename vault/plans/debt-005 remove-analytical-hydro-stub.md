@@ -6,7 +6,7 @@ date: 2026-09-10
 issue: DEBT-005
 github: 28
 branch: refactor/debt-005/remove-analytical-hydro-stub
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-10
   round: 4
@@ -740,7 +740,7 @@ cd D:\Lessons\Grants\2026\GPN\Oil_Gas
 - [ ] `git ls-files numerical_solver/gpn_multiphase_solver/hydro/analytical.py` → пусто (файл удалён и выведен из индекса; надёжнее `Test-Path`, см. шаг 6)
 - [ ] `git grep "AnalyticalHydroSolver" -- numerical_solver/gpn_multiphase_solver/` → пусто
 - [ ] `git grep "AnalyticalHydroSolver" -- numerical_solver/tests/` → пусто (проза docstring-ов; тесты этого не ловят)
-- [ ] `git grep "hydro.analytical" -- numerical_solver/` → пусто
+- [ ] `git grep -E "^\s*(from|import).*hydro\.analytical" -- numerical_solver/` → пусто (искать именно **импорты**: голый `git grep "hydro.analytical"` даёт ложную тревогу на исторических ссылках в прозе docstring `_doubles.py` и `test_hydro.py` — уточнено при реализации)
 - [ ] `git grep "test_analytical_is_hydro_solver" -- numerical_solver/` → пусто (переименование шага 5.3)
 - [ ] `tests/_doubles.py` создан, содержит `LogProfileHydroStub`
 - [ ] Docstring в `hydro/base.py` и `simulator.py` не упоминают удалённый класс

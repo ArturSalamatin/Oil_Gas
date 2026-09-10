@@ -159,7 +159,11 @@ def compute_free_gas_prediction(history, config):
 
     Rs_up = np.empty(N + 1)
     Rs_up[:N] = Rs
-    Rs_up[N] = Rs[-1]
+    # Контур: при притоке (G_o < 0) выше по потоку лежит контур с составом
+    # Rs0, поэтому predicted = |G_o|·(Rs0 - Rs0) = 0 — через контур свободный
+    # газ не поступает (Sg_ext = 0, k_rg = 0). Безусловный Rs[-1] давал бы
+    # ложную невязку при разгазировании у контура — DEBT-009.
+    Rs_up[N] = Rs[-1] if hr.G_o[N] >= 0 else Rs0
 
     predicted = np.abs(hr.G_o) * (Rs0 - Rs_up)
     return predicted, np.abs(hr.G_free_gas)

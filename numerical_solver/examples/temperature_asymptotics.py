@@ -142,7 +142,8 @@ def _face_coefficients(config, history, grid, simulator):
     Phi_g[0] = rho_g[0] * cp_g[0] * Q_g[0]
     J[0] = (mu_JT_o[0] * Phi_o[0] + mu_JT_g[0] * Phi_g[0]) * p[0]
 
-    # ── Контур (f=N): upstream = ячейка N-1 ──
+    # ── Контур (f=N): для Φ и J upstream = ячейка N-1 ──
+    # (для R_conv ниже upstream зависит от знака G_o — см. DEBT-009)
     Phi_o[N] = rho_o[-1] * cp_o[-1] * Q_o[N]
     Phi_g[N] = rho_g[-1] * cp_g[-1] * Q_g[N]
     J[N] = (mu_JT_o[-1] * Phi_o[N] + mu_JT_g[-1] * Phi_g[N]) * p[-1]
@@ -153,7 +154,11 @@ def _face_coefficients(config, history, grid, simulator):
         Go_p, Go_m = max(G_o[f], 0.0), min(G_o[f], 0.0)
         R_conv[f] = Go_p * Rs[f - 1] + Go_m * Rs[f]
     R_conv[0] = G_o[0] * Rs[0]
-    R_conv[N] = G_o[N] * Rs[-1]
+    # Контур: при оттоке upstream = ячейка N-1, при притоке — состав ГУ
+    # (eq. bc_Sg_ext). Безусловный Rs[-1] завышал бы поток растворённого
+    # газа при разгазировании у контура — DEBT-009.
+    Rs_ext = config.initial_conditions.Rs0
+    R_conv[N] = G_o[N] * (Rs[-1] if G_o[N] >= 0 else Rs_ext)
 
     return Phi_o + Phi_g, Phi_o, Phi_g, J, R_conv
 

@@ -20,7 +20,7 @@ from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
-from ._doubles import LogProfileHydroStub
+from ._doubles import LogProfileHydroStub, SubdividingHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.io.config import load_config, RockConfig
 from gpn_multiphase_solver.simulator import (
@@ -411,3 +411,88 @@ class TestHistoryComposition:
 
         assert history.n_saved == 2          # начальное + конец интервала
         assert history.times[-1] == pytest.approx(36000.0)
+
+
+# ── F. Синхронное дробление шага энергии (BUG-010) ───────────
+
+class _CountingEnergySolver:
+    """Обёртка над энергетическим решателем: считает вызовы и их dt.
+
+    Не подменяет физику — делегирует настоящему TridiagEnergySolver.
+    Нужна, чтобы проверить, СКОЛЬКО шагов энергии сделал Simulator и
+    какой длины, не полагаясь на разбор логов.
+    """
+
+    def __init__(self, inner):
+        self._inner = inner
+        self.dt_calls: list[float] = []
+
+    def solve(self, hydro_result, state_prev, dt, bc, collect=None):
+        self.dt_calls.append(dt)
+        return self._inner.solve(hydro_result, state_prev, dt, bc, collect)
+
+
+class TestEnergySubstepsUnderRetry:
+    """BUG-010: когда гидро дробит шаг, энергия обязана дробиться с ним."""
+
+    def test_energy_steps_match_hydro_substeps(self):
+        """Когда гидро дробит шаг, энергия проходит столько же подшагов.
+
+        Физика: расщепление «гидро -> энергия» имеет порядок O(dt) и
+        применимо лишь на шаге, где обе половины устойчивы. Если гидро
+        признало dt слишком крупным и раздробило его, решать энергию
+        одним большим шагом нельзя: замерено -1.39 К ошибки на первом
+        шаге при dt = 450 с против -0.06 К при дроблении энергии на 2
+        (улучшение в 11.8 раза при ИДЕНТИЧНОМ гидро-состоянии) — BUG-010.
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = SubdividingHydroStub(inner_hydro, n_substeps=2)
+        energy = _CountingEnergySolver(inner_energy)
+
+        # Один интервал = один шаг интегрирования: dt_hist = dt_int.
+        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        sim.run(_initial_state())
+
+        # Энергия должна пройти 2 шага по 1800 с, а не 1 шаг на 3600 с.
+        assert energy.dt_calls == [1800.0, 1800.0]
+
+        # Интервал пройден ровно один раз: сумма dt энергии = длине интервала.
+        # Ловит ошибку «большой шаг не отброшен, интервал посчитан дважды».
+        assert sum(energy.dt_calls) == pytest.approx(3600.0)
+
+    def test_no_retry_path_unchanged(self):
+        """Без A-retry путь исполнения не меняется вовсе.
+
+        n_substeps = 1 (гидро дробления не запрашивало) — энергия обязана
+        получить ровно один вызов с полным dt. Регрессия на штатный путь:
+        все рабочие конфиги идут именно так, и их результаты меняться
+        не должны.
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = SubdividingHydroStub(inner_hydro, n_substeps=1)
+        energy = _CountingEnergySolver(inner_energy)
+
+        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        sim.run(_initial_state())
+
+        assert energy.dt_calls == [3600.0]
+
+    def test_subdivision_does_not_duplicate_history(self):
+        """Дробление не добавляет записей в историю.
+
+        Состав истории задаёт расписание, а не число подшагов (DEBT-013).
+        Повторный проход интервала — деталь реализации фикса BUG-010,
+        снаружи он не должен быть виден.
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = SubdividingHydroStub(inner_hydro, n_substeps=2)
+        energy = _CountingEnergySolver(inner_energy)
+
+        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        history = sim.run(_initial_state())
+
+        assert history.n_saved == 2                        # начальное + конец
+        assert history.times[-1] == pytest.approx(3600.0)  # время не удвоилось

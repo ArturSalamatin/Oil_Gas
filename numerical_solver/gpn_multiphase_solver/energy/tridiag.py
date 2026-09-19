@@ -33,6 +33,12 @@ class TridiagEnergySolver(EnergySolver):
         self._grid = grid
         self._pvt = pvt
         self._rock = rock
+        # Проба коэффициентов СЛАУ (DEBT-016). None в production коде;
+        # тест выставляет колбэк, чтобы сверить a, b, c, d с эталоном,
+        # собранным независимо по problem_statement.tex. Отдаются именно
+        # те значения, что уходят в solve_banded_system, — пересобирать
+        # их снаружи нельзя, это повторило бы ошибку BUG-004.
+        self.matrix_probe = None
 
     def solve(self, hydro_result: HydroResult,
               state_prev: SimulationState,
@@ -96,6 +102,15 @@ class TridiagEnergySolver(EnergySolver):
             N, dt, T_old, T_ext,
             props['rho_cp_eff'], Q_T_internal, Q_T_ext,
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
+
+        # Проба (DEBT-016): dt передаётся ФАКТИЧЕСКИЙ — тот, с которым
+        # собрана матрица. При A-retry Simulator дробит шаг и вызывает
+        # solve с dt_sub = dt/n_sub (BUG-010); шаг расписания здесь уже
+        # не при чём, а cap = V·(ρcp)/dt зависит именно от dt_sub.
+        if self.matrix_probe is not None:
+            self.matrix_probe(a=a, b=b, c=c, d=d, dt=dt,
+                              T_old=T_old, hydro_result=hydro_result,
+                              state_prev=state_prev, bc=bc)
 
         # Подшаг 7: решение прогонкой
         T_new = self.solve_banded_system(a, b, c, d, N)

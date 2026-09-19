@@ -4,7 +4,7 @@ date: 2026-09-19
 issue: BUG-007
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/30
 branch: fix/bug-007/convection-implicit-temperature
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-19
   round: 2

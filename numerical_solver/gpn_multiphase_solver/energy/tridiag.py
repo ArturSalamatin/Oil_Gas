@@ -33,7 +33,7 @@ class TridiagEnergySolver(EnergySolver):
         self._grid = grid
         self._pvt = pvt
         self._rock = rock
-        # Проба коэффициентов СЛАУ (DEBT-016). None в продуктовом коде;
+        # Проба коэффициентов СЛАУ (DEBT-016). None в production коде;
         # тест выставляет колбэк, чтобы сверить a, b, c, d с эталоном,
         # собранным независимо по problem_statement.tex. Отдаются именно
         # те значения, что уходят в solve_banded_system, — пересобирать

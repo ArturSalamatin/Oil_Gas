@@ -14,6 +14,12 @@
 
 Ожидаемый результат: (б) точнее (а) примерно в 12 раз.
 
+ПОСЛЕ ФИКСА числа не меняются, и это правильно: скрипт вызывает
+hydro.solve и energy.solve НАПРЯМУЮ, в обход Simulator, то есть
+продолжает демонстрировать сам механизм. Исправленный путь (Simulator
+дробит энергию сам) проверяется скриптом dt_anomaly_scan.py: там
+аномальные dt = 1200, 720, 450, 400 с перестали выбиваться из тренда.
+
 Запуск (из numerical_solver/):
     .venv/Scripts/python examples/07_degassing_adiabatic_only/dt_anomaly_energy_substeps.py
 """

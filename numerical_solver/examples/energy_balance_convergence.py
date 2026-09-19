@@ -133,7 +133,7 @@ def plot_balance_convergence(results, output_dir: Path,
     plt.close(fig)
     print(f"\nСохранён: {out_path}")
 
-    print("\n  Δt, с   финальная    максимальная")
+    print("\n  dt, с   финальная    максимальная")
     for bal in results:
         print(f"  {bal['value']:6d}   {bal['final_rel']:.3e}    "
               f"{bal['max_rel']:.3e}")

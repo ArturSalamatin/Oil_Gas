@@ -312,7 +312,7 @@ def report(history, config, grid, energy_solver, n_steps=DEFAULT_N_STEPS):
         err = float(np.max(np.abs(T_num - T_i)))
         err1 = float(np.max(np.abs((T_num - T_i)[mask1])))
         results[label] = (r_o, T_o, err)
-        print(f"  {label:26s} max|ΔT| = {err:.4f} К   "
+        print(f"  {label:26s} max|dT| = {err:.4f} К   "
               f"(однофазная зона {err1:.4f} К)")
 
     print("  Выключение любого члена увеличивает ошибку на порядок — "

@@ -174,7 +174,9 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     print(f"Сохранён: {out_path}")
 
     final_rel = abs(bal["residual"][-1] / (abs(bal["delta_E"][-1]) + 1e-30))
-    print(f"  ΔE финал          = {bal['delta_E'][-1]:+.4e} Дж")
+    # Без символа Δ: консоль Windows под cp1251 его не кодирует и
+    # print падает с UnicodeEncodeError, обрывая весь расчёт.
+    print(f"  dE финал          = {bal['delta_E'][-1]:+.4e} Дж")
     print(f"  Адиабатика финал  = {bal['cum_adiab'][-1]:+.4e} Дж")
     print(f"  Конвекция финал   = {bal['cum_conv'][-1]:+.4e} Дж")
     print(f"  Джоуль-Томсон     = {bal['cum_jt'][-1]:+.4e} Дж")
@@ -195,10 +197,10 @@ def report_energy_balance(config, history, grid, simulator) -> dict:
     bal = compute_balance(history, grid, config)
 
     print("── Баланс энергии ──")
-    print(f"  ΔE финал = {bal['delta_E'][-1]:+.4e} Дж, "
+    print(f"  dE финал = {bal['delta_E'][-1]:+.4e} Дж, "
           f"сумма источников = {bal['total'][-1]:+.4e} Дж")
     print(f"  относительная невязка = {bal['rel_residual'][-1]:.4e}")
-    print(f"    (остаток — ошибка расщепления O(Δt): гидро-шаг замораживает "
+    print(f"    (остаток — ошибка расщепления O(dt): гидро-шаг замораживает "
           f"T, тепловой шаг — p и S_g)")
     return bal
 

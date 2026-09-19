@@ -5,7 +5,7 @@
     "h": 10.0
   },
   "grid": {
-    "N": 50,
+    "N": 150,
     "type": "log_radial"
   },
   "rock": {
@@ -4373,7 +4373,8 @@
   "numerics": {
     "dt_min": 1.0,
     "dt_max": 86400,
-    "skin": 0.0
+    "skin": 0.0,
+    "max_retries": 12
   },
   "output": {
     "log_level": "INFO"

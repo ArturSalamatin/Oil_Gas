@@ -151,7 +151,7 @@ def report(config_path, label):
     print(f"  НЕВЯЗКА СХЕМЫ = {acc - src:+.4e} Дж  (отн. {abs(acc-src)/scale:.3e})")
 
     print("\n-- ИЗ СКРИПТА energy_balance.py --")
-    print(f"  ΔE          = {bal['delta_E'][-1]:+.4e} Дж")
+    print(f"  dE          = {bal['delta_E'][-1]:+.4e} Дж")
     print(f"  конвекция   = {bal['cum_conv'][-1]:+.4e} Дж")
     print(f"  JT          = {bal['cum_jt'][-1]:+.4e} Дж")
     print(f"  адиабатика  = {bal['cum_adiab'][-1]:+.4e} Дж")
@@ -160,11 +160,11 @@ def report(config_path, label):
           f"  (отн. {bal['rel_residual'][-1]:.3e})")
 
     print("\n-- РАСХОЖДЕНИЕ ПОЧЛЕННО (скрипт - решатель) --")
-    print(f"  Δ накопление = {bal['delta_E'][-1] - acc:+.4e}")
-    print(f"  Δ конвекция  = {bal['cum_conv'][-1] - conv:+.4e}")
-    print(f"  Δ JT         = {bal['cum_jt'][-1] - jt:+.4e}")
-    print(f"  Δ адиабатика = {bal['cum_adiab'][-1] - ad:+.4e}")
-    print(f"  Δ дегазация  = {bal['cum_deg'][-1] - deg:+.4e}")
+    print(f"  d накопление = {bal['delta_E'][-1] - acc:+.4e}")
+    print(f"  d конвекция  = {bal['cum_conv'][-1] - conv:+.4e}")
+    print(f"  d JT         = {bal['cum_jt'][-1] - jt:+.4e}")
+    print(f"  d адиабатика = {bal['cum_adiab'][-1] - ad:+.4e}")
+    print(f"  d дегазация  = {bal['cum_deg'][-1] - deg:+.4e}")
 
     return dict(acc=acc, src=src, rel_scheme=abs(acc - src) / scale,
                 rel_script=float(bal['rel_residual'][-1]))

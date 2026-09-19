@@ -10,6 +10,22 @@ import sys
 import time
 from pathlib import Path
 
+# ── Кодировка консоли ────────────────────────────────────────
+# Консоль Windows по умолчанию cp1251, а вывод примеров содержит символы,
+# которых в ней нет: м³ст/с, λ, μ, Φ, ≠, ≡, →, рамки ── в заголовках.
+# Любой такой print падает с UnicodeEncodeError и обрывает расчёт — причём
+# уже ПОСЛЕ того, как отработал решатель
+#
+# Переключаем поток на UTF-8 с errors="replace". 
+# Файлы (CSV, PNG) пишутся своими
+# кодировками и этой строкой не затрагиваются.
+#
+# run_all.py решает ту же задачу своим _print_safe, но только для
+# собственных сообщений — внутрь дочерних процессов защита не проходит.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 # ── Подключение прототипа radial_blackoil ────────────────────
 # Прототип не установлен в venv (pyproject.toml включает только
 # gpn_multiphase_solver*), но Factory импортирует его при создании

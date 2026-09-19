@@ -11,6 +11,8 @@ tests/, чтобы его нельзя было по ошибке подстав
 (сигнатура совпадает с настоящим PrototypeHydroAdapter).
 """
 
+from dataclasses import replace
+
 import numpy as np
 
 from gpn_multiphase_solver.hydro.base import HydroSolver
@@ -67,3 +69,32 @@ class LogProfileHydroStub(HydroSolver):
         # compute_fluxes возвращает HydroResult с state=new_state (без изменений),
         # что и нужно: state содержит обновлённые p, Sg, Rs, T, t.
         return result
+
+
+class SubdividingHydroStub(HydroSolver):
+    """Двойник, сообщающий о дроблении шага, не выполняя его.
+
+    Нужен для BUG-010: LogProfileHydroStub никогда не дробит шаг (он строит
+    аналитический профиль, а не решает уравнение), поэтому на нём нельзя
+    проверить, что Simulator реагирует на n_substeps > 1. Физика берётся
+    у LogProfileHydroStub, поле n_substeps проставляется принудительно.
+
+    Запоминает dt каждого вызова solve — тест по этому списку проверяет,
+    что интервал пройден нужным числом шагов нужной длины.
+    """
+
+    def __init__(self, inner: LogProfileHydroStub, n_substeps: int):
+        self._inner = inner
+        self._n_substeps = int(n_substeps)
+        self.dt_calls: list[float] = []      # dt каждого вызова solve
+
+    def solve(self, state: SimulationState, dt: float,
+              bc: BoundaryConditions) -> HydroResult:
+        self.dt_calls.append(dt)
+        result = self._inner.solve(state, dt, bc)
+        # О дроблении сообщаем только на ПЕРВОМ (крупном) вызове: подшаги,
+        # как и в примере 07, вложенного дробления не требуют (замерено при
+        # планировании BUG-010). Так двойник воспроизводит реальное поведение
+        # адаптера, а не бесконечную вложенность.
+        n = self._n_substeps if len(self.dt_calls) == 1 else 1
+        return replace(result, n_substeps=n)

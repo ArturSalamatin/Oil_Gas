@@ -4,7 +4,7 @@ date: 2026-09-19
 issue: BUG-010
 github: "#31"
 branch: fix/bug-010/table-pvt-dt-anomaly
-status: готов к реализации
+status: реализован
 baseline_commit: 82ba4a1
 audit:
   date: 2026-09-19

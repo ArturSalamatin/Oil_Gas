@@ -59,34 +59,46 @@ def _run_balance(example: str, p_wf: float | None = None) -> dict:
     return compute_balance(history, simulator._grid, config)
 
 
+# Порог замыкания баланса. Дискретные уравнения схемы — тождество: если
+# все члены выписаны на правильных слоях, баланс сходится точно, и остаются
+# только округления прогонки. На укороченном сценарии тестов (6 ч, N = 25)
+# измерено 4.0e-14 (пример 03) и 1.2e-13 (пример 04) — запас к порогу
+# почти три порядка, а до дефектного значения 9.6e-3 остаётся восемь.
+#
+# До BUG-007 здесь стояли 1e-2 и 2e-2: невязку считали ошибкой расщепления
+# O(dt) и подгоняли порог под наблюдаемые ~1e-3. Ошибки расщепления в
+# балансе нет (см. шапку gpn_multiphase_solver/energy/balance.py).
+TOL_RESIDUAL = 1e-10
+
+
 def test_energy_balance_table_pvt():
     """Табличный PVT + табличная ОФП: именно эта конфигурация давала 20 %.
 
-    До фикса BUG-004 невязка была 0.204 на этом же setup. Порог 1e-2 —
-    уровень ошибки расщепления O(dt); измеренное значение ~3.6e-3, запас
-    примерно втрое.
+    До фикса BUG-004 невязка была 0.204 на этом же setup, до BUG-007 —
+    ~3.6e-3. Теперь это округления прогонки.
     """
     bal = _run_balance("04_table_table")
-    assert abs(bal["rel_residual"][-1]) < 1e-2
+    assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
 
 
 def test_energy_balance_standing_pvt():
     """Standing + Corey: контрольная точка, что фикс не сломал рабочий путь.
 
-    Порог здесь 2e-2, а не 1e-2: у этого примера невязка ~9.4e-3 —
-    остаток чисто от расщепления по времени (дрейфом свойств он не был
-    поражён, фикс его не уменьшает). При пороге 1e-2 запас был бы 6 %,
-    и тест стал бы хрупким к любому изменению сетки или шага.
+    Прежде порог здесь был вдвое мягче остальных (2e-2 против 1e-2):
+    невязка ~9.4e-3 считалась неустранимым остатком расщепления, и при
+    пороге 1e-2 запас составлял 6 %. После BUG-007 выяснилось, что это был
+    не остаток, а дефект: невязка упала до 4.0e-14, и отдельный порог
+    больше не нужен.
     """
     bal = _run_balance("03_standing_corey")
-    assert abs(bal["rel_residual"][-1]) < 2e-2
+    assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
 
 
 def test_energy_balance_no_degassing():
     """Табличный PVT при p_wf > p_b: газ не выделяется, Sg == 0, Rs == const.
 
     Отдельный режим, потому что в нём отсутствует разгазирование, но дефект
-    накопления присутствовал в полной мере (0.209 до фикса) — дрейф
+    накопления присутствовал в полной мере (0.209 до фикса BUG-004) — дрейф
     (rho cp)_eff идёт через rho_o, а не только через Sg.
 
     ВНИМАНИЕ: cum_deg здесь НЕ равен нулю и не должен — при Rs == const
@@ -96,7 +108,7 @@ def test_energy_balance_no_degassing():
     на ноль было бы ошибкой (см. DEBT-009 и запись BUG-004 в реестре).
     """
     bal = _run_balance("04_table_table", p_wf=16e6)
-    assert abs(bal["rel_residual"][-1]) < 1e-2
+    assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
 
 
 @pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
@@ -137,5 +149,71 @@ def test_balance_independent_of_history_structure(example):
 
     # Невязка проходит порог при обеих структурах — раньше разреженная
     # история давала на два-три порядка хуже.
-    assert abs(sparse["rel_residual"][-1]) < 2e-2
-    assert abs(dense["rel_residual"][-1]) < 2e-2
+    assert abs(sparse["rel_residual"][-1]) < TOL_RESIDUAL
+    assert abs(dense["rel_residual"][-1]) < TOL_RESIDUAL
+
+
+# ──────────────────────────────────────────────────────────────
+# Регрессия BUG-007: конвективный член на слое T^{n+1}
+# ──────────────────────────────────────────────────────────────
+
+
+def test_convection_uses_implicit_temperature():
+    """Баланс замыкается с машинной точностью на Standing-PVT.
+
+    Прямой регрессор BUG-007. Схема НЕЯВНАЯ: Phi+/Phi- стоят в матрице
+    СЛАУ при неизвестных T^{n+1}, а накопитель баланса умножал их на T^n.
+    Ошибка ~Phi*(T^{n+1}-T^n)*dt за подшаг систематична, пока идёт
+    охлаждение, поэтому копилась: 9.6e-3 против самосогласованности
+    схемы 5.5e-13.
+
+    На дефектном коде даёт ~9.6e-3 — мимо порога на восемь порядков
+    (проверено откатом правки).
+    """
+    bal = _run_balance("03_standing_corey")
+    assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
+
+
+def test_convection_implicit_table_pvt():
+    """То же на табличном PVT — вторая ветвь по источнику свойств.
+
+    Источник PVT был разделительной линией в BUG-004 (20 % на таблице
+    против 1 % на Стендинге), поэтому обе ветви проверяются раздельно:
+    дефект, проявляющийся только на одной из них, иначе прошёл бы мимо.
+    """
+    bal = _run_balance("04_table_table")
+    assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
+
+
+def test_accumulation_without_substep_raises():
+    """add_accumulation без парного add_substep обязана бросить RuntimeError.
+
+    Контракт двухфазного накопления (DEBT-013): коэффициенты подшага
+    приходят в первой фазе, применяются во второй. При рассогласовании фаз
+    Phi остались бы от ПРЕДЫДУЩЕГО подшага, и конвективный вклад
+    посчитался бы по чужим коэффициентам — молча, без признаков.
+
+    Без явной проверки падение всё равно произошло бы, но с невнятным
+    "TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'"
+    на гашеном _dt_substep. Явное сообщение называет причину.
+    """
+    import numpy as np
+
+    from gpn_multiphase_solver.energy.balance import EnergyBalanceAccumulator
+    from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
+
+    # Сетка-минимум: значения роли не играют, нужны лишь N и volumes.
+    grid = LogRadialGrid(0.1, 100.0, 10.0, 5, 1e-14)
+    acc = EnergyBalanceAccumulator(grid)
+
+    T_new = np.full(5, 350.0)
+    T_prev = np.full(5, 351.0)
+    rho_cp_eff = np.full(5, 2.0e6)
+
+    with pytest.raises(RuntimeError, match="add_substep"):
+        acc.add_accumulation(T_new, T_prev, rho_cp_eff, dt=3600.0)
+
+    # Состояние не тронуто: проверка стоит до любых накоплений, поэтому
+    # прерванный вызов не оставляет накопитель частично обновлённым.
+    assert acc.delta_E == 0.0
+    assert acc.cum_cond == 0.0

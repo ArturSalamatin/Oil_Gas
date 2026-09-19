@@ -153,26 +153,8 @@ class Simulator:
 
             # ── Внутренний цикл: подшаги интегрирования ──
             for step in range(n_sub):
-                # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
-                hydro_result = self._hydro.solve(state, dt, interval.bc)
-
-                # 2. Температура на замороженных p, Sg, Rs.
-                # Решатель попутно отдаёт накопителю коэффициенты, которые
-                # уходят в СЛАУ, — баланс считается по тем же величинам,
-                # что и схема (DEBT-013).
-                T_new = self._energy.solve(
-                    hydro_result, state, dt, interval.bc,
-                    collect=balance)
-
-                # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
-                state = SimulationState(
-                    p=hydro_result.state.p,
-                    Sg=hydro_result.state.Sg,
-                    Rs=hydro_result.state.Rs,
-                    T=T_new,
-                    regime=hydro_result.state.regime,
-                    t=hydro_result.state.t,
-                )
+                state, hydro_result = self._advance(
+                    state, dt, interval.bc, balance)
 
                 # 4. Сохранить состояние на конце интервала истории.
                 # Единственный механизм отбора: моменты записи задаёт
@@ -199,6 +181,75 @@ class Simulator:
             f"T_final = {state.t:.0f} с")
 
         return history
+
+    def _advance(self, state: SimulationState, dt: float,
+                 bc: BoundaryConditions,
+                 balance: EnergyBalanceAccumulator,
+                 allow_subdivision: bool = True
+                 ) -> tuple[SimulationState, HydroResult]:
+        """Один шаг dt: гидродинамика → энергия → новое состояние.
+
+        Если гидро-решатель раздробил шаг на n_substeps подшагов (A-retry),
+        шаг энергии дробится на столько же. Причина — BUG-010: расщепление
+        «гидро → энергия» имеет порядок O(dt) и применимо лишь там, где
+        устойчивы обе половины. Решать энергию одним шагом по интервалу,
+        который гидродинамика признала слишком крупным, значит накопить
+        ошибку порядка градуса (замерено −1.39 К против −0.06 К при
+        дроблении, пример 07 при dt = 450 с).
+
+        Порядок вызовов критичен. `EnergyBalanceAccumulator` — кумулятивный
+        сумматор без отката: вклад, единожды добавленный в него, убрать
+        нельзя. Поэтому энергия решается только ПОСЛЕ того, как выяснено
+        окончательное число подшагов; результат «пробного» крупного шага
+        отбрасывается до того, как он попадёт в баланс.
+
+        allow_subdivision=False запрещает повторное дробление: так
+        ограничивается один уровень вложенности. Подшаг, который сам
+        потребовал retry, принимается как есть — иначе рекурсия не имеет
+        дна. На примере 07 такого не происходит ни разу (подшаги 225 и
+        200 с сходятся без дробления), это страховка для других конфигов.
+        """
+        # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
+        hydro_result = self._hydro.solve(state, dt, bc)
+
+        n_sub = getattr(hydro_result, 'n_substeps', 1)
+
+        if allow_subdivision and n_sub > 1:
+            # Результат пробного шага отбрасываем целиком и проходим
+            # интервал заново — гидро и энергию вместе, тем же дроблением.
+            # Гидро-подшаги при этом считаются повторно: плата за то, что
+            # A-retry живёт внутри адаптера (DEBT-015).
+            dt_sub = dt / n_sub
+            for _ in range(n_sub):
+                state, hydro_result = self._advance(
+                    state, dt_sub, bc, balance, allow_subdivision=False)
+            return state, hydro_result
+
+        if n_sub > 1:
+            # Вложенное дробление: принимаем как есть, но не молчим —
+            # часть ошибки расщепления здесь остаётся неисправленной.
+            user_log.warning(
+                f"Гидро раздробило подшаг dt={dt:.3g} с на {n_sub} частей; "
+                f"шаг энергии не дробится (предел вложенности). "
+                f"Точность T на этом шаге снижена — уменьшите dt_integration.")
+
+        # 2. Температура на замороженных p, Sg, Rs.
+        # Решатель попутно отдаёт накопителю коэффициенты, которые
+        # уходят в СЛАУ, — баланс считается по тем же величинам,
+        # что и схема (DEBT-013).
+        T_new = self._energy.solve(
+            hydro_result, state, dt, bc, collect=balance)
+
+        # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
+        new_state = SimulationState(
+            p=hydro_result.state.p,
+            Sg=hydro_result.state.Sg,
+            Rs=hydro_result.state.Rs,
+            T=T_new,
+            regime=hydro_result.state.regime,
+            t=hydro_result.state.t,
+        )
+        return new_state, hydro_result
 
     def _zero_hydro(self, state: SimulationState) -> HydroResult:
         """HydroResult с нулевыми потоками (для начального состояния)."""

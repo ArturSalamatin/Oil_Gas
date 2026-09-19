@@ -4,7 +4,7 @@ date: 2026-09-19
 issue: BUG-011
 github: 32
 branch: fix/bug-011/test-retries-assertion
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-19
   round: 1

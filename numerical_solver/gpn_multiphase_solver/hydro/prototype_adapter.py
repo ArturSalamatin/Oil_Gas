@@ -107,12 +107,20 @@ class PrototypeHydroAdapter(HydroSolver):
 
             if success:
                 if attempt > 0:
+                    # Сообщаем и о дроблении шага энергии: Simulator повторит
+                    # интервал тем же числом подшагов (BUG-010), и это видимо
+                    # сказывается на времени расчёта.
                     user_log.info(
                         f"Hydro: converged after {n_sub} substeps "
-                        f"(dt_sub={dt_sub:.2e} s)")
+                        f"(dt_sub={dt_sub:.2e} s); "
+                        f"шаг энергии раздроблен на {n_sub} подшагов")
 
-                # Шаг 5–8: потоки и сборка HydroResult
-                return self._build_result(current_state, new_proto, bc)
+                # Шаг 5–8: потоки и сборка HydroResult.
+                # n_sub уходит наружу: энергия обязана пройти столько же
+                # подшагов, иначе расщепление применяется на шаге, который
+                # гидродинамика признала неустойчивым (BUG-010).
+                return self._build_result(current_state, new_proto, bc,
+                                          n_substeps=n_sub)
 
         # Подсказка называет обе известные первопричины (DEBT-007, BUG-003).
         # Про dt_integration намеренно не пишем: при высокой Sg уменьшение dt
@@ -126,8 +134,13 @@ class PrototypeHydroAdapter(HydroSolver):
             f"(обе фазы малоподвижны одновременно).")
 
     def _build_result(self, new_state: SimulationState,
-                      new_proto, bc: BoundaryConditions) -> HydroResult:
-        """Шаги 5–8: извлечь потоки из прототипа, вычислить Q, u, m, Gm."""
+                      new_proto, bc: BoundaryConditions,
+                      n_substeps: int = 1) -> HydroResult:
+        """Шаги 5–8: извлечь потоки из прототипа, вычислить Q, u, m, Gm.
+
+        n_substeps — фактическое дробление A-retry, уходит в HydroResult
+        для синхронного дробления шага энергии (BUG-010).
+        """
         N = self._grid.N
 
         # ── Шаг 5+6: потоки + согласование знаков ──
@@ -222,4 +235,5 @@ class PrototypeHydroAdapter(HydroSolver):
             u_o=u_o, u_g=u_g,
             m_o=m_o, m_g=m_g,
             Gm_o=Gm_o, Gm_g=Gm_g,
+            n_substeps=n_substeps,
         )

@@ -170,19 +170,28 @@ class TridiagEnergySolver(EnergySolver):
         Phi_o = np.zeros(N + 1)
         Phi_g = np.zeros(N + 1)
 
-        # Внутренние грани
-        for f in range(1, N):
-            up_o = f - 1 if Q_o[f] >= 0 else f
-            Phi_o[f] = rho_o[up_o] * c_p_o[up_o] * Q_o[f]
+        # Внутренние грани. Грань f разделяет ячейки f-1 (слева) и f (справа).
+        # Конвенция знаков: Q >= 0 — течение от скважины, слева направо, выше
+        # по потоку левая ячейка f-1; Q < 0 — к скважине, выше по потоку f.
+        # Ноль отнесён к левой ветке (>=): при Q = 0 вклад нулевой, выбор
+        # ячейки ни на что не влияет.
+        f = np.arange(1, N)
+        up_o = np.where(Q_o[f] >= 0, f - 1, f)
+        up_g = np.where(Q_g[f] >= 0, f - 1, f)
 
-            up_g = f - 1 if Q_g[f] >= 0 else f
-            Phi_g[f] = rho_g[up_g] * c_p_g[up_g] * Q_g[f]
+        Phi_o[f] = rho_o[up_o] * c_p_o[up_o] * Q_o[f]
+        Phi_g[f] = rho_g[up_g] * c_p_g[up_g] * Q_g[f]
 
         # Забой (f=0): upstream = ячейка 0
         Phi_o[0] = rho_o[0] * c_p_o[0] * Q_o[0]
         Phi_g[0] = rho_g[0] * c_p_g[0] * Q_g[0]
 
-        # Контур (f=N): upstream = ячейка N-1 (приближение)
+        # Контур (f=N): upstream = ячейка N-1 (приближение).
+        # Знак потока здесь не разбирается: при притоке (Q < 0) выше по
+        # потоку физически контур, и свойства надо брать при условиях ГУ,
+        # а не при p_{N-1}, T_{N-1}. Ср. compute_degassing, где та же грань
+        # обработана строго (DEBT-009). Приведение к единому подходу —
+        # DEBT-017.
         Phi_o[N] = rho_o[N - 1] * c_p_o[N - 1] * Q_o[N]
         Phi_g[N] = rho_g[N - 1] * c_p_g[N - 1] * Q_g[N]
 
@@ -237,25 +246,29 @@ class TridiagEnergySolver(EnergySolver):
         """
         J_face = np.zeros(N + 1)
 
-        # Внутренние грани
-        for f in range(1, N):
-            up_o = f - 1 if Q_o[f] >= 0 else f
-            Phi_o_p = max(Phi_o[f], 0.0)
-            Phi_o_m = min(Phi_o[f], 0.0)
-            J_o = mu_JT_o[up_o] * (Phi_o_p * p[f - 1] + Phi_o_m * p[f])
+        # Внутренние грани. Выбор ячейки выше по потоку — тот же, что
+        # в compute_convective_coefficients (раздельно по фазам).
+        # <Φ_α·p>_f = Φ_α⁺·p[f-1] + Φ_α⁻·p[f] — оператор против потока
+        # (eq. upstream_operator): при Φ > 0 берётся левая ячейка, при Φ < 0
+        # правая; расщепление по знаку делает выбор арифметическим.
+        f = np.arange(1, N)
+        up_o = np.where(Q_o[f] >= 0, f - 1, f)
+        up_g = np.where(Q_g[f] >= 0, f - 1, f)
 
-            up_g = f - 1 if Q_g[f] >= 0 else f
-            Phi_g_p = max(Phi_g[f], 0.0)
-            Phi_g_m = min(Phi_g[f], 0.0)
-            J_g = mu_JT_g[up_g] * (Phi_g_p * p[f - 1] + Phi_g_m * p[f])
+        J_o = mu_JT_o[up_o] * (np.maximum(Phi_o[f], 0.0) * p[f - 1]
+                               + np.minimum(Phi_o[f], 0.0) * p[f])
+        J_g = mu_JT_g[up_g] * (np.maximum(Phi_g[f], 0.0) * p[f - 1]
+                               + np.minimum(Phi_g[f], 0.0) * p[f])
 
-            J_face[f] = J_o + J_g
+        J_face[f] = J_o + J_g
 
         # Забой: <Φ·p> = Φ_well · p[0] (upstream = ячейка 0)
         J_face[0] = (mu_JT_o[0] * Phi_o[0] * p[0]
                      + mu_JT_g[0] * Phi_g[0] * p[0])
 
-        # Контур: upstream = ячейка N-1
+        # Контур: upstream = ячейка N-1. Как и в Φ на этой грани, знак
+        # потока не разбирается: при притоке μ_JT и p должны браться
+        # из ГУ контура. Правится вместе с Φ — DEBT-017.
         J_face[N] = (mu_JT_o[-1] * Phi_o[N] * p[-1]
                      + mu_JT_g[-1] * Phi_g[N] * p[-1])
 
@@ -292,10 +305,12 @@ class TridiagEnergySolver(EnergySolver):
 
         # Конвективная часть: R_conv[f] = <G_o · Rs>_f
         R_conv = np.zeros(N + 1)
-        for f in range(1, N):
-            Go_p = max(G_o[f], 0.0)
-            Go_m = min(G_o[f], 0.0)
-            R_conv[f] = Go_p * Rs[f - 1] + Go_m * Rs[f]
+        # Внутренние грани: <G^o·Rs>_f = G^o⁺·Rs[f-1] + G^o⁻·Rs[f]
+        # (eq. mdot_conv_face + upstream_operator). При оттоке от скважины
+        # (G_o > 0) состав берётся из левой ячейки, при притоке — из правой.
+        f = np.arange(1, N)
+        R_conv[f] = (np.maximum(G_o[f], 0.0) * Rs[f - 1]
+                     + np.minimum(G_o[f], 0.0) * Rs[f])
         # Забой
         R_conv[0] = G_o[0] * Rs[0]
         # Контур: upstream зависит от знака потока.

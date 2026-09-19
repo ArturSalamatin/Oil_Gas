@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
-from gpn_multiphase_solver.io.config import load_config
+from gpn_multiphase_solver.io.config import NumericsConfig, load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -1231,15 +1231,27 @@ class TestHighGasSaturation:
         задач (табличный PVT, высокая Sg), а не только для сценария с
         корреляциями Стендинга, на котором BUG-003 верифицировался косвенно.
 
-        Отдельный прогон, а не фикстура results: сетка другая. ~60 с, отсюда
+        Источник значения — умолчание NumericsConfig, НЕ конфиг примера
+        (BUG-011). Конфиг 04a задаёт 12 под свою штатную сетку N = 150, где
+        девяти хватает лишь впритык (BUG-008); здесь сетка N = 80 и вопрос
+        стоит иначе. Само умолчание = 9 контролируется в test_config.py:185.
+
+        Штатную конфигурацию примера (N = 150, лимит 12) покрывает фикстура
+        results — она считает каждый пример на его собственном конфиге.
+
+        Отдельный прогон, а не фикстура results: сетка другая. ~50 с, отсюда
         маркер slow (pytest -m "not slow" его пропустит).
         """
         cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
         cfg.grid.N = 80
-        # Приватные поля НЕ трогаем: смысл теста в том, что штатного
-        # значения из конфига достаточно.
-        assert cfg.numerics.max_retries == 9, (
-            "значение по умолчанию изменилось — пересмотреть BUG-003")
+        # Лимит дробления берём из УМОЛЧАНИЯ NumericsConfig, а не из конфига
+        # 04a: там стоит 12 под штатную сетку примера N = 150, где девяти
+        # хватает лишь впритык (BUG-008: требуется attempt 9 из 9). Здесь
+        # сетка другая (N = 80), и проверяется ровно обратное — что на этом
+        # сценарии штатных девяти удвоений достаточно с запасом.
+        # Присваивание строго ДО SimulatorFactory.from_config: фабрика читает
+        # max_retries один раз при сборке адаптера (factory.py:207).
+        cfg.numerics.max_retries = NumericsConfig().max_retries
 
         sim, initial = SimulatorFactory.from_config(cfg)
         history = sim.run(initial)

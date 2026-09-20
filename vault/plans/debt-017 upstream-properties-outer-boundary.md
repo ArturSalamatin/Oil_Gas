@@ -6,7 +6,11 @@ date: 2026-09-19
 issue: DEBT-017
 github: 34
 branch: refactor/debt-017/upstream-properties-outer-boundary
-status: готов к реализации
+status: реализован
+decisions:
+  - date: 2026-09-20
+    question: порядок работ с DEBT-019 (обе задачи правят compute_convective_coefficients)
+    answer: вариант А — только DEBT-017; забой и assemble_tridiag не трогать (П-12)
 audit:
   date: 2026-09-20
   round: 1

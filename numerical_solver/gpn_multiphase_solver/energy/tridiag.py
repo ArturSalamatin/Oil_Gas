@@ -47,7 +47,8 @@ class TridiagEnergySolver(EnergySolver):
         N = self._grid.N
 
         # Граничные условия на контуре: T_ext — Дирихле по температуре,
-        # Rs_ext — состав притока (eq. bc_Sg_ext: R_s|_ext = R_s^0)
+        # Rs_ext — состав притока (eq. bc_Sg_ext: R_s|_ext = R_s^0).
+        # p_ext используется ниже, в _ext_properties (eq. bc_props_ext).
         T_ext = bc.T_ext
         Rs_ext = bc.Rs_ext
 
@@ -67,10 +68,16 @@ class TridiagEnergySolver(EnergySolver):
         # Подшаг 1–2: PVT + эффективные свойства
         props = self.compute_cell_properties(p, Sg, Rs, So, T_old)
 
+        # Свойства контура — выше по потоку при притоке (DEBT-017).
+        # Считаются один раз на шаг и передаются в оба метода, которые
+        # трогают контурную грань: единый источник, иначе Φ и J
+        # разойдутся между собой.
+        ext = self._ext_properties(bc)
+
         # Подшаг 3: конвективные коэффициенты Φ на гранях
         Phi_plus, Phi_minus, Phi_o, Phi_g = self.compute_convective_coefficients(
             Q_o, Q_g, props['rho_o'], props['rho_g'],
-            props['c_p_o'], props['c_p_g'], N)
+            props['c_p_o'], props['c_p_g'], N, ext)
 
         # Подшаг 4: кондуктивная проводимость
         Q_T_internal, Q_T_ext = self.compute_conductive_transmissibility(
@@ -78,7 +85,8 @@ class TridiagEnergySolver(EnergySolver):
 
         # Подшаг 5: источники (JT, адиабатический, дегазация)
         J_jt = self.compute_jt(
-            Q_o, Q_g, Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'], p, N)
+            Q_o, Q_g, Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
+            p, N, ext)
         Q_ad = self.compute_adiabatic(
             So, Sg, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'],
@@ -157,14 +165,46 @@ class TridiagEnergySolver(EnergySolver):
             mu_JT_o=mu_JT_o, mu_JT_g=mu_JT_g, L=L,
             rho_cp_eff=rho_cp_eff, lambda_eff=lambda_eff)
 
+    def _ext_properties(self, bc: BoundaryConditions) -> dict:
+        """Свойства фаз при условиях контура. Ур. (eq:bc_props_ext).
+
+        На контуре задано: p = p_ext, T = T_ext, Rs = Rs_ext, Sg = 0
+        (eq. bc_Sg_ext). При притоке через грань N выше по потоку
+        находится контур, поэтому ρ, c_p и μ_JT берутся здесь, а не
+        из ячейки N-1 (DEBT-017).
+
+        Sg на контуре не участвует: ни одна тепловая PVT-величина от
+        насыщенности не зависит — она входит в поток через k_rg внутри
+        Q_g, который приходит готовым из hydro_result.
+
+        PVT принимает массивы, поэтому скаляры оборачиваем и берём [0]
+        — как в fluxes.py:47-52. Значения одни на весь шаг, считаются
+        один раз в solve и передаются в оба метода: единый источник,
+        иначе Φ и J разойдутся между собой.
+        """
+        pvt = self._pvt
+        p_a = np.array([bc.p_ext])
+        T_a = np.array([bc.T_ext])
+        Rs_a = np.array([bc.Rs_ext])
+
+        return dict(
+            p=bc.p_ext,
+            rho_o=pvt.rho_o(p_a, Rs_a)[0],
+            rho_g=pvt.rho_g(p_a)[0],
+            c_p_o=pvt.c_p_oil(p_a, T_a)[0],
+            c_p_g=pvt.c_p_gas(p_a, T_a)[0],
+            mu_JT_o=pvt.mu_JT_oil(p_a, T_a)[0],
+            mu_JT_g=pvt.mu_JT_gas(p_a, T_a)[0])
+
     # ──────────────────────────────────────────────────────
     # Подшаг 3: конвективные коэффициенты Φ на гранях
     # ──────────────────────────────────────────────────────
 
     def compute_convective_coefficients(self, Q_o, Q_g, rho_o, rho_g,
-                                          c_p_o, c_p_g, N):
+                                          c_p_o, c_p_g, N, ext):
         """Φ_α[f] = ρ_α_up · c_p_α_up · Q_α[f] (eq. 23).
-        Upstream раздельно по каждой фазе (по знаку Q_α).
+        Против потока раздельно по каждой фазе (по знаку Q_α).
+        ext — свойства контура из _ext_properties (eq:bc_props_ext).
         Возвращает Φ⁺, Φ⁻, Φ_o, Φ_g — все [N+1].
         """
         Phi_o = np.zeros(N + 1)
@@ -186,14 +226,28 @@ class TridiagEnergySolver(EnergySolver):
         Phi_o[0] = rho_o[0] * c_p_o[0] * Q_o[0]
         Phi_g[0] = rho_g[0] * c_p_g[0] * Q_g[0]
 
-        # Контур (f=N): upstream = ячейка N-1 (приближение).
-        # Знак потока здесь не разбирается: при притоке (Q < 0) выше по
-        # потоку физически контур, и свойства надо брать при условиях ГУ,
-        # а не при p_{N-1}, T_{N-1}. Ср. compute_degassing, где та же грань
-        # обработана строго (DEBT-009). Приведение к единому подходу —
-        # DEBT-017.
-        Phi_o[N] = rho_o[N - 1] * c_p_o[N - 1] * Q_o[N]
-        Phi_g[N] = rho_g[N - 1] * c_p_g[N - 1] * Q_g[N]
+        # ── Контур (f=N) ── ур. (eq:bc_props_ext)
+        # Выше по потоку зависит от знака расхода, как и на внутренних
+        # гранях: Q >= 0 — отток наружу, свойства из ячейки N-1;
+        # Q < 0 (штатный приток) — выше по потоку контур, свойства при
+        # условиях ГУ. Брать N-1 при притоке нельзя: Q_α уже посчитан
+        # гидродинамикой по условиям контура (fluxes.py:143-145), и
+        # произведение ρ·c_p·Q вышло бы из двух разных состояний.
+        # Тот же разбор знака, что в compute_degassing (DEBT-009).
+        if Q_o[N] >= 0:
+            Phi_o[N] = rho_o[N - 1] * c_p_o[N - 1] * Q_o[N]
+        else:
+            Phi_o[N] = ext['rho_o'] * ext['c_p_o'] * Q_o[N]
+
+        if Q_g[N] >= 0:
+            Phi_g[N] = rho_g[N - 1] * c_p_g[N - 1] * Q_g[N]
+        else:
+            # Свободного газа на контуре нет (Sg|ext = 0, k_rg = 0),
+            # поэтому Q_g[N] = 0 и вклад нулевой при любых ρ_g, c_p_g.
+            # Значения всё равно считаются по формуле, а не подставляются
+            # нулём: ветвь останется верной, если появится конфиг
+            # с Sg_ext > 0.
+            Phi_g[N] = ext['rho_g'] * ext['c_p_g'] * Q_g[N]
 
         Phi_plus = np.maximum(Phi_o, 0) + np.maximum(Phi_g, 0)
         Phi_minus = np.minimum(Phi_o, 0) + np.minimum(Phi_g, 0)
@@ -239,9 +293,10 @@ class TridiagEnergySolver(EnergySolver):
     # Подшаг 5a: JT-поток (eq. 28–29)
     # ──────────────────────────────────────────────────────
 
-    def compute_jt(self, Q_o, Q_g, Phi_o, Phi_g, mu_JT_o, mu_JT_g, p, N):
+    def compute_jt(self, Q_o, Q_g, Phi_o, Phi_g, mu_JT_o, mu_JT_g, p, N, ext):
         """J_face[f] = Σ_α μ_JT_α_up · <Φ_α · p>_f.
         J_jt[j] = J_face[j+1] - J_face[j].
+        ext — свойства контура из _ext_properties (eq:bc_props_ext).
         Возвращает J_jt [N].
         """
         J_face = np.zeros(N + 1)
@@ -266,11 +321,18 @@ class TridiagEnergySolver(EnergySolver):
         J_face[0] = (mu_JT_o[0] * Phi_o[0] * p[0]
                      + mu_JT_g[0] * Phi_g[0] * p[0])
 
-        # Контур: upstream = ячейка N-1. Как и в Φ на этой грани, знак
-        # потока не разбирается: при притоке μ_JT и p должны браться
-        # из ГУ контура. Правится вместе с Φ — DEBT-017.
-        J_face[N] = (mu_JT_o[-1] * Phi_o[N] * p[-1]
-                     + mu_JT_g[-1] * Phi_g[N] * p[-1])
+        # ── Контур ── ур. (eq:bc_props_ext)
+        # Тот же разбор знака, что для Φ выше: при притоке μ_JT и p
+        # берутся из ГУ контура. Признак — знак Q_α (не Φ_α): он
+        # тождественно тот же, так как Φ_α = ρ_α·c_p_α·Q_α и ρ·c_p > 0,
+        # но по Q согласовано с Φ и с compute_degassing — один критерий
+        # во всех трёх местах. DEBT-017.
+        mu_o_N = mu_JT_o[-1] if Q_o[N] >= 0 else ext['mu_JT_o']
+        p_o_N = p[-1] if Q_o[N] >= 0 else ext['p']
+        mu_g_N = mu_JT_g[-1] if Q_g[N] >= 0 else ext['mu_JT_g']
+        p_g_N = p[-1] if Q_g[N] >= 0 else ext['p']
+
+        J_face[N] = mu_o_N * Phi_o[N] * p_o_N + mu_g_N * Phi_g[N] * p_g_N
 
         return J_face[1:] - J_face[:-1]
 

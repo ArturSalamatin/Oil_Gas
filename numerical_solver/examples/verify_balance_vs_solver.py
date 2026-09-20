@@ -72,12 +72,17 @@ def run_instrumented(config_path):
         Q_o, Q_g, G_o = hydro_result.Q_o, hydro_result.Q_g, hydro_result.G_o
 
         props = self.compute_cell_properties(p, Sg, Rs, So, T_old)
+        # Свойства контура — выше по потоку при притоке (DEBT-017).
+        # Повторяем то, что делает solve: иначе диагностика считала бы
+        # Phi и J не так, как схема, и дала бы ложную невязку баланса —
+        # ровно тот класс расхождения, который породил BUG-004.
+        ext = self._ext_properties(bc)
         Phi_plus, Phi_minus, Phi_o, Phi_g = \
             self.compute_convective_coefficients(
                 Q_o, Q_g, props['rho_o'], props['rho_g'],
-                props['c_p_o'], props['c_p_g'], N)
+                props['c_p_o'], props['c_p_g'], N, ext)
         J_jt = self.compute_jt(Q_o, Q_g, Phi_o, Phi_g,
-                               props['mu_JT_o'], props['mu_JT_g'], p, N)
+                               props['mu_JT_o'], props['mu_JT_g'], p, N, ext)
         Q_ad = self.compute_adiabatic(
             So, Sg, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'],

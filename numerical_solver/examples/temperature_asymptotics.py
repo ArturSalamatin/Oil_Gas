@@ -104,7 +104,12 @@ def _face_coefficients(config, history, grid, simulator):
     """Φ, J, R на всех гранях — ровно как их собирает tridiag.py.
 
     Возвращает (Phi, Phi_o, Phi_g, J, R_conv), все [N+1].
-    Upstream: при потоке к скважине (Q < 0) upstream грани f — ячейка f.
+    Выше по потоку: при потоке к скважине (Q < 0) для грани f — ячейка f.
+    На контурной грани при притоке — контур, свойства из ГУ
+    (eq:bc_props_ext, DEBT-017), как и состав для R_conv (DEBT-009).
+
+    Формулы обязаны совпадать с ядром: расхождение диагностики со схемой
+    породило BUG-004 и увело расследование в сторону.
     """
     pvt = _pvt_of(simulator)
     N = grid.N
@@ -142,11 +147,43 @@ def _face_coefficients(config, history, grid, simulator):
     Phi_g[0] = rho_g[0] * cp_g[0] * Q_g[0]
     J[0] = (mu_JT_o[0] * Phi_o[0] + mu_JT_g[0] * Phi_g[0]) * p[0]
 
-    # ── Контур (f=N): для Φ и J upstream = ячейка N-1 ──
-    # (для R_conv ниже upstream зависит от знака G_o — см. DEBT-009)
-    Phi_o[N] = rho_o[-1] * cp_o[-1] * Q_o[N]
-    Phi_g[N] = rho_g[-1] * cp_g[-1] * Q_g[N]
-    J[N] = (mu_JT_o[-1] * Phi_o[N] + mu_JT_g[-1] * Phi_g[N]) * p[-1]
+    # ── Контур (f=N): выше по потоку зависит от знака расхода ──
+    # При оттоке (Q >= 0) — ячейка N-1, при штатном притоке (Q < 0) —
+    # контур, где свойства заданы ГУ (eq:bc_props_ext, DEBT-017). То же
+    # правило, что для R_conv ниже (DEBT-009) и в tridiag.py.
+    # Прежняя редакция брала ячейку N-1 безусловно для Φ и J — при
+    # притоке это домножало расход, посчитанный по условиям контура,
+    # на свойства другого состояния.
+    ic = config.initial_conditions
+    p_ext_a = np.array([ic.p0])
+    T_ext_a = np.array([ic.T0])
+    Rs_ext_a = np.array([ic.Rs0])
+    rho_o_ext = pvt.rho_o(p_ext_a, Rs_ext_a)[0]
+    rho_g_ext = pvt.rho_g(p_ext_a)[0]
+    cp_o_ext = pvt.c_p_oil(p_ext_a, T_ext_a)[0]
+    cp_g_ext = pvt.c_p_gas(p_ext_a, T_ext_a)[0]
+    mu_o_ext = pvt.mu_JT_oil(p_ext_a, T_ext_a)[0]
+    mu_g_ext = pvt.mu_JT_gas(p_ext_a, T_ext_a)[0]
+
+    if Q_o[N] >= 0:
+        Phi_o[N] = rho_o[-1] * cp_o[-1] * Q_o[N]
+        mu_o_N, p_o_N = mu_JT_o[-1], p[-1]
+    else:
+        Phi_o[N] = rho_o_ext * cp_o_ext * Q_o[N]
+        mu_o_N, p_o_N = mu_o_ext, ic.p0
+
+    if Q_g[N] >= 0:
+        Phi_g[N] = rho_g[-1] * cp_g[-1] * Q_g[N]
+        mu_g_N, p_g_N = mu_JT_g[-1], p[-1]
+    else:
+        # На контуре Sg = 0, поэтому Q_g[N] = 0 и вклад нулевой при
+        # любых ρ_g, c_p_g; формула выписана полностью — верна и при Sg_ext > 0
+        Phi_g[N] = rho_g_ext * cp_g_ext * Q_g[N]
+        mu_g_N, p_g_N = mu_g_ext, ic.p0
+
+    # Множитель p раскрыт по фазам: при притоке он контурный, а знак
+    # Q_o и Q_g в общем случае может различаться (фазы текут врозь)
+    J[N] = mu_o_N * Phi_o[N] * p_o_N + mu_g_N * Phi_g[N] * p_g_N
 
     # ── R_f = <G^o·Rs>_f — поток растворённого газа ──
     R_conv = np.zeros(N + 1)

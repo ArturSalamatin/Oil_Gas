@@ -1477,6 +1477,43 @@ JT-поток~\eqref{eq:QJT_face} и~конвективный поток
 $\Phi_{\alpha} = \rho_\alpha\,c_{p,\alpha}\,\mathcal{Q}_\alpha$
 определяется по~общей формуле.
 
+\paragraph{Свойства фаз на~контурной грани.}
+Множители~$\rho_\alpha$, $c_{p,\alpha}$, $\mu_{\mathrm{JT},\alpha}$
+в~$\Phi_\alpha$ и~$\mathcal{J}$ берутся с~той же стороны грани,
+что и~остальные величины в~операторе против
+потока~\eqref{eq:upstream_operator}:
+\begin{equation}\label{eq:bc_props_ext}
+  \boxed{
+  \bigl(\rho_\alpha,\,c_{p,\alpha},\,\mu_{\mathrm{JT},\alpha}
+  \bigr)_{N+\half}
+  =
+  \begin{cases}
+    \bigl(\rho_\alpha,\,c_{p,\alpha},\,\mu_{\mathrm{JT},\alpha}
+    \bigr)\big|_{N-1},
+      & \mathcal{Q}_{\alpha,N+\half} \geqslant 0
+        \quad\text{(отток наружу)},\\[6pt]
+    \bigl(\rho_\alpha,\,c_{p,\alpha},\,\mu_{\mathrm{JT},\alpha}
+    \bigr)\big|_{(\ppl,\,\Tpl,\,R_s^0)},
+      & \mathcal{Q}_{\alpha,N+\half} < 0
+        \quad\text{(приток с~контура)}.
+  \end{cases}}
+\end{equation}
+При~притоке давление в~произведении
+$\langle\Phi_\alpha\,p\rangle_{N+\half}$~\eqref{eq:QJT_face}
+также берётся контурным: $p = \ppl$.
+
+Тот же принцип уже применён к~подвижностям
+в~\eqref{eq:bc_flux_ext}: при~втекании $k_{r\alpha}/\mu_\alpha$
+вычисляется при~условиях контура, где $S_g\big|_{\Rext} = 0$
+и~$k_{rg} = 0$. Свободного газа на~контуре нет, поэтому
+$\mathcal{Q}_{g,N+\half} = 0$, и~газовая составляющая~$\Phi_g$
+обращается в~нуль независимо от~значений $\rho_g$, $c_{p,g}$.
+
+Брать свойства из~ячейки~$N-1$ при~втекании нельзя: расход
+$\mathcal{Q}_\alpha$ вычислен по~условиям контура, и~произведение
+$\rho_\alpha\,c_{p,\alpha}\,\mathcal{Q}_\alpha$ оказалось бы
+составлено из~двух разных термодинамических состояний.
+
 \paragraph{Температура.}
 \begin{itemize}[nosep]
   \item $r = \Rext$: условие I~рода, $T\big|_{\Rext} = \Tpl$.

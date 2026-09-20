@@ -78,16 +78,22 @@ def _rock(lambda_solid=1.5, lambda_oil=0.14, lambda_gas=0.04):
         lambda_oil=lambda_oil, lambda_gas=lambda_gas)
 
 
-def _bc(T_ext, Rs_ext=RS0):
+def _bc(T_ext, Rs_ext=RS0, p_ext=P0):
     """Граничные условия для энергетического решателя (DEBT-009).
 
     Rs_ext по умолчанию = RS0: во всех этих тестах контур насыщен,
     поэтому состав притока совпадает с начальным (eq. bc_Sg_ext).
-    p_ext энергетическим решателем не используется — он работает на
-    замороженных полях из hydro_result, — но поле обязательное.
+
+    p_ext, T_ext, Rs_ext используются энергетическим решателем при
+    втекании через контурную грань: свойства фаз берутся при условиях
+    контура (_ext_properties, eq:bc_props_ext, DEBT-017). Прежде здесь
+    было сказано, что p_ext решателем не используется, — после DEBT-017
+    это неверно. Параметр p_ext оставлен изменяемым: тесты контурной
+    грани задают его отличным от давления в ячейке N-1, иначе ветви
+    «контур» и «ячейка N-1» неразличимы.
     """
     return BoundaryConditions(
-        well=PressureControl(P_WF), p_ext=P0,
+        well=PressureControl(P_WF), p_ext=p_ext,
         T_ext=T_ext, Rs_ext=Rs_ext, Sg_ext=0.0)
 
 
@@ -674,6 +680,147 @@ class TestComputeConductiveTransmissibility:
         assert Q_T_ext == pytest.approx(0.0, abs=1e-30)
 
 
+class TestComputeConvectiveCoefficients:
+    """compute_convective_coefficients: выбор ячейки выше по потоку.
+
+    Прямых тестов у метода не было до DEBT-017 (в отличие от четырёх
+    соседних методов) — он покрывался только косвенно, через сборку
+    матрицы и эталон DEBT-016. Эти три теста закрывают контурную грань:
+    ветвь притока, ветвь оттока и неизменность остальных граней.
+
+    Как обеспечена различимость ветвей. ρ_o = (ρ_o,ст + Rs·ρ_g,ст)/Bo(p, Rs)
+    (base.py:70), поэтому различие даёт либо Rs, либо p — но p только при
+    включённой сжимаемости недонасыщенной нефти: при co_undersaturated = 0
+    (значение по умолчанию в _make_pvt) Bo от p выше p_b не зависит вовсе,
+    и ветви по давлению неразличимы. Здесь используются оба пути:
+    Rs_ext ≠ Rs[N-1] — физическая ситуация DEBT-009 (разгазирование
+    у контура), и p_ext ≠ p[N-1] при co > 0.
+
+    Через c_p или μ_JT проверять нельзя — в _make_pvt они константы
+    (CP_OIL, mu_JT_oil_val), ветви по ним неразличимы в принципе.
+    """
+
+    def _setup(self, N_cells=3, p_cells=None, Rs_cells=None,
+               p_ext=P0, Rs_ext=RS0, co=0.0):
+        """Решатель, свойства ячеек и ГУ для проверки грани N.
+
+        co — сжимаемость недонасыщенной нефти: при co > 0 величина Bo,
+        а значит и ρ_o, начинает зависеть от давления.
+        """
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+        pvt = StandingFullPVT(
+            rho_o_std=RHO_O_STD, rho_g_std=RHO_G_STD, T0=T0, Rs0=RS0,
+            co_undersaturated=co, c_p_oil=CP_OIL, c_p_gas=CP_GAS,
+            mu_JT_oil_val=4e-7, mu_JT_gas_val=2e-6, L_degas_val=0.0)
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        p = np.full(N_cells, P0) if p_cells is None else p_cells
+        Rs = np.full(N_cells, RS0) if Rs_cells is None else Rs_cells
+        Sg = np.zeros(N_cells)
+        T_old = np.full(N_cells, T0)
+        props = solver.compute_cell_properties(p, Sg, Rs, 1.0 - Sg, T_old)
+        bc = _bc(T_EXT, Rs_ext=Rs_ext, p_ext=p_ext)
+        return solver, props, bc, N_cells
+
+    def test_inflow_uses_boundary_properties(self):
+        """Приток (Q_o < 0): ρ и c_p на грани N — из ГУ, не из ячейки N-1.
+
+        Физика: при втекании выше по потоку находится контур
+        (eq:bc_props_ext, problem_statement.tex). В ячейке N-1 задано
+        разгазирование — Rs снижен до 0.6·Rs^0, как при падении давления
+        ниже p_b у контура (ситуация DEBT-009). Тогда ρ_o(Rs^0) ≠
+        ρ_o(Rs[N-1]) и ветви различимы. DEBT-017.
+        """
+        N_cells = 3
+        # Приконтурная ячейка обеднена растворённым газом
+        Rs_cells = np.full(N_cells, RS0)
+        Rs_cells[-1] = 0.6 * RS0
+        solver, props, bc, N_cells = self._setup(
+            N_cells=N_cells, Rs_cells=Rs_cells, Rs_ext=RS0)
+        ext = solver._ext_properties(bc)
+
+        # Приток через все грани: поток направлен к скважине (Q < 0)
+        Q_o = np.full(N_cells + 1, -0.01)
+        Q_g = np.zeros(N_cells + 1)
+
+        _, _, Phi_o, _ = solver.compute_convective_coefficients(
+            Q_o, Q_g, props['rho_o'], props['rho_g'],
+            props['c_p_o'], props['c_p_g'], N_cells, ext)
+
+        expected = ext['rho_o'] * ext['c_p_o'] * Q_o[N_cells]
+        buggy = (props['rho_o'][-1] * props['c_p_o'][-1] * Q_o[N_cells])
+
+        # Контроль невырожденности: если ветви дают одно значение,
+        # тест ничего не проверяет (приём из DEBT-009)
+        assert not np.isclose(expected, buggy), \
+            "тест вырожден: ветви дают одно значение, увеличить перепад p"
+        np.testing.assert_allclose(Phi_o[N_cells], expected, rtol=1e-13)
+
+    def test_outflow_uses_inner_cell(self):
+        """Отток (Q_o > 0): свойства из ячейки N-1, ГУ не участвует.
+
+        Страхует от правдоподобной ошибки реализации — применить ГУ
+        в обеих ветвях, «упростив» ветвление. Два вызова с разными
+        p_ext обязаны дать один и тот же Φ_o[N].
+
+        Сжимаемость включена (co = 1e-9): иначе ρ_o не зависит от p_ext
+        и тест прошёл бы даже на ошибочной реализации.
+        """
+        N_cells = 3
+        Q_o = np.full(N_cells + 1, +0.01)   # отток наружу
+        Q_g = np.zeros(N_cells + 1)
+
+        phis = []
+        for p_ext in (P0, 0.7 * P0):
+            solver, props, bc, _ = self._setup(
+                N_cells=N_cells, p_ext=p_ext, co=1e-9)
+            ext = solver._ext_properties(bc)
+            _, _, Phi_o, _ = solver.compute_convective_coefficients(
+                Q_o, Q_g, props['rho_o'], props['rho_g'],
+                props['c_p_o'], props['c_p_g'], N_cells, ext)
+            phis.append(Phi_o[N_cells])
+
+        # ГУ различаются вдвое по давлению — если бы они участвовали,
+        # значения разошлись бы
+        assert phis[0] == phis[1], \
+            f"при оттоке Φ_o[N] зависит от p_ext: {phis[0]} != {phis[1]}"
+
+    def test_internal_and_well_faces_unchanged_by_bc(self):
+        """Внутренние грани и забой не зависят от ГУ контура.
+
+        Правка DEBT-017 касается только грани N. Забой (f=0) — зона
+        DEBT-019, он не должен измениться; внутренние грани тем более.
+        Два вызова с разными p_ext дают одинаковые Φ[0] и Φ[1:N],
+        а Φ[N] обязан различаться — иначе правка не работает.
+
+        Сжимаемость включена (co = 1e-9), чтобы ρ_o зависела от p_ext.
+        """
+        N_cells = 4
+        Q_o = np.full(N_cells + 1, -0.01)
+        Q_g = np.full(N_cells + 1, -0.001)
+
+        results = []
+        for p_ext in (P0, 0.7 * P0):
+            solver, props, bc, _ = self._setup(
+                N_cells=N_cells, p_ext=p_ext, co=1e-9)
+            ext = solver._ext_properties(bc)
+            _, _, Phi_o, Phi_g = solver.compute_convective_coefficients(
+                Q_o, Q_g, props['rho_o'], props['rho_g'],
+                props['c_p_o'], props['c_p_g'], N_cells, ext)
+            results.append((Phi_o.copy(), Phi_g.copy()))
+
+        (Phi_o_a, Phi_g_a), (Phi_o_b, Phi_g_b) = results
+        # Забой: f=0
+        assert Phi_o_a[0] == Phi_o_b[0], "забой изменился от p_ext"
+        assert Phi_g_a[0] == Phi_g_b[0], "забой (газ) изменился от p_ext"
+        # Внутренние грани: f = 1..N-1
+        np.testing.assert_array_equal(Phi_o_a[1:N_cells], Phi_o_b[1:N_cells])
+        np.testing.assert_array_equal(Phi_g_a[1:N_cells], Phi_g_b[1:N_cells])
+        # Контроль: грань N при этом ОБЯЗАНА различаться (приток)
+        assert Phi_o_a[N_cells] != Phi_o_b[N_cells], \
+            "грань N не реагирует на p_ext — правка DEBT-017 не работает"
+
+
 class TestComputeDegassing:
     """compute_degassing: Q_deg = -L * mdot."""
 
@@ -806,9 +953,13 @@ class TestAssembleTridiag:
         props = solver.compute_cell_properties(p, Sg, Rs, So, T_old)
         Q_o = np.zeros(N_cells + 1)
         Q_g = np.zeros(N_cells + 1)
+        # ext — свойства контура (DEBT-017). При Q = 0 ветвь «отток»
+        # (Q >= 0) берёт ячейку N-1, и ext на результат не влияет,
+        # но параметр обязательный.
+        ext = solver._ext_properties(_bc(T_EXT))
         Phi_plus, Phi_minus, _, _ = solver.compute_convective_coefficients(
             Q_o, Q_g, props['rho_o'], props['rho_g'],
-            props['c_p_o'], props['c_p_g'], N_cells)
+            props['c_p_o'], props['c_p_g'], N_cells, ext)
         Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
             props['lambda_eff'], N_cells)
 
@@ -847,9 +998,12 @@ class TestAssembleTridiag:
         hydro = compute_fluxes(state, grid, pvt, rp, bc)
 
         props = solver.compute_cell_properties(p, Sg, Rs, So, T_old)
+        # ext — свойства контура из того же bc, что у compute_fluxes:
+        # согласованность гидро и энергии на контурной грани (DEBT-017)
+        ext = solver._ext_properties(bc)
         Phi_plus, Phi_minus, _, _ = solver.compute_convective_coefficients(
             hydro.Q_o, hydro.Q_g, props['rho_o'], props['rho_g'],
-            props['c_p_o'], props['c_p_g'], N_cells)
+            props['c_p_o'], props['c_p_g'], N_cells, ext)
         Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
             props['lambda_eff'], N_cells)
 

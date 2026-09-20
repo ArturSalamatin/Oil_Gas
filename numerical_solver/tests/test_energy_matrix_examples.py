@@ -15,7 +15,9 @@
 Эталон следует форме ДОКУМЕНТА, а не форме кода. В двух местах они записаны
 по-разному при тождественных значениях (см. `_ref_adiabatic` и `_ref_conductive`).
 Копировать форму кода нельзя: тогда тест зафиксировал бы реализацию вместо
-постановки и перестал бы ловить расхождение между ними.
+постановки и перестал бы ловить расхождение между ними. По той же причине
+контурные свойства считает `_ref_ext_properties`, а не метод ядра
+`TridiagEnergySolver._ext_properties`.
 
 Почему нельзя требовать побитового равенства. Эталон и ядро суммируют одни и
 те же величины в разном порядке, набегает несколько ULP. Замерено: худшее
@@ -78,7 +80,7 @@ def _ref_cell_properties(pvt, rock, p, Sg, Rs, T_old):
     λ_eff     = (1-φ)·λ_s     + φ·Σ_α S_α·λ_α        [Вт/(м·К)]
 
     So берётся как 1 - Sg, как в ядре: тождество So + Sg = 1 обязано
-    выполняться точно, на нём держится эквивалентность форм Q_ad.
+    выполняться точно.
     """
     So = 1.0 - Sg
     phi = rock.porosity
@@ -119,7 +121,7 @@ def _upstream(flux_at_face, face):
     return face - 1 if flux_at_face >= 0 else face
 
 
-def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N):
+def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N, ext):
     """Конвективные коэффициенты на гранях. eq:energy_conv_face.
 
     Φ_α = ρ_α·c_pα·Q_α  [Вт/К], свойства из ячейки выше по потоку.
@@ -149,10 +151,16 @@ def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N):
     Phi_o[0] = rho_o[0] * c_p_o[0] * Q_o[0]
     Phi_g[0] = rho_g[0] * c_p_g[0] * Q_g[0]
 
-    # ── Контур (f=N) ──
-    # За контуром ячейки нет, свойства берутся из N-1.
-    Phi_o[N] = rho_o[N - 1] * c_p_o[N - 1] * Q_o[N]
-    Phi_g[N] = rho_g[N - 1] * c_p_g[N - 1] * Q_g[N]
+    # ── Контур (f=N) ── eq:bc_props_ext (74)
+    # По знаку расхода, раздельно по фазам: отток наружу — свойства
+    # из ячейки N-1, приток — при условиях контура (p_0, T_0, Rs^0).
+    # Газовая ветвь при Sg|ext = 0 умножается на Q_g = 0, поэтому
+    # значение ρ_g, c_p_g на результат не влияет; формула всё равно
+    # выписана полностью — она верна и при Sg_ext > 0.
+    Phi_o[N] = ((rho_o[N - 1] * c_p_o[N - 1] if Q_o[N] >= 0
+                 else ext['rho_o'] * ext['c_p_o']) * Q_o[N])
+    Phi_g[N] = ((rho_g[N - 1] * c_p_g[N - 1] if Q_g[N] >= 0
+                 else ext['rho_g'] * ext['c_p_g']) * Q_g[N])
 
     return (Phi_o, Phi_g,
             np.maximum(Phi_o, 0.0) + np.maximum(Phi_g, 0.0),
@@ -201,7 +209,32 @@ def _ref_conductive(grid, lambda_eff, N):
     return Q_T_internal, Q_T_ext
 
 
-def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N):
+def _ref_ext_properties(pvt, bc):
+    """Свойства фаз при условиях контура. eq:bc_props_ext (74).
+
+    Считается ЗДЕСЬ, а не вызовом TridiagEnergySolver._ext_properties:
+    эталон обязан быть независимым от ядра, иначе он зафиксирует
+    реализацию вместо постановки (шапка модуля). Из ядра берутся только
+    PVT-корреляции — воспроизводить их тут бессмысленно.
+
+    Sg на контуре не участвует: тепловые PVT-величины от насыщенности
+    не зависят (FullPVT, pvt/base.py:60-107); отсутствие газовой фазы
+    выражается через Q_g = 0 при k_rg|ext = 0 (eq:bc_flux_ext).
+    """
+    p_a = np.array([bc.p_ext])
+    T_a = np.array([bc.T_ext])
+    Rs_a = np.array([bc.Rs_ext])
+    return dict(
+        p=bc.p_ext,
+        rho_o=pvt.rho_o(p_a, Rs_a)[0],
+        rho_g=pvt.rho_g(p_a)[0],
+        c_p_o=pvt.c_p_oil(p_a, T_a)[0],
+        c_p_g=pvt.c_p_gas(p_a, T_a)[0],
+        mu_JT_o=pvt.mu_JT_oil(p_a, T_a)[0],
+        mu_JT_g=pvt.mu_JT_gas(p_a, T_a)[0])
+
+
+def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N, ext):
     """Вклад Джоуля—Томсона. eq:QJT_face, eq:QJT_disc.
 
     J_{f} = Σ_α μ_JT,α^up · <Φ_α·p>_f,  где <·> — оператор против потока
@@ -212,7 +245,12 @@ def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N):
 
     На граничных гранях значения за границей заменяются граничными
     условиями (ssec:bc_disc, «Источниковые члены на граничных гранях»):
-    на забое upstream — ячейка 0, на контуре — ячейка N-1.
+    на забое выше по потоку — ячейка 0.
+
+    На контуре — по знаку расхода, eq:bc_props_ext (74):
+        Q_α >= 0 (отток наружу)  → μ_JT и p из ячейки N-1;
+        Q_α <  0 (приток)        → μ_JT при (p_0, T_0), p = p_ext.
+    Раздельно по фазам, как и всюду в операторе против потока.
 
     Возвращает J_jt [N].
     """
@@ -236,9 +274,15 @@ def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N):
     J_face[0] = (mu_JT_o[0] * Phi_o[0] * p[0]
                  + mu_JT_g[0] * Phi_g[0] * p[0])
 
-    # ── Контур ──
-    J_face[N] = (mu_JT_o[-1] * Phi_o[N] * p[-1]
-                 + mu_JT_g[-1] * Phi_g[N] * p[-1])
+    # ── Контур ── eq:bc_props_ext (74)
+    # При притоке за границей находится контур, поэтому μ_JT и p
+    # берутся при его условиях. Признак — знак Q_α, раздельно по фазам.
+    mu_o_N = mu_JT_o[-1] if Q_o[N] >= 0 else ext['mu_JT_o']
+    p_o_N = p[-1] if Q_o[N] >= 0 else ext['p']
+    mu_g_N = mu_JT_g[-1] if Q_g[N] >= 0 else ext['mu_JT_g']
+    p_g_N = p[-1] if Q_g[N] >= 0 else ext['p']
+
+    J_face[N] = mu_o_N * Phi_o[N] * p_o_N + mu_g_N * Phi_g[N] * p_g_N
 
     return J_face[1:] - J_face[:-1]
 
@@ -377,15 +421,18 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
 
     props = _ref_cell_properties(pvt, rock, st.p, st.Sg, st.Rs, state_prev.T)
 
+    # Свойства контура — выше по потоку при притоке, eq:bc_props_ext (74)
+    ext = _ref_ext_properties(pvt, bc)
+
     Phi_o, Phi_g, Phi_plus, Phi_minus = _ref_convective(
         hydro_result.Q_o, hydro_result.Q_g,
         props['rho_o'], props['rho_g'],
-        props['c_p_o'], props['c_p_g'], N)
+        props['c_p_o'], props['c_p_g'], N, ext)
 
     Q_T_internal, Q_T_ext = _ref_conductive(grid, props['lambda_eff'], N)
 
     J_jt = _ref_jt(Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
-                   hydro_result.Q_o, hydro_result.Q_g, st.p, N)
+                   hydro_result.Q_o, hydro_result.Q_g, st.p, N, ext)
 
     Q_ad = _ref_adiabatic(rock, props['So'], st.Sg,
                           props['rho_o'], props['rho_g'],

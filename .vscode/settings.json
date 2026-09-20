@@ -1,0 +1,14 @@
+{
+    // Интерпретатор из venv решателя (numerical_solver), а не из method_of_moments.
+    "python.defaultInterpreterPath": "${workspaceFolder}/numerical_solver/.venv/Scripts/python.exe",
+
+    // Тесты живут в numerical_solver/tests, а корень workspace — Oil_Gas.
+    // cwd задаётся через python.testing.cwd, чтобы подхватился
+    // [tool.pytest.ini_options] из numerical_solver/pyproject.toml.
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.cwd": "${workspaceFolder}/numerical_solver",
+    "python.testing.pytestArgs": [
+        "tests"
+    ]
+}

@@ -205,7 +205,7 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def compute_conductive_transmissibility(self, lambda_eff, N):
-        """Кондуктивная проводимость: Q_T = 2πh / (w_L/λ_L + w_R/λ_R).
+        """Теплопроводность: Q_T = 2πh / (w_L/λ_L + w_R/λ_R).
 
         Последовательные кольцевые сопротивления R_α = ln(r_face/r_center_α) / (2πh·λ_α).
         Возвращает Q_T_internal [N-1] и Q_T_ext (скаляр).

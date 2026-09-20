@@ -6,7 +6,7 @@ date: 2026-09-19
 issue: DEBT-017
 github: 34
 branch: refactor/debt-017/upstream-properties-outer-boundary
-status: в процессе
+status: реализован
 decisions:
   - date: 2026-09-20
     question: порядок работ с DEBT-019 (обе задачи правят compute_convective_coefficients)

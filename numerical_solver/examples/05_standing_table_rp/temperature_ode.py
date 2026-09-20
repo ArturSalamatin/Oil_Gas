@@ -116,9 +116,22 @@ def _build_interpolants(history, config, grid, energy_solver):
     p, Sg, Rs = st.p, st.Sg, st.Rs
 
     props = es.compute_cell_properties(p, Sg, Rs, 1.0 - Sg, st_prev.T)
+
+    # Свойства контура — выше по потоку при притоке (DEBT-017). Объекта bc
+    # здесь нет (скрипт работает по history), собираем из конфига так же,
+    # как factory.py:328-334. _ext_properties читает только p_ext, T_ext,
+    # Rs_ext; well в расчёт не входит, но поле обязательное.
+    from gpn_multiphase_solver.state import BoundaryConditions
+    from gpn_multiphase_solver.bc import PressureControl
+    ic = config.initial_conditions
+    bc = BoundaryConditions(
+        well=PressureControl(config.time.history[0].p_wf), p_ext=ic.p0,
+        T_ext=ic.T0, Rs_ext=ic.Rs0, Sg_ext=0.0)
+    ext = es._ext_properties(bc)
+
     _, _, Phi_o, Phi_g = es.compute_convective_coefficients(
         hr.Q_o, hr.Q_g, props['rho_o'], props['rho_g'],
-        props['c_p_o'], props['c_p_g'], N)
+        props['c_p_o'], props['c_p_g'], N, ext)
 
     mu_o = config.thermal.mu_JT_oil
     mu_g = config.thermal.mu_JT_gas

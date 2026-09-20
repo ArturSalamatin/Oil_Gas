@@ -328,9 +328,9 @@ status: готов к реализации
 ### 5.2. Обновить связи
 
 1. В записи техдолга: `- **План:** [[<имя плана>]]`
-2. Если есть GitHub issue — сохрани комментарий во временный файл (scratchpad) и добавь:
+2. Если есть GitHub issue — сохрани комментарий в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad — запрет CLAUDE.md, раздел «Файлы и код») и добавь:
    ```powershell
-   gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-file>
+   gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/03-comment-plan.md
    ```
    Формат: `План: vault/plans/<файл>. Ветка: <branch>. Шагов: <N>.`
 3. В `vault/00-home/index.md` — секция Plans (если создана новая заметка)

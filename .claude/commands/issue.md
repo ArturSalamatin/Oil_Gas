@@ -132,7 +132,7 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 
 **В dry-run режиме:** вывести preview (title, labels, имя ветки, первые 20 строк body) и остановиться. Не создавать issue, не менять vault.
 
-Сформируй тело issue в формате markdown и сохрани во временный файл (scratchpad).
+Сформируй тело issue в формате markdown и сохрани в `vault/issues/<id-lowercase>/01-issue-body.md` (создай каталог, если его нет). Файл в проекте, не во временном каталоге — см. «Файлы для `gh --body-file`» в примечаниях.
 
 Структура issue зависит от типа задачи:
 
@@ -267,7 +267,7 @@ gh issue list --repo ArturSalamatin/Oil_Gas --search "<ID>" --state all
 ```
 gh issue create --repo ArturSalamatin/Oil_Gas \
   --title "<ID>: <краткое описание>" \
-  --body-file <path-to-temp-file> \
+  --body-file vault/issues/<id-lowercase>/01-issue-body.md \
   --label "<labels>" \
   --assignee "@me"
 ```
@@ -322,9 +322,9 @@ gh issue create --repo ArturSalamatin/Oil_Gas \
 - **Блокирующие зависимости:** <список ID или "нет">
 ```
 
-Сохрани текст комментария во временный файл (scratchpad) и добавь через:
+Сохрани текст комментария в `vault/issues/<id-lowercase>/02-comment-open.md` и добавь через:
 ```
-gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-file>
+gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/02-comment-open.md
 ```
 
 ### 12. Обратная связь в vault
@@ -423,7 +423,17 @@ gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file <path-to
 - Не используй спецсимволы PowerShell в теле issue — пиши в файл, передавай через `--body-file`
 - Язык issue и vault-записей: русский
 - Не создавай коммитов — только issue, комментарий и vault-записи. Пользователь коммитит сам
-- Тело issue и комментария сохраняй в scratchpad-директорию, не в проект
+- **Файлы для `gh --body-file`.** `gh` принимает многострочный markdown только файлом: в PowerShell спецсимволы и кириллица в аргументе ломаются. Эти файлы — в папке проекта, `vault/issues/<id-lowercase>/`, с нумерацией по порядку публикации:
+
+  | Файл | Назначение | Команда |
+  |---|---|---|
+  | `01-issue-body.md` | тело issue | `/issue` |
+  | `02-comment-open.md` | «Контекст при открытии» | `/issue` |
+  | `03-comment-plan.md` | «План готов» | `/plan-*` |
+  | `04-comment-audit.md` | «Аудит плана» | `/audit-plan` |
+  | `05-comment-done.md` | результат реализации | `/implement` |
+
+  ⚠️ **Не использовать scratchpad, `/tmp` и другие временные каталоги** — прямой запрет CLAUDE.md, раздел «Файлы и код». Побочная польза от хранения в репозитории: видно, что именно опубликовано в issue и когда, без обращения к GitHub. Описание папки — `vault/issues/README.md`
 - PATH для gh может потребовать обновления: `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
 
 ---

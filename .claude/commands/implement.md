@@ -286,7 +286,7 @@ git diff --stat <базовая-ветка>..HEAD
 Если у задачи есть GitHub issue — создай комментарий.
 **Не закрывай issue** — issue закрывается при merge ветки в базовую.
 
-1. Сохрани текст комментария во временный файл (scratchpad)
+1. Сохрани текст комментария в `vault/issues/<id-lowercase>/05-comment-done.md` (папка проекта, не scratchpad — запрет CLAUDE.md, раздел «Файлы и код»)
 2. Формат:
 ```markdown
 ## Реализация завершена
@@ -311,7 +311,7 @@ git diff --stat <базовая-ветка>..HEAD
 ```
 3. Отправь:
 ```powershell
-gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-file>
+gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/05-comment-done.md
 ```
 
 ### 4.3. Обработать inbox

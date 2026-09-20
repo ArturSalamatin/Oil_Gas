@@ -320,9 +320,9 @@ status: готов к реализации
 ### 5.2. Обновить связи
 
 1. В реестре: `- **План:** [[<имя плана>]]`
-2. Если есть GitHub issue — комментарий через `--body-file` (scratchpad):
+2. Если есть GitHub issue — комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad — запрет CLAUDE.md, раздел «Файлы и код»):
    ```powershell
-   gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file <path-to-comment-file>
+   gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/03-comment-plan.md
    ```
    Формат: `План валидации: vault/plans/<файл>. Эталон: <тип>. Tolerance: <значение>.`
 3. В `vault/00-home/index.md` — секция Plans

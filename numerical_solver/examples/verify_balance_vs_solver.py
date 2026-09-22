@@ -81,8 +81,14 @@ def run_instrumented(config_path):
             self.compute_convective_coefficients(
                 Q_o, Q_g, props['rho_o'], props['rho_g'],
                 props['c_p_o'], props['c_p_g'], N, ext)
+        # p_wf — давление на забойной грани: в адвективной форме JT-вклад
+        # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без него не считается
+        # (BUG-012). Берётся так же, как в solve.
+        p_wf = bc.well.boundary_pressure(hydro_result.state, self._grid,
+                                         self._pvt, None)
         J_jt = self.compute_jt(Q_o, Q_g, Phi_o, Phi_g,
-                               props['mu_JT_o'], props['mu_JT_g'], p, N, ext)
+                               props['mu_JT_o'], props['mu_JT_g'], p, N, ext,
+                               p_wf)
         Q_ad = self.compute_adiabatic(
             So, Sg, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'],
@@ -100,17 +106,22 @@ def run_instrumented(config_path):
         E_ad = float(np.sum(V * Q_ad) * dt)
         E_deg = float(np.sum(V * Q_deg) * dt)
 
-        # Конвекция: телескопируем поток энтальпии по граням так, как это
-        # делает матрица. Φ⁺ несёт T ячейки слева, Φ⁻ — T ячейки справа.
-        # Поток через грань f: Φ⁺[f]·T[f-1] + Φ⁻[f]·T[f].
-        T_ext_arr = T_ext
-        flux = np.zeros(N + 1)
-        for f in range(N + 1):
-            T_L = T_new[f - 1] if f >= 1 else T_new[0]
-            T_R = T_new[f] if f <= N - 1 else T_ext_arr
-            flux[f] = Phi_plus[f] * T_L + Phi_minus[f] * T_R
-        # Чистая конвекция в ячейки: -(flux_out - flux_in) = -(flux[N]-flux[0])
-        E_conv = float(-(flux[N] - flux[0]) * dt)
+        # Конвекция в АДВЕКТИВНОЙ форме (BUG-012): вклад каждой грани —
+        # произведение Φ на РАЗНОСТЬ температур, и сумма по ячейкам к
+        # двум крайним граням не сворачивается. Прежняя формула
+        # -(flux[N] - flux[0]) опиралась на такое сворачивание (свойство
+        # дивергентной дискретизации) и после правки неверна.
+        #
+        # Соседи по тем же соглашениям, что в assemble_tridiag: слева от
+        # ячейки 0 — она сама (забойная грань вклада не даёт, ГУ Неймана),
+        # справа от N-1 — T_ext (ГУ Дирихле).
+        T_left = np.concatenate(([T_new[0]], T_new[:-1]))    # [N]: T_{j-1}
+        T_right = np.concatenate((T_new[1:], [T_ext]))        # [N]: T_{j+1}
+        F = (Phi_plus[0:N] * (T_new - T_left)
+             + Phi_minus[1:N + 1] * (T_right - T_new))
+        # F_j стоит в левой части уравнения рядом с накоплением, поэтому
+        # вклад конвекции в энергию области равен -ΣF_j.
+        E_conv = float(-np.sum(F) * dt)
 
         log.append(dict(
             t=float(hydro_result.state.t), dt=float(dt),

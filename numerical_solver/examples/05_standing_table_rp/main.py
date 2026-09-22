@@ -23,8 +23,11 @@ T выводится при lambda = 0, иначе задача становит
 
 Дополнительные проверки запускаются отдельными скриптами — они делают свои
 прогоны (до 1000 суток либо на мелких сетках) и потому небыстрые:
-compare_with_corey, check_asymptotics_relaxation, closed_form_convergence,
-energy_balance_convergence, ode_grid_convergence.
+compare_with_corey, closed_form_convergence, energy_balance_convergence,
+ode_grid_convergence.
+
+(check_asymptotics_relaxation удалён вместе с телескопической формулой —
+BUG-012, двухфазная асимптотика больше не поддерживается.)
 """
 
 import sys

@@ -504,7 +504,9 @@ class TestHistoryIntervalDefaults:
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.time.history[0].control == "pressure"
 
-    def test_q_total_default_none(self, tmp_path):
+    def test_q_oil_default_none(self, tmp_path):
+        # При управлении по давлению дебит не задаётся: поле остаётся None.
+        # Имя q_oil (не q_total) — управление идёт по дебиту нефти, FEAT-020.
         raw = _minimal_raw()
         cfg = load_config(_write_json(tmp_path, raw))
-        assert cfg.time.history[0].q_total is None
+        assert cfg.time.history[0].q_oil is None

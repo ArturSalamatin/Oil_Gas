@@ -6,7 +6,11 @@ issue: BUG-012
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/36
 branch: fix/bug-012/advective-convection-form
 status: в процессе
-этап: I — постановка (до контрольной точки)
+этап: II — ядро под согласованную постановку
+контрольная-точка:
+  пройдена: 2026-09-22
+  постановка-утверждена: да (правки пользователя приняты, косметические)
+  решение-по-шагу-13а: не принято — вынести отдельно
 baseline:
   commit: 7735b44
   branch: numerical_scheme/implementation

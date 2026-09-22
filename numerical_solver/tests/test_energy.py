@@ -1043,3 +1043,296 @@ class TestAssembleTridiag:
 
         assert a[0] == 0.0, "a[0] must be 0 (Neumann BC)"
         assert c[N_cells - 1] == 0.0, "c[N-1] must be 0 (Dirichlet BC)"
+
+
+# ═══════════════════════════════════════════════════════════
+# Детекторы формы дискретизации (BUG-012)
+# ═══════════════════════════════════════════════════════════
+
+class TestAdvectiveFormDetectors:
+    """Схема решает то уравнение, которое выведено в постановке.
+
+    ЗАЧЕМ ЭТИ ТЕСТЫ. Три пространственных члена уравнения энергии имеют
+    в постановке структуру «скорость · градиент скаляра»:
+
+        конвекция  ρ·c_p·u·∂T/∂r     eq:main_energy_final
+        JT         ρ·c_p·μ_JT·u·∂p/∂r  eq:main_QJT_muJT
+        дегазация  (u_o/B_o)·∂Rs/∂r    eq:main_mdot
+
+    До BUG-012 все три дискретизировались как РАЗНОСТЬ ПОТОКОВ через
+    грани, то есть аппроксимировали div(u·ψ). Разность операторов —
+    лишний член ψ_j·D_j, где D_j = Φ_{j+1/2} − Φ_{j−1/2}, и на сетке он
+    в нуль не обращается.
+
+    Дефект не ловился НИ ОДНИМ существующим тестом, и это было слепое
+    пятно по построению, а не пробел покрытия:
+      - баланс энергии суммировал те же дивергентные потоки, что матрица;
+      - эталон матрицы (DEBT-016) сверял её с теми же формулами;
+      - оба проверяли согласованность кода с кодом, а не схемы с
+        уравнением.
+
+    ИДЕЯ ДЕТЕКТОРА. Адвективный оператор на ОДНОРОДНОМ поле переносимой
+    величины обязан давать машинный ноль: каждое слагаемое содержит
+    разность соседних значений. Дивергентный даёт ψ·D_j ≠ 0. Это прямой
+    различитель форм, не требующий эталонного решения.
+
+    ⚠️ СЦЕНАРИИ ОБЯЗАНЫ БЫТЬ ДВУХФАЗНЫМИ. В однофазной зоне Φ почти
+    постоянен (замерено: D_j ~ 1e-12 — машинный ноль), и обе формы дают
+    один результат. Тест на Sg = 0 проходил бы при любой форме и создавал
+    бы ложное чувство покрытия. Существующие TestAssembleTridiag — как раз
+    такие: они правку BUG-012 не различают.
+    """
+
+    N_CELLS = 12
+    SG = 0.3          # двухфазная зона: ρ_g·c_p_g на полтора порядка
+                      # меньше ρ_o·c_p_o, поэтому Φ меняется вдоль r
+
+    def _setup(self):
+        """Двухфазное состояние с потоком к скважине.
+
+        Sg = 0.3 постоянна, но Φ всё равно меняется по r: вклад газовой
+        фазы зависит от k_rg и от расхода, а тот падает как 1/r.
+        """
+        grid = LogRadialGrid(R_WELL, R_EXT, H, self.N_CELLS, K_PERM)
+        pvt = _make_pvt(mu_JT_oil=-3e-7, mu_JT_gas=4e-6, L_degas=1e5)
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        p = _log_pressure_profile(grid, P_WF, P0)
+        Sg = np.full(self.N_CELLS, self.SG)
+        Rs = np.full(self.N_CELLS, RS0)
+        T_old = np.full(self.N_CELLS, T0)
+
+        state = SimulationState(
+            p=p, Sg=Sg, Rs=Rs, T=T_old,
+            regime=np.full(self.N_CELLS, 1, dtype=int), t=0.0)
+        bc = BoundaryConditions(well=PressureControl(P_WF), p_ext=P0,
+                                T_ext=T_EXT, Rs_ext=RS0)
+        hydro = compute_fluxes(state, grid, pvt, CoreyRP(0.2, 0.05, 2.0, 2.0),
+                               bc)
+
+        props = solver.compute_cell_properties(p, Sg, Rs, 1.0 - Sg, T_old)
+        ext = solver._ext_properties(bc)
+        Phi_plus, Phi_minus, Phi_o, Phi_g = \
+            solver.compute_convective_coefficients(
+                hydro.Q_o, hydro.Q_g, props['rho_o'], props['rho_g'],
+                props['c_p_o'], props['c_p_g'], self.N_CELLS, ext)
+
+        return dict(solver=solver, grid=grid, hydro=hydro, bc=bc,
+                    props=props, ext=ext, p=p, Sg=Sg, Rs=Rs, T_old=T_old,
+                    Phi_plus=Phi_plus, Phi_minus=Phi_minus,
+                    Phi_o=Phi_o, Phi_g=Phi_g)
+
+    def test_scenario_is_two_phase(self):
+        """Контроль самого теста: D_j существенно отличен от нуля.
+
+        Без этой проверки остальные тесты класса могли бы «проходить»
+        на вырожденном сценарии, где обе формы совпадают. Порог выбран
+        по замеру: в однофазной зоне D_j ~ 1e-12, в двухфазной ~1e+2.
+        """
+        s = self._setup()
+        Phi = s['Phi_o'] + s['Phi_g']
+        D = Phi[1:] - Phi[:-1]
+        assert np.max(np.abs(D)) > 1.0, (
+            f"сценарий вырожден: max|D_j| = {np.max(np.abs(D)):.3e} Вт/К, "
+            "обе формы дадут одно и то же и тест ничего не различит")
+
+    def test_convection_vanishes_on_uniform_temperature(self):
+        """Конвективный вклад строки матрицы на однородном T равен нулю.
+
+        Условия: T ≡ T_ext во всех ячейках И на контуре (иначе вклад дала
+        бы граничная разность, а не дефект формы). Собирается ТОЛЬКО
+        конвективная часть коэффициентов — накопление и кондукция
+        исключены, они на однородном поле зануляются сами и замаскировали
+        бы результат.
+
+        Ожидание: машинный ноль относительно масштаба задачи.
+        На дивергентной схеме тест даёт 4.5e-06 при пороге 1e-9.
+
+        ⚠️ Коэффициенты берутся ИЗ ЯДРА (assemble_tridiag), а не
+        собираются здесь по формулам постановки. Собранные в тесте они
+        проверяли бы арифметику самого теста — тавтология, из-за которой
+        первая редакция этого теста проходила и на дефектном коде.
+        Чтобы выделить конвективную часть, матрица собирается дважды: с
+        потоками и без них, и вычитается. Всё, что не зависит от Φ
+        (накопление, кондукция, источники), сокращается.
+        """
+        s = self._setup()
+        N = self.N_CELLS
+        solver = s['solver']
+
+        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+            s['props']['lambda_eff'], N)
+        z = np.zeros(N)
+        zf = np.zeros(N + 1)
+        args = (N, DT, s['T_old'], T_EXT, s['props']['rho_cp_eff'],
+                Q_T_int, Q_T_ext)
+
+        a1, b1, c1, d1 = solver.assemble_tridiag(
+            *args, s['Phi_plus'], s['Phi_minus'], z, z, z)
+        a0, b0, c0, d0 = solver.assemble_tridiag(
+            *args, zf, zf, z, z, z)
+
+        a_conv, b_conv = a1 - a0, b1 - b0
+        c_conv, d_conv = c1 - c0, d1 - d0
+
+        # Однородное поле: T в ячейках и T_ext за контуром — одно число
+        T_u = np.full(N, T_EXT)
+
+        residual = b_conv * T_u - d_conv
+        residual[1:] += a_conv[1:] * T_u[:-1]
+        residual[:-1] += c_conv[:-1] * T_u[1:]
+
+        cap = s['grid'].volumes * s['props']['rho_cp_eff'] / DT
+        scale = float(np.max(cap * T_EXT))
+        rel = float(np.max(np.abs(residual))) / scale
+
+        assert rel < 1e-9, (
+            f"конвективный оператор не зануляется на однородном T: "
+            f"отн. невязка {rel:.3e}. Это признак дивергентной формы — "
+            f"остаток равен T·D_j (BUG-012)")
+
+    def test_jt_vanishes_on_uniform_pressure(self):
+        """JT-вклад на однородном p равен нулю.
+
+        Зеркало предыдущего теста для eq:QJT_disc. Давление однородно и
+        в ячейках, и за обеими границами (p_wf и p_ext равны тому же
+        значению), расходы при этом НЕнулевые — иначе тест тривиален:
+        при Q = 0 обращается в нуль и дивергентная форма.
+        """
+        s = self._setup()
+        N = self.N_CELLS
+        solver = s['solver']
+
+        p_u = np.full(N, P0)
+        # Свойства пересчитываем на однородном p: μ_JT в _make_pvt
+        # константа, но Φ зависит от ρ(p), и брать его от другого поля
+        # нельзя — коэффициенты должны отвечать одному состоянию.
+        props_u = solver.compute_cell_properties(
+            p_u, s['Sg'], s['Rs'], 1.0 - s['Sg'], s['T_old'])
+        bc_u = BoundaryConditions(well=PressureControl(P0), p_ext=P0,
+                                  T_ext=T_EXT, Rs_ext=RS0)
+        ext_u = solver._ext_properties(bc_u)
+
+        # Расходы берём от НЕоднородного поля: они должны быть ненулевыми,
+        # иначе обе формы дадут ноль и тест ничего не различит.
+        Q_o, Q_g = s['hydro'].Q_o, s['hydro'].Q_g
+        _, _, Phi_o_u, Phi_g_u = solver.compute_convective_coefficients(
+            Q_o, Q_g, props_u['rho_o'], props_u['rho_g'],
+            props_u['c_p_o'], props_u['c_p_g'], N, ext_u)
+
+        assert np.max(np.abs(Phi_o_u)) > 0.0, "расходы нулевые — тест вырожден"
+
+        J = solver.compute_jt(
+            Q_o, Q_g, Phi_o_u, Phi_g_u,
+            props_u['mu_JT_o'], props_u['mu_JT_g'], p_u, N, ext_u, P0)
+
+        scale = float(np.max(np.abs(Phi_o_u + Phi_g_u))) * P0
+        rel = float(np.max(np.abs(J))) / scale
+
+        assert rel < 1e-12, (
+            f"JT-член не зануляется на однородном p: отн. {rel:.3e}. "
+            f"Признак дивергентной формы — остаток равен μ_JT·p·D_j")
+
+    def test_degassing_vanishes_on_uniform_composition(self):
+        """Пространственная часть mdot на однородном Rs равна нулю.
+
+        Дискретный аналог утверждения постановки: в однофазной зоне
+        (Rs = Rs0 = const) mdot = 0 автоматически. Временная часть здесь
+        тоже нулевая (Rs_old = Rs), поэтому проверяется именно
+        пространственная.
+
+        Состав однороден и за контуром (Rs_ext = Rs0) — иначе вклад дала
+        бы граничная разность.
+        """
+        s = self._setup()
+        N = self.N_CELLS
+        solver = s['solver']
+
+        Rs_u = np.full(N, RS0)
+        Q_deg = solver.compute_degassing(
+            1.0 - s['Sg'], s['Sg'], Rs_u, Rs_u, s['props']['Bo'],
+            s['hydro'].G_o, s['props']['L'], DT, N, RS0)
+
+        assert np.max(np.abs(s['hydro'].G_o)) > 0.0, (
+            "потоки нулевые — тест вырожден")
+        assert np.max(np.abs(Q_deg)) == 0.0, (
+            f"член дегазации не зануляется на однородном Rs: "
+            f"max|Q_deg| = {np.max(np.abs(Q_deg)):.3e} Вт/м³. "
+            f"Признак дивергентной формы — остаток равен Rs·div(G^o)")
+
+    def test_outflow_branch_assembles_correctly(self):
+        """Ветвь Φ⁺ > 0 (отток от скважины) собирается по постановке.
+
+        Во ВСЕХ штатных конфигах поток направлен к скважине, и Φ⁺ ≡ 0 на
+        всех гранях (замерено: 0 из 51). Слагаемые с Phi_plus в
+        assemble_tridiag прогонами примеров не исполняются вовсе, и
+        ошибка в них осталась бы незамеченной.
+
+        Здесь знак потока инвертируется искусственно.
+        """
+        s = self._setup()
+        N = self.N_CELLS
+        solver = s['solver']
+
+        # Инвертируем знак: Φ⁺ становится ненулевым, Φ⁻ зануляется
+        Phi_plus = -s['Phi_minus'][::1].copy()
+        Phi_minus = -s['Phi_plus'][::1].copy()
+        assert np.max(Phi_plus) > 0.0, "ветвь оттока не активирована"
+
+        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+            s['props']['lambda_eff'], N)
+        z = np.zeros(N)
+        a, b, c, d = solver.assemble_tridiag(
+            N, DT, s['T_old'], T_EXT, s['props']['rho_cp_eff'],
+            Q_T_int, Q_T_ext, Phi_plus, Phi_minus, z, z, z)
+
+        # Проверяем по eq:tridiag_a/b/c: Φ⁺ берётся с ЛЕВОЙ грани j
+        for j in range(1, N - 1):
+            assert a[j] == pytest.approx(-Q_T_int[j - 1] - Phi_plus[j]), (
+                f"a[{j}]: Φ⁺ должен браться с левой грани {j}")
+            assert b[j] == pytest.approx(
+                s['grid'].volumes[j] * s['props']['rho_cp_eff'][j] / DT
+                + Q_T_int[j - 1] + Q_T_int[j]
+                + Phi_plus[j] - Phi_minus[j + 1]), (
+                f"b[{j}]: в адвективной форме Φ⁺ с грани j, Φ⁻ с грани j+1")
+
+    def test_single_cell_boundary_contribution_counted_once(self):
+        """N = 1: вклад контурной грани учитывается ровно один раз.
+
+        Вырожденный случай, в котором обе грани ячейки граничные. Прежний
+        код писал в b[0] дважды — в блоке забоя и в блоке контура, — и
+        вторая запись затирала первую, теряя вклад. Постановка разбирает
+        случай явно (ГУ по температуре, N = 1).
+        """
+        grid = LogRadialGrid(R_WELL, R_EXT, H, 1, K_PERM)
+        pvt = _make_pvt()
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        props = solver.compute_cell_properties(
+            np.full(1, P0), np.zeros(1), np.full(1, RS0),
+            np.ones(1), np.full(1, T0))
+        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+            props['lambda_eff'], 1)
+
+        # Потоки на двух гранях РАЗЛИЧНЫ — иначе дефект не проявится:
+        # прежний код брал забойную грань (индекс 0) там, где должна
+        # стоять контурная (индекс 1), и при равных значениях подмена
+        # давала бы тот же результат.
+        Phi_plus = np.zeros(2)
+        Phi_minus = np.array([-300.0, -500.0])
+        z = np.zeros(1)
+
+        a, b, c, d = solver.assemble_tridiag(
+            1, DT, np.full(1, T0), T_EXT, props['rho_cp_eff'],
+            Q_T_int, Q_T_ext, Phi_plus, Phi_minus, z, z, z)
+
+        cap = grid.volumes[0] * props['rho_cp_eff'][0] / DT
+        # Забойная грань вклада не даёт, контурная даёт РОВНО ОДИН раз
+        assert b[0] == pytest.approx(cap + Q_T_ext - Phi_minus[1]), (
+            "при N = 1 вклад контурной грани учтён неверно "
+            "(дважды или потерян)")
+        assert d[0] == pytest.approx(
+            cap * T0 + Q_T_ext * T_EXT + (-Phi_minus[1]) * T_EXT), (
+            "при N = 1 правая часть собрана неверно")
+        assert a[0] == 0.0 and c[0] == 0.0, (
+            "при N = 1 связей с соседями нет")

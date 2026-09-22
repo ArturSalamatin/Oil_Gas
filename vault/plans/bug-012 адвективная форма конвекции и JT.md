@@ -5,7 +5,8 @@ date: 2026-09-22
 issue: BUG-012
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/36
 branch: fix/bug-012/advective-convection-form
-status: готов к реализации
+status: в процессе
+этап: I — постановка (до контрольной точки)
 baseline:
   commit: 7735b44
   branch: numerical_scheme/implementation

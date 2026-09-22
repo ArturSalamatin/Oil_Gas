@@ -111,9 +111,15 @@ class TridiagEnergySolver(EnergySolver):
             props['lambda_eff'], N)
 
         # Подшаг 5: источники (JT, адиабатический, дегазация)
+        # p_wf — давление на забойной грани: в адвективной форме JT-вклад
+        # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf), и без p_wf не считается.
+        # Для температуры и состава аналога нет — там значение за забоем
+        # не задано и вклад нулевой.
+        p_wf = bc.well.boundary_pressure(hydro_result.state, self._grid,
+                                         self._pvt, None)
         J_jt = self.compute_jt(
             Q_o, Q_g, Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
-            p, N, ext)
+            p, N, ext, p_wf)
         Q_ad = self.compute_adiabatic(
             So, Sg, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'],
@@ -320,48 +326,77 @@ class TridiagEnergySolver(EnergySolver):
     # Подшаг 5a: JT-поток (eq. 28–29)
     # ──────────────────────────────────────────────────────
 
-    def compute_jt(self, Q_o, Q_g, Phi_o, Phi_g, mu_JT_o, mu_JT_g, p, N, ext):
-        """J_face[f] = Σ_α μ_JT_α_up · <Φ_α · p>_f.
-        J_jt[j] = J_face[j+1] - J_face[j].
+    def compute_jt(self, Q_o, Q_g, Phi_o, Phi_g, mu_JT_o, mu_JT_g, p, N, ext,
+                   p_wf):
+        """Вклад JT в адвективной форме. Ур. (eq:QJT_disc).
+
+        J_jt[j] = Σ_α [ μ_JT_α^{j-1/2}·Φ_α⁺_{j-1/2}·(p[j] − p[j-1])
+                      + μ_JT_α^{j+1/2}·Φ_α⁻_{j+1/2}·(p[j+1] − p[j]) ]  [Вт]
+
+        Каждое слагаемое содержит ПЕРЕПАД давления на грани, а не само p:
+        источник (eq:main_QJT_muJT) записан поточечно, через градиент
+        давления. Прежняя форма J_jt[j] = J_face[j+1] − J_face[j] с
+        J_face = Σ_α μ_JT·<Φ_α·p> дискретизировала div(μ_JT·Φ·p) и давала
+        лишний член μ_JT·p[j]·D_j (BUG-012).
+
+        При однородном p член обращается в нуль тождественно.
+
+        p_wf — давление на забойной грани (задано ГУ). В отличие от
+        температуры и состава, давление за забоем известно, поэтому
+        забойная грань даёт НЕнулевой вклад: перепад (p[0] − p_wf) реален
+        и создаёт дросселирование. Поправки на полушаг не требуется —
+        длина пути учтена в Φ через проводимость грани.
+
         ext — свойства контура из _ext_properties (eq:bc_props_ext).
         Возвращает J_jt [N].
         """
-        J_face = np.zeros(N + 1)
+        # Давление «за гранью» для каждой из N+1 граней:
+        #   грань 0   — забой, значение задано ГУ (p_wf);
+        #   грань f   — центр ячейки f-1 слева и ячейки f справа;
+        #   грань N   — контур, значение из ГУ (ext['p']).
+        p_left = np.concatenate(([p_wf], p))        # [N+1]: слева от грани
+        p_right = np.concatenate((p, [ext['p']]))   # [N+1]: справа от грани
 
-        # Внутренние грани. Выбор ячейки выше по потоку — тот же, что
-        # в compute_convective_coefficients (раздельно по фазам).
-        # <Φ_α·p>_f = Φ_α⁺·p[f-1] + Φ_α⁻·p[f] — оператор против потока
-        # (eq. upstream_operator): при Φ > 0 берётся левая ячейка, при Φ < 0
-        # правая; расщепление по знаку делает выбор арифметическим.
+        # Ячейка выше по потоку — та же, что в compute_convective_coefficients
+        # (раздельно по фазам, по знаку Q_α). Для забойной грани upstream —
+        # ячейка 0 при любом знаке: слева ячеек нет.
         f = np.arange(1, N)
-        up_o = np.where(Q_o[f] >= 0, f - 1, f)
-        up_g = np.where(Q_g[f] >= 0, f - 1, f)
+        up_o = np.zeros(N + 1, dtype=int)
+        up_g = np.zeros(N + 1, dtype=int)
+        up_o[f] = np.where(Q_o[f] >= 0, f - 1, f)
+        up_g[f] = np.where(Q_g[f] >= 0, f - 1, f)
+        up_o[N] = N - 1
+        up_g[N] = N - 1
 
-        J_o = mu_JT_o[up_o] * (np.maximum(Phi_o[f], 0.0) * p[f - 1]
-                               + np.minimum(Phi_o[f], 0.0) * p[f])
-        J_g = mu_JT_g[up_g] * (np.maximum(Phi_g[f], 0.0) * p[f - 1]
-                               + np.minimum(Phi_g[f], 0.0) * p[f])
-
-        J_face[f] = J_o + J_g
-
-        # Забой: <Φ·p> = Φ_well · p[0] (upstream = ячейка 0)
-        J_face[0] = (mu_JT_o[0] * Phi_o[0] * p[0]
-                     + mu_JT_g[0] * Phi_g[0] * p[0])
+        mu_o_face = mu_JT_o[up_o]
+        mu_g_face = mu_JT_g[up_g]
 
         # ── Контур ── ур. (eq:bc_props_ext)
-        # Тот же разбор знака, что для Φ выше: при притоке μ_JT и p
-        # берутся из ГУ контура. Признак — знак Q_α (не Φ_α): он
-        # тождественно тот же, так как Φ_α = ρ_α·c_p_α·Q_α и ρ·c_p > 0,
-        # но по Q согласовано с Φ и с compute_degassing — один критерий
-        # во всех трёх местах. DEBT-017.
-        mu_o_N = mu_JT_o[-1] if Q_o[N] >= 0 else ext['mu_JT_o']
-        p_o_N = p[-1] if Q_o[N] >= 0 else ext['p']
-        mu_g_N = mu_JT_g[-1] if Q_g[N] >= 0 else ext['mu_JT_g']
-        p_g_N = p[-1] if Q_g[N] >= 0 else ext['p']
+        # При притоке μ_JT берётся при условиях контура. Признак — знак
+        # Q_α (не Φ_α): он тождественно тот же, так как Φ_α = ρ_α·c_p_α·Q_α
+        # и ρ·c_p > 0, но по Q согласовано с Φ и с compute_degassing —
+        # один критерий во всех трёх местах. DEBT-017.
+        if Q_o[N] < 0:
+            mu_o_face[N] = ext['mu_JT_o']
+        if Q_g[N] < 0:
+            mu_g_face[N] = ext['mu_JT_g']
 
-        J_face[N] = mu_o_N * Phi_o[N] * p_o_N + mu_g_N * Phi_g[N] * p_g_N
+        # Вклад левой грани j (Φ⁺ > 0) и правой грани j+1 (Φ⁻ < 0).
+        # Индексы: для ячейки j левая грань имеет индекс j, правая — j+1.
+        Phi_o_p = np.maximum(Phi_o, 0.0)
+        Phi_g_p = np.maximum(Phi_g, 0.0)
+        Phi_o_m = np.minimum(Phi_o, 0.0)
+        Phi_g_m = np.minimum(Phi_g, 0.0)
 
-        return J_face[1:] - J_face[:-1]
+        dp_left = p - p_left[0:N]          # [N]: p[j] − (значение слева)
+        dp_right = p_right[1:N + 1] - p    # [N]: (значение справа) − p[j]
+
+        J_jt = (mu_o_face[0:N] * Phi_o_p[0:N] * dp_left
+                + mu_g_face[0:N] * Phi_g_p[0:N] * dp_left
+                + mu_o_face[1:N + 1] * Phi_o_m[1:N + 1] * dp_right
+                + mu_g_face[1:N + 1] * Phi_g_m[1:N + 1] * dp_right)
+
+        return J_jt
 
     # ──────────────────────────────────────────────────────
     # Подшаг 5b: адиабатический эффект (eq. 29)
@@ -381,8 +416,30 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N, Rs_ext):
-        """Q_deg[j] = -L · mdot[j], Вт/м³.
-        mdot — из временной и конвективной частей (eq. 31).
+        """Q_deg[j] = -L · mdot[j], Вт/м³. Ур. (eq:mdot_disc), (eq:mdot_conv_face).
+
+        Пространственная часть — в АДВЕКТИВНОЙ форме (BUG-012):
+
+            R_adv[j] = G^o⁺_{j-1/2}·(Rs[j] − Rs[j-1])
+                     + G^o⁻_{j+1/2}·(Rs[j+1] − Rs[j])
+
+        Каждое слагаемое содержит РАЗНОСТЬ Rs на грани: источник
+        (u_o/B_o)·∂Rs/∂r записан поточечно, через градиент состава.
+        Прежняя форма (R_conv[f+1] − R_conv[f]) с R_conv = <G^o·Rs>
+        дискретизировала div(G^o·Rs) и давала лишний член
+        Rs[j]·(G^o_{j+1/2} − G^o_{j-1/2}).
+
+        При однородном Rs член обращается в нуль тождественно — это и есть
+        утверждение постановки о том, что в однофазной зоне (Rs = Rs0)
+        mdot = 0 автоматически.
+
+        Где берётся B_o: во временном члене из текущей ячейки, в
+        пространственном множитель 1/B_o сидит внутри G^o и снесён по
+        потоку. Асимметрия намеренная: временной член — ЗАПАС нефти в
+        ячейке, пространственный — ПОТОК через грань. Форма воспроизводит
+        дискретное правило Лейбница точно (невязка ~1e-15); вариант с
+        общим множителем 1/B_o[j] даёт ~5e-3.
+
         Rs_ext — состав притока с контура (eq. bc_Sg_ext): R_s|_ext = R_s^0.
         """
         phi = self._rock.porosity
@@ -392,29 +449,25 @@ class TridiagEnergySolver(EnergySolver):
         # Временная часть
         mdot_time = -rho_g_std * phi * So / Bo * (Rs - Rs_old) / dt
 
-        # Конвективная часть: R_conv[f] = <G_o · Rs>_f
-        R_conv = np.zeros(N + 1)
-        # Внутренние грани: <G^o·Rs>_f = G^o⁺·Rs[f-1] + G^o⁻·Rs[f]
-        # (eq. mdot_conv_face + upstream_operator). При оттоке от скважины
-        # (G_o > 0) состав берётся из левой ячейки, при притоке — из правой.
-        f = np.arange(1, N)
-        R_conv[f] = (np.maximum(G_o[f], 0.0) * Rs[f - 1]
-                     + np.minimum(G_o[f], 0.0) * Rs[f])
-        # Забой
-        R_conv[0] = G_o[0] * Rs[0]
-        # Контур: upstream зависит от знака потока.
-        # Конвенция: G_o > 0 — от скважины (отток), G_o < 0 — приток к скважине.
-        if G_o[N] >= 0:
-            # Отток наружу: выше по потоку — последняя внутренняя ячейка N-1
-            R_conv[N] = G_o[N] * Rs[N - 1]
-        else:
-            # Приток с контура: выше по потоку — контур, состав задан ГУ
-            # (eq. bc_Sg_ext, problem_statement.tex:1469-1472).
-            # Брать здесь Rs[N-1] нельзя: при p_{N-1} < p_b это состав
-            # дегазированной нефти вместо состава притока (DEBT-009).
-            R_conv[N] = G_o[N] * Rs_ext
+        # Пространственная часть: перенос Rs потоком нефтяного компонента.
+        # Расщепление по знаку G^o — тот же критерий, что в
+        # compute_convective_coefficients и compute_jt.
+        Gp = np.maximum(G_o, 0.0)
+        Gm = np.minimum(G_o, 0.0)
 
-        mdot_conv = -rho_g_std * (R_conv[1:] - R_conv[:-1]) / V
+        # Состав соседей. Слева от ячейки 0 ячейки нет и ГУ по Rs на забое
+        # тоже нет, поэтому ячейка назначается сама себе левым соседом:
+        # разность Rs[0] − Rs[0] = 0, и забойная грань вклада не даёт при
+        # ЛЮБОМ знаке потока. Отдельной ветви для этого не требуется.
+        # Справа от ячейки N-1 — контур, состав задан ГУ (eq. bc_Sg_ext).
+        # Брать Rs[N-1] нельзя: при p_{N-1} < p_b это состав дегазированной
+        # нефти вместо состава притока (DEBT-009).
+        Rs_left = np.concatenate(([Rs[0]], Rs[:-1]))
+        Rs_right = np.concatenate((Rs[1:], [Rs_ext]))
+
+        R_adv = Gp[0:N] * (Rs - Rs_left) + Gm[1:N + 1] * (Rs_right - Rs)
+
+        mdot_conv = -rho_g_std * R_adv / V
         mdot = mdot_time + mdot_conv
         return -L * mdot
 

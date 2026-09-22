@@ -56,28 +56,37 @@ class PressureControl(WellControl):
         return self.p_wf
 ```
 
-### RateControl (будущее)
+### RateControl (будущее, FEAT-020)
+
+> [!warning] Проект разошёлся с реализацией
+> Здесь изначально проектировался `TotalRateControl` — **суммарный** расход,
+> $p_{wf}$ ищется итеративно из условия $G^o_0 + G^g_0 = -q_{\text{total}}$.
+> Прототип гидродинамики реализовал **другое**: режим `OIL_RATE` —
+> управление по дебиту **нефти**, $p_{bhp}$ исключается **алгебраически**
+> (`blackoil.py:56-77`), без итераций:
+> $$p_{bhp} = p_0 - \frac{q_{\text{цель}}}{T_w \lambda_o}.$$
+> В знаменателе одна $\lambda_o$: целевой дебит приравнен к притоку нефти,
+> свободный газ досчитывается по тому же $\Delta p_w$ и не управляется.
+> Суммарного расхода прототип не умеет — для него нужен новый режим
+> с $(\lambda_o + \lambda_g)$, то есть правка кода прототипа.
+>
+> Поле конфига переименовано `q_total` → `q_oil` (2026-09-22): имя обещало
+> суммарный расход, которого нет. Актуальная постановка — [[FEAT-020]].
 
 ```python
-class TotalRateControl(WellControl):
-    """Задан суммарный объёмный расход (при ст. условиях)."""
+class RateControl(WellControl):
+    """Задан дебит нефти в ст. условиях, м³ст/с. Ограничение min_bhp, Па."""
 
-    def __init__(self, q_total_std: float):
-        self.q_total = q_total_std
-
-    def boundary_pressure(self, state, grid, pvt, relperm) -> float:
-        # Найти p_wf, при котором G_o[0] + G_g[0] = -q_total
-        # Итеративно или из линеаризованной формулы
-        ...
+    def __init__(self, q_oil_std: float, min_bhp: float | None = None):
+        self.q_oil = q_oil_std
+        self.min_bhp = min_bhp
 ```
 
-### PhaseRateControl (будущее)
-
-```python
-class OilRateControl(WellControl):
-    """Задан расход нефтяной фазы (при ст. условиях)."""
-    ...
-```
+Открытый вопрос FEAT-020: откуда берётся фактическое $p_{wf}$. При
+`PressureControl` оно известно до шага, при `RateControl` — результат
+гидро-шага. Либо `boundary_pressure` дублирует формулу прототипа (риск
+расхождения двух путей, ср. DEBT-021), либо адаптер возвращает фактическое
+$p_{wf}$ через `HydroResult` (прототип хранит его в `_last_effective_bhp_bar`).
 
 ## BoundaryConditions — контейнер
 
@@ -104,7 +113,7 @@ class BoundaryConditions:
     "history": [
         {"dt": 86400, "control": "pressure", "p_wf": 15e6},
         {"dt": 172800, "control": "pressure", "p_wf": 12e6},
-        {"dt": 604800, "control": "rate", "q_total": 0.001}
+        {"dt": 604800, "control": "rate", "q_oil": 0.001}
     ]
 }
 ```
@@ -119,7 +128,8 @@ def create_well_control(interval_config) -> WellControl:
     if control_type == "pressure":
         return PressureControl(interval_config["p_wf"])
     elif control_type == "rate":
-        return TotalRateControl(interval_config["q_total"])
+        return RateControl(interval_config["q_oil"],
+                           interval_config.get("min_bhp"))
     ...
 ```
 

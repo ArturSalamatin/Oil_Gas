@@ -120,7 +120,7 @@ Sg,kro,krg
     "history": [
         {"dt": 86400, "control": "pressure", "p_wf": 15000000},
         {"dt": 172800, "control": "pressure", "p_wf": 12000000},
-        {"dt": 604800, "control": "rate", "q_total": 0.001, "min_bhp": 5000000}
+        {"dt": 604800, "control": "rate", "q_oil": 0.001, "min_bhp": 5000000}
     ]
 }
 ```
@@ -153,7 +153,7 @@ def _build_prototype_schedule(time_config) -> Schedule:
             row = ScheduleRow(
                 time_day=t_day,
                 mode='OIL_RATE',
-                oil_rate_sm3_day=interval.q_total * DAY_TO_S,
+                oil_rate_sm3_day=interval.q_oil * DAY_TO_S,  # дебит нефти
                 min_bhp_bar=(interval.min_bhp / BAR_TO_PA 
                              if interval.min_bhp is not None else None)
             )

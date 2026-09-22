@@ -6,7 +6,15 @@ issue: BUG-012
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/36
 branch: fix/bug-012/advective-convection-form
 status: в процессе
-этап: II — ядро под согласованную постановку
+этап: III — остальные тесты и диагностика
+этап-II-завершён:
+  дата: 2026-09-22
+  критерий: test_energy_matrix_examples.py — 15/15 зелёные при rtol=1e-13
+  шаги: 6 (эталон), 7 (конвекция), 8 (JT), 8а (дегазация)
+  красных-осталось: 11 из 854
+    - test_energy_balance_examples.py — 7 (шаг 10)
+    - test_val002.py — 3 (шаг 12)
+    - test_examples.py — 1 (шаг 11)
 контрольная-точка:
   пройдена: 2026-09-22
   постановка-утверждена: да (правки пользователя приняты, косметические)

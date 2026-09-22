@@ -323,7 +323,7 @@ class TridiagEnergySolver(EnergySolver):
         return Q_T_internal, Q_T_ext
 
     # ──────────────────────────────────────────────────────
-    # Подшаг 5a: JT-поток (eq. 28–29)
+    # Подшаг 5a: JT-вклад (eq:QJT_disc, адвективная форма)
     # ──────────────────────────────────────────────────────
 
     def compute_jt(self, Q_o, Q_g, Phi_o, Phi_g, mu_JT_o, mu_JT_g, p, N, ext,
@@ -412,7 +412,8 @@ class TridiagEnergySolver(EnergySolver):
             + Sg * (1.0 + rho_g * c_p_g * mu_JT_g) * dp_dt)
 
     # ──────────────────────────────────────────────────────
-    # Подшаг 5c: теплота дегазации (eq. 30–31)
+    # Подшаг 5c: теплота дегазации (eq:Qdeg_disc, eq:mdot_disc,
+    # eq:mdot_conv_face — адвективная пространственная часть)
     # ──────────────────────────────────────────────────────
 
     def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N, Rs_ext):
@@ -472,7 +473,8 @@ class TridiagEnergySolver(EnergySolver):
         return -L * mdot
 
     # ──────────────────────────────────────────────────────
-    # Подшаг 6: сборка трёхдиагональной СЛАУ (eq. 33–36)
+    # Подшаг 6: сборка трёхдиагональной СЛАУ
+    # (eq:tridiag_a … eq:tridiag_d, адвективная форма)
     # ──────────────────────────────────────────────────────
 
     def assemble_tridiag(self, N, dt, T_old, T_ext,

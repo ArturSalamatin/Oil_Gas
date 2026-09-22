@@ -222,7 +222,8 @@ class EnergyBalanceAccumulator:
         self.cum_adiab += np.sum(V * Q_ad) * dt
 
         # ── Скрытая теплота дегазации ──
-        # Q_deg = -L·mdot, Вт/м³ (eq. 30–31). Решатель ставит V[j]·Q_deg[j]
+        # Q_deg = -L·mdot, Вт/м³ (eq:Qdeg_disc, eq:mdot_disc).
+        # Решатель ставит V[j]·Q_deg[j]
         # в правую часть. При L = 0 (примеры 01, 02, 07, 08) член нулевой.
         self.cum_deg += np.sum(V * Q_deg) * dt
 

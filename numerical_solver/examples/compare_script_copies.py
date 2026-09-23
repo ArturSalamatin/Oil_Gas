@@ -36,20 +36,13 @@ EXAMPLES = Path(__file__).resolve().parent
 # даёт tests/test_examples.py::TestSharedChecks::test_no_duplicate_helper_scripts,
 # а этот инструмент показывает, ЧТО именно разошлось).
 #
-# Реально дублируются две группы, и обе оставлены осознанно:
-#   temperature_ode      — у примера 04 своя реализация: там гидродинамика
-#                          релаксирует постепенно, и заморозка коэффициентов
-#                          по конечному состоянию давала 0.45 К против
-#                          0.017 К с пошаговыми. Копии 03 и 05 между собой
-#                          идентичны — их свести можно, кандидат в DEBT.
-#   ode_grid_convergence — зависит от temperature_ode, поэтому вынести его
-#                          нельзя: общий модуль подтянул бы для примера 04
-#                          чужую реализацию ОДУ.
+# Реально дублирующихся групп больше нет. Прежде их было две:
+# temperature_ode (у примера 04 своя реализация) и зависевший от него
+# ode_grid_convergence. Оба удалены в DEBT-022 — ОДУ-аналитика была
+# дивергентной, а постановка адвективная (BUG-012).
 GROUPS = [
     "energy_balance.py",
     "energy_balance_convergence.py",
-    "temperature_ode.py",
-    "ode_grid_convergence.py",
     "temperature_asymptotics.py",
     "two_phase_analytics.py",
 ]

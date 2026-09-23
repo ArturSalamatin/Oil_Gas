@@ -165,9 +165,14 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
         props['c_p_o'], props['c_p_g'], N, ext)
     Q_T_internal, Q_T_ext = solver.compute_conductive_transmissibility(
         props['lambda_eff'], N)
+    # p_wf — давление на забойной грани: в адвективной форме JT-вклад
+    # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без p_wf не считается
+    # (BUG-012). Берётся из того же bc, что и свойства контура.
+    p_wf = bc.well.boundary_pressure(state_prev, solver._grid,
+                                     solver._pvt, None)
     J_jt = solver.compute_jt(
         hydro.Q_o, hydro.Q_g, Phi_o, Phi_g,
-        props['mu_JT_o'], props['mu_JT_g'], p, N, ext)
+        props['mu_JT_o'], props['mu_JT_g'], p, N, ext, p_wf)
     Q_ad = solver.compute_adiabatic(
         So, Sg, props['rho_o'], props['rho_g'],
         props['c_p_o'], props['c_p_g'],

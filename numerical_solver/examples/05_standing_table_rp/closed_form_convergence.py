@@ -46,8 +46,8 @@ from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
 
-# (N, dt, max_retries): здесь, в отличие от ode_grid_convergence, ОДУ по
-# времени не решается — нужен только стационар гидродинамики.
+# (N, dt, max_retries): ОДУ по времени здесь не решается — нужен только
+# стационар гидродинамики.
 #
 # До DEBT-007 шаг приходилось уменьшать вместе с сеткой: (100, 600),
 # (200, 300), (400, 120), иначе Newton падал с жёстко зашитым лимитом

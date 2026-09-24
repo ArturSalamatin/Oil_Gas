@@ -6,7 +6,7 @@ date: 2026-09-23
 issue: DEBT-022
 github: 37
 branch: refactor/debt-022/advective-ode-analytics
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-09-23
   round: 3

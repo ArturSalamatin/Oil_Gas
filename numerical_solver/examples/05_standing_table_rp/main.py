@@ -12,28 +12,26 @@
        единого числа из расчёта) и равновесие Rs = min(Rs_eq(p), Rs0).
        Эти выводы не зависят ни от вида PVT, ни от вида ОФП, поэтому здесь
        не переопределяются.
-  T  — ОДУ первого порядка на каждом моменте времени плюс однофазная
-       JT-асимптотика. Единственная аналитика, специфичная для примера:
+  T  — однофазная JT-асимптотика и линия фронта разгазирования. В
+       двухфазной зоне эталона нет. Аналитика специфична для примера:
        температура зависит от тепловых параметров и в общий модуль не входит.
 
-Теплопроводности в конфиге обнулены, как в примерах 03, 04, 06-09: ОДУ для
-T выводится при lambda = 0, иначе задача становится краевой и аналитика —
-приближённой. Цена проверена: при lambda != 0 порядок сходимости ОДУ по
-сетке падает с 1.05 до 0.92 (ode_grid_convergence.py).
+Теплопроводности в конфиге обнулены, как в примерах 03, 04, 06-09. Цена
+обнуления мала: конвекция подавляет кондукцию (см. README примера 03,
+раздел про стоимость обнуления теплопроводности).
 
 Дополнительные проверки запускаются отдельными скриптами — они делают свои
 прогоны (до 1000 суток либо на мелких сетках) и потому небыстрые:
-compare_with_corey, closed_form_convergence, energy_balance_convergence,
-ode_grid_convergence.
+compare_with_corey, closed_form_convergence, energy_balance_convergence.
 
 (check_asymptotics_relaxation удалён вместе с телескопической формулой —
-BUG-012, двухфазная асимптотика больше не поддерживается.)
+BUG-012, двухфазная асимптотика больше не поддерживается.
+ОДУ-аналитика удалена в DEBT-022: она была дивергентной, а постановка
+адвективная; стационарной замены не существует.)
 """
 
 import sys
 from pathlib import Path
-
-import numpy as np
 
 # examples/ в sys.path — для импорта example_runner.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -50,7 +48,6 @@ from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
 import temperature_asymptotics as ta  # noqa: E402
-import temperature_ode as tode  # noqa: E402
 
 
 def _times_to_plot(history):
@@ -60,7 +57,7 @@ def _times_to_plot(history):
     return [times[i] for i in sorted(set(idx))]
 
 
-def _add_temperature_analytics(history, grid, config, pvt, energy_solver,
+def _add_temperature_analytics(history, grid, config, pvt,
                                output_dir: Path, title: str):
     """Перестроить temperature_profiles.png: ОДУ на каждом моменте + асимптотика."""
     T_as = ta.single_phase_asymptote(config, history)
@@ -72,29 +69,10 @@ def _add_temperature_analytics(history, grid, config, pvt, energy_solver,
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_profiles(history, grid, _times_to_plot(history), field="T", ax=ax)
 
-    # ОДУ-аналитика на тех же моментах. Рекуррентное решение до последнего
-    # рисуемого шага — один проход, решения снимаются по дороге.
-    times = history.times
-    plot_idx = sorted(set([0, len(times) // 3,
-                           2 * len(times) // 3, len(times) - 1]))
-    print("Решение ОДУ для температуры...")
-    ode_sol = tode.solve_ode_at_steps(history, config, grid, energy_solver,
-                                      steps=plot_idx)
-    for n in plot_idx:
-        if n == 0:
-            continue
-        r_o, T_o = ode_sol[n]
-        ax.semilogx(r_o, T_o, 'k--', linewidth=1.1)
-    ax.semilogx([], [], 'k--', linewidth=1.1, label="ОДУ-аналитика")
-
-    print("Аналитика T (ОДУ vs численное):")
-    for n in plot_idx:
-        if n == 0:
-            continue
-        r_o, T_o = ode_sol[n]
-        err = np.max(np.abs(history.states[n].T - np.interp(r, r_o, T_o)))
-        print(f"  t = {times[n]:8.0f} с (шаг {n:3d}): "
-              f"max|T_num - T_ode| = {err:.4f} К")
+    # ОДУ-аналитика удалена (DEBT-022): она дискретизировала конвекцию, JT
+    # и дегазацию дивергентно, тогда как постановка адвективная, и после
+    # BUG-012 расходилась с ядром на 1.12 К. Стационарной замены нет —
+    # температурного стационара в задаче не существует.
 
     # Асимптотику рисуем только там, где она выведена — в однофазной зоне.
     ax.semilogx(r[mask1], T_as[mask1], color='gray', linestyle=':',
@@ -142,9 +120,9 @@ if __name__ == "__main__":
 
     # report_asymptotics вызывает run_example (FEAT-016) — здесь не дублируем.
     print()
-    _add_temperature_analytics(history, grid, config, pvt, sim._energy,
+    _add_temperature_analytics(history, grid, config, pvt,
                                here / "output", TITLE)
-    print("\nГрафик T перестроен с ОДУ-аналитикой.")
+    print("\nГрафик T перестроен с JT-асимптотикой и линией фронта.")
 
     # Баланс энергии считает run_example — общей проверкой для всех
     # примеров (FEAT-016).

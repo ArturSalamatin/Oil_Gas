@@ -225,7 +225,7 @@ def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N, ext):
             np.minimum(Phi_o, 0.0) + np.minimum(Phi_g, 0.0))
 
 
-def _ref_conductive(grid, lambda_eff, N):
+def _ref_conductive(grid, lambda_eff):
     """Кондуктивная проводимость граней. eq:heat_cond_disc.
 
     ФОРМА ДОКУМЕНТА:
@@ -235,31 +235,38 @@ def _ref_conductive(grid, lambda_eff, N):
 
     Ядро считает это иначе — как последовательные кольцевые сопротивления
     Q_T = 2πh / (w_L/λ_L + w_R/λ_R). Формы алгебраически тождественны, так
-    как w_L + w_R = ln(r_{j+1}/r_j); расхождение 3.4e-16 (несколько ULP).
+    как w_L + w_R = ln(r_{j+1}/r_j).
     Здесь намеренно записана форма документа: именно ошибка в этом месте
     (двойной ln) была содержанием BUG-002.
 
-    При λ = 0 сопротивление бесконечно, проводимость — ноль. Считаем через
-    errstate: промежуточные inf/nan ожидаемы, 2πh/inf = 0 — верный ответ.
+    При λ = 0 сопротивление бесконечно, проводимость — ноль. Считаем по
+    маске λ > 0: деления на нуль не происходит вовсе.
 
     Контур: соседней ячейки нет, λ берётся из ячейки N-1 (ssec:bc_disc).
 
     Возвращает Q_T_internal [N-1] (>= 0) и Q_T_ext (скаляр, >= 0).
     """
-    if N > 1:
-        w_L = grid.log_weights_left      # ln(r_face / r_center_left)
-        w_R = grid.log_weights_right     # ln(r_center_right / r_face)
-        r_c = grid.r_centers
-        ln_ratio = np.log(r_c[1:] / r_c[:-1])
+    # При N = 1 внутренних граней нет: веса и срезы пустые, вся арифметика
+    # ниже даёт пустой массив — отдельная ветка не нужна.
+    w_L = grid.log_weights_left      # ln(r_face / r_center_left)   [N-1]
+    w_R = grid.log_weights_right     # ln(r_center_right / r_face)  [N-1]
+    lam_L = lambda_eff[:-1]
+    lam_R = lambda_eff[1:]
+    r_c = grid.r_centers
 
-        with np.errstate(divide='ignore', invalid='ignore'):
-            lam_face = (w_L + w_R) / (w_L / lambda_eff[:-1]
-                                      + w_R / lambda_eff[1:])
-            Q_T_internal = 2.0 * np.pi * grid.h * lam_face / ln_ratio
-        # λ = 0 даёт 0/0 → nan; физический ответ — нулевая проводимость.
-        Q_T_internal = np.nan_to_num(Q_T_internal, nan=0.0)
-    else:
-        Q_T_internal = np.empty(0)
+    # λ = 0 хотя бы с одной стороны грани → кольцевое сопротивление w/λ
+    # бесконечно → гармоническое среднее и проводимость равны нулю.
+    # Считаем по маске: деление на нуль не выполняется.
+    ok = np.minimum(lam_L, lam_R) > 0.0
+    lam_face = np.zeros_like(w_L)
+    lam_face[ok] = ((w_L[ok] + w_R[ok])
+                    / (w_L[ok] / lam_L[ok] + w_R[ok] / lam_R[ok]))
+
+    # Форма документа: делим на ln(r_{j+1}/r_j) ещё раз. Этот ln тождественен
+    # числителю (w_L + w_R), но сокращать его НЕЛЬЗЯ — двойной ln здесь и был
+    # содержанием BUG-002, эталон воспроизводит запись документа буквально.
+    Q_T_internal = (2.0 * np.pi * grid.h * lam_face
+                    / np.log(r_c[1:] / r_c[:-1]))
 
     Q_T_ext = (2.0 * np.pi * grid.h
                / np.log(grid.R_ext / grid.r_centers[-1]) * lambda_eff[-1])
@@ -292,14 +299,41 @@ def _ref_ext_properties(pvt, bc):
         mu_JT_g=pvt.mu_JT_gas(p_a, T_a)[0])
 
 
+def _ref_jt_face(f, Q_o, Q_g, mu_JT_o, mu_JT_g, p, N, ext, p_wf):
+    """Свойства грани f для JT-вклада: (p за гранью, μ_JT_o, μ_JT_g).
+
+    «За гранью» — со стороны, противоположной ячейке-владельцу грани.
+    Три типа граней (ssec:bc_disc, «Источниковые члены на граничных гранях»):
+
+    f = 0 — забой: p за гранью = p_wf, выше по потоку — ячейка 0.
+        Знак расхода здесь НЕ проверяется, в отличие от контура: закачка
+        через забой запрещена assert-ом в _ref_convective, поэтому
+        Φ⁺[0] ≡ 0 и возвращаемый μ_JT всё равно умножается на нуль.
+
+    0 < f < N — внутренняя: p из соседней ячейки, μ_JT из ячейки выше
+        по потоку СВОЕЙ фазы (eq:QJT_disc).
+
+    f = N — контур: p за гранью = p_ext при любом знаке расхода (давление
+        на контуре задано), а μ_JT — по знаку расхода (eq:bc_props_ext, 74):
+        отток наружу берёт свойства ячейки N-1, приток — контурные.
+    """
+    if f == 0:
+        return p_wf, mu_JT_o[0], mu_JT_g[0]
+    if f == N:
+        return (ext['p'],
+                mu_JT_o[-1] if Q_o[N] >= 0 else ext['mu_JT_o'],
+                mu_JT_g[-1] if Q_g[N] >= 0 else ext['mu_JT_g'])
+    return p[f], mu_JT_o[_upstream(Q_o[f], f)], mu_JT_g[_upstream(Q_g[f], f)]
+
+
 def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N, ext, p_wf):
     """Вклад Джоуля—Томсона. eq:QJT_disc (АДВЕКТИВНАЯ форма, BUG-012).
 
     J_j = Σ_α [ μ_JT,α^{j-1/2}·Φ⁺_{α,j-1/2}·(p_j - p_{j-1})
               + μ_JT,α^{j+1/2}·Φ⁻_{α,j+1/2}·(p_{j+1} - p_j) ]   [Вт]
 
-    Каждое слагаемое содержит ПЕРЕПАД давления на грани, а не само p:
-    источник eq:main_QJT_muJT записан поточечно, через градиент давления,
+    Каждое слагаемое содержит ПЕРЕПАД давления на грани.
+    Источник eq:main_QJT_muJT записан поточечно, через градиент давления,
     и дискретизация обязана воспроизводить именно эту форму. Прежняя
     запись J_j = J_{j+1/2} - J_{j-1/2} с J_f = Σ_α μ_JT·<Φ_α·p>_f
     дискретизировала div(μ_JT·Φ·p) и давала лишний член μ_JT·p_j·D_j,
@@ -318,38 +352,45 @@ def _ref_jt(Phi_o, Phi_g, mu_JT_o, mu_JT_g, Q_o, Q_g, p, N, ext, p_wf):
             Q_α >= 0 (отток)  → μ_JT из ячейки N-1, p за гранью = p_ext;
             Q_α <  0 (приток) → μ_JT при условиях контура, p = p_ext.
 
-    О полушаге на забое: перепад (p_0 - p_wf) набирается на половине
-    пути (от центра ячейки 0 до грани), тогда как на внутренних гранях —
-    между центрами. Поправки не требуется: длина пути уже учтена в Φ
-    через проводимость грани (trans_well на ln(r_0/r_well) против
-    trans_internal на ln(r_{j+1}/r_j)). См. постановку, «О полушаге».
+    О полушаге на ОБЕИХ граничных гранях: перепад набирается на половине
+    пути — (p_0 - p_wf) от центра ячейки 0 до забойной грани, (p_ext -
+    p_{N-1}) от центра ячейки N-1 до грани контура, — тогда как на
+    внутренних гранях перепад берётся между центрами, на полном шаге.
+    Поправки не требуется ни там, ни там: длина пути уже учтена в Φ через
+    проводимость грани, построенную на том же самом полушаге
+    (trans_well на ln(r_0/r_well), trans_ext на ln(R_ext/r_{N-1}) против
+    trans_internal на ln(r_{j+1}/r_j)). В произведении μ_JT·Φ·Δp длины
+    сокращаются: Φ ∝ 1/ln(...) несёт обратную длину, Δp — прямую.
+    См. постановку, «О полушаге».
 
     Возвращает J_jt [N].
     """
     J = np.zeros(N)
 
     for j in range(N):
-        # ── Левая грань j-1/2 (индекс j): работает при Φ⁺ > 0 ──
-        # Давление за гранью: p[j-1] для внутренней, p_wf для забоя.
-        p_left = p_wf if j == 0 else p[j - 1]
-        up_o_l = _upstream(Q_o[j], j) if j > 0 else 0
-        up_g_l = _upstream(Q_g[j], j) if j > 0 else 0
-        J[j] += (mu_JT_o[up_o_l] * max(Phi_o[j], 0.0) * (p[j] - p_left)
-                 + mu_JT_g[up_g_l] * max(Phi_g[j], 0.0) * (p[j] - p_left))
+        # Обе грани ячейки обрабатываются одной и той же функцией: разница
+        # между забоем, внутренней гранью и контуром — только в выборе
+        # p за гранью и ячейки выше по потоку, и она вся внутри _ref_jt_face.
+        p_left, mu_o_l, mu_g_l = _ref_jt_face(
+            j, Q_o, Q_g, mu_JT_o, mu_JT_g, p, N, ext, p_wf)
+        p_right, mu_o_r, mu_g_r = _ref_jt_face(
+            j + 1, Q_o, Q_g, mu_JT_o, mu_JT_g, p, N, ext, p_wf)
 
-        # ── Правая грань j+1/2 (индекс j+1): работает при Φ⁻ < 0 ──
-        f = j + 1
-        if f < N:
-            p_right = p[f]
-            mu_o_r = mu_JT_o[_upstream(Q_o[f], f)]
-            mu_g_r = mu_JT_g[_upstream(Q_g[f], f)]
-        else:
-            # Контур: давление за гранью — контурное; μ_JT по знаку расхода
-            p_right = ext['p']
-            mu_o_r = mu_JT_o[-1] if Q_o[N] >= 0 else ext['mu_JT_o']
-            mu_g_r = mu_JT_g[-1] if Q_g[N] >= 0 else ext['mu_JT_g']
-        J[j] += (mu_o_r * min(Phi_o[f], 0.0) * (p_right - p[j])
-                 + mu_g_r * min(Phi_g[f], 0.0) * (p_right - p[j]))
+        # Перепад давления общий для обеих фаз на своей грани — вынесен
+        # за сумму по фазам, как в eq:QJT_disc (знак Σ_α стоит снаружи).
+        dp_left = p[j] - p_left          # на левой грани j-1/2
+        dp_right = p_right - p[j]        # на правой грани j+1/2
+
+        # Σ_α μ_JT,α·Φ±_α на своей грани. Левая грань работает при Φ⁺ > 0,
+        # правая — при Φ⁻ < 0. Эти две суммы НЕ приводятся друг к другу:
+        # Φ⁺ берётся с левой грани, Φ⁻ с правой, и множители μ приходят
+        # из разных ячеек выше по потоку.
+        mu_Phi_left = (mu_o_l * max(Phi_o[j], 0.0)
+                       + mu_g_l * max(Phi_g[j], 0.0))
+        mu_Phi_right = (mu_o_r * min(Phi_o[j + 1], 0.0)
+                        + mu_g_r * min(Phi_g[j + 1], 0.0))
+
+        J[j] = mu_Phi_left * dp_left + mu_Phi_right * dp_right
 
     return J
 
@@ -554,7 +595,7 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
         props['rho_o'], props['rho_g'],
         props['c_p_o'], props['c_p_g'], N, ext)
 
-    Q_T_internal, Q_T_ext = _ref_conductive(grid, props['lambda_eff'], N)
+    Q_T_internal, Q_T_ext = _ref_conductive(grid, props['lambda_eff'])
 
     # Забойное давление задано НА ГРАНИ и входит в JT-вклад забойной
     # грани как значение "за гранью" (eq:QJT_disc, ssec:bc_disc).

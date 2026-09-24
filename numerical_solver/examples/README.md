@@ -432,7 +432,6 @@ $\lambda$ составляла 0.0002 К на забое при полном э�
 **Что остаётся у примера.** Проверка, осмысленная только для своего
 сценария: `check_slopes` (02 — наклоны профиля под JT),
 `compare_with_corey` (05 — сравнение двух ОФП в одном прогоне),
-`pressure_gor_closure` (04 — замыкание на табличном PVT),
 `spatial_convergence` (01), `grid_convergence` (04),
 `closed_form_convergence` (05).
 

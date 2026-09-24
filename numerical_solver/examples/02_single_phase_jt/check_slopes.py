@@ -209,6 +209,9 @@ def main():
     out_dir = HERE / "output"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "slopes.png"
+    # Стираем результат прошлого прогона. Остальные файлы в output/ пишет
+    # main.py примера, и трогать их нельзя: этот скрипт их не восстановит.
+    out_path.unlink(missing_ok=True)
     fig.savefig(out_path, dpi=130)
     plt.close(fig)
     print(f"\nСохранён: {out_path}")

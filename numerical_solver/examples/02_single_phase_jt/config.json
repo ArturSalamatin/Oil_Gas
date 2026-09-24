@@ -5,7 +5,7 @@
     "h": 10.0
   },
   "grid": {
-    "N": 50,
+    "N": 150,
     "type": "log_radial"
   },
   "rock": {

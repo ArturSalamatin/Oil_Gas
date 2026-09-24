@@ -1,8 +1,15 @@
 """Сходимость по числу ячеек N для примера 01.
 
-Прогоняет N=50 и N=200, для каждого решает рекуррентное ОДУ-аналитику
+Прогоняет серию сеток, для каждой решает рекуррентное ОДУ-аналитику
 и считает max|T_num - T_ode| на финальном шаге.
-При O(h^2) увеличение N в 4 раза должно уменьшить ошибку в ~16 раз.
+Конвективный член дискретизирован против потока (схема 1-го порядка),
+поэтому при O(h) увеличение N в 4 раза уменьшает ошибку в ~4 раза.
+
+Сетки здесь НЕ совпадают с рабочей сеткой примера: config.json фиксирует
+N = 150 (2026-09-24, поднято с 50). При N = 50 ошибка 0.0037 К была
+различима глазом на temperature_profiles.png, при 150 она 0.0013 К и
+кривые сливаются с эталоном. Ряд 50/200/800 оставлен кратным четырём:
+так отношения ошибок читаются напрямую как проверка порядка схемы.
 
 Запуск:
     cd numerical_solver
@@ -95,10 +102,11 @@ def run_and_compute_errors(config, n_ode_points=500):
     return history, grid, np.array(errors)
 
 
-# ── Два прогона ──
+# ── Прогоны на последовательности сеток ──
 config_base = load_config(HERE / "config.json")
 
-Ns = [50, 200]
+# Каждая следующая сетка в 4 раза подробнее предыдущей
+Ns = [50, 200, 800]
 results = {}
 
 for N_val in Ns:
@@ -110,23 +118,30 @@ for N_val in Ns:
     print(f"   max ошибка T (все шаги): {errors.max():.6f} К")
     print(f"   ошибка T (финал):        {errors[-1]:.6f} К")
 
-# ── Отношение ──
-ratio_max = results[Ns[0]].max() / results[Ns[1]].max()
-ratio_fin = results[Ns[0]][-1] / results[Ns[1]][-1]
-print(f"\nОтношение max ошибок (N={Ns[0]}/N={Ns[1]}): {ratio_max:.1f}x")
-print(f"Отношение fin ошибок (N={Ns[0]}/N={Ns[1]}): {ratio_fin:.1f}x")
-print(f"Ожидаем ~{(Ns[1]/Ns[0])**2:.0f}x при O(h^2)")
+# ── Отношения ошибок на соседних сетках ──
+# Схема против потока → 1-й порядок: ошибка падает линейно по h, то есть в N раз.
+# Наблюдаемый порядок p = log(E_coarse/E_fine) / log(N_fine/N_coarse).
+print()
+for N_coarse, N_fine in zip(Ns[:-1], Ns[1:]):
+    ratio_max = results[N_coarse].max() / results[N_fine].max()
+    ratio_fin = results[N_coarse][-1] / results[N_fine][-1]
+    order_max = np.log(ratio_max) / np.log(N_fine / N_coarse)
+    print(f"N={N_coarse} → N={N_fine} (ожидаем ~{N_fine / N_coarse:.0f}x при O(h)):")
+    print(f"   отношение max ошибок: {ratio_max:.1f}x   (порядок p = {order_max:.2f})")
+    print(f"   отношение fin ошибок: {ratio_fin:.1f}x")
 
 # ── График ──
 fig, ax = plt.subplots(figsize=(9, 5))
-t_hours_50 = np.arange(1, len(results[Ns[0]]) + 1) * config_base.time.dt_integration / 3600
-t_hours_200 = np.arange(1, len(results[Ns[1]]) + 1) * config_base.time.dt_integration / 3600
-ax.plot(t_hours_50, results[Ns[0]], 'b-', linewidth=1.5,
-        label=f"N = {Ns[0]} (max {results[Ns[0]].max():.4f} К)")
-ax.plot(t_hours_200, results[Ns[1]], 'r-', linewidth=1.5,
-        label=f"N = {Ns[1]} (max {results[Ns[1]].max():.4f} К)")
+colors = ['b', 'r', 'g', 'm']
+for N_val, color in zip(Ns, colors):
+    errors = results[N_val]
+    t_hours = np.arange(1, len(errors) + 1) * config_base.time.dt_integration / 3600
+    ax.plot(t_hours, errors, color=color, linestyle='-', linewidth=1.5,
+            label=f"N = {N_val} (max {errors.max():.4f} К)")
 ax.set_xlabel("Время, ч")
 ax.set_ylabel("max|T_num − T_ode|, К")
+# Ошибки на разных сетках отличаются на порядки — лог-шкала делает все кривые читаемыми
+ax.set_yscale('log')
 ax.set_title("Сходимость температуры по числу ячеек N")
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -134,6 +149,9 @@ ax.grid(True, alpha=0.3)
 fig.tight_layout()
 out_path = HERE / "output" / "spatial_convergence.png"
 out_path.parent.mkdir(parents=True, exist_ok=True)
+# Стираем результат прошлого прогона. Остальные файлы в output/ пишет
+# main.py примера, и трогать их нельзя: этот скрипт их не восстановит.
+out_path.unlink(missing_ok=True)
 fig.savefig(out_path, dpi=130)
 plt.close(fig)
 print(f"\nСохранён: {out_path}")

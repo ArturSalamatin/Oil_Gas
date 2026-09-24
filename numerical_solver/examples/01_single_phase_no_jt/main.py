@@ -187,21 +187,21 @@ if __name__ == "__main__":
     elapsed, history, grid, config = run_example(
         config_path=here / "config.json",
         output_dir=here / "output",
-        title="01: однофазная фильтрация без JT",
+        title="01: однофазная несжимаемая фильтрация без JT",
     )
 
     _add_dupuit_curve(
         history, grid, config,
         output_dir=here / "output",
-        title="01: однофазная фильтрация без JT",
+        title="01: однофазная несжимаемая фильтрация без JT",
     )
     print("График давления перестроен с аналитикой Дюпюи.")
 
     _add_temperature_analytics(
         history, grid, config,
         output_dir=here / "output",
-        title="01: однофазная фильтрация без JT",
+        title="01: однофазная несжимаемая фильтрация без JT",
     )
 
     # Баланс энергии считает run_example — общей проверкой для всех
-    # примеров (FEAT-016). Прежде каждый пример вызывал его сам.
+    # примеров (FEAT-016).

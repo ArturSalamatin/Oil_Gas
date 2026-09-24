@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -110,6 +111,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
 
     elapsed = time.perf_counter() - t_start
 
+    # Чистим output/ от результатов прошлых прогонов: иначе файлы, которые
+    # текущая конфигурация уже не порождает (например, rs_profiles.png после
+    # перехода примера на однофазный режим), остаются лежать и выглядят как
+    # актуальные. Удаление ПОСЛЕ расчёта, а не до: если решатель упадёт,
+    # прошлые результаты уцелеют.
+    if output_dir.is_dir():
+        shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Таблицы ──

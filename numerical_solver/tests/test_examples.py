@@ -339,32 +339,43 @@ def test_01_02_differ_by_single_parameter():
         f"01 и 02 должны отличаться только mu_JT_oil, отличаются: {sorted(diff)}"
 
 
+def _asymptotics_module():
+    """Общий модуль examples/temperature_asymptotics.py."""
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import temperature_asymptotics
+    return temperature_asymptotics
+
+
 def test_02_relaxes_toward_jt_asymptote(results):
-    """Пример 02 идёт к аналитической JT-асимптотике T = T_ext + mu_JT·(p - p_ext).
+    """Пример 02 идёт к аналитической JT-асимптотике T = T_ext + mu_JT·(p - p_0).
 
     При lambda = 0 стационарный энергобаланс rho·cp·u·dT/dr = rho·cp·mu_JT·u·dp/dr
     даёт dT/dr = mu_JT·dp/dr — скорость сокращается, профиль не зависит
-    от дебита. Опорная точка — центр последней ячейки (там ГУ Дирихле
-    задаёт T_ext), а не r = R_e.
+    от дебита. Опорная точка — контур r = R_e: ГУ задаёт там T_ext при
+    p = p_0 (factory.py). Нефть охлаждается уже на полуячейке между контуром
+    и центром последней ячейки (compute_jt, перепад p_ext - p[N-1]), поэтому
+    асимптота в ячейке N-1 равна T_ext - mu_JT·(p_0 - p[N-1]), а не T_ext
+    (BUG-013).
 
     За 3 суток релаксация не завершается, поэтому проверяем не совпадение,
     а движение в нужную сторону: температура на забое монотонно падает
     и остаётся выше асимптотики (подходит сверху, не проскакивает).
     """
     res = results["02_single_phase_jt"]
-    cfg = load_config(EXAMPLES_DIR / "02_single_phase_jt" / "config.json")
-    mu_JT = cfg.thermal.mu_JT_oil
-    T_ext = cfg.initial_conditions.T0
+    ta = _asymptotics_module()
+    T_ext = res["config"].initial_conditions.T0
 
-    p = res["p"]
     T = res["T"]
-    T_asymp = T_ext + mu_JT * (p - p[-1])
+    T_asymp = ta.single_phase_asymptote(res["config"], res["history"])
 
     # Подход сверху: JT только охлаждает, ниже асимптотики уйти не может.
-    # Приконтурная ячейка исключена: она служит опорной точкой асимптотики
-    # (там T_asymp = T_ext по построению), но сама уже охлаждена
-    # адиабатическим импульсом 1-го шага, поэтому лежит на ~0.01 К ниже.
-    assert np.all(T[:-1] >= T_asymp[:-1] - 1e-9), \
+    # Проверяются ВСЕ ячейки, включая приконтурную. За 3 суток она остыла
+    # на ~0.0044 К (адиабатический импульс 1-го шага), но её асимптота ниже
+    # T_ext на mu_JT·(p_0 - p[N-1]) ≈ 0.0067 К — запас ~0.002 К. Прежний
+    # отсчёт от p[N-1] ставил асимптоту этой ячейки в T_ext, ячейку
+    # приходилось исключать, и сдвиг асимптоты оставался незамеченным.
+    assert np.all(T >= T_asymp - 1e-9), \
         "температура проскочила ниже JT-асимптотики"
 
     # Но уже прошла заметную часть пути: у забоя полный размах ~2 К,
@@ -379,6 +390,35 @@ def test_02_relaxes_toward_jt_asymptote(results):
     T_well = np.array([s.T[0] for s in res["history"].states])
     assert T_well[-1] < T_well[1], \
         "T(r_w) должна падать под действием постоянного JT-стока"
+
+
+def test_single_phase_asymptote_reference_is_contour(results):
+    """Однофазная асимптотика отсчитывается от давления на контуре p_0 (BUG-013).
+
+    ГУ задаёт T_ext при p = p_0 на контуре, а не в центре последней ячейки,
+    поэтому асимптота в ячейке N-1 ниже T_ext на mu_JT·(p_0 - p[N-1]).
+    Прежняя формула отсчитывала от p[N-1] и сдвигала асимптоту примера 02
+    на ~0.0067 К по всей однофазной зоне.
+    """
+    res = results["02_single_phase_jt"]
+    ta = _asymptotics_module()
+    cfg = res["config"]
+    T0 = cfg.initial_conditions.T0
+    p0 = cfg.initial_conditions.p0
+    mu = cfg.thermal.mu_JT_oil
+    p = res["p"]
+
+    T_as = ta.single_phase_asymptote(cfg, res["history"])
+
+    # Та же формула, записанная независимо: отсчёт от p_0 на всей сетке.
+    assert np.allclose(T_as, T0 + mu * (p - p0), rtol=0.0, atol=1e-12)
+
+    # Приконтурная ячейка не опорная: её асимптота ниже T0 ровно на JT-перепад
+    # полуячейки. Допуск абсолютный: T0 - T_as[-1] ~ 7e-3 К — разность
+    # чисел ~350 К, её относительная ошибка округления ~1.5e-12, и rel=1e-12
+    # давал бы ложное падение.
+    assert T0 - T_as[-1] == pytest.approx(mu * (p0 - p[-1]), abs=1e-12)
+    assert T0 - T_as[-1] > 0.0
 
 
 # ═══════════════════════════════════════════════════════════

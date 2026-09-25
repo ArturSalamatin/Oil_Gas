@@ -4,7 +4,7 @@ date: 2026-09-24
 issue: BUG-013
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/38
 branch: fix/bug-013/jt-asymptote-reference-pressure
-status: в процессе
+status: реализован
 audit:
   date: 2026-09-25
   round: 3

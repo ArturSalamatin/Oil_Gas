@@ -26,7 +26,7 @@
 арифметики, только структура схемы.
 
 Нулевые члены — это верный результат, а не пробел. На текущих конфигах
-Φ⁺ ≡ 0 (потоки всегда к скважине) и λ_eff = 0 везде, кроме 10 и 11. Эталон
+Φ⁺ ≡ 0 (потоки всегда к скважине) и λ_eff = 0 везде, кроме 10, 11 и 12. Эталон
 по формуле даёт там же ноль, значения совпадают. Появится конфиг с оттоком
 на ВНУТРЕННИХ гранях или с теплопроводностью — тот же тест отработает на
 нём верно без единой правки: он вычисляет формулу, а не перебирает случаи.
@@ -51,7 +51,7 @@ from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 12 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 13 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -67,6 +67,7 @@ ALL_EXAMPLES = [
     "09_degassing_latent_heat",
     "10_deep_degassing",
     "11_degassing_at_boundary",
+    "12_large_drainage_radius",
 ]
 
 # Порог сверки. Ниже 1e-13 начинается шум разного порядка суммирования
@@ -696,8 +697,10 @@ class _CountingEnergySolver:
 # Примеры, где A-retry реально срабатывает (замерено):
 #   10_deep_degassing        — один шаг 3600 с раздроблен на 2 × 1800 с
 #   11_degassing_at_boundary — один шаг 3600 с раздроблен на 16 × 225 с
+#   12_large_drainage_radius — один шаг 3600 с раздроблен на 128 × 28.125 с
 # На остальных конфигах дробления нет и проверять нечего.
-SUBDIVIDING_EXAMPLES = ["10_deep_degassing", "11_degassing_at_boundary"]
+SUBDIVIDING_EXAMPLES = ["10_deep_degassing", "11_degassing_at_boundary",
+                        "12_large_drainage_radius"]
 
 
 @pytest.mark.parametrize("example", SUBDIVIDING_EXAMPLES)

@@ -116,10 +116,12 @@ class TestBaselineThermal:
         assert cfg.thermal.c_p_gas == 1000.0
 
     def test_mu_JT_oil(self, cfg):
-        assert cfg.thermal.mu_JT_oil == 4.0e-7
+        # μ_JT = (∂T/∂p)_h (eq:muJT_def): у нефти < 0 — при дросселировании греется
+        assert cfg.thermal.mu_JT_oil == -4.0e-7
 
     def test_mu_JT_gas(self, cfg):
-        assert cfg.thermal.mu_JT_gas == -4.0e-6
+        # у газа > 0 — при дросселировании охлаждается
+        assert cfg.thermal.mu_JT_gas == 4.0e-6
 
     def test_L_degas(self, cfg):
         assert cfg.thermal.L_degas == 168000.0

@@ -33,7 +33,7 @@
   "thermal": {
     "c_p_oil": 2000.0,
     "c_p_gas": 1000.0,
-    "mu_JT_oil": 4e-07,
+    "mu_JT_oil": -4e-07,
     "mu_JT_gas": 0.0,
     "L_degas": 0.0
   },

@@ -309,6 +309,38 @@ class TestPlots:
         ax = plot_2d_map(history, grid, field='p')
         assert ax is not None
 
+    def test_profile_legend_in_days(self, small_history):
+        """Момент в легенде профиля — в сутках (правило проекта, FEAT-022).
+
+        small_history: один интервал 10800 с, записи t = 0 и 10800 с.
+        Ожидание: подписи «t = 0 сут» и «t = 0.125 сут» (10800/86400).
+        Аргумент times_to_plot по-прежнему в секундах — API не меняется.
+        Ловит: возврат подписи в секунды или перевод, сделанный дважды.
+        """
+        history, grid = small_history
+        ax = plot_profiles(history, grid, [0.0, 10800.0], field='T')
+        labels = [t.get_text() for t in ax.get_legend().get_texts()]
+        assert labels == ["t = 0 сут", "t = 0.125 сут"]
+
+    def test_time_axes_in_days(self, small_history):
+        """Оси времени — в сутках: и подпись, и сами данные (FEAT-022).
+
+        Последняя запись small_history — 10800 с = 0.125 сут. Проверяется
+        не только подпись оси, но и абсцисса кривой: переименованная ось
+        при данных в секундах — худший вариант ошибки.
+        """
+        history, grid = small_history
+        ax = plot_well_rate(history)
+        assert ax.get_xlabel() == "t, сут"
+        assert ax.get_lines()[0].get_xdata()[-1] == pytest.approx(0.125)
+
+        axes = plot_wellbore_dynamics(history)
+        assert axes[2].get_xlabel() == "t, сут"
+        assert axes[0].get_lines()[0].get_xdata()[-1] == pytest.approx(0.125)
+
+        ax = plot_2d_map(history, grid, field='T')
+        assert ax.get_ylabel() == "t, сут"
+
 
 # ═══════════════════════════════════════════════════════════
 # E. Минимальная история (1 шаг)

@@ -1,0 +1,1163 @@
+---
+tags:
+  - план
+  - режим
+date: 2026-09-29
+issue: FEAT-020
+github: 41
+branch: feat/feat-020/oil-rate-control
+model_level: null
+status: готов к реализации
+---
+
+# FEAT-020: Управление скважиной по дебиту нефти + пример 14 (пуск с линейно растущим дебитом)
+
+## Цель
+
+1. Сделать рабочим режим управления скважиной по **дебиту нефти** при стандартных
+   условиях `q_oil` (м³ст/с) с обязательным ограничением `min_bhp` (Па): конфиг →
+   валидация → фабрика → граничные условия → адаптер гидродинамики → уравнение
+   энергии → вывод. Прототип гидродинамики режим `OIL_RATE` уже умеет
+   (`radial_blackoil/blackoil.py:46-90`), наш код его не пробрасывает: конфиг с
+   `"control": "rate"` сейчас падает (`TypeError` в `factory.py:191`, затем
+   `ValueError` в `factory.py:345-350`, `NotImplementedError` в
+   `hydro/prototype_adapter.py:60-65`).
+2. Ввести контракт: **все гидродинамические величины энергия и вывод берут из
+   `HydroResult`, объект целиком формирует модуль гидродинамики**. Новое поле
+   `HydroResult.p_wf` — фактическое давление на забойной грани после шага.
+   `WellControl.boundary_pressure` удаляется: обойти `HydroResult` через `bc.well`
+   становится нечем.
+3. Пример 14 `examples/14_oil_rate_ramp_up/`: конфиг примера 12, 15 сут, дебит
+   нефти по записям истории растёт линейно от нуля (пуск) до 270 м³ст/сут.
+4. Замкнутое стационарное решение (`examples/closed_form.py`) при управлении по
+   дебиту строится обращением по дебиту последнего интервала.
+
+**Подтип:** режим (новые ГУ на забое). Новая формула — исключение $p_{wf}$ из
+уравнения притока при заданном дебите (уже реализована в прототипе); в постановку
+добавляется её описание.
+
+**Вне объёма:** срабатывание `min_bhp` в примере (переход «дебит → давление») —
+отдельный пример позже; расхождение постановки и docstring-ов по JT-вкладу
+забойной грани — [[BUG-015]]; управление по газу или суммарному расходу.
+
+---
+
+## 0. Решения пользователя
+
+| № | Вопрос | Решение | Дата |
+|---|---|---|---|
+| 1 | Откуда энергия и вывод берут $p_{wf}$ | из результата шага гидродинамики: `HydroResult.p_wf` (вариант 2 записи реестра) | 2026-09-29 |
+| 2 | Принцип | температура берёт **все** гидродинамические величины из одного места — `HydroResult`; модуль гидродинамики сам формирует этот объект | 2026-09-29 |
+| 3 | `min_bhp` | **обязателен** при `control = "rate"`; в примере 14 — 1 атм = 101 325 Па | 2026-09-29 |
+| 4 | Пример 14 | конфиг примера 12 (как у 13a), 15 сут, с другими примерами не сравнивается | 2026-09-29 |
+| 5 | Дебит | внутри интервала постоянен; по записям истории растёт линейно от нуля (пуск, $t = 0$) до 270 м³ст/сут на последней записи | 2026-09-29 |
+| 6 | Переход «дебит → давление» | в пример 14 не закладывается | 2026-09-29 |
+| 7 | Нумерация | выбор Claude: `14_oil_rate_ramp_up`; папки [[FEAT-019]] — `15_*…17_*` | 2026-09-29 |
+| 8 | `WellControl.boundary_pressure` | **убрать** из ABC; `WellControl` — базовый класс без абстрактных методов, управление читают только модули гидродинамики | 2026-09-29 |
+| 9 | Стационар при управлении по дебиту | **обращать по $q_{last}$**: $p_{wf}^*$ из $q_{\text{стац}}(p_{wf}^*) = q_{last}$; если недостижимо при `min_bhp` — стационар при `min_bhp`. Наложение $S_g$ в примере 14 отключается, как у 13a | 2026-09-29 |
+| 10 | Расхождение по JT-вкладу забойной грани | отдельная запись [[BUG-015]], FEAT-020 не блокирует; в FEAT-020 только не повторять ложное утверждение в новом тексте | 2026-09-29 |
+
+**Трактовки плана (не решения пользователя; при несогласии — поправить на аудите):**
+
+- **Дискретизация расписания:** 15 интервалов по 86 400 с (как у примера 12),
+  $q_k = 270\,k/15 = 18k$ м³ст/сут, $k = 1\ldots15$; в конфиге
+  `q_oil = 18·k / 86400` м³ст/с. Нулевая запись $t = 0$ — начальное состояние
+  с нулевыми дебитами (`Simulator._zero_well_data`, `simulator.py:263-268`).
+- **Мёртвые поля отвергаются** (в духе [[DEBT-008]]): при `control = "pressure"`
+  заданные `q_oil` или `min_bhp` — ошибка; при `control = "rate"` заданный
+  `p_wf` — ошибка; неизвестное значение `control` — ошибка валидации (сейчас оно
+  проходит валидацию и падает только в фабрике).
+- **`compute_fluxes` поддерживает только `PressureControl`** и на `RateControl`
+  бросает `NotImplementedError`: это путь тестов и дублёров, $p_{wf}$ при
+  заданном дебите там пришлось бы искать итерациями — вне задачи.
+- **Конструкторов `HydroResult` девять**, а не восемь, как в записи реестра:
+  три в коде (`fluxes.py:163`, `simulator.py:258`, `prototype_adapter.py:231`) и
+  шесть в тестах (`test_energy.py:60`, `test_fluxes.py:667, 697`,
+  `test_output.py:259, 358`, `test_val002.py:68`).
+- **Шесть скриптов `examples/`** зовут `bc.well.boundary_pressure` в пробе матрицы
+  энергии (`verify_balance_vs_solver.py:87`, `probe_recurrence_vs_time.py:73`,
+  `probe_advective_asymptotics.py:110`, `measure_jt_well_halfstep.py:81`,
+  `measure_jt_form.py:71`, `measure_divergence_term.py:90`). После удаления
+  метода они сломаются — заменяются на `hydro_result.p_wf` (в пробе он в области
+  видимости). Выводы в docstring-е `measure_jt_well_halfstep.py` — [[BUG-015]],
+  не здесь.
+- **Docstring `compute_jt` (`tridiag.py:344-348`):** в FEAT-020 меняется только
+  источник («задано ГУ» → «`HydroResult.p_wf`»); физические утверждения о вкладе
+  забойной грани правит [[BUG-015]]. Комментарий `tridiag.py:114-117` заменяется
+  целиком (строка кода меняется) — новый текст верен (§2.3).
+- **Генератор конфига** — `vault/issues/feat-020/probes/make_14_config.py`
+  (одноразовый, как `make_13a_config.py`).
+- **Главный тест согласованности** — новый файл `tests/test_rate_control.py`.
+- **Подпись пунктира давления** в `make_overlay_pressure` не меняется.
+
+---
+
+## 1. Предусловия
+
+1. **База:** `numerical_scheme/implementation` на `a8e7e6c` (FEAT-022 влит
+   `--no-ff`, проверено 2026-09-29: `git merge-base --is-ancestor` → да).
+2. **Незакоммиченные vault-файлы** (созданы при `/issue` и `/plan-feature` на
+   базовой ветке):
+   ```
+    M vault/roadmap/планируемые фичи.md                     (FEAT-019, FEAT-020)
+    M vault/roadmap/известные баги и технический долг.md    (BUG-015)
+    M vault/00-home/index.md                                (ссылка на план)
+   ?? vault/issues/feat-020/                                (issue, комментарии, probes/)
+   ?? vault/plans/feat-020 oil-rate-control.md
+   ```
+   Их коммитит пользователь отдельным vault-коммитом в базу до создания ветки
+   (прецедент FEAT-021/022: при согласии пользователя — сам `/implement`). В дереве
+   лежат и **чужие** неотслеживаемые файлы — `vault/inbox/ОФП Кори в гидродинамике…md`,
+   `vault/issues/feat-022/probes/{corey_tabulation_check,darcy_identity_all_examples,sg_closure_local_gor}.py`:
+   в коммиты FEAT-020 **не включать**, решение о них — за пользователем.
+3. **Базовый уровень тестов** (2026-09-29, `a8e7e6c`): **902 passed, 1 warning,
+   504.9 с** (часть прогона шла параллельно с пробой — время завышено на
+   десятки секунд). Предупреждение — `PytestRemovedIn10Warning` в
+   `test_val002.py::TestCaseC_MeshConvergence`, к задаче не относится.
+
+---
+
+## 2. Физика и математика
+
+### 2.1 Уравнение притока и исключение $p_{wf}$
+
+Поток нефтяного компонента через забойную грань (`problem_statement.tex:1643-1647`,
+`eq:bc_flux_well`; $p_0$ в дискретной части — давление в ячейке 0):
+
+$$G^{o}_{1/2} = \mathcal{T}_{1/2}\left(\frac{k_{ro}}{\mu_o B_o}\right)_0 (p_{wf} - p_0),$$
+
+газового — `eq:bc_flux_well_gas`:
+$G^{g}_{1/2} = \mathcal{T}_{1/2}\left[\left(\frac{R_s k_{ro}}{\mu_o B_o}\right)_0 + \left(\frac{k_{rg}}{\mu_g B_g}\right)_0\right](p_{wf} - p_0)$.
+
+Конвенция знаков: положительное — от скважины; при добыче $G^o_{1/2} < 0$,
+дебит $q_{o,\text{ст}} = -G^o_{1/2} > 0$ (`problem_statement.tex:1663`).
+
+**Управление по дебиту** задаёт $G^o_{1/2} = -q_{o,\text{ст}}$, откуда
+
+$$\boxed{p_{wf} = p_0 - \frac{q_{o,\text{ст}}}{\mathcal{T}_{1/2}\,\lambda_{o,0}}},\qquad \lambda_{o} = \frac{k_{ro}}{\mu_o B_o}.$$
+
+Подвижность — из ячейки 0 на **новом** слое: $p_{wf}$ — функция неизвестных
+$p_0, S_{g,0}, R_{s,0}$ и определяется внутри Ньютона вместе с ними. Ровно так
+устроен прототип (`blackoil.py:56-77`):
+```python
+qtarget = oil_rate_target_sm3_day / 86400.0          # м³ст/с
+bhp_req = p0 - qtarget / (tw * lo * BAR_TO_PA)        # бар; tw — проводимость со скином
+if min_bhp_bar is not None and bhp_req < min_bhp_bar:
+    if p0 <= min_bhp_bar:  bhp = p0; qow = 0; qgfw = 0        # скважина закрыта
+    else:                  bhp = min_bhp_bar; qow = tw*lo*(p0-bhp)*BAR_TO_PA   # дебит срезан
+else:
+    bhp = bhp_req; qow = qtarget; qgfw = tw*lg*(p0-bhp)*BAR_TO_PA
+```
+Нагнетания нет ни при каком управлении: при управлении по давлению и
+$p_0 \le p_{wf}$ прототип тоже закрывает скважину (`blackoil.py:78-88`).
+
+**Почему `min_bhp` обязателен (решение 3).** При $\lambda_o \to 0$ (рост $S_g$ у
+забоя) без ограничения $p_{bhp} \to -\infty$ (`blackoil.py:58-61`: при
+`lo <= 0` — `bhp_req = -inf`), дальше `qgfw = tw*lg*inf` — невязка бесконечна,
+Ньютон отказывает вместо понятной ошибки.
+
+**Единицы.** В конфиге `q_oil` — м³ст/с, `min_bhp` — Па (СИ, как `p_wf` и `dt`).
+Прототип ждёт м³ст/сут и бар: `set_oil_rate_control(q_oil · DAY_TO_S, min_bhp / BAR_TO_PA)`,
+`DAY_TO_S = 86400.0` — `gpn_multiphase_solver/units.py:18`.
+
+### 2.2 `HydroResult.p_wf` — фактическое давление на забойной грани
+
+После шага прототип знает фактическое забойное давление: `well_rates(state)`
+(`blackoil.py:220-224`) пересчитывает потоки на переданном состоянии и отдаёт
+`bhp_bar` — значение, выставленное `_well_fluxes` на **этом же** состоянии.
+Адаптер вызывает его на `new_proto` — том же состоянии, по которому считаны потоки
+в `_build_result`. Значения по режимам:
+
+| Управление | Режим скважины | `HydroResult.p_wf` |
+|---|---|---|
+| давление | добыча, $p_0 > p_{wf}$ | уставка $p_{wf}$ (с точностью до округления Па → бар → Па) |
+| давление | закрыта, $p_0 \le p_{wf}$ | $p_0$ нового слоя (прежде в `well_history.csv` писалась уставка — расхождение из [[FEAT-022]]/[[FEAT-023]] закрывается) |
+| дебит | ограничение неактивно | по формуле §2.1 |
+| дебит | дебит срезан | `min_bhp` |
+| дебит | закрыта, $p_0 \le$ `min_bhp` | $p_0$ нового слоя |
+
+### 2.3 Где $p_{wf}$ входит в уравнение энергии — и почему при добыче не входит
+
+JT-вклад `eq:QJT_disc` (`problem_statement.tex:1352-1362`), схема против потока:
+
+$$\mathcal{J}_j = \sum_\alpha\Big[\mu^{j-1/2}_{JT,\alpha}\,\Phi^{+}_{\alpha,j-1/2}(p_j - p_{j-1}) + \mu^{j+1/2}_{JT,\alpha}\,\Phi^{-}_{\alpha,j+1/2}(p_{j+1} - p_j)\Big],\qquad p_{-1} \equiv p_{wf}.$$
+
+Код — `energy/tridiag.py:357, 394-397`. При добыче $\Phi_{1/2} < 0$ ⇒
+$\Phi^+_{1/2} = 0$ ⇒ слагаемое с $(p_0 - p_{wf})$ **тождественно нулевое**.
+Прототип обратного потока не допускает, поэтому в текущем расчёте $p_{wf}$ на $T$
+**не влияет вообще**. Замер (§3.3): энергии подставлен $p_{wf}$ = 1 атм вместо
+фактического — $T$ побитово та же.
+
+Следствия для FEAT-020:
+- управление по дебиту влияет на температуру **только через поля гидродинамики**
+  ($p$, $S_g$, $R_s$, $Q_\alpha$), а они уже берутся из `HydroResult`;
+- `HydroResult.p_wf` нужен для вывода $p_{wf}(t)$ (главная наблюдаемая при
+  управлении по дебиту), для принципа единого источника и для притока через забой
+  ([[DEBT-019]]) — единственного режима, где $\Phi^+_{1/2} > 0$;
+- главный тест согласованности (§9) проверяет $T$ через поля гидродинамики, но
+  **не** проверяет, какой $p_{wf}$ получает энергия: для этого отдельный тест с
+  притоком через забой.
+
+Охлаждение у скважины при этом не теряется — разбор в [[BUG-015]] (сдвиг источника
+на полъячейки; $T_0$ — температура выходящего через $r_w$ флюида).
+
+### 2.4 Стационар при управлении по дебиту (решение 9)
+
+Замкнутое решение (`examples/closed_form.py`, docstring модуля): при GOR = $R_{s,0}$
+дебит — квадратура
+
+$$q_o(p_{wf}) = \frac{2\pi k h}{\ln(R_e/r_w)}\int_{p_{wf}}^{p_e}\frac{k_{ro}(S_g(p))}{\mu_o B_o}\,dp \qquad (3),$$
+
+монотонно убывает по $p_{wf}$. При управлении по дебиту последнего интервала
+$q_{last}$:
+- $q_{last} = 0$ → $p_{wf}^* = p_e$;
+- $q_o(\text{min\_bhp}) \le q_{last}$ → $p_{wf}^* = $ `min_bhp` (в пределе $t\to\infty$ ограничение активно);
+- иначе $p_{wf}^*$ — корень $q_o(p_{wf}^*) = q_{last}$ (`brentq` на $[\text{min\_bhp}, p_e]$).
+
+Квадратуре передавать `points=[pb]` только при $p_{wf} < p_b < p_e$ (иначе точка
+разрыва вне отрезка).
+
+---
+
+## 3. Замер (2026-09-29, `vault/issues/feat-020/probes/plan_numbers.py`)
+
+Управление по дебиту в пробе подставлено **временной заглушкой** `ProbeRate`
+(наследует `PressureControl`, подменяет `set_bhp_control` модели на
+`set_oil_rate_control`, $p_{wf}$ берёт из `model._last_effective_bhp_bar`) — это не
+образец реализации. Вывод — `plan_numbers.out.txt` рядом.
+
+### 3.1 Пример 14 (часть A)
+
+`sim.run` 12.6 с; **360 подшагов по 3600 с, дробления нет**; `min_bhp` не
+срабатывает ни разу; контурная ячейка однофазна
+($\min_t p_{N-1} - p_b = +428.9$ кПа, $S_{g,N-1} \equiv 0$); первая двухфазная
+ячейка — на 25-м часе ($p_{wf} = 14.69$ МПа).
+
+| сут | $q_o$, м³ст/сут | $p_{wf}$, МПа | $p[0]$, МПа | GOR | $S_g[0]$ | $T(r_w)$, К | двухфазных ячеек |
+|---|---|---|---|---|---|---|---|
+| 0 | 0 | 15.5000 | 15.5000 | — | 0 | 350.0000 | 0 |
+| 1 | 18 | 15.0483 | 15.0529 | 30.0 | 0 | 349.8748 | 0 |
+| 2 | 36 | 14.5874 | 14.5968 | 30.0 | 0.0008 | 349.6573 | 22 |
+| 3 | 54 | 14.1002 | 14.1149 | 31.3 | 0.0026 | 349.4362 | 32 |
+| 4 | 72 | 13.5807 | 13.6013 | 35.1 | 0.0060 | 349.2000 | 36 |
+| 5 | 90 | 13.0480 | 13.0749 | 37.7 | 0.0088 | 348.9530 | 39 |
+| 6 | 108 | 12.4929 | 12.5266 | 40.2 | 0.0117 | 348.6941 | 41 |
+| 7 | 126 | 11.9104 | 11.9515 | 42.7 | 0.0146 | 348.4227 | 42 |
+| 8 | 144 | 11.2998 | 11.3488 | 45.0 | 0.0175 | 348.1389 | 43 |
+| 9 | 162 | 10.6588 | 10.7164 | 47.1 | 0.0204 | 347.8426 | 44 |
+| 10 | 180 | 9.9858 | 10.0525 | 49.2 | 0.0233 | 347.5337 | 45 |
+| 11 | 198 | 9.2832 | 9.3598 | 51.2 | 0.0262 | 347.2131 | 45 |
+| 12 | 216 | 8.5449 | 8.6320 | 53.1 | 0.0292 | 346.8798 | 46 |
+| 13 | 234 | 7.7747 | 7.8730 | 54.8 | 0.0321 | 346.5348 | 46 |
+| 14 | 252 | 6.9711 | 7.0814 | 56.5 | 0.0349 | 346.1781 | 46 |
+| 15 | 270 | 6.1299 | 6.2528 | 58.1 | 0.0379 | 345.8093 | 46 |
+
+- дебит записей совпадает с расписанием **точно** ($\max|q - q_k|/q_k = 0$);
+- $p_{wf}$ строго убывает **на каждом подшаге** (наибольшее приращение −92 Па);
+- $T(r_w)$ монотонно падает 350 → 345.809 К;
+- баланс энергии $\max$ `rel_residual` $= 1.2\cdot10^{-11}$.
+
+### 3.2 Стационар при $q = 270$ м³ст/сут (часть B)
+
+| Величина | Значение |
+|---|---|
+| $p_{wf}^*$ (обращение (3)) | 6.59493 МПа; $q(p_{wf}^*) = 270.000003$ м³ст/сут |
+| $q_o$ стационара при 6 МПа / при 1 атм | 283.627 / 411.978 м³ст/сут — 270 достижим, `min_bhp` в пределе неактивно |
+| $p_{wf}$ расчёта на 15 сут | 6.12991 МПа |
+| $\max\lvert p_{\text{ана}} - p_{\text{чис}}\rvert$ | 463.97 кПа (5.210 % депрессии $p_e - p_{wf}^* = 8.905$ МПа) |
+| $S_g^{max}$ | 0.01798 (стационар) против 0.03787 (расчёт) |
+
+Пласт при нарастающем дебите ещё не вышел на стационар: отбор опережает приток с
+контура, давление ниже стационарного. Обращение в пробе делалось `brentq` по
+полному `solve_closed` (10 с); в реализации — по одной квадратуре (доли секунды).
+
+### 3.3 Тест согласованности (часть C)
+
+Прогон по давлению с интервалом истории = один подшаг 3600 с; дебиты его записей —
+расписание второго прогона по дебиту (`min_bhp` = 1 атм). Конфиг примера 12.
+
+| Сценарий | 24 × 3600 с, $p_{wf}$ = 14.4 МПа | 24 × 3600 с, 14.4 → 13.8 МПа на 12 ч |
+|---|---|---|
+| подшагов энергии (давление / дебит) | 24 / 24 | 24 / 24 |
+| срабатываний `min_bhp` | 0 | 0 |
+| $q$, м³ст/сут | 43.1 … 55.0 | 44.0 … 73.9 |
+| двухфазных ячеек (макс) | 27 | 35 |
+| $\max\lvert\Delta p\rvert$ | $6.1\cdot10^{-4}$ Па | $3.6\cdot10^{-3}$ Па |
+| $\max\lvert\Delta S_g\rvert$ | $4.8\cdot10^{-11}$ | $8.8\cdot10^{-11}$ |
+| $\max\lvert\Delta R_s\rvert$ | $1.8\cdot10^{-9}$ | $1.1\cdot10^{-8}$ |
+| $\max\lvert\Delta T\rvert$ | $2.5\cdot10^{-10}$ К | $1.4\cdot10^{-9}$ К |
+| $\max\lvert\Delta p_{wf}\rvert$ | $6.1\cdot10^{-4}$ Па | $3.6\cdot10^{-3}$ Па |
+| отн. $\lvert\Delta q_o\rvert$ / $\lvert\Delta q_g\rvert$ | 0 / $1.1\cdot10^{-9}$ | $1.4\cdot10^{-16}$ / $2.1\cdot10^{-9}$ |
+| несовпадений `regime` | 0 | **1** (ячейка на фазовой границе, $S_g \approx 0$; $\Delta S_g$ при этом $< 10^{-10}$) |
+| баланс энергии (дебит) | $1.3\cdot10^{-11}$ | $9.1\cdot10^{-12}$ |
+| время прогона | 0.95 + 0.96 с | 1.15 + 1.11 с |
+| мутант «энергия видит `min_bhp`» | $\max\lvert\Delta T\rvert$ = $2.5\cdot10^{-10}$ К — **тот же** | $1.4\cdot10^{-9}$ К — **тот же** |
+| мутант «$p_{wf}$ с запаздыванием на шаг» | тот же | тот же |
+
+Мутанты не отличимы от правильного расчёта — прямое подтверждение §2.3. Отсюда
+порог теста: сравнивать `regime` нельзя (одно несовпадение на фазовой границе
+— не дефект), сравнивать $S_g$, $R_s$ — можно.
+
+---
+
+## 4. Затронутые файлы
+
+| Файл | Строки | Что меняется |
+|---|---|---|
+| `numerical_solver/doc/problem_statement.tex` | после 653; после 1663 | абзацы «Управление по дебиту нефти» (`eq:bc_rate_well`) и «Забой при управлении по дебиту» (`eq:bc_rate_pwf`) |
+| `numerical_solver/gpn_multiphase_solver/state.py` | 30-66 | `HydroResult.p_wf: float` (обязательное, перед `n_substeps`) |
+| `numerical_solver/gpn_multiphase_solver/bc.py` | весь (50 строк) | `WellControl` без абстрактного метода; `PressureControl` без `boundary_pressure`; новый `RateControl` |
+| `numerical_solver/gpn_multiphase_solver/hydro/prototype_adapter.py` | 1-19, 27, 58-65, 136-239 | ветка `RateControl`; `p_wf` из `well_rates` в `_build_result` |
+| `numerical_solver/gpn_multiphase_solver/energy/tridiag.py` | 114-119, 344-348 | `p_wf = hydro_result.p_wf` |
+| `numerical_solver/gpn_multiphase_solver/simulator.py` | 165-174, 254-261 | `WellData.p_wf` и `_zero_hydro` |
+| `numerical_solver/gpn_multiphase_solver/fluxes.py` | 43-44, 163-170 | `p_wf` из `PressureControl`, поле в `HydroResult` |
+| `numerical_solver/gpn_multiphase_solver/io/config.py` | 111-121, 279-285 | валидация `control`, `q_oil`, `min_bhp`, мёртвых полей |
+| `numerical_solver/gpn_multiphase_solver/factory.py` | 23, 186-191, 317-350 | импорт, `p_bhp_bar` инициализации, ветка `rate` |
+| `numerical_solver/gpn_multiphase_solver/state.py` | 102 | комментарий `well:` — «PressureControl, RateControl» |
+| `numerical_solver/tests/_doubles.py` | 48-49 | `p_wf = bc.well.p_wf` |
+| `numerical_solver/tests/test_energy.py` | 57-62 + новый класс | `_zero_hydro(p_wf=…)`; тесты источника $p_{wf}$ |
+| `numerical_solver/tests/test_fluxes.py` | 72, 667, 697, 712-726 | `p_wf`; `TestPressureControl` без `boundary_pressure`; тест `RateControl` в `compute_fluxes` |
+| `numerical_solver/tests/test_output.py` | 259, 358 | `p_wf=` в конструкторах |
+| `numerical_solver/tests/test_val002.py` | 65-70, 168-172 | `p_wf=`; `hydro.p_wf` |
+| `numerical_solver/tests/test_energy_matrix_examples.py` | 57-72, 602-605 | `"14_oil_rate_ramp_up"`; `hydro_result.p_wf` |
+| `numerical_solver/tests/test_hydro.py` | 12 | docstring: «p_wf из bc.well.p_wf» |
+| `numerical_solver/tests/test_prototype_adapter.py` | новые классы | `p_wf` адаптера, управление по дебиту |
+| `numerical_solver/tests/test_simulator.py` | новый тест | `WellData.p_wf` из `HydroResult` |
+| `numerical_solver/tests/test_config.py` | классы `TestValidationTime`, `TestHistoryIntervalDefaults` | валидация rate |
+| `numerical_solver/tests/test_rate_control.py` | **новый** | `RateControl`, конфиг → фабрика → расчёт, согласованность управлений |
+| `numerical_solver/tests/test_examples.py` | 28-58, новый класс | `14_oil_rate_ramp_up` в списках; `TestOilRateRampUp`; тесты `stationary_pwf` |
+| `numerical_solver/examples/closed_form.py` | 1-71, 132-186, 277-305 | `stationary_pwf`; ключ `p_wf` в результате; `report_closed` |
+| `numerical_solver/examples/two_phase_analytics.py` | 376-377 | `dep` по `cl["p_wf"]` |
+| `numerical_solver/examples/{verify_balance_vs_solver,probe_recurrence_vs_time,probe_advective_asymptotics,measure_jt_well_halfstep,measure_jt_form,measure_divergence_term}.py` | 87 / 73 / 110 / 81 / 71 / 90 | `hydro_result.p_wf` |
+| `numerical_solver/examples/14_oil_rate_ramp_up/` | **новая папка** | `config.json`, CSV, `main.py`, `README.md` |
+| `numerical_solver/examples/README.md` | 24, 100-104, 129-138, 219-266, 277-303, 316-346, 365-376, 431-450 | пример 14 |
+| `vault/issues/feat-020/probes/make_14_config.py` | **новый** | генератор конфига 14 |
+| vault: `knowledge/decisions/модули-bc-граничные-условия.md`, `P1-адаптер-единицы.md`, `словарь-код-физика.md`, `архитектура библиотеки numerical_solver.md`; реестр; `00-home/index.md` | — | §8, шаг 14 |
+
+Прототип (`HydroSolverPrototype/`) **не меняется**.
+
+---
+
+## 5. Формулы → код
+
+| Формула | Уравнение | Код | Модуль | Тест |
+|---|---|---|---|---|
+| заданный дебит, ограничение | `eq:bc_rate_well` (новое) | `RateControl(q_oil, min_bhp)`; валидация | `bc.py`, `io/config.py` | `TestRateControlClass`, `TestValidationTime::test_rate_*` |
+| исключение $p_{wf}$ | `eq:bc_rate_pwf` (новое) | прототип `_well_fluxes` (не меняется) ← `set_oil_rate_control` в адаптере | `hydro/prototype_adapter.py` | `TestAdapterRateControl` |
+| фактический $p_{wf}$ шага | §2.2 | `HydroResult.p_wf` из `well_rates(new_proto)` | `state.py`, адаптер | `TestAdapterWellPressure` |
+| JT забойной грани | `eq:QJT_disc` | `p_wf = hydro_result.p_wf` | `energy/tridiag.py` | `TestWellPressureSource` |
+| вывод $p_{wf}$ | `WellData.p_wf` | `hydro_result.p_wf` | `simulator.py` | `test_well_data_pwf_from_hydro_result` |
+| стационар по дебиту | (3) closed_form | `stationary_pwf` | `examples/closed_form.py` | `TestStationaryPwf` |
+
+Docstring каждой новой функции — одна строка + ссылка на уравнение (CLAUDE.md).
+
+---
+
+## 6. Варианты решения (выбраны)
+
+- **Источник $p_{wf}$:** `RateControl.boundary_pressure` по формуле прототипа —
+  отклонён (дублирование формулы, болезнь [[DEBT-021]]; оба рабочих вызова
+  передают `relperm=None`); `HydroResult.p_wf` — принят (решение 1).
+- **`boundary_pressure`:** оставить в ABC с исключением у `RateControl` — отклонён
+  (при управлении по давлению обход через `bc.well` работал бы молча); убрать —
+  принят (решение 8).
+- **Стационар по дебиту:** фактический $p_{wf}$ последней записи (стационарный
+  дебит ≈ 280 против 270 — расхождение по построению) и отключение — отклонены;
+  обращение по $q_{last}$ — принят (решение 9).
+
+---
+
+## 7. Подводные камни
+
+| Пункт | Оценка | Как адресован |
+|---|---|---|
+| Размерности | ⚠️ | `q_oil` м³ст/с → ×`DAY_TO_S` → м³ст/сут; `min_bhp` Па → /`BAR_TO_PA`; `bhp_bar` × `BAR_TO_PA` → Па. Тест: `−G_o[0] = q_oil` с точностью 1e-12 (замер — точно) |
+| Граничные случаи | ⚠️ | `q_oil = 0` (скважина стоит, $p_{wf} = p_0$); `min_bhp ≥ p_0` (закрыта с первого шага); недостижимый дебит (ограничение). Тесты адаптера на все три |
+| Порядок полей dataclass | ⚠️ | `p_wf: float` без умолчания — **до** `n_substeps: int = 1`, иначе `TypeError: non-default argument follows default argument` |
+| Все конструкторы `HydroResult` | ⚠️ | девять мест (§0); пропуск — `TypeError` при сборке, найдётся первым прогоном pytest |
+| Бит-в-бит для управления по давлению | ✅ | энергия: $p_{wf}$ умножается на $\Phi^+_{1/2} = 0$ → $T$ побитово та же. `WellData.p_wf`: Па → бар → Па может дать ±1 ulp; тесты сравнивают с допуском (`test_examples.py:1408` — `abs=1e-3`, `test_output.py:234` — `rel=1e-5`) |
+| Закрытие скважины при управлении по давлению | ✅ | `well_history.csv` пишет $p_0$ вместо уставки. В примерах 01–13a закрытий нет (замер FEAT-022 для 13a; у остальных $p_{wf} = \text{const} < p_0$) |
+| Смена режима между интервалами | ⚠️ | адаптер выставляет управление в каждом `solve`; `set_bhp_control` сбрасывает `min_bhp_bar`, режим, `_last_*` (`blackoil.py:41-44`). Тест согласованности со смешанным расписанием |
+| Сходимость Ньютона в режиме дебита | ✅ | замер: 360 подшагов без дробления, переход ячейки 0 в двухфазный режим на 25-м часе проходит. A-retry и дробление энергии ([[BUG-010]]) не меняются |
+| Двойной расчёт потоков в `_build_result` | ✅ | `well_rates` повторно зовёт `face_component_fluxes_sm3s` — $O(N)$, $N = 50$, пренебрежимо |
+| Import-цепочки | ✅ | `fluxes.py` импортирует `bc` (у `bc.py` рантайм-импортов нет); `prototype_adapter.py` уже импортирует `bc` |
+| `quad` с `points` вне отрезка | ⚠️ | `points=[pb]` только при `p_wf < pb < p_e` (§2.4) |
+| Связь с задачами | ✅ | [[BUG-014]] (скачок $p_{wf}$ вверх) — в 14 дебит только растёт, $p_{wf}$ только падает; [[DEBT-019]] — приток через забой не возникает; [[BUG-015]] — только не повторять ложное утверждение |
+| Мёртвые поля в конфигах примеров | ✅ | ни один конфиг 01–13a не задаёт `q_oil`/`min_bhp` (проверить grep в шаге 5) |
+| Формулы vs код | ✅ | новых вычислений в ядре нет: исключение $p_{wf}$ — в прототипе; обращение — в `examples/` |
+
+---
+
+## 8. Шаги реализации
+
+### Шаг 1: Подготовка
+
+**Цель:** ветка от актуальной базы, зелёный базовый уровень.
+
+1. `git status` — проверить, что vault-файлы §1.2 закоммичены пользователем в
+   `numerical_scheme/implementation`. Если нет — **остановиться** и спросить.
+   Чужие неотслеживаемые файлы (§1.2) не трогать.
+2. `git ls-tree numerical_scheme/implementation --name-only | Select-String numerical_solver` — база содержит солвер.
+3. `git checkout numerical_scheme/implementation; git checkout -b feat/feat-020/oil-rate-control`.
+4. Базовый прогон: `cd numerical_solver; .venv\Scripts\python -m pytest tests/ -q` →
+   ожидается **902 passed** (§1.3). Иное — остановиться.
+
+**Оценка:** ~10 мин (прогон ~8 мин).
+
+### Шаг 2: Постановка — управление по дебиту
+
+**Цель:** описать режим в `problem_statement.tex` до кода.
+**Файл:** `numerical_solver/doc/problem_statement.tex`.
+
+1. После строки 653 («При типичных условиях $\pwf < \pb$…», конец абзаца «На забое
+   скважины» в `sssec:bc_p`) вставить:
+   ```latex
+   \paragraph{Управление по дебиту нефти.}
+   Вместо забойного давления на~интервале истории может быть задан
+   дебит нефти при~стандартных условиях $q_{o,\text{ст}}^{(k)} \ge 0$
+   и~минимальное забойное давление $p_{\min}^{(k)} > 0$:
+   \begin{equation}\label{eq:bc_rate_well}
+     -G^{o}\big|_{r = \rw} = q_{o,\text{ст}}^{(k)},
+     \qquad \pwf \ge p_{\min}^{(k)}
+     \qquad\text{при}\quad t \in [t_k,\; t_{k+1}).
+   \end{equation}
+   Забойное давление при~этом~--- не~параметр, а~результат расчёта
+   (см.~\eqref{eq:bc_rate_pwf}). Если заданный дебит недостижим
+   при~$\pwf = p_{\min}$, действует ограничение: $\pwf = p_{\min}$,
+   дебит меньше заданного. Если давление у~забоя не~выше~$p_{\min}$,
+   скважина закрыта: $q_{o,\text{ст}} = 0$. Нагнетание исключено.
+   Ограничение~$p_{\min}$ обязательно: при~росте газонасыщенности
+   у~забоя подвижность нефти падает, и~без~него требуемое $\pwf$
+   неограниченно убывает.
+   ```
+2. После строки 1663 (`$q_{o,\text{ст}} = -G_{\half}^o > 0$.`) вставить:
+   ```latex
+   \paragraph{Забой при~управлении по~дебиту.}
+   Поток нефти через~забойную грань задан, $G_{\half}^{o} = -q_{o,\text{ст}}$,
+   и~из~\eqref{eq:bc_flux_well} забойное давление исключается
+   алгебраически:
+   \begin{equation}\label{eq:bc_rate_pwf}
+     \boxed{\;
+     \pwf = p_0 - \frac{q_{o,\text{ст}}}
+       {\mathcal{T}_{\half}\,\bigl(k_{ro}/(\mu_o B_o)\bigr)_0}
+     \;}
+   \end{equation}
+   Поток газа~--- по~\eqref{eq:bc_flux_well_gas} при~этом~$\pwf$.
+   Подвижность берётся из~ячейки~0 на~новом слое, поэтому $\pwf$
+   зависит от~неизвестных $p_0$, $S_{g,0}$, $R_{s,0}$ и~определяется
+   вместе с~ними в~неявной системе. Если~\eqref{eq:bc_rate_pwf}
+   даёт $\pwf < p_{\min}$, грань переходит на~$\pwf = p_{\min}$
+   и~поток~\eqref{eq:bc_flux_well}; при~$p_0 \le p_{\min}$ потоки
+   через~забой равны нулю и~$\pwf = p_0$.
+
+   Фактическое $\pwf$ шага (при~любом управлении) возвращает
+   гидродинамика вместе с~потоками; оно используется всюду, где нужно
+   давление на~забойной грани. В~JT-вклад~\eqref{eq:QJT_disc} оно
+   входит с~весом~$\Phi^{+}_{\half}$ и~при~добыче ($\Phi_{\half} < 0$)
+   на~температуру не~влияет.
+   % BUG-015: абзацы о JT-вкладе забойной грани ниже (строки ~1697-1705,
+   % ~1815-1823) утверждают обратное — исправляются там.
+   ```
+3. Сборка (дважды — ссылки):
+   ```powershell
+   cd numerical_solver\doc; pdflatex -interaction=nonstopmode problem_statement.tex; pdflatex -interaction=nonstopmode problem_statement.tex
+   ```
+   Проверить в логе: нет `undefined reference`, новые метки разрешены.
+
+**Проверка:** `Select-String -Path problem_statement.log -Pattern "undefined"` — пусто.
+**Оценка:** ~40 строк, 20 мин.
+
+### Шаг 3: `HydroResult.p_wf` и единый источник (тесты вперёд)
+
+**Цель:** энергия и вывод берут $p_{wf}$ только из `HydroResult`; управление по
+давлению — без изменений результата.
+**Файлы:** `state.py`, `hydro/prototype_adapter.py`, `energy/tridiag.py`,
+`simulator.py`, `fluxes.py`, тесты (§4).
+
+**Тесты сначала** (падают до правки):
+
+- `tests/test_prototype_adapter.py`, новый класс `TestAdapterWellPressure`:
+  - `test_pwf_equals_setpoint_when_producing` — фикстуры модуля (`adapter`,
+    `initial_state`, `bc`: $p_0$ = 200 бар, уставка 150 бар): `result.p_wf ==
+    approx(P_WF_PA, rel=1e-14)`; `result.G_o[0] < 0`. Ловит: `p_wf` не заполнен
+    или взят не из прототипа.
+  - `test_pwf_floats_to_p0_when_shut` — `PressureControl(250e5)` при $p_0$ =
+    200 бар (скважина закрыта, `blackoil.py:83-84`): `result.G_o[0] == 0.0`,
+    `result.p_wf == approx(result.state.p[0], rel=1e-14)`. Ловит: запись уставки
+    вместо фактического давления. Если шаг не сойдётся — это [[BUG-014]];
+    остановиться и сообщить (замер не делался; ожидается сходимость — поле
+    давления однородно, потоков нет).
+- `tests/test_simulator.py`, класс `TestSimulatorRun`, новый
+  `test_well_data_pwf_from_hydro_result` — на `LogProfileHydroStub` через
+  `_single_interval_schedule`: для каждой записи $n \ge 1$
+  `history.well_data[n].p_wf == history.hydro_results[n].p_wf`; для записи 0 —
+  `== history.states[0].p[0]`. Ловит: второй источник $p_{wf}$ в выводе.
+- `tests/test_energy.py`, новый класс `TestWellPressureSource`:
+  ```python
+  class _NoAccessWell:
+      """Управление-ловушка: любое обращение к атрибуту — ошибка теста."""
+      def __getattr__(self, name):
+          raise AssertionError(f"энергия обратилась к bc.well.{name}")
+  ```
+  - `test_energy_does_not_read_well_control` — однофазное состояние
+    ($p$ = `_log_pressure_profile(grid, P_WF, P0)`, $S_g = 0$), `hydro =
+    compute_fluxes(state, grid, pvt, CoreyRP(0.2, 0.05, 2.0, 2.0), _bc(T_EXT))`,
+    затем `solver.solve(hydro, state, DT, BoundaryConditions(well=_NoAccessWell(),
+    p_ext=P0, T_ext=T_EXT, Rs_ext=RS0))` — проходит, `T` конечна. Ловит: обход
+    `HydroResult`.
+  - `test_inflow_temperature_depends_on_hydro_pwf` — **приток** через забой:
+    однородное $p = P0$, `PressureControl(P0 + 2e6)` → `compute_fluxes` даёт
+    `Q_o[0] > 0` (проверить в тесте); `pvt = _make_pvt(mu_JT_oil=4e-7)`;
+    `T_a = solve(hydro)`, `T_b = solve(dataclasses.replace(hydro, p_wf=P0 + 1e6))`
+    с `bc.well = _NoAccessWell()`; ожидание `abs(T_a[0] - T_b[0]) > 1e-6` К.
+    Физика: при $\Phi^+_{1/2} > 0$ вклад $\mu_{JT}\Phi^+_{1/2}(p_0 - p_{wf})$
+    зависит от $p_{wf}$ (`eq:QJT_disc`). Ловит: энергия игнорирует
+    `hydro_result.p_wf`.
+  - `test_production_temperature_independent_of_pwf` — добыча (лог-профиль, как
+    в первом тесте), `T_a`, `T_b` при `p_wf = P_WF` и `p_wf = 1e5`: `np.array_equal(T_a, T_b)`.
+    Фиксирует факт §2.3 ($\Phi^+_{1/2} = 0$ при добыче) — см. [[BUG-015]].
+    Ловит: случайное появление забойного вклада при добыче (двойной учёт).
+
+**Что сделать:**
+
+1. `state.py`, `HydroResult` — после `Gm_g` и **до** `n_substeps`:
+   ```python
+       # Фактическое давление на забойной грани после шага, Па. Результат
+       # гидродинамики при любом управлении: при заданном дебите исключается
+       # из уравнения притока (eq:bc_rate_pwf), при закрытой скважине равно
+       # p[0]. Энергия и вывод берут p_wf только отсюда — единый источник
+       # гидродинамических величин (FEAT-020).
+       p_wf: float
+   ```
+   Строку 102 (`well: WellControl  # ABC: PressureControl, TotalRateControl, ...`)
+   исправить на `# PressureControl или RateControl (bc.py)`.
+2. `hydro/prototype_adapter.py`, `_build_result` — перед `return HydroResult(`:
+   ```python
+           # ── Шаг 9: фактическое забойное давление ──
+           # Результат шага при любом управлении: при OIL_RATE прототип
+           # исключает p_bhp из уравнения притока (blackoil.py:56-77), при BHP
+           # и p[0] <= уставки скважина закрыта и p_bhp = p[0] (blackoil.py:83-84).
+           # well_rates считает на том же new_proto, что и потоки выше.
+           p_wf = self._model.well_rates(new_proto)['bhp_bar'] * BAR_TO_PA
+   ```
+   и `p_wf=p_wf` в конструктор. В docstring модуля (строки 3-6) добавить пункт
+   «забойное давление: bhp_bar прототипа → HydroResult.p_wf (Па)».
+3. `energy/tridiag.py:114-119` — было:
+   ```python
+           # p_wf — давление на забойной грани: в адвективной форме JT-вклад
+           # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf), и без p_wf не считается.
+           # Для температуры и состава аналога нет — там значение за забоем
+           # не задано и вклад нулевой.
+           p_wf = bc.well.boundary_pressure(hydro_result.state, self._grid,
+                                            self._pvt, None)
+   ```
+   стало:
+   ```python
+           # p_wf — фактическое давление на забойной грани после гидро-шага.
+           # Берётся из HydroResult, как все гидродинамические величины
+           # (FEAT-020): при управлении по дебиту оно известно только после
+           # шага. В JT-вклад забойной грани входит с весом Φ⁺ (eq:QJT_disc):
+           # при добыче Φ < 0 и вклад нулевой — p_wf влияет на T только при
+           # притоке через забой (BUG-015, DEBT-019).
+           p_wf = hydro_result.p_wf
+   ```
+   Docstring `compute_jt` (строка 344): «p_wf — давление на забойной грани
+   (задано ГУ).» → «p_wf — давление на забойной грани (HydroResult.p_wf).»
+   Остальное в docstring-е — [[BUG-015]].
+4. `simulator.py:165-174` — убрать вызов `interval.bc.well.boundary_pressure(...)`,
+   в `WellData` передать `p_wf=hydro_result.p_wf` с комментарием «фактическое
+   давление шага из HydroResult (FEAT-020)». `_zero_hydro` (254-261): добавить
+   `p_wf=state.p[0]` — то же значение, что `_zero_well_data` (строка 268).
+5. `fluxes.py:163-170` — `p_wf=p_wf` в конструктор (сама строка 44 меняется в шаге 4).
+6. Тесты-конструкторы: `test_energy.py:60`, `test_fluxes.py:667, 697`,
+   `test_output.py:259, 358`, `test_val002.py:68` — добавить `p_wf=…`:
+   значение, согласованное с соседними данными теста (`P_WF` модуля, либо
+   `state.p[0]` для нулевых потоков, либо `1e7` как в соседнем `WellData`).
+7. `test_energy_matrix_examples.py:602-605` и `test_val002.py:168-172` —
+   `p_wf = hydro_result.p_wf` / `hydro.p_wf`; комментарий «из HydroResult (FEAT-020)».
+8. Шесть скриптов `examples/` (§0) — `p_wf = hydro_result.p_wf`.
+
+**Проверка:**
+- `.venv\Scripts\python -m pytest tests/test_prototype_adapter.py tests/test_energy.py tests/test_simulator.py -q`
+- полный прогон: **902 + новые**, прежние тесты без изменений (бит-в-бит по $T$ — §7).
+- `.venv\Scripts\python examples\measure_jt_form.py` отрабатывает без ошибки
+  (выборочная проверка скриптов).
+
+**Зависимости:** требует шаг 1; блокирует шаг 4.
+**Оценка:** ~80 строк кода, ~90 строк тестов, 1 ч.
+
+### Шаг 4: `WellControl` без `boundary_pressure`, `RateControl`
+
+**Цель:** управление — только данные; `RateControl` с валидацией.
+**Файлы:** `bc.py`, `fluxes.py`, `tests/_doubles.py`, `tests/test_fluxes.py`,
+`tests/test_hydro.py`, новый `tests/test_rate_control.py`.
+
+**Тесты сначала** — `tests/test_rate_control.py`, класс `TestRateControlClass`:
+- `test_stores_si_values` — `RateControl(2.0/86400, 101325.0)`: `.q_oil`, `.min_bhp`.
+- `test_zero_rate_allowed` — `q_oil = 0` допустим (скважина стоит).
+- `test_negative_rate_rejected` — `q_oil < 0` → `ValueError` (нагнетание не поддержано).
+- `test_nonpositive_min_bhp_rejected` — `min_bhp = 0`, `-1` → `ValueError`.
+- `test_is_well_control` — `isinstance(RateControl(...), WellControl)`.
+- `test_has_no_boundary_pressure` — `not hasattr(PressureControl(1e7), "boundary_pressure")`
+  и то же для `RateControl`. Ловит: возврат обходного пути (решение 8).
+
+`tests/test_fluxes.py`:
+- `TestPressureControl`, строка 722-723: `pc.boundary_pressure(None, None, None, None) == 15e6`
+  → `pc.p_wf == 15e6`.
+- новый `test_rate_control_not_supported` — `compute_fluxes` с
+  `bc.well = RateControl(...)` → `NotImplementedError`.
+
+**Что сделать:**
+
+1. `bc.py` целиком:
+   ```python
+   """Граничные условия на забое: стратегии управления скважиной.
+
+   Управление — только данные. Читают его модули гидродинамики
+   (PrototypeHydroAdapter, compute_fluxes, тестовый двойник): они превращают
+   управление в поток через забойную грань и возвращают фактическое p_wf
+   в HydroResult. Энергия и Simulator к управлению не обращаются (FEAT-020).
+   """
+
+
+   class WellControl:
+       """Управление скважиной на одном интервале истории.
+
+       Абстрактных методов нет намеренно: прежний boundary_pressure позволял
+       энергии и выводу брать p_wf в обход HydroResult, а при управлении по
+       дебиту p_wf до шага неизвестно (FEAT-020).
+       """
+
+
+   class PressureControl(WellControl):
+       """Задано забойное давление p_wf = const на интервале. Ур. (eq:bc_p_well)."""
+
+       def __init__(self, p_wf: float):
+           if p_wf <= 0:
+               raise ValueError(f"p_wf должно быть > 0, получено {p_wf}")
+           self._p_wf = float(p_wf)
+
+       @property
+       def p_wf(self) -> float:
+           """Забойное давление, Па."""
+           return self._p_wf
+
+
+   class RateControl(WellControl):
+       """Задан дебит нефти q_oil (м³ст/с) при p_wf >= min_bhp (Па). Ур. (eq:bc_rate_well)."""
+
+       def __init__(self, q_oil: float, min_bhp: float):
+           # Дебит положителен при добыче (q = -G_o[0]); нагнетания прототип
+           # не допускает (blackoil.py:48), поэтому q_oil < 0 — ошибка.
+           if q_oil < 0:
+               raise ValueError(f"q_oil должен быть >= 0 (добыча), получено {q_oil}")
+           # Без нижней границы p_wf при λ_o -> 0 уходит в -inf (blackoil.py:58-61)
+           if min_bhp <= 0:
+               raise ValueError(f"min_bhp должно быть > 0, получено {min_bhp}")
+           self._q_oil = float(q_oil)
+           self._min_bhp = float(min_bhp)
+
+       @property
+       def q_oil(self) -> float:
+           """Дебит нефти при стандартных условиях, м³ст/с."""
+           return self._q_oil
+
+       @property
+       def min_bhp(self) -> float:
+           """Минимальное забойное давление, Па."""
+           return self._min_bhp
+   ```
+2. `fluxes.py:43-44`:
+   ```python
+       # Забойное давление. compute_fluxes — гидродинамический путь тестов
+       # и дублёров и сам читает управление (FEAT-020). Заданный дебит здесь
+       # не поддержан: p_wf пришлось бы искать итерациями.
+       if not isinstance(bc.well, PressureControl):
+           raise NotImplementedError(
+               f"compute_fluxes поддерживает только PressureControl, "
+               f"получено {type(bc.well).__name__}")
+       p_wf = bc.well.p_wf
+   ```
+   Импорт `from .bc import PressureControl`.
+3. `tests/_doubles.py:48-49` → `p_wf = bc.well.p_wf  # двойник: только PressureControl`.
+4. `tests/test_hydro.py:12` — «1. Вычисляет p_wf из bc.well.p_wf (PressureControl)».
+
+**Проверка:** `pytest tests/test_rate_control.py tests/test_fluxes.py tests/test_hydro.py -q`;
+`Select-String -Path gpn_multiphase_solver\*.py,gpn_multiphase_solver\*\*.py,tests\*.py,examples\*.py -Pattern boundary_pressure` — **пусто**.
+**Оценка:** ~70 строк, 30 мин.
+
+### Шаг 5: Валидация конфига (тесты вперёд)
+
+**Файлы:** `io/config.py`, `tests/test_config.py`.
+
+**Тесты сначала** — в `TestValidationTime` (`test_config.py:381`), по образцу
+`test_pressure_control_without_p_wf` (`_minimal_raw()` + `_write_json`); у всех
+`pytest.raises(ValueError, match=…)`:
+
+| Тест | Интервал истории | `match` |
+|---|---|---|
+| `test_unknown_control_rejected` | `{"dt": 86400, "control": "rat", "p_wf": 10e6}` | `"control"` |
+| `test_rate_without_q_oil` | `{"dt": 86400, "control": "rate", "min_bhp": 1e5}` | `"q_oil"` |
+| `test_rate_without_min_bhp` | `{"dt": 86400, "control": "rate", "q_oil": 1e-3}` | `"min_bhp"` |
+| `test_rate_negative_q_oil` | `q_oil = -1e-3`, `min_bhp = 1e5` | `"q_oil"` |
+| `test_rate_nonpositive_min_bhp` | `q_oil = 1e-3`, `min_bhp = 0` | `"min_bhp"` |
+| `test_rate_with_p_wf_rejected` | `control = "rate"`, `q_oil`, `min_bhp`, `p_wf = 10e6` | `"p_wf"` |
+| `test_pressure_with_q_oil_rejected` | `control = "pressure"`, `p_wf = 10e6`, `q_oil = 1e-3` | `"q_oil"` |
+| `test_pressure_with_min_bhp_rejected` | `control = "pressure"`, `p_wf = 10e6`, `min_bhp = 1e5` | `"min_bhp"` |
+
+и в `TestHistoryIntervalDefaults`: `test_rate_interval_loads` — `{"dt": 86400,
+"control": "rate", "q_oil": 2.0e-3, "min_bhp": 101325.0}` → `control == "rate"`,
+`q_oil == 2.0e-3`, `min_bhp == 101325.0`, `p_wf is None`.
+
+**Что сделать** — `io/config.py:279-285` заменить цикл:
+```python
+    for i, h in enumerate(cfg.time.history):
+        if h.dt <= 0:
+            raise ValueError(f"history[{i}].dt должен быть > 0, получено {h.dt}")
+        if h.control == "pressure":
+            if h.p_wf is None:
+                raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
+            if h.p_wf <= 0:
+                raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
+            # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
+            for name in ("q_oil", "min_bhp"):
+                if getattr(h, name) is not None:
+                    raise ValueError(
+                        f"history[{i}]: control='pressure' не использует {name} — "
+                        f"уберите поле или задайте control='rate'")
+        elif h.control == "rate":
+            # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
+            if h.q_oil is None:
+                raise ValueError(f"history[{i}]: control='rate', но q_oil не задан")
+            if h.q_oil < 0:
+                raise ValueError(f"history[{i}].q_oil должен быть >= 0, получено {h.q_oil}")
+            # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
+            if h.min_bhp is None:
+                raise ValueError(f"history[{i}]: control='rate', но min_bhp не задано")
+            if h.min_bhp <= 0:
+                raise ValueError(f"history[{i}].min_bhp должно быть > 0, получено {h.min_bhp}")
+            if h.p_wf is not None:
+                raise ValueError(
+                    f"history[{i}]: control='rate' не использует p_wf — забойное "
+                    f"давление при заданном дебите вычисляется")
+        else:
+            raise ValueError(
+                f"history[{i}].control = '{h.control}': допустимы 'pressure', 'rate'")
+```
+Комментарии полей `HistoryInterval` (строки 111-121): убрать «(для rate, FEAT-020)»
+как план — поле работает; у `min_bhp` — «обязательно при control='rate', Па».
+
+Перед правкой: `Select-String -Path examples\*\config.json,configs\*.json -Pattern '"q_oil"|"min_bhp"'`
+— ожидается пусто (иначе действующий конфиг станет невалиден).
+
+**Проверка:** `pytest tests/test_config.py -q`.
+**Оценка:** ~40 строк кода, ~70 строк тестов, 30 мин.
+
+### Шаг 6: Фабрика и адаптер — ветка `RateControl`
+
+**Файлы:** `factory.py`, `hydro/prototype_adapter.py`, `tests/test_prototype_adapter.py`,
+`tests/test_rate_control.py`.
+
+**Тесты сначала:**
+
+- `tests/test_prototype_adapter.py`, новый класс `TestAdapterRateControl` (фикстуры
+  модуля; $p_0$ = 200 бар, $N = 20$, $R = 50$ м):
+  - `test_rate_honoured` — `RateControl(2.0/86400, 100e5)`, `adapter.solve(initial_state, DT, bc_rate)`:
+    `-result.G_o[0] == approx(2.0/86400, rel=1e-12)`; `result.p_wf > 100e5`;
+    `result.p_wf < result.state.p[0]`. Эталон $p_{wf}$ — прототип напрямую:
+    `BlackOilState(result.state.p / BAR_TO_PA, result.state.Rs, result.state.Sg,
+    result.state.regime == 1)` → `model.well_rates(...)['bhp_bar'] * BAR_TO_PA`,
+    `rel=1e-12`. (Тот же сценарий, что `test_rate_control_one_implicit_step`
+    прототипа, но через адаптер и в СИ.)
+  - `test_unreachable_rate_clamped_to_min_bhp` — `RateControl(1000.0/86400, 100e5)`:
+    `result.p_wf == approx(100e5, rel=1e-12)`; `-result.G_o[0] < 1000.0/86400`.
+    (Аналог `test_rate_floor_switches_to_bhp` прототипа.)
+  - `test_well_shut_when_p0_below_min_bhp` — `RateControl(2.0/86400, 250e5)` при
+    $p_0$ = 200 бар: `result.G_o[0] == 0.0`, `result.p_wf == approx(result.state.p[0], rel=1e-14)`.
+  - `test_zero_rate` — `RateControl(0.0, 100e5)`: `result.G_o[0] == 0.0`.
+  - `test_control_switch_between_calls` — `solve` с `RateControl`, затем с
+    `PressureControl(P_WF_PA)` на результате: второй `result.p_wf == approx(P_WF_PA, rel=1e-14)`.
+    Ловит: залипание режима дебита в модели.
+  - существующий `test_unsupported_control_raises` (`FakeControl(WellControl)`)
+    остаётся — проверить, что проходит.
+- `tests/test_rate_control.py`, класс `TestFactoryRate`:
+  - `test_factory_builds_rate_control` — конфиг примера 12 (`load_config`), история
+    заменена на `[HistoryInterval(dt=3600.0, control="rate", q_oil=50.0/86400, min_bhp=101325.0)]`,
+    `cfg.output.log_level = "WARNING"`; `SimulatorFactory.from_config` не падает;
+    `isinstance(simulator._schedule.intervals[0].bc.well, RateControl)`; `run` —
+    `history.well_data[1].q_o_std == approx(50.0/86400, rel=1e-12)`,
+    `history.well_data[1].p_wf < 15.5e6`.
+
+**Что сделать:**
+
+1. `factory.py:23` — `from .bc import PressureControl, RateControl`.
+2. `factory.py:186-191`:
+   ```python
+       # p_bhp прототипа при создании — только начальное значение: управление
+       # выставляет адаптер в каждом solve() по WellControl интервала. При
+       # заданном дебите p_wf в конфиге нет, берём min_bhp (обязателен, FEAT-020).
+       h0 = config.time.history[0]
+       p_bhp_bar = (h0.p_wf if h0.control == "pressure" else h0.min_bhp) / BAR_TO_PA
+   ```
+   (сохранить прежний комментарий про DEBT-013).
+3. `factory.py:343-350`:
+   ```python
+   def _create_well_control(hist, index: int):
+       """Создать WellControl из HistoryInterval (control проверен в _validate)."""
+       if hist.control == "pressure":
+           return PressureControl(hist.p_wf)
+       if hist.control == "rate":
+           return RateControl(hist.q_oil, hist.min_bhp)
+       raise ValueError(
+           f"history[{index}]: control='{hist.control}' не поддерживается. "
+           f"Доступные: 'pressure', 'rate'.")
+   ```
+   Docstring `_create_schedule` (строка 321): «control + p_wf / q_oil, min_bhp → WellControl».
+4. `hydro/prototype_adapter.py:58-65`:
+   ```python
+           # ── Шаг 1: управление скважиной ──
+           # Прототип ждёт бар и м³ст/сут; конфиг и WellControl — в СИ.
+           well = bc.well
+           if isinstance(well, PressureControl):
+               self._model.set_bhp_control(well.p_wf / BAR_TO_PA)
+           elif isinstance(well, RateControl):
+               # Дебит нефти: p_bhp исключается из уравнения притока внутри
+               # Ньютона (blackoil.py:56-77, eq:bc_rate_pwf); min_bhp — нижняя граница.
+               self._model.set_oil_rate_control(well.q_oil * DAY_TO_S,
+                                                well.min_bhp / BAR_TO_PA)
+           else:
+               raise NotImplementedError(
+                   f"PrototypeHydroAdapter поддерживает PressureControl и RateControl, "
+                   f"получено {type(well).__name__}")
+   ```
+   Импорты: `from ..bc import PressureControl, RateControl`,
+   `from ..units import BAR_TO_PA, DAY_TO_S`. Docstring модуля (строка 6):
+   «управление: PressureControl → set_bhp_control, RateControl → set_oil_rate_control».
+
+**Проверка:** `pytest tests/test_prototype_adapter.py tests/test_rate_control.py -q`.
+**Оценка:** ~40 строк кода, ~110 строк тестов, 45 мин.
+
+### Шаг 7: Главный тест — согласованность двух управлений
+
+**Файл:** `tests/test_rate_control.py`, класс `TestControlConsistency`.
+
+**Сценарий** (физика — §3.3): конфиг примера 12, `dt_integration = 3600`, 24
+интервала по 3600 с (один подшаг на интервал). Прогон А — по давлению. Прогон Б —
+тот же, но в интервалах с управлением по дебиту `q_oil` = дебит соответствующей
+записи прогона А (`history_A.well_data[k+1].q_o_std`), `min_bhp = 101325.0`. Схема
+неявная: состояние $n+1$ прогона А тождественно удовлетворяет невязке прогона Б,
+поэтому решения совпадают до допуска Ньютона.
+
+**Конфиги — через JSON** (проверяется чтение конфига): вспомогательная функция
+копирует `oil_pvt.csv`, `gas_pvt.csv`, `relperm.csv` из
+`examples/12_large_drainage_radius/` в `tmp_path`, берёт `config.json` примера 12,
+подменяет `time.history` и `time.dt_integration`, ставит `output.log_level =
+"WARNING"`, пишет `tmp_path / "<имя>.json"` через `json.dumps` (значения `q_oil`
+пишутся `repr`-точно) и возвращает `load_config(...)`.
+
+Параметризация (`@pytest.mark.parametrize`):
+
+| id | Прогон А ($p_{wf}$ по интервалам) | Прогон Б |
+|---|---|---|
+| `constant` | 24 × 14.4 МПа | все 24 — `rate` |
+| `step` | 12 × 14.4, 12 × 13.8 МПа | все 24 — `rate` |
+| `mixed` | 12 × 14.4, 12 × 13.8 МПа | 1–12 — `rate`, 13–24 — `pressure` с теми же $p_{wf}$ |
+
+`mixed` проверяет смену режима модели между интервалами (`rate` → `pressure`).
+
+**Проверки** (пороги — с запасом ~300× к замеру §3.3):
+- дробления нет: энергия вызвана ровно 24 раза в каждом прогоне (обёртка
+  `_CountingEnergySolver`, как в `test_simulator.py:418`) — иначе совпадение не
+  обязано выполняться;
+- ограничение неактивно: $p_{wf} > $ `min_bhp` на всех записях Б;
+- прогон Б: `q_o_std` записей $k$ = заданному `q_oil` интервала, `rel=1e-12`
+  (для интервалов `rate`);
+- по всем 25 записям: $\max|\Delta p| < 1$ Па; $\max|\Delta S_g| < 10^{-8}$;
+  $\max|\Delta R_s| < 10^{-6}$ м³ст/м³ст; $\max|\Delta T| < 10^{-6}$ К;
+  $\max|\Delta p_{wf}| < 1$ Па (`well_data[k].p_wf`);
+- `regime` **не** сравнивать (§3.3: одно несовпадение на фазовой границе в `step`).
+
+Docstring теста — физика выше, пороги и замер, и оговорка: тест **не** проверяет,
+какой $p_{wf}$ получает энергия (§2.3) — это `TestWellPressureSource`.
+
+**Проверка:** `pytest tests/test_rate_control.py -q` — ~7 с (три пары прогонов ~2.3 с).
+**Оценка:** ~120 строк, 45 мин.
+
+### Шаг 8: Стационар при управлении по дебиту — `closed_form`
+
+**Файлы:** `examples/closed_form.py`, `examples/two_phase_analytics.py`,
+`tests/test_examples.py`.
+
+**Тесты сначала** — `tests/test_examples.py`, новый класс `TestStationaryPwf`
+(после `TestPwfRampDown`; хелперы `_pvt_of_config`, `_create_relperm`, импорт
+`closed_form` — как в `test_closed_form_uses_last_interval_pwf`):
+- `test_pressure_control_uses_last_interval` — конфиг 13a: `stationary_pwf == 6.0e6` точно.
+- `test_rate_control_inverts_last_rate` — конфиг 14 (после шага 9; до него —
+  конфиг 12 с историей из одного интервала `rate`, `q_oil = 270/86400`,
+  `min_bhp = 101325`): $p_{wf}^* \approx 6.59493\cdot10^6$ Па (`rel=1e-5`),
+  `solve_closed(...)["q_o"] == approx(270/86400, rel=1e-9)`,
+  `solve_closed(...)["p_wf"] == p_wf*`.
+- `test_unreachable_rate_gives_min_bhp` — тот же конфиг, `q_oil = 1000/86400`
+  (стационарный максимум 412 м³ст/сут при 1 атм, §3.2): `stationary_pwf == 101325.0`.
+- `test_zero_rate_gives_contour_pressure` — `q_oil = 0`: `stationary_pwf == p0`.
+
+**Что сделать:**
+
+1. `closed_form.py` — новая функция перед `solve_closed`:
+   ```python
+   def stationary_pwf(config, pvt, relperm) -> float:
+       """p_wf стационара при удержании последнего интервала истории. Ур. (3)."""
+       last = config.time.history[-1]
+       if last.control == "pressure":
+           return float(last.p_wf)
+       # Управление по дебиту (FEAT-020): p_wf* из q_o(p_wf*) = q_last по (3).
+       # q_o(p_wf) монотонно убывает, поэтому корень единственный.
+       Rs0 = config.initial_conditions.Rs0
+       p_e = config.initial_conditions.p0
+       q_last = float(last.q_oil)
+       if q_last == 0.0:
+           return float(p_e)                  # скважина стоит, депрессии нет
+       clo = Closure(pvt, relperm, Rs0)
+       pb = float(pvt.pb(np.array([Rs0]))[0])
+       k, h = config.rock.permeability, config.geometry.h
+       r_w, R_e = config.geometry.r_well, config.geometry.R_ext
+       coef = 2.0 * np.pi * k * h / np.log(R_e / r_w)
+
+       def q_of(p_wf):
+           # точка излома pb — только если лежит внутри отрезка интегрирования
+           pts = [pb] if p_wf < pb < p_e else None
+           val, _err = quad(clo.mob_o, p_wf, p_e, points=pts,
+                            limit=200, epsabs=1e-13, epsrel=1e-13)
+           return coef * val
+
+       p_min = float(last.min_bhp)
+       if q_of(p_min) <= q_last:
+           return p_min                        # в пределе действует ограничение
+       return float(brentq(lambda x: q_of(x) - q_last, p_min, p_e,
+                           xtol=1.0, rtol=1e-12))
+   ```
+   В `solve_closed` строки 145-149 заменить на
+   `p_wf = stationary_pwf(config, pvt, relperm)` с комментарием: «p_wf стационара —
+   предел t -> inf при удержании последнего режима: при давлении — уставка
+   последнего интервала (FEAT-022), при дебите — обращение (3) по нему (FEAT-020)».
+   В возвращаемый словарь добавить `p_wf=p_wf`; docstring: «Ключи: q_o, p_wf, p, Sg, pb, r_b, closure».
+   Docstring модуля: абзац «Управление по дебиту» — обращение (3), случаи §2.4.
+2. `report_closed` (строки 284-285): `dep = config.initial_conditions.p0 - cl["p_wf"]`
+   (комментарий: «та же депрессия, по которой построено решение»); если
+   `config.time.history[-1].control == "rate"` — после строки `q_o:` печатать
+   `f"  (дебит задан: совпадение q_o по построению; p_wf* = {cl['p_wf']/1e6:.4f} МПа)"`.
+3. `two_phase_analytics.py:376-377` — `dep = config.initial_conditions.p0 - cl["p_wf"]`.
+
+**Проверка:** `pytest tests/test_examples.py -k "StationaryPwf or PwfRampDown" -q`.
+**Оценка:** ~60 строк кода, ~60 строк тестов, 40 мин.
+
+### Шаг 9: Папка примера 14 — конфиг, данные, `main.py`, списки тестов
+
+1. `vault/issues/feat-020/probes/make_14_config.py` — по образцу
+   `vault/issues/feat-022/probes/make_13a_config.py`: `DST = EX / "14_oil_rate_ramp_up"`,
+   копия трёх CSV из `12_large_drainage_radius`, история:
+   ```python
+   # q_k = 270·k/15 = 18·k м³ст/сут (решение пользователя 2026-09-29: линейный рост
+   # по записям от нуля до 270 на последней записи), в конфиге — м³ст/с (СИ)
+   cfg["time"]["history"] = [
+       {"dt": 86400.0, "control": "rate", "q_oil": 18.0 * k / 86400.0, "min_bhp": 101325.0}
+       for k in range(1, 16)
+   ]
+   ```
+   Запуск: `.venv\Scripts\python ..\vault\issues\feat-020\probes\make_14_config.py`.
+2. `examples/14_oil_rate_ramp_up/main.py`:
+   ```python
+   """Сценарий 14: пуск скважины, дебит нефти 18 -> 270 м³ст/сут за 15 сут (R_ext = 200 м)."""
+   ...  # как 13a
+       run_example(
+           config_path=here / "config.json",
+           output_dir=here / "output",
+           title="14: пуск скважины с линейно растущим дебитом нефти",
+           # 6 моментов равномерно по времени: 0, 3, ..., 15 сут (как 13a)
+           n_profiles=6,
+           # Без стационарного решения на профилях S_g (как 13a, решение
+           # пользователя 2026-09-29): при нарастающем дебите пласт не на
+           # стационаре, S_g^max 0.038 против 0.018 у замыкания GOR = Rs0.
+           # Пунктир давления остаётся — предел t -> inf при 270 м³ст/сут.
+           overlays={"Sg": None},
+       )
+   ```
+3. `tests/test_examples.py`: `"14_oil_rate_ramp_up"` в `ALL_EXAMPLES` (после 13a) и
+   в `NEEDS_SG_SECTION` (табличная ОФП, $S_g$ ~ 4 %).
+   `tests/test_energy_matrix_examples.py:57-72` — в `ALL_EXAMPLES`; комментарий
+   «Те же 14 сценариев» → «Те же 15 сценариев».
+4. Новый класс `TestOilRateRampUp` (после `TestPwfRampDown`), раздел
+   `# N. Сценарий 14: пуск с линейно растущим дебитом (FEAT-020)`; `NAME = "14_oil_rate_ramp_up"`:
+   - `test_config_is_rate_controlled` — 15 интервалов; у всех `control == "rate"`,
+     `dt == 86400.0`, `min_bhp == 101325.0`, `p_wf is None`,
+     `q_oil == approx(18*k/86400, rel=1e-15)`. Ловит: опечатку генератора, потерю полей.
+   - `test_rate_follows_schedule` — `well_data[0].q_o_std == 0.0`;
+     `well_data[k].q_o_std == approx(18*k/86400, rel=1e-12)`, $k = 1..15$ (замер: точно).
+     Ловит: сдвиг расписания, ошибку единиц м³ст/с ↔ м³ст/сут.
+   - `test_pwf_decreases_and_stays_above_min_bhp` — `p_wf` записей 0..15 строго
+     убывает (15.5 → 6.1299 МПа), все `> 101325`, последняя
+     `== approx(6.12991e6, rel=1e-4)` (замер §3.1). Ловит: срабатывание ограничения,
+     запись уставки вместо фактического $p_{wf}$.
+   - `test_boundary_cell_stays_single_phase` — как у 13a (замер: $+428.9$ кПа,
+     $S_{g,N-1} \equiv 0$).
+   - `test_main_plots_six_moments`, `test_main_disables_saturation_overlay` — как у 13a.
+
+**Проверка:** `pytest tests/test_examples.py -k "OilRateRampUp or Structure or Configs" -q`.
+**Оценка:** ~120 строк, 40 мин.
+
+### Шаг 10: Прогон `main.py` и сверка чисел
+
+```powershell
+cd numerical_solver; .venv\Scripts\python examples\14_oil_rate_ramp_up\main.py
+```
+Сверить с §3.1 (таблица по суткам — до 4-го знака; допуск на изменение
+реализации — нет: гидродинамика та же, что в пробе, $T$ от $p_{wf}$ не зависит) и
+§3.2 ($p_{wf}^* = 6.595$ МПа, $\max|\Delta p|$ = 464 кПа). Расхождение — искать
+причину, не подгонять. Зафиксировать: время расчёта, `report_rs`, `report_pvt`,
+баланс энергии, асимптотику $T$ однофазной зоны — числа нужны для README (шаги 11-12).
+
+### Шаг 11: README примера 14
+
+**Файл:** `numerical_solver/examples/14_oil_rate_ramp_up/README.md` — по структуре
+README 13a. Обязательно (тесты `TestReadme`): разделы «Как модифицировать»,
+«Как увеличить газонасыщенность», классы `PrototypeHydroAdapter`,
+`TridiagEnergySolver`. Разделы:
+
+1. **Описание** — пуск скважины: дебит нефти задан, $p_{wf}$ — результат; самостоятельный пример.
+2. **Комбинация модулей (B: Table + Table)** — таблица как у 13a.
+3. **Ключевые параметры** — как у 13a, с `q_oil`, `min_bhp` = 1 атм вместо $p_{wf}$.
+4. **Расписание** — таблица сутки / `q_oil` м³ст/сут и м³ст/с; как задаётся в JSON
+   (`"control": "rate"`, единицы СИ).
+5. **Ожидаемое поведение** — таблица §3.1 (из прогона шага 10); контур однофазен.
+6. **Управление по дебиту и температура** — дебит исключает $p_{wf}$ из уравнения
+   притока (`eq:bc_rate_pwf`); на $T$ режим влияет через поле давления и
+   газонасыщенности; фактическое $p_{wf}$ в `well_history.csv` — из гидродинамики;
+   при добыче $p_{wf}$ в уравнение энергии не входит (`eq:QJT_disc`, $\Phi^+ = 0$) —
+   без утверждения «формирует основное охлаждение» ([[BUG-015]]).
+7. **Стационарное решение на графиках** — обращение по 270 м³ст/сут, таблица §3.2,
+   почему $S_g$-наложение отключено.
+8. **Графики**, **Как увеличить газонасыщенность**, **Как модифицировать** (сменить
+   расписание дебита; ограничение `min_bhp`; как перейти на давление), **Запуск**, **Дальше**
+   (переход «дебит → давление» — отдельный пример).
+
+С другими примерами **не сравнивать** (правило проекта).
+
+### Шаг 12: `examples/README.md`
+
+По числам шага 10, в местах, где сейчас есть 13a (§4, строки): индекс «С какого
+начать» (строка 24 — «Дебит нефти задан, $p_{wf}$ — результат | **14**»); новый
+подраздел «Управление по дебиту нефти» после «Переменное забойное давление»
+(строки 100-104) с таблицей: папка, расписание 18 → 270 м³ст/сут, 15 сут, запись
+раз в сутки, $T(r_w)$ на 15 сут; время прогона (строка 138); замкнутое решение
+(строки 219-266: строка 14 таблицы; абзац о $p_{wf}$ стационара — «у 14 —
+обращение по дебиту последнего интервала»); проверка $R_s$ (302-303); баланс
+энергии (329, 346); асимптотика (376); общие параметры (435-450: $R_e$ 200 м,
+$p_0$ 15.5 МПа, длительность, $\lambda$ у 10-14).
+
+### Шаг 13: Регрессия
+
+```powershell
+cd numerical_solver; .venv\Scripts\python -m pytest tests/ -q
+```
+Ожидание: **все зелёные**; число — 902 + новые (оценка ≈ 950; зафиксировать
+фактическое). Время — базовое + ~1 мин (пример 14 в сессионном кэше
+`test_examples` ~13 с, в `test_energy_matrix_examples` ~30 с, `test_rate_control` ~8 с).
+Проверить, что результаты 01–13a не изменились: `test_examples` фиксирует
+замеренные числа 12 и 13a; дополнительно `examples\13a_pwf_ramp_down\main.py` —
+$T(r_w)$ на 15 сут = 345.682 К, $p_{wf}$ записей = уставки.
+
+### Шаг 14: Vault и issue
+
+1. Реестр `vault/roadmap/планируемые фичи.md`, FEAT-020: статус ✅ с датой,
+   «Что сделано», итог тестов; открытые вопросы — остаются (управление по газу).
+2. `vault/knowledge/decisions/модули-bc-граничные-условия.md` — раздел `RateControl`
+   (строки 59-131): реализовано; `boundary_pressure` удалён (решение 8), строки
+   32-55 и 158 («Simulator вызывает `well_ctrl.boundary_pressure`») — пометить как
+   устаревшие со ссылкой на FEAT-020.
+3. `P1-адаптер-единицы.md` (строки 187-201) — фактический код ветки `RateControl`;
+   шаг 9 `_build_result` — `p_wf`.
+4. `словарь-код-физика.md` §3 — строка `HydroResult.p_wf` (Па, фактическое давление
+   на забойной грани, `eq:bc_rate_pwf`); строка 90 — $p_{wf}$ «из HydroResult».
+5. `архитектура библиотеки numerical_solver.md` — контракт: энергия и `Simulator`
+   берут гидродинамику только из `HydroResult`; `WellControl` — данные.
+6. `vault/issues/feat-020/05-comment-done.md` → `gh issue comment 41`.
+7. Коммиты (CLAUDE.md): код и vault — раздельно; stage по имени файла.
+
+---
+
+## 9. Тестовая стратегия
+
+| Категория | Тесты |
+|---|---|
+| Unit | `TestRateControlClass`; валидация конфига (9 тестов); `TestAdapterWellPressure`; `TestAdapterRateControl`; `stationary_pwf` |
+| Аналитические | `test_rate_control_inverts_last_rate` — квадратура (3) против заданного дебита; `test_rate_honoured` — прототип напрямую как эталон $p_{wf}$ |
+| Предельные случаи | `q_oil = 0`; `min_bhp ≥ p_0` (закрыта); недостижимый дебит (ограничение); стационар при $q = 0$ и недостижимом $q$ |
+| Сходимость / точность | `TestControlConsistency` — совпадение с управлением по давлению до допуска Ньютона |
+| Инвариантные | единый источник: `_NoAccessWell` в энергии; `WellData.p_wf == HydroResult.p_wf`; нет `boundary_pressure`; $T$ при добыче не зависит от $p_{wf}$; баланс энергии 14 (`TestSharedChecks`) |
+| Регрессия | 902 прежних теста; бит-в-бит $T$ для управления по давлению (§7); матрица энергии всех 15 примеров |
+
+Главная проверка температуры — `TestControlConsistency`: при одном и том же поле
+гидродинамики, полученном двумя управлениями, $T$ совпадает до $10^{-9}$ К.
+Вторая — `test_inflow_temperature_depends_on_hydro_pwf`: при единственном режиме,
+где $p_{wf}$ входит в энергию, он берётся из `HydroResult`.
+
+---
+
+## 10. Критерии завершения
+
+- [ ] `eq:bc_rate_well`, `eq:bc_rate_pwf` в постановке; PDF собирается без неразрешённых ссылок
+- [ ] `HydroResult.p_wf` заполнен во всех девяти конструкторах; `boundary_pressure` нигде не встречается
+- [ ] `RateControl` + валидация + фабрика + адаптер; конфиг с `"control": "rate"` считается
+- [ ] `TestControlConsistency` (3 параметризации) зелёный
+- [ ] `stationary_pwf` + тесты; пример 14 с README и строками в `examples/README.md`
+- [ ] Прежние 902 теста зелёные, результаты 01–13a не изменились
+- [ ] Docstring-и новых функций — одна строка + уравнение
+- [ ] Vault обновлён; issue #41 прокомментирован
+
+---
+
+## 11. Новые проблемы (обнаружены при планировании)
+
+1. **[[BUG-015]]** (зарегистрирован 2026-09-29): JT-вклад забойной грани при добыче
+   тождественно нулевой, а постановка (`problem_statement.tex:1697-1701, 1815-1823`),
+   docstring-и `tridiag.py` и `measure_jt_well_halfstep.py` утверждают, что он
+   «формирует основное охлаждение». Схема и формула в рамке согласованы; неверен
+   текст. Не блокирует.
+2. **Два источника условий на контуре** (кандидат в DEBT, не зарегистрирован —
+   предложить пользователю после реализации): прототип получает `p_outer_bar`,
+   `outer_rs` из `initial_conditions` (`factory.py:192, 198`), адаптер и энергия —
+   `bc.p_ext`, `bc.Rs_ext` (`factory.py:330-332`). Совпадают по построению; при
+   переменном давлении на контуре разойдутся — нарушение того же принципа единого
+   источника.
+3. **Неверное обоснование в записи FEAT-020 и в issue #41** («главный риск —
+   температура») — исправлено в реестре 2026-09-29; в issue — комментарием плана.
+
+---
+
+## 12. Как начать работу по этому плану
+
+1. Прочитай этот файл целиком.
+2. Прочитай `numerical_solver/doc/problem_statement.tex`: строки 639-660
+   (ГУ по давлению), 1640-1665 (дискретный забой), 1340-1390 (`eq:QJT_disc`).
+3. Прочитай `numerical_solver/HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/blackoil.py:33-90, 220-224`
+   и `tests/test_rate_control.py` прототипа.
+4. Прочитай пробу `vault/issues/feat-020/probes/plan_numbers.py` и её вывод
+   `plan_numbers.out.txt`.
+5. Шаг 1: ветка `feat/feat-020/oil-rate-control` от `numerical_scheme/implementation`,
+   базовый прогон **902 passed**.
+6. Тесты: `cd numerical_solver; .venv\Scripts\python -m pytest tests/ -q`
+   (прототип подключает `tests/conftest.py`; скрипты вне pytest — сами, как
+   `examples/example_runner.py:37-46`).
+7. Шаги 2 → 14 по порядку; после каждого — тесты шага и, начиная с шага 3,
+   полный прогон.
+
+---
+
+## Связанные заметки
+
+- [[FEAT-020]] в `vault/roadmap/планируемые фичи.md`; GitHub [#41](https://github.com/ArturSalamatin/Oil_Gas/issues/41)
+- [[BUG-015]] — JT-вклад забойной грани
+- [[FEAT-022]] — пример 13a (образец структуры, решение 6 о стационаре), [[FEAT-021]] — пример 12
+- [[DEBT-019]] — приток через забой, [[BUG-014]] — скачок $p_{wf}$ вверх, [[DEBT-008]] — мёртвые поля
+- `vault/knowledge/decisions/модули-bc-граничные-условия.md`, `P1-адаптер-единицы.md`,
+  `словарь-код-физика.md`, `конвенции-знаков.md`, `архитектура библиотеки numerical_solver.md`

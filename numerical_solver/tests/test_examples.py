@@ -489,6 +489,24 @@ def test_pipeline_writes_output(tmp_path):
         assert path.stat().st_size > 0, f"пустой файл {fname}"
 
 
+def test_profile_times_default_and_all():
+    """Моменты профильных графиков: 4 опорных по умолчанию, все — по флагу.
+
+    31 запись (как у 13a): по умолчанию начало, 1/3, 2/3 и конец —
+    индексы 0, 10, 20, 30; при all_profiles=True — все 31 момент
+    (решение пользователя 2026-09-28 для 13a). Умолчание не меняется:
+    у 04a 865 записей.
+    """
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    from example_runner import _profile_times
+
+    times = [43200.0 * n for n in range(31)]
+    assert _profile_times(times, all_profiles=False) == [
+        times[0], times[10], times[20], times[30]]
+    assert _profile_times(times, all_profiles=True) == times
+
+
 # ═══════════════════════════════════════════════════════════
 # I. Общие проверки: баланс энергии у всех примеров (FEAT-016)
 # ═══════════════════════════════════════════════════════════

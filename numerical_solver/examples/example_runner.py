@@ -76,7 +76,8 @@ from pvt_plot import plot_pvt, report_pvt  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
-                title: str, overlays: dict | None = None) -> tuple:
+                title: str, overlays: dict | None = None,
+                all_profiles: bool = False) -> tuple:
     """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
 
     Возвращает (elapsed, history, grid, config):
@@ -91,6 +92,11 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     вызывается после отрисовки численных профилей и может добавить на те же
     оси, например, аналитическое решение. Примеры без аналитики просто не
     передают overlays.
+
+    all_profiles — профили на КАЖДУЮ запись истории (начальное состояние и
+    конец каждого интервала), а не на четыре опорных момента. Для
+    коротких историй с меняющимся p_wf (13a: 31 запись); у 04a (865
+    записей) не включать.
     """
     config_path = Path(config_path)
     output_dir = Path(output_dir)
@@ -125,11 +131,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     save_csv(history, grid, output_dir / "profiles.csv")
 
     # ── Графики ──
-    # 4 момента времени, равномерно по сохранённым шагам: начало,
-    # две промежуточные точки и конец расчёта.
-    times = history.times
-    idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
-    times_to_plot = [times[i] for i in sorted(set(idx))]
+    times_to_plot = _profile_times(history.times, all_profiles)
 
     overlays = overlays or {}
 
@@ -239,6 +241,17 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     report_asymptotics(config, history, grid, simulator)
 
     return elapsed, history, grid, config
+
+
+def _profile_times(times, all_profiles: bool) -> list:
+    """Моменты профильных графиков, с: все записи или четыре опорных."""
+    if all_profiles:
+        # Начальное состояние и конец каждого интервала истории (FEAT-022)
+        return list(times)
+    # 4 момента, равномерно по сохранённым шагам: начало,
+    # две промежуточные точки и конец расчёта.
+    idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
+    return [times[i] for i in sorted(set(idx))]
 
 
 def _plot_field(history, grid, times_to_plot, field: str,

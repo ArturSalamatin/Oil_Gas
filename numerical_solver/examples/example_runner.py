@@ -91,7 +91,8 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     {"p": func(ax, history, grid), "T": ..., "Sg": ..., "Rs": ...}. Функция
     вызывается после отрисовки численных профилей и может добавить на те же
     оси, например, аналитическое решение. Примеры без аналитики просто не
-    передают overlays.
+    передают overlays. Значение None у ключа отключает наложение по
+    умолчанию для этого поля (13a: {"Sg": None}).
 
     n_profiles — число моментов на профильных графиках, равномерно по
     времени от начала до конца расчёта (ближайшие записи истории). None —
@@ -137,10 +138,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
 
     # Замкнутое решение по условию GOR = Rs0 не зависит ни от источника PVT,
     # ни от вида ОФП, поэтому подставляется по умолчанию всем двухфазным
-    # сценариям. Пример может задать свой overlay — он имеет приоритет.
+    # сценариям. Пример может задать свой overlay — он имеет приоритет,
+    # а None отключает наложение (см. _pick_overlay).
     two_phase = config.initial_conditions.Rs0 > 0.0
-    p_overlay = overlays.get("p") or (make_overlay_pressure(config) if two_phase else None)
-    sg_overlay = overlays.get("Sg") or (make_overlay_saturation(config) if two_phase else None)
+    p_overlay = _pick_overlay(overlays, "p",
+                              make_overlay_pressure(config) if two_phase else None)
+    sg_overlay = _pick_overlay(overlays, "Sg",
+                               make_overlay_saturation(config) if two_phase else None)
 
     _plot_field(history, grid, times_to_plot, "p",
                 f"{title}\nПрофили давления",
@@ -157,8 +161,8 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     if np.max(history.states[0].Rs) > 0.0:
         # Аналитика Rs = min(Rs_eq(p), Rs0) зависит только от PVT и давления,
         # поэтому применима во ВСЕХ сценариях с газом и включается по
-        # умолчанию. Пример может подменить её своим overlay.
-        rs_overlay = overlays.get("Rs") or make_overlay_rs(config)
+        # умолчанию. Пример может подменить её своим overlay или отключить (None).
+        rs_overlay = _pick_overlay(overlays, "Rs", make_overlay_rs(config))
         _plot_field(history, grid, times_to_plot, "Rs",
                     f"{title}\nПрофили газосодержания",
                     output_dir / "rs_profiles.png", rs_overlay, simulator)
@@ -241,6 +245,15 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     report_asymptotics(config, history, grid, simulator)
 
     return elapsed, history, grid, config
+
+
+def _pick_overlay(overlays: dict, key: str, default):
+    """Наложение поля key: нет ключа — default, иначе значение примера (None — без наложения)."""
+    # Не `overlays.get(key) or default`: так явный None молча заменялся
+    # умолчанием, и отключить стационарное решение из примера было нельзя.
+    if key in overlays:
+        return overlays[key]
+    return default
 
 
 def _profile_times(times, n_profiles: int | None) -> list:

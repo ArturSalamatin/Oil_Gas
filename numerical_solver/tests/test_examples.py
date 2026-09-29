@@ -516,6 +516,26 @@ def test_profile_times_default_and_uniform():
         _profile_times(times, n_profiles=1)
 
 
+def test_pick_overlay_none_disables_default():
+    """Наложение поля: нет ключа — умолчание; функция — она; None — без наложения.
+
+    До FEAT-022 выбор шёл через `overlays.get(key) or умолчание`, и явный
+    None молча заменялся умолчанием — отключить стационарное решение из
+    примера было нельзя. 13a отключает его на профилях S_g (решение
+    пользователя 2026-09-29): стационарное замыкание GOR = R_s0 при
+    GOR = 54.9 на 15 сут вводит в заблуждение.
+    """
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    from example_runner import _pick_overlay
+
+    default, own = object(), object()
+    assert _pick_overlay({}, "Sg", default) is default
+    assert _pick_overlay({"T": own}, "Sg", default) is default
+    assert _pick_overlay({"Sg": own}, "Sg", default) is own
+    assert _pick_overlay({"Sg": None}, "Sg", default) is None
+
+
 # ═══════════════════════════════════════════════════════════
 # I. Общие проверки: баланс энергии у всех примеров (FEAT-016)
 # ═══════════════════════════════════════════════════════════
@@ -1450,3 +1470,13 @@ class TestPwfRampDown:
         """
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
         assert "n_profiles=6" in text
+
+    def test_main_disables_saturation_overlay(self):
+        """main.py 13a не рисует стационарное решение на профилях S_g.
+
+        Решение пользователя 2026-09-29: замыкание GOR = R_s0 на 15 сут
+        (GOR = 54.9) даёт S_g почти вдвое ниже численной — на графике это
+        выглядит как ошибка. Пунктир стационара на профилях p остаётся.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert 'overlays={"Sg": None}' in text

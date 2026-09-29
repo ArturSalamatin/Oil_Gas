@@ -36,6 +36,7 @@ from scipy.interpolate import interp1d
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
+from gpn_multiphase_solver.units import S_TO_DAY
 
 
 def run_and_compute_errors(config, n_ode_points=500):
@@ -135,10 +136,11 @@ fig, ax = plt.subplots(figsize=(9, 5))
 colors = ['b', 'r', 'g', 'm']
 for N_val, color in zip(Ns, colors):
     errors = results[N_val]
-    t_hours = np.arange(1, len(errors) + 1) * config_base.time.dt_integration / 3600
-    ax.plot(t_hours, errors, color=color, linestyle='-', linewidth=1.5,
+    # Время по оси — в сутках (FEAT-022)
+    t_days = np.arange(1, len(errors) + 1) * config_base.time.dt_integration * S_TO_DAY
+    ax.plot(t_days, errors, color=color, linestyle='-', linewidth=1.5,
             label=f"N = {N_val} (max {errors.max():.4f} К)")
-ax.set_xlabel("Время, ч")
+ax.set_xlabel("Время, сут")
 ax.set_ylabel("max|T_num − T_ode|, К")
 # Ошибки на разных сетках отличаются на порядки — лог-шкала делает все кривые читаемыми
 ax.set_yscale('log')

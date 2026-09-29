@@ -191,6 +191,8 @@ def plot_2d_map(history, r, field='T'):
     fig.colorbar(c, label=field)
 ```
 
+> **2026-09-29, FEAT-022:** время на всех графиках — в сутках (`units.S_TO_DAY`): легенда `plot_profiles` («t = 0.5 сут»), оси `plot_wellbore_dynamics`, `plot_well_rate`, `plot_2d_map` («t, сут»), `energy_balance.png`. История (`SimulationHistory.times`) и аргумент `times_to_plot` по-прежнему в секундах — переводится только то, что рисуется. Эскизы выше с `'t, с'` — исходный проект, не текущий код. Правило пользователя: [[feat-022 daily-bhp-schedule-examples]].
+
 ## Связанные заметки
 
 - [[json-config-schema]] — структура JSON

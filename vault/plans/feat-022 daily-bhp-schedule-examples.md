@@ -7,7 +7,7 @@ issue: FEAT-022
 github: 40
 branch: feat/feat-022/daily-bhp-schedule-examples
 model_level: null
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-09-29
   round: 1

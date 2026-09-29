@@ -8,7 +8,7 @@ issue: FEAT-021
 github: 39
 branch: feat/feat-021/large-drainage-radius-example
 model_level: null
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-09-28
   round: 2

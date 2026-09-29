@@ -7,7 +7,7 @@ issue: FEAT-022
 github: 40
 branch: feat/feat-022/daily-bhp-schedule-examples
 model_level: null
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-09-29
   round: 1
@@ -56,6 +56,7 @@ audit:
 | 6 | Стационарные кривые 13a | по $p_{wf}$ последнего интервала (6 МПа) — предел $t \to \infty$ при удержании последнего режима | 2026-09-29 |
 | 7 | Разделение задачи | FEAT-022 = 13a + общие правки; 13б и флаг отключения стационарной аналитики — [[FEAT-023]] после [[BUG-014]] | 2026-09-29 |
 | 8 | Связь с другими примерами | **нет** (правило проекта, решение по FEAT-021 2026-09-25): README и тесты 13a не сравнивают его ни с 12, ни с другими; конфиг 12 — только заготовка | 2026-09-25 |
+| 1′ | **Пересмотр решения 1** (после шага 8: 31 кривая при 10 цветах цикла — цвета повторяются трижды, легенда не помещается, записи после 12 сут и наложения обрезаны) | **5–10 моментов, равномерно по времени** (механизм `04a/plot_profiles_50k.py`: N целевых моментов на [0, T], ближайшая запись); параметр `run_example(n_profiles=N)` вместо `all_profiles`; **только 13a**, N = 6 → 0, 3, 6, 9, 12, 15 сут (все — концы суток, состояние перед следующей ступенью); остальные примеры — прежние 4 момента; в рамках FEAT-022 (шаг 13) | 2026-09-29 |
 
 **Трактовки плана (не решения пользователя; при несогласии — поправить на
 аудите):**
@@ -1013,6 +1014,30 @@ PrototypeRPAdapter, PrototypeHydroAdapter, TridiagEnergySolver; блок thermal
 По желанию (≈ 8 мин): `.venv\Scripts\python examples\run_all.py` —
 перегенерирует PNG всех примеров с сутками. `output/` в `.gitignore`, в
 коммит не идёт.
+
+### Шаг 13 (добавлен 2026-09-29, решение 1′): 6 моментов на профилях 13a
+
+**Цель:** вместо 31 кривой — N моментов, равномерно по времени.
+
+**Файлы:** `numerical_solver/examples/example_runner.py`,
+`numerical_solver/examples/13a_pwf_ramp_down/main.py`,
+`numerical_solver/examples/13a_pwf_ramp_down/README.md`,
+`numerical_solver/examples/README.md`, `numerical_solver/tests/test_examples.py`
+
+1. `run_example(..., n_profiles: int | None = None)` вместо
+   `all_profiles: bool = False`. `None` — прежние 4 момента по номеру записи
+   (у всех примеров, кроме 13a, ничего не меняется).
+2. `_profile_times(times, n_profiles)`: при `n_profiles = N` — целевые
+   моменты `np.linspace(times[0], times[-1], N)`, для каждого ближайшая
+   запись, повторы убираются (при N больше числа записей — все записи).
+   `N < 2` — `ValueError` (один момент не показывает эволюцию).
+3. `13a/main.py`: `n_profiles=6` → 0, 3, 6, 9, 12, 15 сут.
+4. Тесты: `test_profile_times_default_and_all` → `test_profile_times_default_and_uniform`
+   (N = 6 на 31 полусуточной записи → 0, 3, …, 15 сут; N больше числа
+   записей → все записи; N = 1 → `ValueError`);
+   `test_main_plots_every_interval` → `test_main_plots_six_moments`
+   (`n_profiles=6` в `main.py`).
+5. README 13a и `examples/README.md` — «31 кривая» → «6 моментов».
 
 ### Шаг 12: Vault и issue
 

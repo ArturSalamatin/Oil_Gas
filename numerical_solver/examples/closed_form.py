@@ -142,7 +142,11 @@ def solve_closed(config, pvt, relperm, r):
     r = np.asarray(r, float)
     Rs0 = config.initial_conditions.Rs0
     p_e = config.initial_conditions.p0
-    p_wf = config.time.history[0].p_wf
+    # p_wf ПОСЛЕДНЕГО интервала: стационар — предел t -> inf при
+    # удержании последнего режима. У примеров с постоянным p_wf это то
+    # же значение; у 13a первый интервал — 14.4 МПа, последний — 6 МПа
+    # (FEAT-022).
+    p_wf = config.time.history[-1].p_wf
     k = config.rock.permeability
     h = config.geometry.h
     r_w, R_e = config.geometry.r_well, config.geometry.R_ext
@@ -277,7 +281,8 @@ def report_closed(config, history, grid, simulator) -> dict:
     p_num = history.states[-1].p
     Sg_num = history.states[-1].Sg
     q_num = abs(history.hydro_results[-1].G_o[0])
-    dep = config.initial_conditions.p0 - config.time.history[0].p_wf
+    # Та же депрессия, по которой построено решение (solve_closed)
+    dep = config.initial_conditions.p0 - config.time.history[-1].p_wf
     d_p = float(np.abs(cl["p"] - p_num).max())
 
     print("── Замкнутое решение (GOR = Rs0): из расчёта ничего не берётся ──")

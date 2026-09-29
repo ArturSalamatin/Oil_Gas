@@ -19,6 +19,7 @@ import numpy as np
 
 from ..state import SimulationHistory
 from ..grid.base import Grid
+from ..units import S_TO_DAY
 
 
 # ═══════════════════════════════════════════════════════════
@@ -153,9 +154,12 @@ def plot_profiles(history: SimulationHistory, grid: Grid,
     labels = {'p': 'p, Па', 'T': 'T, К', 'Sg': 'Sg', 'Rs': 'Rs, м³ст/м³ст'}
 
     for t_target in times_to_plot:
+        # Ближайшая запись ищется в секундах — в них хранится история
+        # и задаются times_to_plot. В сутки переводится только подпись:
+        # время на всех графиках проекта — в сутках (FEAT-022).
         idx = int(np.argmin(np.abs(times - t_target)))
         ax.semilogx(r, arrays[field][idx, :],
-                     label=f"t = {times[idx]:.0f} с")
+                     label=f"t = {times[idx] * S_TO_DAY:.4g} сут")
 
     ax.set_xlabel('r, м')
     ax.set_ylabel(labels.get(field, field))
@@ -175,7 +179,7 @@ def plot_wellbore_dynamics(history: SimulationHistory, axes=None):
         _, axes = plt.subplots(3, 1, sharex=True, figsize=(8, 8))
 
     arrays = history_to_arrays(history)
-    t = arrays['times']
+    t = arrays['times'] * S_TO_DAY   # сутки (FEAT-022)
 
     axes[0].plot(t, arrays['p'][:, 0])
     axes[0].set_ylabel('p(rw), Па')
@@ -187,7 +191,7 @@ def plot_wellbore_dynamics(history: SimulationHistory, axes=None):
 
     axes[2].plot(t, arrays['Sg'][:, 0])
     axes[2].set_ylabel('Sg(rw)')
-    axes[2].set_xlabel('t, с')
+    axes[2].set_xlabel('t, сут')
     axes[2].grid(True, alpha=0.3)
 
     return axes
@@ -201,11 +205,11 @@ def plot_well_rate(history: SimulationHistory, ax=None):
         _, ax = plt.subplots()
 
     arrays = history_to_arrays(history)
-    t = arrays['times']
+    t = arrays['times'] * S_TO_DAY   # сутки (FEAT-022)
 
     ax.plot(t, arrays['q_o_std'], label='q_o, м³ст/с')
     ax.plot(t, arrays['q_g_std'], label='q_g, м³ст/с')
-    ax.set_xlabel('t, с')
+    ax.set_xlabel('t, сут')
     ax.set_ylabel('Дебит, м³ст/с')
     ax.legend()
     ax.grid(True, alpha=0.3)
@@ -225,13 +229,13 @@ def plot_2d_map(history: SimulationHistory, grid: Grid,
 
     arrays = history_to_arrays(history)
     r = grid.r_centers
-    t = arrays['times']
+    t = arrays['times'] * S_TO_DAY   # сутки (FEAT-022)
 
     labels = {'p': 'p, Па', 'T': 'T, К', 'Sg': 'Sg', 'Rs': 'Rs'}
 
     c = ax.pcolormesh(r, t, arrays[field], shading='auto', cmap='coolwarm')
     ax.set_xlabel('r, м')
-    ax.set_ylabel('t, с')
+    ax.set_ylabel('t, сут')
     ax.set_xscale('log')
     plt.colorbar(c, ax=ax, label=labels.get(field, field))
     return ax

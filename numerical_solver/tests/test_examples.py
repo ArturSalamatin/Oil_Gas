@@ -39,6 +39,7 @@ ALL_EXAMPLES = [
     "10_deep_degassing",
     "11_degassing_at_boundary",
     "12_large_drainage_radius",
+    "13a_pwf_ramp_down",
 ]
 
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
@@ -53,6 +54,7 @@ NEEDS_SG_SECTION = [
     "07_degassing_adiabatic_only", "08_degassing_jt",
     "09_degassing_latent_heat", "10_deep_degassing",
     "11_degassing_at_boundary", "12_large_drainage_radius",
+    "13a_pwf_ramp_down",
 ]
 
 
@@ -487,6 +489,31 @@ def test_pipeline_writes_output(tmp_path):
         path = tmp_path / fname
         assert path.is_file(), f"не создан {fname}"
         assert path.stat().st_size > 0, f"пустой файл {fname}"
+
+
+def test_profile_times_default_and_uniform():
+    """Моменты профильных графиков: 4 опорных по умолчанию, N — равномерно.
+
+    31 полусуточная запись (как у 13a). По умолчанию (n_profiles=None) —
+    начало, 1/3, 2/3 и конец: индексы 0, 10, 20, 30; у остальных примеров
+    так и остаётся. При n_profiles = 6 — моменты равномерно по времени
+    на [0, 15 сут]: 0, 3, 6, 9, 12, 15 сут (решение пользователя
+    2026-09-29 для 13a). N больше числа записей даёт каждую запись по
+    одному разу; N = 1 эволюции не показывает — ValueError.
+    """
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    from example_runner import _profile_times
+
+    day = 86400.0
+    times = [43200.0 * n for n in range(31)]
+    assert _profile_times(times, n_profiles=None) == [
+        times[0], times[10], times[20], times[30]]
+    assert _profile_times(times, n_profiles=6) == [
+        0.0, 3 * day, 6 * day, 9 * day, 12 * day, 15 * day]
+    assert _profile_times(times, n_profiles=100) == times
+    with pytest.raises(ValueError):
+        _profile_times(times, n_profiles=1)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1328,3 +1355,98 @@ class TestLargeDrainageRadius:
         assert np.all(np.diff(gor) < 0.0), f"GOR не убывает монотонно: {gor}"
         assert gor[-1] > r["Rs0"], \
             f"GOR = {gor[-1]:.3f} на конце <= R_s0 = {r['Rs0']}: режим уже стационарен"
+
+
+# ═══════════════════════════════════════════════════════════
+# M. Сценарий 13a: ступенчатое снижение p_wf (FEAT-022)
+# ═══════════════════════════════════════════════════════════
+
+class TestPwfRampDown:
+    """Сценарий 13a: конфиг 12, p_wf раз в сутки снижается на 0.6 МПа.
+
+    Сутки k = 1..15: p_wf = 15 - 0.6·k МПа (14.4 -> 6.0), отсчёт от p_b.
+    Запись каждые 0.5 сут: 30 интервалов, 31 запись; интервалы 2k-1 и 2k
+    — сутки k. p_wf только снижается, поэтому p[0] > p_wf на всех
+    подшагах и скважина не закрывается (к 13a не относится BUG-014).
+    """
+
+    NAME = "13a_pwf_ramp_down"
+
+    def test_pwf_follows_schedule(self, results):
+        """Заданное p_wf каждой записи совпадает с расписанием.
+
+        Запись n = 1..30 — конец интервала n, сутки k = (n + 1) // 2.
+        Ожидание: p_wf = 15 - 0.6·k МПа точно (целые Па в конфиге).
+        Запись 0 — начальное состояние, там p_wf = p[0] (simulator.py:268).
+        Ловит: сдвиг расписания на интервал, опечатку в конфиге.
+        """
+        wd = results[self.NAME]["history"].well_data
+        assert len(wd) == 31
+        for n in range(1, 31):
+            k = (n + 1) // 2
+            expected = 15.0e6 - 0.6e6 * k
+            assert wd[n].p_wf == pytest.approx(expected, abs=1e-3), \
+                f"запись {n}: p_wf = {wd[n].p_wf}, ожидалось {expected}"
+
+    def test_boundary_cell_stays_single_phase(self, results):
+        """Контурная ячейка однофазна на всей истории.
+
+        Условия: p0 = 15.5 МПа при p_b = 15 МПа, 31 запись.
+        Ожидание: S_g[N-1] = 0 точно, R_s[N-1] = R_s^0 с машинной точностью
+        (замер: min_t p_{N-1} - p_b = +426.5 кПа, max|R_s - R_s^0| = 7.8e-14).
+        Ловит: опускание p0 к p_b, при котором двухфазность контурной
+        ячейки задаётся сеткой, а не физикой.
+        """
+        r = results[self.NAME]
+        for n, st in enumerate(r["history"].states):
+            assert st.Sg[-1] == 0.0, \
+                f"запись {n}: S_g[N-1] = {st.Sg[-1]:.3e}, контурная ячейка двухфазна"
+            assert abs(st.Rs[-1] - r["Rs0"]) < 1e-10, \
+                f"запись {n}: R_s[N-1] = {st.Rs[-1]} отличается от R_s^0 = {r['Rs0']}"
+
+    def test_oil_rate_steps_up_daily_and_relaxes_within_day(self, results):
+        """Дебит нефти растёт от суток к суткам и спадает внутри суток.
+
+        Физика: каждая ступень увеличивает депрессию на 0.6 МПа, поэтому
+        дебит в конце суток k+1 выше, чем в конце суток k (замер:
+        4.99e-4 -> 3.157e-3 м³ст/с). Внутри суток после скачка воронка
+        депрессии расширяется и дебит убывает: запись середины суток
+        (2k-1) выше записи конца суток (2k). Замер: на всех 15 сутках.
+        Ловит: потерю ступенчатого режима (p_wf не меняется между
+        интервалами) или неверный знак отклика на скачок ГУ.
+        """
+        q = results[self.NAME]["q_o"]      # запись 0 — нулевой дебит
+        day_end = q[2::2]                   # записи 2, 4, ..., 30
+        mid_day = q[1::2]                   # записи 1, 3, ..., 29
+        assert np.all(np.diff(day_end) > 0.0), f"q_o концов суток не растёт: {day_end}"
+        assert np.all(mid_day > day_end), \
+            f"q_o внутри суток не спадает: середины {mid_day}, концы {day_end}"
+
+    def test_closed_form_uses_last_interval_pwf(self, results):
+        """Замкнутое решение строится при p_wf последнего интервала (6 МПа).
+
+        До FEAT-022 closed_form брал history[0].p_wf — у 13a это 14.4 МПа,
+        и пунктир на графиках описывал бы режим первых суток (q_o =
+        4.98e-4). Теперь — предел t -> inf при удержании последнего режима.
+        Ожидание: q_o = 3.2827e-3 м³ст/с (замер 2026-09-29: 3.282724e-3).
+        Ловит: возврат к history[0].
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from closed_form import solve_closed
+        from gpn_multiphase_solver.factory import _create_relperm
+
+        r = results[self.NAME]
+        cfg = r["config"]
+        cl = solve_closed(cfg, _pvt_of_config(cfg), _create_relperm(cfg),
+                          r["grid"].r_centers)
+        assert cl["q_o"] == pytest.approx(3.2827e-3, rel=1e-4)
+
+    def test_main_plots_six_moments(self):
+        """main.py 13a рисует профили на 6 моментах: 0, 3, ..., 15 сут.
+
+        Решение пользователя 2026-09-29: 31 кривая (каждая запись) нечитаема —
+        10 цветов цикла повторяются трижды, легенда не помещается.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=6" in text

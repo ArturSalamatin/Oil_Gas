@@ -94,6 +94,7 @@ from energy_balance import compute_balance  # noqa: E402
 # fit_order больше не импортируется: после BUG-007 порядок невязки по Δt
 # отрицателен и смысла не несёт, проверяется уровень (см. шапку модуля).
 from convergence import run_series  # noqa: E402
+from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
 
 # Шаги по времени, с. Диапазон в 10 раз: проверяем, что уровень невязки
 # держится и при штатном шаге, и при десятикратно меньшем.
@@ -162,9 +163,11 @@ def plot_balance_convergence(results, output_dir: Path,
 
     colors = ['b', 'g', 'r', 'c', 'm']
     for bal, col in zip(results, colors):
-        ax1.plot(bal["t"] / 3600.0, bal["rel_residual"], col, linewidth=1.3,
+        # Время по оси — в сутках (FEAT-022); Δt в легенде — шаг
+        # интегрирования, численный параметр, а не время: остаётся в секундах.
+        ax1.plot(bal["t"] * S_TO_DAY, bal["rel_residual"], col, linewidth=1.3,
                  label=f"Δt = {bal['value']} с (max {bal['max_rel']:.1e})")
-    ax1.set_xlabel("Время, ч")
+    ax1.set_xlabel("Время, сут")
     ax1.set_ylabel(r"|невязка| / |$\Delta E$|")
     ax1.set_title("Невязка баланса энергии во времени")
     ax1.legend(fontsize=9)

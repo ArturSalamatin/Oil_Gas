@@ -76,7 +76,8 @@ from pvt_plot import plot_pvt, report_pvt  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
-                title: str, overlays: dict | None = None) -> tuple:
+                title: str, overlays: dict | None = None,
+                n_profiles: int | None = None) -> tuple:
     """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
 
     Возвращает (elapsed, history, grid, config):
@@ -91,6 +92,11 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     вызывается после отрисовки численных профилей и может добавить на те же
     оси, например, аналитическое решение. Примеры без аналитики просто не
     передают overlays.
+
+    n_profiles — число моментов на профильных графиках, равномерно по
+    времени от начала до конца расчёта (ближайшие записи истории). None —
+    четыре опорных момента по номеру записи, как у всех примеров до
+    FEAT-022. 13a задаёт 6: 0, 3, ..., 15 сут.
     """
     config_path = Path(config_path)
     output_dir = Path(output_dir)
@@ -125,11 +131,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     save_csv(history, grid, output_dir / "profiles.csv")
 
     # ── Графики ──
-    # 4 момента времени, равномерно по сохранённым шагам: начало,
-    # две промежуточные точки и конец расчёта.
-    times = history.times
-    idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
-    times_to_plot = [times[i] for i in sorted(set(idx))]
+    times_to_plot = _profile_times(history.times, n_profiles)
 
     overlays = overlays or {}
 
@@ -239,6 +241,26 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     report_asymptotics(config, history, grid, simulator)
 
     return elapsed, history, grid, config
+
+
+def _profile_times(times, n_profiles: int | None) -> list:
+    """Моменты профильных графиков, с: N равномерно по времени или четыре опорных."""
+    if n_profiles is None:
+        # 4 момента, равномерно по сохранённым шагам: начало,
+        # две промежуточные точки и конец расчёта.
+        idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
+        return [times[i] for i in sorted(set(idx))]
+    if n_profiles < 2:
+        raise ValueError(f"n_profiles = {n_profiles}: нужно не меньше двух "
+                         f"моментов, иначе эволюция не видна")
+    # N целевых моментов равномерно ПО ВРЕМЕНИ (как plot_profiles_50k у 04a),
+    # для каждого — ближайшая запись истории. По времени, а не по номеру
+    # записи: при неравномерной записи номера не равномерны во времени.
+    # Повторы убираются — при N больше числа записей остаются все записи.
+    t = np.asarray(times, dtype=float)
+    targets = np.linspace(t[0], t[-1], n_profiles)
+    idx = sorted({int(np.argmin(np.abs(t - x))) for x in targets})
+    return [times[i] for i in idx]
 
 
 def _plot_field(history, grid, times_to_plot, field: str,

@@ -23,6 +23,7 @@ CSV = HERE / "output" / "profiles.csv"
 OUT = HERE / "output"
 
 T_MAX = 50_000.0   # верх интервала, с
+S_TO_DAY = 1.0 / 86400.0   # время на графиках — в сутках (FEAT-022)
 N_CURVES = 10      # число кривых на рисунке
 
 FIELDS = [
@@ -58,10 +59,11 @@ def main() -> None:
         fig, ax = plt.subplots(figsize=(7.5, 5))
         for c, i in zip(colors, idx):
             ax.semilogx(r, Y[i] * scale, color=c, lw=1.5,
-                        label=f"t = {times[i]:.0f} с")
+                        label=f"t = {times[i] * S_TO_DAY:.4g} сут")
         ax.set_xlabel("r, м")
         ax.set_ylabel(ylabel)
-        ax.set_title(f"04a: высокая газонасыщенность\n{subtitle} (0…{T_MAX:.0f} с)")
+        ax.set_title(f"04a: высокая газонасыщенность\n{subtitle} "
+                     f"(0…{T_MAX * S_TO_DAY:.3g} сут)")
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, ncol=2)
         fig.tight_layout()

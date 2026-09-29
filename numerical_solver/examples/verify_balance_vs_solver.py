@@ -150,7 +150,9 @@ def report(config_path, label):
     ad = sum(r['E_ad'] for r in log)
     deg = sum(r['E_deg'] for r in log)
     src = conv + jt + ad + deg
-    scale = max(abs(acc), abs(src), 1e-30)
+    # Та же нормировка, что в energy_balance.compute_balance — сумма модулей
+    # всех членов: иначе «отн.» решателя и скрипта были бы разными числами.
+    scale = max(abs(acc) + abs(conv) + abs(jt) + abs(ad) + abs(deg), 1e-30)
 
     # Баланс по скрипту.
     bal = eb.compute_balance(history, sim._grid, cfg)

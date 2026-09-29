@@ -119,9 +119,16 @@ def compute_balance(history, grid, config):
                     + out["cum_deg"] + out["cum_cond"])
     out["residual"] = out["delta_E"] - out["total"]
 
-    # Нормируем на больший из масштабов: на первых шагах ΔE ещё мало,
-    # и деление на него дало бы ложный всплеск невязки.
-    scale = np.maximum(np.abs(out["delta_E"]), np.abs(out["total"]))
+    # Нормировка — сумма модулей всех членов, включая ΔE. Невязка есть
+    # разность больших кумулятивных сумм, и ошибка округления растёт с их
+    # модулями, а не с результатом сложения. Прежняя нормировка
+    # max(|ΔE|, |Σ членов|) ломалась, когда вклады гасят друг друга: с
+    # физическим знаком μ_JT (нефть при дросселировании греется) у примера
+    # 10 |ΔE| = 5e8 Дж при JT-члене 1.6e10 Дж, и абсолютная невязка 0.1 Дж
+    # давала относительную 1.9e-10 — выше порога 1e-10. Та же нормировка
+    # давала всплески, когда ΔE менял знак во времени.
+    scale = sum(np.abs(out[k]) for k in _CUMULATIVE)
+    # t = 0: все члены нулевые, делить не на что.
     scale = np.where(scale < 1e-10, 1.0, scale)
     out["rel_residual"] = np.abs(out["residual"]) / scale
 
@@ -162,7 +169,7 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
 
     ax2.plot(t_days, bal["rel_residual"], 'k-', linewidth=1)
     ax2.set_xlabel("Время, сут")
-    ax2.set_ylabel(r"|невязка| / |$\Delta E$|")
+    ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
     ax2.set_title("Относительная невязка баланса")
     ax2.grid(True, alpha=0.3)
     ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
@@ -175,7 +182,9 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     plt.close(fig)
     print(f"Сохранён: {out_path}")
 
-    final_rel = abs(bal["residual"][-1] / (abs(bal["delta_E"][-1]) + 1e-30))
+    # Та же нормировка, что в compute_balance: печать и тесты должны
+    # показывать одно и то же число.
+    final_rel = float(bal["rel_residual"][-1])
     # Без символа Δ: консоль Windows под cp1251 его не кодирует и
     # print падает с UnicodeEncodeError, обрывая весь расчёт.
     print(f"  dE финал          = {bal['delta_E'][-1]:+.4e} Дж")

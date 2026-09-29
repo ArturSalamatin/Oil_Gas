@@ -491,22 +491,29 @@ def test_pipeline_writes_output(tmp_path):
         assert path.stat().st_size > 0, f"пустой файл {fname}"
 
 
-def test_profile_times_default_and_all():
-    """Моменты профильных графиков: 4 опорных по умолчанию, все — по флагу.
+def test_profile_times_default_and_uniform():
+    """Моменты профильных графиков: 4 опорных по умолчанию, N — равномерно.
 
-    31 запись (как у 13a): по умолчанию начало, 1/3, 2/3 и конец —
-    индексы 0, 10, 20, 30; при all_profiles=True — все 31 момент
-    (решение пользователя 2026-09-28 для 13a). Умолчание не меняется:
-    у 04a 865 записей.
+    31 полусуточная запись (как у 13a). По умолчанию (n_profiles=None) —
+    начало, 1/3, 2/3 и конец: индексы 0, 10, 20, 30; у остальных примеров
+    так и остаётся. При n_profiles = 6 — моменты равномерно по времени
+    на [0, 15 сут]: 0, 3, 6, 9, 12, 15 сут (решение пользователя
+    2026-09-29 для 13a). N больше числа записей даёт каждую запись по
+    одному разу; N = 1 эволюции не показывает — ValueError.
     """
     import sys
     sys.path.insert(0, str(EXAMPLES_DIR))
     from example_runner import _profile_times
 
+    day = 86400.0
     times = [43200.0 * n for n in range(31)]
-    assert _profile_times(times, all_profiles=False) == [
+    assert _profile_times(times, n_profiles=None) == [
         times[0], times[10], times[20], times[30]]
-    assert _profile_times(times, all_profiles=True) == times
+    assert _profile_times(times, n_profiles=6) == [
+        0.0, 3 * day, 6 * day, 9 * day, 12 * day, 15 * day]
+    assert _profile_times(times, n_profiles=100) == times
+    with pytest.raises(ValueError):
+        _profile_times(times, n_profiles=1)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1435,7 +1442,11 @@ class TestPwfRampDown:
                           r["grid"].r_centers)
         assert cl["q_o"] == pytest.approx(3.2827e-3, rel=1e-4)
 
-    def test_main_plots_every_interval(self):
-        """main.py 13a рисует профили на каждую запись (решение пользователя)."""
+    def test_main_plots_six_moments(self):
+        """main.py 13a рисует профили на 6 моментах: 0, 3, ..., 15 сут.
+
+        Решение пользователя 2026-09-29: 31 кривая (каждая запись) нечитаема —
+        10 цветов цикла повторяются трижды, легенда не помещается.
+        """
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "all_profiles=True" in text
+        assert "n_profiles=6" in text

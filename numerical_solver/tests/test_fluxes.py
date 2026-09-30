@@ -676,7 +676,8 @@ class TestSimulationHistory:
             m_o=np.array([-9.0, -9.0]),
             m_g=np.zeros(2),
             Gm_o=np.array([-8.5, -8.5]),
-            Gm_g=np.array([-0.425, -0.425]))
+            Gm_g=np.array([-0.425, -0.425]),
+            p_wf=1e7)
         wd = WellData(q_o_std=0.01, q_g_std=0.5, m_o_well=8.5,
                       m_g_well=0.425, p_wf=1e7, T_wf=350.0)
 
@@ -698,7 +699,8 @@ class TestSimulationHistory:
                 state=s, G_o=np.zeros(2), G_g=np.zeros(2),
                 G_free_gas=np.zeros(2), Q_o=np.zeros(2), Q_g=np.zeros(2),
                 u_o=np.zeros(2), u_g=np.zeros(2), m_o=np.zeros(2),
-                m_g=np.zeros(2), Gm_o=np.zeros(2), Gm_g=np.zeros(2))
+                m_g=np.zeros(2), Gm_o=np.zeros(2), Gm_g=np.zeros(2),
+                p_wf=1e7)
             wd = WellData(q_o_std=0.0, q_g_std=0.0, m_o_well=0.0,
                           m_g_well=0.0, p_wf=1e7, T_wf=350.0)
             h.append(t=float(i), state=s, hydro=hr, well=wd)

@@ -86,9 +86,8 @@ def measure(example: str, n_report: int = 8):
 
         # Прочие члены правой части того же уравнения ячейки [Вт]:
         # p_wf нужен с BUG-012: JT-вклад забойной грани равен
-        # μ_JT·Φ⁻·(p[0] − p_wf), давление за забоем задано ГУ.
-        p_wf = bc.well.boundary_pressure(hydro_result.state, grid,
-                                         solver._pvt, None)
+        # μ_JT·Φ⁻·(p[0] − p_wf), давление за забоем — из HydroResult (FEAT-020).
+        p_wf = hydro_result.p_wf
         J_jt = solver.compute_jt(
             hydro_result.Q_o, hydro_result.Q_g, Phi_o, Phi_g,
             props['mu_JT_o'], props['mu_JT_g'], p, N, ext, p_wf)

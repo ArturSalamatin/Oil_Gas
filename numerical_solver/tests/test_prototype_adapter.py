@@ -150,6 +150,39 @@ class TestSetControl:
             adapter.solve(initial_state, dt=DT, bc=bc_fake)
 
 
+class TestAdapterWellPressure:
+    """HydroResult.p_wf — фактическое давление на забойной грани после шага.
+
+    Энергия и вывод берут p_wf только отсюда (FEAT-020): при управлении по
+    дебиту оно известно лишь после шага, при закрытой скважине равно p[0].
+    """
+
+    def test_pwf_equals_setpoint_when_producing(self, result):
+        """Добыча при заданном давлении: p_wf = уставка.
+
+        Условия: p0 = 200 бар, уставка 150 бар — поток к скважине (G_o[0] < 0).
+        Ожидание: p_wf = 150 бар с точностью до округления Па → бар → Па.
+        Ловит: поле не заполнено или взято не из прототипа.
+        """
+        assert result.G_o[0] < 0.0
+        assert result.p_wf == pytest.approx(P_WF_PA, rel=1e-14)
+
+    def test_pwf_floats_to_p0_when_shut(self, adapter, initial_state):
+        """Уставка выше давления у забоя: скважина закрыта, p_wf = p[0].
+
+        Условия: p0 = 200 бар, уставка 250 бар. Прототип закрывает скважину
+        вместо нагнетания (blackoil.py, ветка BHP): q = 0, bhp = p[0].
+        Ожидание: G_o[0] = 0 (прототип отдаёт -0.0, в Python == 0.0 истинно)
+        и p_wf = p[0] нового слоя (замер аудита FEAT-020: побитово).
+        Ловит: запись уставки вместо фактического давления.
+        """
+        bc_shut = BoundaryConditions(
+            well=PressureControl(250e5), p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)
+        r = adapter.solve(initial_state, dt=DT, bc=bc_shut)
+        assert r.G_o[0] == 0.0
+        assert r.p_wf == pytest.approx(r.state.p[0], rel=1e-14)
+
+
 # ═══════════════════════════════════════════════════════════
 # B. Шаги 2+4: конвертация State ↔ proto
 # ═══════════════════════════════════════════════════════════

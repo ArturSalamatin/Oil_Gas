@@ -83,9 +83,8 @@ def run_instrumented(config_path):
                 props['c_p_o'], props['c_p_g'], N, ext)
         # p_wf — давление на забойной грани: в адвективной форме JT-вклад
         # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без него не считается
-        # (BUG-012). Берётся так же, как в solve.
-        p_wf = bc.well.boundary_pressure(hydro_result.state, self._grid,
-                                         self._pvt, None)
+        # (BUG-012). Берётся так же, как в solve: из HydroResult (FEAT-020).
+        p_wf = hydro_result.p_wf
         J_jt = self.compute_jt(Q_o, Q_g, Phi_o, Phi_g,
                                props['mu_JT_o'], props['mu_JT_g'], p, N, ext,
                                p_wf)

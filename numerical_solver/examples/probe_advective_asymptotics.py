@@ -107,7 +107,7 @@ def measure(example: str):
                 props['rho_o'], props['rho_g'],
                 props['c_p_o'], props['c_p_g'], N, ext)
 
-        p_wf = bc.well.boundary_pressure(st, grid, solver._pvt, None)
+        p_wf = hydro_result.p_wf    # фактическое давление шага (FEAT-020)
         J_jt = solver.compute_jt(
             hydro_result.Q_o, hydro_result.Q_g, Phi_o, Phi_g,
             props['mu_JT_o'], props['mu_JT_g'], st.p, N, ext, p_wf)

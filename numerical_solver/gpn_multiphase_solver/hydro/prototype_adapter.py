@@ -4,6 +4,7 @@
   - давление: Па ↔ бар (на входе и выходе)
   - режим: gas_active ↔ regime
   - управление: WellControl → set_bhp_control
+  - забойное давление: bhp_bar прототипа → HydroResult.p_wf (Па)
 
 НЕ конвертирует:
   - Rs, Sg (безразмерные)
@@ -228,6 +229,13 @@ class PrototypeHydroAdapter(HydroSolver):
         Gm_o = self._pvt.rho_o_std * G_o
         Gm_g = self._pvt.rho_g_std * G_g
 
+        # ── Шаг 9: фактическое забойное давление ──
+        # Результат шага при любом управлении: при OIL_RATE прототип
+        # выражает p_bhp из уравнения притока (blackoil.py, _well_fluxes),
+        # при BHP и p[0] <= уставки скважина закрыта и p_bhp = p[0].
+        # well_rates считает на том же new_proto, что и потоки выше.
+        p_wf = self._model.well_rates(new_proto)['bhp_bar'] * BAR_TO_PA
+
         return HydroResult(
             state=new_state,
             G_o=G_o, G_g=G_g, G_free_gas=G_free_gas,
@@ -235,5 +243,6 @@ class PrototypeHydroAdapter(HydroSolver):
             u_o=u_o, u_g=u_g,
             m_o=m_o, m_g=m_g,
             Gm_o=Gm_o, Gm_g=Gm_g,
+            p_wf=p_wf,
             n_substeps=n_substeps,
         )

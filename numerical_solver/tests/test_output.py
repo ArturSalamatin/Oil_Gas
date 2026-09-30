@@ -260,7 +260,8 @@ class TestSaveWellCsv:
             state=state,
             G_o=zeros, G_g=zeros, G_free_gas=zeros,
             Q_o=zeros, Q_g=zeros, u_o=zeros, u_g=zeros,
-            m_o=zeros, m_g=zeros, Gm_o=zeros, Gm_g=zeros)
+            m_o=zeros, m_g=zeros, Gm_o=zeros, Gm_g=zeros,
+            p_wf=P0)
         well = WellData(q_o_std=0.0, q_g_std=0.0, m_o_well=0.0,
                         m_g_well=0.0, p_wf=P0, T_wf=T0)
         history.append(0.0, state, hydro, well)
@@ -358,7 +359,8 @@ class TestMinimalHistory:
         hydro = HydroResult(
             state=state, G_o=Z, G_g=Z, G_free_gas=Z,
             Q_o=Z, Q_g=Z, u_o=Z, u_g=Z,
-            m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z)
+            m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z,
+            p_wf=P0)
         well = WellData(0.0, 0.0, 0.0, 0.0, P0, T0)
         history.append(t=0.0, state=state, hydro=hydro, well=well)
 

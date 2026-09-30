@@ -167,4 +167,5 @@ def compute_fluxes(state: SimulationState, grid: Grid,
         u_o=u_o, u_g=u_g,
         m_o=m_o, m_g=m_g,
         Gm_o=Gm_o, Gm_g=Gm_g,
+        p_wf=p_wf,
     )

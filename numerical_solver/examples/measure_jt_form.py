@@ -68,8 +68,7 @@ def measure(example: str):
             Q_o, Q_g, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'], N, ext)
 
-        p_wf = bc.well.boundary_pressure(hydro_result.state, grid,
-                                         solver._pvt, None)
+        p_wf = hydro_result.p_wf    # фактическое давление шага (FEAT-020)
 
         # ── Адвективная версия: то, что считает ядро ──
         jt_adv = solver.compute_jt(

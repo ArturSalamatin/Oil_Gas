@@ -67,7 +67,8 @@ def _zero_hydro(state, N):
     Z = np.zeros(N + 1)
     return HydroResult(
         state=state, G_o=Z, G_g=Z, G_free_gas=Z,
-        Q_o=Z, Q_g=Z, u_o=Z, u_g=Z, m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z)
+        Q_o=Z, Q_g=Z, u_o=Z, u_g=Z, m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z,
+        p_wf=state.p[0])   # потока нет: давление на забое = p[0]
 
 
 def _log_pressure_profile(grid, p_wf, p_ext):
@@ -167,9 +168,9 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
         props['lambda_eff'], N)
     # p_wf — давление на забойной грани: в адвективной форме JT-вклад
     # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без p_wf не считается
-    # (BUG-012). Берётся из того же bc, что и свойства контура.
-    p_wf = bc.well.boundary_pressure(state_prev, solver._grid,
-                                     solver._pvt, None)
+    # (BUG-012). Берётся из HydroResult — тот же источник, что у решателя
+    # (FEAT-020).
+    p_wf = hydro.p_wf
     J_jt = solver.compute_jt(
         hydro.Q_o, hydro.Q_g, Phi_o, Phi_g,
         props['mu_JT_o'], props['mu_JT_g'], p, N, ext, p_wf)

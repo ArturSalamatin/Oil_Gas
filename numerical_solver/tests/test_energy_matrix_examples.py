@@ -599,10 +599,11 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
 
     Q_T_internal, Q_T_ext = _ref_conductive(grid, props['lambda_eff'])
 
-    # Забойное давление задано НА ГРАНИ и входит в JT-вклад забойной
-    # грани как значение "за гранью" (eq:QJT_disc, ssec:bc_disc).
+    # Забойное давление на ГРАНИ — фактическое давление шага из HydroResult
+    # (FEAT-020, тот же источник, что у решателя); входит в JT-вклад
+    # забойной грани как значение "за гранью" (eq:QJT_disc, ssec:bc_disc).
     # Для температуры и состава такого значения нет — там вклад нулевой.
-    p_wf = bc.well.boundary_pressure(st, grid, pvt, None)
+    p_wf = hydro_result.p_wf
 
     J_jt = _ref_jt(Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
                    hydro_result.Q_o, hydro_result.Q_g, st.p, N, ext, p_wf)

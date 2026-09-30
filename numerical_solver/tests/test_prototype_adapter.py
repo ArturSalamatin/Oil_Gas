@@ -530,3 +530,51 @@ class TestErrorHandling:
                       'u_o', 'u_g', 'm_o', 'm_g', 'Gm_o', 'Gm_g']:
             assert getattr(result, field).shape == (N + 1,), \
                 f"{field} shape mismatch"
+
+
+# ═══════════════════════════════════════════════════════════
+# L. BUG-014: скачок p_wf вверх выше p[0]
+# ═══════════════════════════════════════════════════════════
+
+def _bc(p_wf):
+    """ГУ как фикстура bc, но с заданным p_wf, Па."""
+    return BoundaryConditions(
+        well=PressureControl(p_wf), p_ext=P0_PA,
+        T_ext=T0, Rs_ext=RS0, Sg_ext=0.0)
+
+
+class TestAdapterPwfUpStep:
+    """После отбора p_wf поднимают выше p[0]; адаптер не должен дробить шаг.
+
+    Подготовка: 6 ч отбора при p_wf = 80 бар → p[0] = 84.12 бар, у забоя
+    11 двухфазных ячеек. До правки прототипа (BUG-014) шаг 1 ч не сходился
+    при любом дроблении (RuntimeError), шаг 60 с дробился на 64 подшага.
+    """
+
+    @pytest.fixture
+    def drawn_down(self, adapter, initial_state):
+        state = initial_state
+        for _ in range(6):
+            state = adapter.solve(state, dt=3600.0, bc=_bc(80e5)).state
+        return state
+
+    def test_long_upstep_single_substep(self, adapter, drawn_down):
+        # p_wf 80 → 114 бар при p[0] = 84.1 бар, шаг 1 ч. За час давление у забоя
+        # восстанавливается выше 114 бар — согласованный ответ: скважина снова
+        # добывает. Прототип решает шаг запасным путём без дробления.
+        r = adapter.solve(drawn_down, dt=3600.0, bc=_bc(114e5))
+        assert r.n_substeps == 1
+        # Добыча: поток к скважине, по конвенции знаков G < 0. Замер −4.47e-3.
+        assert r.G_o[0] < 0.0
+        assert r.state.p[0] >= 114e5            # замер 116.57 бар
+
+    def test_short_upstep_well_shut(self, adapter, drawn_down):
+        # p_wf 80 → 190 бар, шаг 60 с: за минуту p[0] до 190 бар не дорастает —
+        # скважина закрыта, потоки через забой нулевые (закачки нет).
+        # −0.0 (инверсия знака well-потоков в адаптере) проходит сравнение с 0.0.
+        r = adapter.solve(drawn_down, dt=60.0, bc=_bc(190e5))
+        assert r.n_substeps == 1
+        assert r.G_o[0] == 0.0
+        assert r.G_g[0] == 0.0
+        assert r.G_free_gas[0] == 0.0
+        assert r.state.p[0] < 190e5             # замер 157.09 бар

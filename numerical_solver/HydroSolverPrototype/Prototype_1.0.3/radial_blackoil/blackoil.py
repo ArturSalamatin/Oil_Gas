@@ -3,6 +3,9 @@
 Physics and Newton/active-set logic are unchanged from the validated Prototype 1
 formulation. Version 1.0.3 keeps the grouped finite-difference Jacobian and
 supports sparse or dense linear algebra as a numerical backend choice.
+Local changes (GPN project, BUG-014): when the original step fails, advance()
+retries with the BHP well branch as an outer active constraint and no lower
+bound on Sg of two-phase cells.
 """
 from dataclasses import dataclass
 import numpy as np
@@ -222,6 +225,44 @@ class RadialBlackOilModel:
             if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
         f=self.residual(z,state_old,dt_s,gas_active); return z,BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)))
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
+        """One implicit step: the original algorithm; on failure a fallback with the
+        BHP well branch as an outer constraint and no lower bound on Sg (BUG-014)."""
+        new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+        if rep.converged:
+            if self.control_mode=='BHP':
+                # branch the automatic rule takes on the accepted state
+                p0=float(new.pressure_bar[0])
+                rep.well_branch='shut' if p0<=float(self.p_bhp_bar) else 'open'
+            return new,rep
+        # Fallback only: where the original algorithm converges, results stay
+        # bitwise; with the bound removed always, deep drawdowns needed more
+        # step splitting than before (BUG-014 audit).
+        self._sg_lower_bound=None
+        try:
+            if self.control_mode!='BHP':
+                new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+                rep.fallback=True; return new,rep
+            target=float(self.p_bhp_bar)
+            # Start from the branch of the old state; shut-in steps start on 'shut'.
+            branch='shut' if float(state_old.pressure_bar[0])<=target else 'open'
+            tried=[]
+            while True:
+                tried.append(branch); self._well_branch=branch
+                new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+                rep.fallback=True; rep.well_branch=branch; rep.well_switches=len(tried)-1
+                if rep.converged:
+                    p0=float(new.pressure_bar[0])
+                    # open: q = WI*lambda*(p0-target) >= 0; shut: p0 <= target
+                    if (p0>=target) if branch=='open' else (p0<=target): return new,rep
+                # Newton failed or the branch is inconsistent: the other branch, once
+                other='open' if branch=='shut' else 'shut'
+                if other in tried:
+                    rep.converged=False; return new,rep
+                branch=other
+        finally:
+            self._sg_lower_bound=-0.05; self._well_branch=None
+    def _advance_phases(self,state_old,dt_s,max_active_iter=12,max_newton=15):
+        """Phase active-set loop (unchanged Prototype 1 logic)."""
         state_old=state_old.copy(); mask=state_old.gas_active.copy(); guess=state_old.copy(); total_switches=total_newton=0
         for aset in range(1,max_active_iter+1):
             z,report=self._newton_fixed_active_set(self.pack(guess,mask),state_old,dt_s,mask,max_iter=max_newton); total_newton+=report.iterations

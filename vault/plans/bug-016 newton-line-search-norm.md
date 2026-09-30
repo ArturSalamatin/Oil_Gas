@@ -8,6 +8,13 @@ issue: BUG-016
 github: 44
 branch: fix/bug-016/newton-line-search-norm
 status: готов к реализации
+audit:
+  date: 2026-09-30
+  round: 1
+  found: 8
+  auto-fixed: 7
+  manual-required: 0
+  note: "порядок с FEAT-023 решён пользователем (решение 4: сначала FEAT-023). Раунд 1 — план исполнен текстом на копии дерева (audit_apply_plan.py): блоки «До» шага 2 — по одному вхождению, blackoil.py компилируется; тесты шага 1 до правки — 10/10 красные, после — 11/11 зелёные; шаги 1–3 — 1012 passed, 349 с; реализация побитово = проба tier3_chop02 на 16 примерах. Исправлено: относительный импорт в тестовом файле (tests/ — пакет), сверка шага 4 шла бы с прототипом основного каталога (BUG016_NS), тройное вхождение последовательности вызовов в test_prototype_well_branch, строки сводного README, формулировки. Решение пользователя: порядок вливания с FEAT-023"
 ---
 
 # BUG-016: третья ступень `advance` — Ньютон с линейным поиском по $\|F\|_2$ и ограничителем $|\Delta S_g| \le 0.2$
@@ -27,6 +34,7 @@ status: готов к реализации
 | 1 | Где включать правку | **Третья ступень** — после исходного алгоритма и запасного пути BUG-014, только при отказе обоих (по образцу варианта F BUG-014). Отвергнуты: «заменить запасной путь» (03 хуже: 0 → 3 отказа, $\lvert\Delta T\rvert$ до 0.21 К) и «всегда» (10 хуже: 1 → 6 отказов, отличия $\sim10^{-10}$ во всех примерах) | 2026-09-30 |
 | 2 | Что делает третья ступень, кроме $\|F\|_2$ | **Ограничитель $\lvert\Delta S_g\rvert \le 0.2$ за итерацию Ньютона** (как `ds_max` в OPM Flow). Отвергнуто: ограничение начального $S_g$ активации ($\le 0.3$) — эмпирический порог, на 04a $N = 500$ хуже (16 подшагов против 8); на всех 16 примерах и на 14 при $N \le 200$ оба дают одинаковые числа | 2026-09-30 |
 | 3 | `numerics.max_retries = 12` в конфиге 04a | **Оставить**; в README 04a переписать причину (первый шаг больше не дробится) | 2026-09-30 |
+| 4 | Порядок вливания с FEAT-023 (пример 13б, реализуется параллельно) | **Сначала FEAT-023**, BUG-016 — после его вливания в `numerical_scheme/implementation`. Дополнительные условия для BUG-016 — §2.5, строка «Параллельная задача FEAT-023» | 2026-09-30 |
 
 ## 1. Измерения (2026-09-30)
 
@@ -43,6 +51,10 @@ status: готов к реализации
 | `readme_claims.py режим cap chop` | утверждения README 11 и 12 о «несходящихся» режимах |
 | `run_example_patched.py метка режим cap chop пример` | консоль `run_example` для сверки с README (`readme_runs/`) |
 | `bug016_plugin.py` | pytest-плагин: патч до сбора тестов (`$env:BUG016_MODE`, `BUG016_CHOP`) |
+| `audit_apply_plan.py <numerical_solver копии> tests\|step2\|step3` | аудит: применяет план **текстом** к копии дерева (блоки «До» — ровно по одному вхождению) |
+| `readme_transient.py метка…` | числа README, зависящие от старта: таблица «Переходный процесс» 04a, минимум $T(r_w)$ у 11 |
+
+Все пробы берут дерево `numerical_solver` из `$env:BUG016_NS` (по умолчанию — основной каталог).
 
 ### 1.1 Механизм отказа (пример 14, первый суточный шаг)
 
@@ -160,6 +172,7 @@ status: готов к реализации
 | README с числами старта | ⚠️ | 04a, 11, 12 — перемерить `run_example` (шаг 5), сравнить с `readme_runs/` |
 | Точность раннего переходного процесса | ⚠️ | первая запись 04a — один шаг 300 с вместо 512 подшагов: $T(r_w)$ на 5 мин 350.51 → 349.97 К (§1.3). Не регрессия решателя (корень тот же, меняется только $dt$ старта), но README 04a получает оговорку (шаг 5) |
 | Общее рабочее дерево | ⚠️ | параллельные сессии правят vault в основном каталоге — работать в worktree (§6) |
+| Параллельная задача FEAT-023 (пример 13б) | ⚠️ **решено (решение 4): BUG-016 — после вливания FEAT-023**; условия ниже обязательны | план `vault/plans/feat-023 alternating-bhp-example.md` (аудит BUG-016: в git ещё не добавлен) правит тот же комментарий над `SUBDIVIDING_EXAMPLES` (`test_energy_matrix_examples.py:701-705`, его шаг 4.4 — «11 … 16 × 225 с», «12 … 128 × 28.125 с», 13b «128 × 28.125 с в первом часу … и 2 × 1800 с на первом скачке p_wf вверх») и снимал числа 13б на коде без третьей ступени. Первый час 13б — тот же старт, что у 12: с BUG-016 он не дробится, числа ранних записей и `sim.run` 13б изменятся; второе дробление (скачок вверх) — вероятно, тоже. **На момент аудита FEAT-023 уже в реализации**: worktree `.worktrees/feat-023`, ветка `feat/feat-023/alternating-bhp-example` (3 коммита: `run_example(steady_state=False)`, постановка), незакоммиченные правки `tests/test_energy_matrix_examples.py` и `tests/test_examples.py`. Кто вливается вторым, перемеряет свои числа и сливает комментарий `SUBDIVIDING_EXAMPLES`. Если BUG-016 — вторым (рекомендация аудита: FEAT-023 ближе к концу), то к шагам добавляется: шаг 0 — `regress_examples.py orig orig` заново (17 примеров, с 13b); шаг 4 — 13b в сверке (13b не побитов: старт и скачки вверх); шаг 5 — README 13b и строка 13b сводного README; ожидаемое число тестов — пересчитать от нового baseline |
 
 ### 2.6 Новые проблемы
 
@@ -169,6 +182,8 @@ status: готов к реализации
 
 ### Шаг 0: Подготовка
 
+**Предусловие (решение 4):** FEAT-023 влит в `numerical_scheme/implementation` (`git log --oneline numerical_scheme/implementation | Select-String FEAT-023` — есть merge-коммит; папка `numerical_solver/examples/13b_pwf_alternating/` на базе). Если нет — не начинать. После вливания выполнить дополнительные условия §2.5 (строка «Параллельная задача FEAT-023»): baseline и `regress_examples.py orig orig` заново на 17 примерах, 13b — в сверку шага 4 и в README шага 5, ожидаемое число тестов — от нового baseline.
+
 ```powershell
 cd D:\Lessons\Grants\2026\GPN\Oil_Gas
 git status --short -uno
@@ -177,7 +192,7 @@ cd .worktrees\bug-016\numerical_solver
 D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/ -q -p no:cacheprovider
 ```
 
-Baseline: **1003 passed, 1 warning, ~557 с** (FEAT-024, 2026-09-30; база `5e2aec7`). venv — основного каталога (в worktree `.venv` нет). pytest в worktree берёт код worktree; скрипты примеров — только с `$env:PYTHONPATH = "<worktree>\numerical_solver"` (память проекта «Worktree и PYTHONPATH»).
+Baseline: **1003 passed, 1 warning, ~557 с** (FEAT-024, 2026-09-30; база `5e2aec7`; на аудите HEAD базы — `4db608f`, после `5e2aec7` только vault, `numerical_solver/` не менялся). Если на старте HEAD новее и затронуты `numerical_solver/` или `HydroSolverPrototype/` — перемерить `regress_examples.py orig orig` (§1.3) до правки. venv — основного каталога (в worktree `.venv` нет). pytest в worktree берёт код worktree; скрипты примеров — только с `$env:PYTHONPATH = "<worktree>\numerical_solver"` (память проекта «Worktree и PYTHONPATH»).
 
 ### Шаг 1: Тесты-воспроизводители (красные)
 
@@ -428,13 +443,13 @@ class TestThirdStageLogic:
         _assert_restored(model)
 ```
 
-Импорт из `test_prototype_well_branch` работает: `tests/` без `__init__.py`, pytest кладёт каталог теста в `sys.path` (проверить при реализации одним прогоном; если импорт не находится — вынести `_build`, `_model` и фикстуру `drawn_down` в `tests/conftest.py` не нужно, достаточно `sys.path.insert(0, str(Path(__file__).parent))` в начале модуля).
+Импорт из `test_prototype_well_branch` — относительный: `tests/` — пакет (`tests/__init__.py`), абсолютный `from test_prototype_well_branch import …` не собирается (`ModuleNotFoundError`, проверено аудитом).
 
 **Проверка (до фикса):**
 ```powershell
 D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/test_prototype_globalization.py -q -p no:cacheprovider
 ```
-Ожидание: красные все, кроме ничего — A: `RuntimeError` (14, 04a) / `n_substeps == 128` (12) / `AttributeError: globalized`; B: `AttributeError: _line_search_l2`. `test_04a_dense_grid_first_step` до фикса идёт долго (до 512 подшагов на $N = 200$) — допустимо один раз.
+Ожидание: **все 11 красные** — A: `RuntimeError` (14, 04a) / `n_substeps == 128` (12) / нет атрибута `_line_search_l2` (ограничитель); B: `AttributeError: … '_line_search_l2'` (аудит: 10 из 10 без 04a — красные, 24 с). `test_04a_dense_grid_first_step` до фикса идёт долго (до 512 подшагов на $N = 200$) — допустимо один раз или `-k "not 04a"`.
 
 **Оценка:** ~230 строк, 30 мин.
 
@@ -609,6 +624,7 @@ D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m 
   ```
   `_fields(rep) == (False, "open", 1, True)` — без изменений (поля последнего вызова запасного пути).
 - `test_both_branches_inconsistent` (~362-372): то же — `calls` из пяти элементов; комментарий дополнить: «третья ступень (BUG-016) повторяет обе ветки — снова несогласованы».
+- ⚠️ Строка `assert calls == [ORIGINAL, ("shut", None), ("open", None)]` встречается в файле **трижды** (аудит): ещё в `test_fallback_second_branch` (строка ~347). Там запасной путь сходится на «открыта», третьей ступени нет — **эту строку не трогать**. Правка «заменить во всём файле» сломает тест. Править по одной, внутри `test_all_fail` и `test_both_branches_inconsistent`.
 
 **3.2** `numerical_solver/tests/test_energy_matrix_examples.py`, строки 701-707. До:
 ```python
@@ -631,7 +647,7 @@ SUBDIVIDING_EXAMPLES = ["10_deep_degassing"]
 ```
 Экземпляров теста становится на 2 меньше.
 
-**3.3** `numerical_solver/tests/test_examples.py`, `test_dense_grid_converges_at_default_retries` (строки 1281-1302, 1312-1316): тест остаётся (проверяет $N = 80$ на штатном лимите), меняется только обоснование. Заменить в докстринге «Здесь нужно ровно 9 удвоений (512 подшагов, замер 2026-09-25) — весь штатный лимит. Дробится только первый шаг: … (механизм — BUG-008). Уменьшение dt_integration не помогает: A-retry дробит шаг внутри.» на «До BUG-016 здесь требовались все 9 удвоений (512 подшагов, замер 2026-09-25): первый шаг — скачок p_wf 20 -> 4 МПа переводит под pb около половины ячеек разом (BUG-008). С третьей ступенью advance (BUG-016) шаг сходится без дробления; тест держит достаточность умолчания и для этого класса задач.»; фразы «Запаса нет и при N = 80: первый шаг использует все 9 удвоений, с лимитом 8 тест упадёт.» и в комментарии «Запаса нет и здесь: при N = 80 нужны все 9.» — удалить. Утверждения теста не менять.
+**3.3** `numerical_solver/tests/test_examples.py`, `test_dense_grid_converges_at_default_retries` (строки 1281-1302, 1312-1316): тест остаётся (проверяет $N = 80$ на штатном лимите), меняется только обоснование. Заменить в докстринге текст строк 1285 (со слов «Здесь нужно») – 1290 («дробит шаг внутри.») — «Здесь нужно ровно 9 удвоений (512 подшагов, замер 2026-09-25) — весь штатный лимит. Дробится только первый шаг: скачок p_wf 20 -> 4 МПа переводит под pb около половины ячеек разом, и цикл active set сходится лишь на мелком подшаге (механизм — BUG-008). Уменьшение dt_integration не помогает: A-retry дробит шаг внутри.» — на «До BUG-016 здесь требовались все 9 удвоений (512 подшагов, замер 2026-09-25): первый шаг — скачок p_wf 20 -> 4 МПа переводит под pb около половины ячеек разом (BUG-008). С третьей ступенью advance (BUG-016) шаг сходится без дробления; тест держит достаточность умолчания и для этого класса задач.»; фразы «Запаса нет и при N = 80: первый шаг использует все 9 удвоений, с лимитом 8 тест упадёт.» и в комментарии «Запаса нет и здесь: при N = 80 нужны все 9.» — удалить. Утверждения теста не менять.
 
 **Проверка:**
 ```powershell
@@ -644,7 +660,7 @@ D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m 
 ```powershell
 D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/ -q -p no:cacheprovider
 ```
-Ожидание: **1003 − 2 (`SUBDIVIDING_EXAMPLES` без 11 и 12) + 11 новых (A: 2 экземпляра примера 14 + 04a + 12 + ограничитель = 5; B: 6) = 1012** — пересчитать по факту; все зелёные; время ≈ 350–400 с (было ~557: 04a и 12 без дробления). Если упал тест с числами 04a, 11 или 12 — это ожидаемое изменение старта (§1.3): сверить с `readme_runs/` и поправить ожидание **только** если отличие объясняется дискретизацией старта (не корнем Ньютона).
+Ожидание: **1003 − 2 (`SUBDIVIDING_EXAMPLES` без 11 и 12) + 11 новых (A: 2 экземпляра примера 14 + 04a + 12 + ограничитель = 5; B: 6) = 1012** — все зелёные; время ≈ 350 с (было ~557: 04a и 12 без дробления). Аудит: шаги 1–3, применённые текстом плана к копии дерева, — **1012 passed, 349 с**. Если упал тест с числами 04a, 11 или 12 — это ожидаемое изменение старта (§1.3): сверить с `readme_runs/` и поправить ожидание **только** если отличие объясняется дискретизацией старта (не корнем Ньютона).
 
 Тесты прототипа:
 ```powershell
@@ -653,13 +669,15 @@ Remove-Item -Recurse -Force HydroSolverPrototype/Prototype_1.0.3/OUTPUT/short_ru
 ```
 Ожидание: 70 passed, 10 failed ([[DEBT-024]], как до правки).
 
-Побитовость 13 примеров (из `numerical_solver` **основного** каталога — пробы ставят патч сами; для реализованного кода — режим `orig` в worktree с `PYTHONPATH`):
+Побитовость с измеренным вариантом — реализованный код в режиме `orig` (патч не ставится). Дерево задаётся **обеими** переменными: `BUG016_NS` — откуда пробы берут прототип и примеры (иначе `patch.py` вставит в `sys.path` первым прототип **основного** каталога и сверка пойдёт с неисправленным кодом), `PYTHONPATH` — откуда импортируется `gpn_multiphase_solver`:
 ```powershell
-$env:PYTHONPATH = "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-016\numerical_solver"
-D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe ..\..\..\vault\issues\bug-016\probes\regress_examples.py impl orig
-D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe ..\..\..\vault\issues\bug-016\probes\compare_regress.py tier3_chop02 impl
+$W = "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-016\numerical_solver"
+$env:BUG016_NS = $W; $env:PYTHONPATH = $W
+$P = "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-016\probes"
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe "$P\regress_examples.py" impl orig
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe "$P\compare_regress.py" tier3_chop02 impl
 ```
-(`regress_examples.py` берёт примеры из `patch.NS` — основного каталога; прототип — через `PYTHONPATH` worktree. Проверить печатью `radial_blackoil.__file__`, при расхождении — поправить `NS` в пробе.) Ожидание: **все 16 — побитово** с прогоном пробы `tier3_chop02` (реализация = проба).
+Первые строки вывода `regress_examples.py` печатают пути `radial_blackoil`, `gpn_multiphase_solver` и примеров — все три должны быть в `.worktrees\bug-016`. Ожидание: **все 16 — побитово** с `tier3_chop02` (аудит 2026-09-30: код плана, применённый текстом к копии дерева, — 16 из 16 побитово).
 
 **Зависимости:** шаг 3. **Оценка:** 25 мин (в основном ожидание).
 
@@ -705,7 +723,10 @@ D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe ..\
 - строки 209-210 — оставить;
 - числа таблиц по суткам — по сверке `readme_runs` (конец истории: $\lvert\Delta p\rvert$ 47 Па, $\lvert\Delta T\rvert$ $7.6\cdot10^{-4}$ К — в печатаемых знаках скорее всего без изменений).
 
-**5.4** `numerical_solver/examples/README.md`, таблица времени (строки ~147-157): 04a, 11, 12 — замерить `main.py` (без параллельной нагрузки); итог «около 9 мин» и строка ~505 «(~9 мин)» — пересчитать (ожидается около 8 мин: 04a −60…70 с, 12 −15 с).
+**5.4** `numerical_solver/examples/README.md` (строки — на `4db608f`, после вливания FEAT-024):
+- таблица времени (строка 161 «Полный прогон занимает **около 9 мин**…» и таблица под ней): 04a, 11, 12 — замерить `main.py` (без параллельной нагрузки); итог и строка 529 «(~9 мин)» — пересчитать (ожидается около 8 мин: 04a −60…70 с, 12 −15 с);
+- таблица баланса энергии: строка 386 (04a, $1.5\cdot10^{-12}$ → $3.9\cdot10^{-14}$), 393 (11, $1.0\cdot10^{-12}$ → $1.2\cdot10^{-13}$), 394 (12, $1.5\cdot10^{-11}$ → $2.5\cdot10^{-11}$) — по консоли `run_example` (таблица выше);
+- замкнутое решение: строки 275 (04a, $4.9408\cdot10^{-3}$ → $4.9409\cdot10^{-3}$) и 280 (11, $3.7695\cdot10^{-3}$ → $3.7692\cdot10^{-3}$, 0.19 % → 0.18 %).
 
 **Проверка:** `pytest tests/test_examples.py -k "Readme or required_files" -q -p no:cacheprovider`.
 

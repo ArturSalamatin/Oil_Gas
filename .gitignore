@@ -45,6 +45,7 @@ numerical_solver/results/*.npz
 numerical_solver/results/*.png
 numerical_solver/results/*.xlsx
 numerical_solver/examples/**/output/
+vault/issues
 
 # Локальный эталон для сверки «до/после» при рефакторинге (DEBT-018).
 # Снимается вручную через BASELINE_WRITE=1, привязан к конкретному дереву.

@@ -41,3 +41,12 @@
 - Internal `Nabor_0b.xlsx` and `Nabor_1b.xlsx` test fixtures moved from root `data/` to `tests/fixtures/`; user-facing package no longer contains an ambiguous `data/` directory.
 - Added pinned runtime dependencies for final output generation: XlsxWriter 3.2.9 and Matplotlib 3.10.8.
 - Short technical output smoke check confirmed that pre-existing `profiles.csv`, `rates.csv`, `material_balance.csv`, and `step_log.csv` are byte-for-byte identical to the validated beta output for the same short input.
+
+## Local changes — GPN project (BUG-014)
+- Problem: a long step after BHP is raised above the first-cell pressure did not converge at any step split. Two mechanisms: (1) the producer-only well branch (open/shut) was chosen from the current Newton iterate — the first iterate is below BHP, the well is shut, and on that branch the step has no consistent solution; (2) free gas dissolving in the near-well zone drove trial points below `Sg = -0.05`, and the line search rejected them all; the phase active set switches cells only after convergence.
+- `advance()` first runs the original algorithm (now `_advance_phases()`, unchanged). If it converges, the result is bitwise the same as before.
+- Only on failure, a fallback: `_sg_lower_bound = None` (no lower bound on Sg of two-phase cells — method of negative saturations; Sg < 0 is a smooth extension of the cell equations and the phase active set switches such cells after convergence). BHP control additionally fixes the well branch for the whole solve (`_well_branch`): start from the old state (`p0 <= BHP` → shut), accept only a consistent result (open → `p0 >= BHP`, shut → `p0 <= BHP`), otherwise try the other branch once. OIL_RATE control: a plain retry without the Sg bound.
+- Outside `advance()` both attributes keep their defaults (`None`, `-0.05`), also after an exception (`try/finally`); `well_rates()` and `face_component_fluxes_sm3s()` choose the branch from `p0` as before.
+- `BlackOilNewtonReport`: new fields `well_branch` (BHP control, branch of the accepted step), `well_switches`, `fallback` — with defaults, positional construction unchanged.
+- Physics, residual equations, tolerances and well semantics (producer only, no injection) are unchanged. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
+- Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/42; plan: `vault/plans/bug-014 well-shutin-active-set.md` of the GPN project.

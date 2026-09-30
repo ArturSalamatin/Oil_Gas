@@ -3,6 +3,9 @@
 Physics and Newton/active-set logic are unchanged from the validated Prototype 1
 formulation. Version 1.0.3 keeps the grouped finite-difference Jacobian and
 supports sparse or dense linear algebra as a numerical backend choice.
+Local changes (GPN project, BUG-014): when the original step fails, advance()
+retries with the BHP well branch as an outer active constraint and no lower
+bound on Sg of two-phase cells.
 """
 from dataclasses import dataclass
 import numpy as np
@@ -19,6 +22,9 @@ class BlackOilNewtonReport:
     residual_inf: float
     active_set_iterations: int = 0
     phase_switches: int = 0
+    well_branch: str = ''     # BHP control: branch of the accepted step ('open'/'shut'), BUG-014
+    well_switches: int = 0    # branch changes in advance's fallback, BUG-014
+    fallback: bool = False    # step solved by advance's fallback, BUG-014
 
 class RadialBlackOilModel:
     def __init__(self, grid, rock, pvt, relperm, p_bhp_bar, p_outer_bar,
@@ -34,6 +40,10 @@ class RadialBlackOilModel:
         # eliminating BHP algebraically from the well oil-rate equation.
         self.control_mode='BHP'; self.oil_rate_target_sm3_day=None; self.min_bhp_bar=None
         self._last_effective_bhp_bar=self.p_bhp_bar; self._last_constraint_active=False
+        # BUG-014: set by advance's fallback only.  _well_branch forces the BHP
+        # well branch for the whole nonlinear solve (None -> chosen from p0);
+        # _sg_lower_bound is the line-search bound on Sg of two-phase cells.
+        self._well_branch=None; self._sg_lower_bound=-0.05
         if jacobian_mode not in ('grouped','reference'): raise ValueError("jacobian_mode must be 'grouped' or 'reference'")
         if linear_solver not in ('sparse','dense'): raise ValueError("linear_solver must be 'sparse' or 'dense'")
         self.jacobian_mode=jacobian_mode; self.linear_solver=linear_solver
@@ -80,9 +90,16 @@ class RadialBlackOilModel:
             # current reservoir pressure, enforcing it would inject fluid.
             # A producer instead shuts in until p0 rises above the target.
             target=float(self.p_bhp_bar)
-            if p0 <= target:
+            # BUG-014: in advance's fallback the branch is fixed for the whole
+            # Newton solve.  Choosing it from the current iterate put Newton on
+            # the branch where the step had no consistent solution.
+            branch=self._well_branch
+            if branch is None: branch='shut' if p0 <= target else 'open'
+            if branch=='shut':
                 bhp=p0; qow=0.0; qgfw=0.0
             else:
+                # 'open' without the sign check: q < 0 (injection) is allowed on
+                # intermediate iterates; advance rejects it after convergence.
                 bhp=target; dpw=p0-bhp
                 qow=float(tw*lo*dpw*BAR_TO_PA); qgfw=float(tw*lg*dpw*BAR_TO_PA)
             self._last_effective_bhp_bar=bhp; self._last_constraint_active=False
@@ -181,7 +198,15 @@ class RadialBlackOilModel:
         n=self.grid.n; p=z[:n]; x=z[n:]
         if not np.all(np.isfinite(z)) or np.any(p<=1.0): return False
         if np.any(x[~gas_active]<-1e-8) or np.any(x[~gas_active]>self.pvt.max_rs*1.5): return False
-        if np.any(x[gas_active]<-0.05) or np.any(x[gas_active]>0.98): return False
+        # BUG-014: the lower bound on Sg of two-phase cells is an attribute.  The
+        # original algorithm keeps -0.05; advance's fallback sets None (method of
+        # negative saturations): Sg < 0 is a smooth extension of the cell
+        # equations (inventories linear in Sg, PVT independent of Sg, relperm
+        # tables clamp at the first row), and the phase active set switches such
+        # cells after convergence.  With -0.05 every trial was rejected when free
+        # gas dissolved in a whole zone (BHP raised above p0).
+        lo=self._sg_lower_bound
+        if (lo is not None and np.any(x[gas_active]<lo)) or np.any(x[gas_active]>0.98): return False
         return True
     def _newton_fixed_active_set(self,z0,state_old,dt_s,gas_active,max_iter=15,rtol=1e-8,atol_sm3s=1e-11):
         z=np.asarray(z0,float).copy(); f_initial=self.residual(z,state_old,dt_s,gas_active); scale=max(np.linalg.norm(f_initial,np.inf),1e-9)
@@ -200,6 +225,44 @@ class RadialBlackOilModel:
             if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
         f=self.residual(z,state_old,dt_s,gas_active); return z,BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)))
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
+        """One implicit step: the original algorithm; on failure a fallback with the
+        BHP well branch as an outer constraint and no lower bound on Sg (BUG-014)."""
+        new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+        if rep.converged:
+            if self.control_mode=='BHP':
+                # branch the automatic rule takes on the accepted state
+                p0=float(new.pressure_bar[0])
+                rep.well_branch='shut' if p0<=float(self.p_bhp_bar) else 'open'
+            return new,rep
+        # Fallback only: where the original algorithm converges, results stay
+        # bitwise; with the bound removed always, deep drawdowns needed more
+        # step splitting than before (BUG-014 audit).
+        self._sg_lower_bound=None
+        try:
+            if self.control_mode!='BHP':
+                new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+                rep.fallback=True; return new,rep
+            target=float(self.p_bhp_bar)
+            # Start from the branch of the old state; shut-in steps start on 'shut'.
+            branch='shut' if float(state_old.pressure_bar[0])<=target else 'open'
+            tried=[]
+            while True:
+                tried.append(branch); self._well_branch=branch
+                new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
+                rep.fallback=True; rep.well_branch=branch; rep.well_switches=len(tried)-1
+                if rep.converged:
+                    p0=float(new.pressure_bar[0])
+                    # open: q = WI*lambda*(p0-target) >= 0; shut: p0 <= target
+                    if (p0>=target) if branch=='open' else (p0<=target): return new,rep
+                # Newton failed or the branch is inconsistent: the other branch, once
+                other='open' if branch=='shut' else 'shut'
+                if other in tried:
+                    rep.converged=False; return new,rep
+                branch=other
+        finally:
+            self._sg_lower_bound=-0.05; self._well_branch=None
+    def _advance_phases(self,state_old,dt_s,max_active_iter=12,max_newton=15):
+        """Phase active-set loop (unchanged Prototype 1 logic)."""
         state_old=state_old.copy(); mask=state_old.gas_active.copy(); guess=state_old.copy(); total_switches=total_newton=0
         for aset in range(1,max_active_iter+1):
             z,report=self._newton_fixed_active_set(self.pack(guess,mask),state_old,dt_s,mask,max_iter=max_newton); total_newton+=report.iterations

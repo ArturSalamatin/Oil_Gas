@@ -7,7 +7,7 @@ issue: FEAT-024
 github: 43
 branch: feat/feat-024/high-gor-cooling-example
 model_level: null
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-09-30
   round: 2

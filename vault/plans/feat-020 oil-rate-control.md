@@ -7,7 +7,8 @@ issue: FEAT-020
 github: 41
 branch: feat/feat-020/oil-rate-control
 model_level: null
-status: готов к реализации
+status: в процессе
+worktree: .worktrees/feat-020  # реализация в отдельном worktree (параллельная сессия в основном каталоге), 2026-09-30
 audit:
   date: 2026-09-29
   round: 2

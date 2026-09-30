@@ -51,7 +51,7 @@ from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 15 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 16 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -69,6 +69,7 @@ ALL_EXAMPLES = [
     "11_degassing_at_boundary",
     "12_large_drainage_radius",
     "13a_pwf_ramp_down",
+    "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
 ]
 

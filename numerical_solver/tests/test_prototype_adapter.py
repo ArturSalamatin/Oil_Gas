@@ -30,7 +30,7 @@ from radial_blackoil.state import BlackOilState
 from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
 from gpn_multiphase_solver.pvt.prototype_adapter import PrototypePVTAdapter
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
-from gpn_multiphase_solver.bc import PressureControl, WellControl
+from gpn_multiphase_solver.bc import PressureControl, RateControl, WellControl
 from gpn_multiphase_solver.hydro.base import HydroSolver
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.units import BAR_TO_PA, M2_TO_MD
@@ -140,14 +140,115 @@ class TestSetControl:
         assert model.p_bhp_bar == pytest.approx(P_WF_PA / BAR_TO_PA, rel=1e-14)
 
     def test_unsupported_control_raises(self, adapter, initial_state):
-        """Не-PressureControl → NotImplementedError."""
+        """Неизвестное адаптеру управление → NotImplementedError."""
         class FakeControl(WellControl):
-            def boundary_pressure(self, state, grid, pvt, relperm):
-                return 1e7
+            pass
         bc_fake = BoundaryConditions(
             well=FakeControl(), p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)
         with pytest.raises(NotImplementedError):
             adapter.solve(initial_state, dt=DT, bc=bc_fake)
+
+
+class TestAdapterWellPressure:
+    """HydroResult.p_wf — фактическое давление на забойной грани после шага.
+
+    Энергия и вывод берут p_wf только отсюда (FEAT-020): при управлении по
+    дебиту оно известно лишь после шага, при закрытой скважине равно p[0].
+    """
+
+    def test_pwf_equals_setpoint_when_producing(self, result):
+        """Добыча при заданном давлении: p_wf = уставка.
+
+        Условия: p0 = 200 бар, уставка 150 бар — поток к скважине (G_o[0] < 0).
+        Ожидание: p_wf = 150 бар с точностью до округления Па → бар → Па.
+        Ловит: поле не заполнено или взято не из прототипа.
+        """
+        assert result.G_o[0] < 0.0
+        assert result.p_wf == pytest.approx(P_WF_PA, rel=1e-14)
+
+    def test_pwf_floats_to_p0_when_shut(self, adapter, initial_state):
+        """Уставка выше давления у забоя: скважина закрыта, p_wf = p[0].
+
+        Условия: p0 = 200 бар, уставка 250 бар. Прототип закрывает скважину
+        вместо нагнетания (blackoil.py, ветка BHP): q = 0, bhp = p[0].
+        Ожидание: G_o[0] = 0 (прототип отдаёт -0.0, в Python == 0.0 истинно)
+        и p_wf = p[0] нового слоя (замер аудита FEAT-020: побитово).
+        Ловит: запись уставки вместо фактического давления.
+        """
+        bc_shut = BoundaryConditions(
+            well=PressureControl(250e5), p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)
+        r = adapter.solve(initial_state, dt=DT, bc=bc_shut)
+        assert r.G_o[0] == 0.0
+        assert r.p_wf == pytest.approx(r.state.p[0], rel=1e-14)
+
+
+def _bc_rate(q_oil_sm3_day, min_bhp_pa):
+    """Граничные условия с управлением по дебиту нефти (дебит в м³ст/сут → СИ)."""
+    return BoundaryConditions(
+        well=RateControl(q_oil_sm3_day / 86400.0, min_bhp_pa),
+        p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)
+
+
+class TestAdapterRateControl:
+    """Ветка RateControl адаптера: СИ → set_oil_rate_control(м³ст/сут, бар).
+
+    Прототип выражает p_bhp из уравнения притока нефти внутри Ньютона
+    (eq:bc_rate_pwf) с нижней границей min_bhp. Фикстуры model и adapter
+    функциональные: внутри теста это одна модель, model.well_rates смотрит
+    на то же управление, что выставил адаптер. p0 = 200 бар, N = 20, R = 50 м.
+    """
+
+    def test_rate_honoured(self, model, adapter, initial_state):
+        """Дебит 2 м³ст/сут, граница 100 бар: дебит выдержан, p_wf из прототипа.
+
+        Ожидание: −G_o[0] = q_oil (замер аудита: точно), 100 бар < p_wf < p[0];
+        p_wf совпадает с bhp прототипа на том же состоянии. Сценарий
+        test_rate_control_one_implicit_step прототипа, но через адаптер и в СИ.
+        Ловит: ошибку единиц м³ст/с ↔ м³ст/сут, p_wf не из прототипа.
+        """
+        r = adapter.solve(initial_state, dt=DT, bc=_bc_rate(2.0, 100e5))
+        assert -r.G_o[0] == pytest.approx(2.0 / 86400.0, rel=1e-12)
+        assert 100e5 < r.p_wf < r.state.p[0]
+        proto = BlackOilState(r.state.p / BAR_TO_PA, r.state.Rs, r.state.Sg,
+                              r.state.regime == 1)
+        assert r.p_wf == pytest.approx(
+            model.well_rates(proto)['bhp_bar'] * BAR_TO_PA, rel=1e-12)
+
+    def test_unreachable_rate_clamped_to_min_bhp(self, adapter, initial_state):
+        """Дебит 1000 м³ст/сут недостижим: p_wf = min_bhp, дебит срезан.
+
+        Замер аудита: за час дебит 477 м³ст/сут при p_bhp = 100 бар.
+        Аналог test_rate_floor_switches_to_bhp прототипа.
+        Ловит: расхождение решателя вместо перехода на ограничение.
+        """
+        r = adapter.solve(initial_state, dt=DT, bc=_bc_rate(1000.0, 100e5))
+        assert r.p_wf == pytest.approx(100e5, rel=1e-12)
+        assert 0.0 < -r.G_o[0] < 1000.0 / 86400.0
+
+    def test_well_shut_when_p0_below_min_bhp(self, adapter, initial_state):
+        """Граница 250 бар выше p0 = 200 бар: скважина закрыта, реверса нет.
+
+        Ожидание: G_o[0] = 0 и p_wf = p[0] (замер аудита: bhp = p0 = 200 бар).
+        Ловит: нагнетание вместо закрытия.
+        """
+        r = adapter.solve(initial_state, dt=DT, bc=_bc_rate(2.0, 250e5))
+        assert r.G_o[0] == 0.0
+        assert r.p_wf == pytest.approx(r.state.p[0], rel=1e-14)
+
+    def test_zero_rate(self, adapter, initial_state):
+        """Нулевой дебит: потока через забой нет."""
+        r = adapter.solve(initial_state, dt=DT, bc=_bc_rate(0.0, 100e5))
+        assert r.G_o[0] == 0.0
+
+    def test_control_switch_between_calls(self, adapter, initial_state, bc):
+        """Шаг по дебиту, затем по давлению: режим модели не залипает.
+
+        set_bhp_control сбрасывает режим, min_bhp и последнее p_bhp прототипа.
+        Ожидание: второй шаг — p_wf = уставка 150 бар.
+        """
+        r1 = adapter.solve(initial_state, dt=DT, bc=_bc_rate(2.0, 100e5))
+        r2 = adapter.solve(r1.state, dt=DT, bc=bc)
+        assert r2.p_wf == pytest.approx(P_WF_PA, rel=1e-14)
 
 
 # ═══════════════════════════════════════════════════════════

@@ -412,6 +412,37 @@ class TestValidationTime:
         with pytest.raises(ValueError, match="p_wf"):
             load_config(_write_json(tmp_path, raw))
 
+    # ── Управление по дебиту нефти (FEAT-020) ──
+    # Каждый интервал задаёт ровно одно управление; поля другого управления
+    # отвергаются как мёртвые (DEBT-008), иначе пользователь решит, что они
+    # на что-то влияют.
+
+    @pytest.mark.parametrize("interval, field", [
+        # неизвестное управление: прежде проходило валидацию и падало в фабрике
+        ({"dt": 86400, "control": "rat", "p_wf": 10e6}, "control"),
+        # rate без дебита
+        ({"dt": 86400, "control": "rate", "min_bhp": 1e5}, "q_oil"),
+        # rate без нижней границы p_wf: при λ_o -> 0 p_wf ушло бы в -inf
+        ({"dt": 86400, "control": "rate", "q_oil": 1e-3}, "min_bhp"),
+        # отрицательный дебит — нагнетание, прототип его не поддерживает
+        ({"dt": 86400, "control": "rate", "q_oil": -1e-3, "min_bhp": 1e5}, "q_oil"),
+        ({"dt": 86400, "control": "rate", "q_oil": 1e-3, "min_bhp": 0.0}, "min_bhp"),
+        # p_wf при заданном дебите вычисляется, задавать его — ошибка
+        ({"dt": 86400, "control": "rate", "q_oil": 1e-3, "min_bhp": 1e5,
+          "p_wf": 10e6}, "p_wf"),
+        # поля управления по дебиту при управлении по давлению не читаются
+        ({"dt": 86400, "control": "pressure", "p_wf": 10e6, "q_oil": 1e-3}, "q_oil"),
+        ({"dt": 86400, "control": "pressure", "p_wf": 10e6, "min_bhp": 1e5}, "min_bhp"),
+    ], ids=["unknown_control", "rate_without_q_oil", "rate_without_min_bhp",
+            "rate_negative_q_oil", "rate_nonpositive_min_bhp",
+            "rate_with_p_wf", "pressure_with_q_oil", "pressure_with_min_bhp"])
+    def test_rate_control_validation(self, tmp_path, interval, field):
+        """Ошибки управления интервала называют поле, в котором они допущены."""
+        raw = _minimal_raw()
+        raw["time"]["history"] = [interval]
+        with pytest.raises(ValueError, match=field):
+            load_config(_write_json(tmp_path, raw))
+
 
 class TestMaxRetriesValidation:
     """Валидация numerics.max_retries — граница и тип (DEBT-007, BUG-003).
@@ -512,3 +543,17 @@ class TestHistoryIntervalDefaults:
         raw = _minimal_raw()
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.time.history[0].q_oil is None
+
+    def test_rate_interval_loads(self, tmp_path):
+        """Интервал с управлением по дебиту читается как задан (СИ, без пересчёта).
+
+        q_oil — м³ст/с, min_bhp — Па; p_wf при заданном дебите не задаётся.
+        """
+        raw = _minimal_raw()
+        raw["time"]["history"] = [
+            {"dt": 86400, "control": "rate", "q_oil": 2.0e-3, "min_bhp": 101325.0}]
+        h = load_config(_write_json(tmp_path, raw)).time.history[0]
+        assert h.control == "rate"
+        assert h.q_oil == 2.0e-3
+        assert h.min_bhp == 101325.0
+        assert h.p_wf is None

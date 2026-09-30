@@ -17,7 +17,30 @@ metadata:
 
 Аналог в InjectorGPN: `WellBottomHolePressureControl`, `WellSurfaceRateControl`, `WellReservoirFlowProfileControl` — разные стратегии управления скважиной.
 
-## ABC WellControl
+## Состояние после FEAT-020 (2026-09-30)
+
+> [!important] Управление — только данные
+> `WellControl` — базовый класс **без абстрактных методов**; `boundary_pressure`
+> удалён. `PressureControl(p_wf)` хранит забойное давление, `RateControl(q_oil,
+> min_bhp)` — дебит нефти, м³ст/с, и обязательную нижнюю границу $p_{wf}$, Па.
+> Управление читают только модули гидродинамики: `PrototypeHydroAdapter`
+> (`set_bhp_control` / `set_oil_rate_control`), `compute_fluxes` и тестовый
+> двойник (оба — только `PressureControl`).
+>
+> Фактическое давление на забойной грани после шага возвращает гидродинамика —
+> `HydroResult.p_wf` (адаптер берёт `well_rates(new_proto)['bhp_bar']`). Энергия
+> (JT-вклад забойной грани) и `Simulator` (`WellData.p_wf`) берут $p_{wf}$ только
+> оттуда — единый источник гидродинамических величин. Причина: при управлении по
+> дебиту $p_{wf}$ до шага неизвестно, а вариант «`RateControl.boundary_pressure`
+> по формуле прототипа» дублировал бы формулу и требовал ОФП, которых у вызывающих
+> не было (`relperm=None`). План: [[feat-020 oil-rate-control]].
+>
+> Постановка: `eq:bc_rate_well`, `eq:bc_rate_pwf` в `numerical_solver/doc/problem_statement.tex`.
+> Пример: `examples/15_oil_rate_ramp_up/`.
+
+Ниже — исходный проект модуля (до FEAT-020); код в нём устарел.
+
+## ABC WellControl (исходный проект — устарел)
 
 ```python
 from abc import ABC, abstractmethod
@@ -43,7 +66,7 @@ class WellControl(ABC):
 
 ## Конкретные реализации
 
-### PressureControl (реализуется сейчас)
+### PressureControl (исходный проект; `boundary_pressure` удалён в FEAT-020)
 
 ```python
 class PressureControl(WellControl):
@@ -56,7 +79,7 @@ class PressureControl(WellControl):
         return self.p_wf
 ```
 
-### RateControl (будущее, FEAT-020)
+### RateControl (FEAT-020 — реализован 2026-09-30, `min_bhp` обязателен)
 
 > [!warning] Проект разошёлся с реализацией
 > Здесь изначально проектировался `TotalRateControl` — **суммарный** расход,
@@ -88,6 +111,10 @@ class RateControl(WellControl):
 расхождения двух путей, ср. DEBT-021), либо адаптер возвращает фактическое
 $p_{wf}$ через `HydroResult` (прототип хранит его в `_last_effective_bhp_bar`).
 
+**Решено 2026-09-29 (пользователь), реализовано 2026-09-30:** второй вариант —
+`HydroResult.p_wf`, адаптер заполняет его из публичного `well_rates()`; см.
+раздел «Состояние после FEAT-020» выше.
+
 ## BoundaryConditions — контейнер
 
 ```python
@@ -118,7 +145,7 @@ class BoundaryConditions:
 }
 ```
 
-Сейчас: `"control": "pressure"` — единственный вариант, поле `control` опционально (по умолчанию pressure).
+С FEAT-020 (2026-09-30): `"control": "pressure"` (поле `p_wf`) или `"rate"` (поля `q_oil`, м³ст/с, и `min_bhp`, Па, оба обязательны); поле `control` опционально (по умолчанию pressure). Поля другого управления в интервале отвергаются валидацией как мёртвые, неизвестное значение `control` — тоже.
 
 В будущем: фабрика создаёт WellControl из JSON:
 
@@ -155,7 +182,9 @@ if interval.control == "pressure":
     well_ctrl = PressureControl(interval.p_wf)
 ```
 
-Simulator вызывает `well_ctrl.boundary_pressure(state, grid, pvt, relperm)`.
+~~Simulator вызывает `well_ctrl.boundary_pressure(state, grid, pvt, relperm)`.~~
+Устарело (FEAT-020): Simulator и энергия к управлению не обращаются, $p_{wf}$
+берут из `HydroResult.p_wf`.
 
 ## Граничные условия на контуре
 

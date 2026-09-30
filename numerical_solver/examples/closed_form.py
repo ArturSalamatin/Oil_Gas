@@ -45,6 +45,14 @@ Rs = Rs0 и корень Sg = 0; при p < pb дефицит Rs0 - Rs(p) > 0 к
 жидкостей в пористых средах», глава о двухфазном стационарном притоке).
 Профиль p(r) восстанавливается интегрированием (2) от контура внутрь.
 
+Какое p_wf подставлять — определяет ПОСЛЕДНИЙ интервал истории: решение
+описывает предел t -> inf при удержании последнего режима. При управлении
+по давлению это его уставка (FEAT-022). При управлении по дебиту нефти
+(FEAT-020) p_wf* находится обращением (3): q_o(p_wf) монотонно убывает,
+корень q_o(p_wf*) = q_last единственный; если q_last недостижим и при
+min_bhp — стационар при min_bhp (ограничение активно), при q_last = 0 —
+p_wf* = p_e.
+
 ──────────────────────────────────────────────────────────────────
 Область применимости и точность
 
@@ -129,10 +137,47 @@ class Closure:
 _CACHE = {}
 
 
+def _rate_closed(config, clo, pb, p_wf):
+    """Дебит стационара при забойном давлении p_wf, м³ст/с. Ур. (3)."""
+    p_e = config.initial_conditions.p0
+    k, h = config.rock.permeability, config.geometry.h
+    r_w, R_e = config.geometry.r_well, config.geometry.R_ext
+    # points=[pb]: подынтегральная функция негладкая в точке насыщения
+    # (ниже pb включается разгазирование, kro начинает падать). Точку
+    # передаём, только если она внутри отрезка: при заданном дебите p_wf
+    # стационара может оказаться выше pb (FEAT-020).
+    pts = [pb] if p_wf < pb < p_e else None
+    integral, _err = quad(clo.mob_o, p_wf, p_e, points=pts,
+                          limit=200, epsabs=1e-13, epsrel=1e-13)
+    return 2.0 * np.pi * k * h / np.log(R_e / r_w) * integral
+
+
+def stationary_pwf(config, pvt, relperm) -> float:
+    """p_wf стационара при удержании последнего интервала истории. Ур. (3)."""
+    last = config.time.history[-1]
+    if last.control == "pressure":
+        return float(last.p_wf)
+    # Управление по дебиту (FEAT-020): p_wf* из q_o(p_wf*) = q_last по (3).
+    # q_o(p_wf) монотонно убывает, поэтому корень единственный.
+    p_e = config.initial_conditions.p0
+    q_last = float(last.q_oil)
+    if q_last == 0.0:
+        return float(p_e)                  # скважина стоит, депрессии нет
+    Rs0 = config.initial_conditions.Rs0
+    clo = Closure(pvt, relperm, Rs0)
+    pb = float(pvt.pb(np.array([Rs0]))[0])
+    p_min = float(last.min_bhp)
+    if _rate_closed(config, clo, pb, p_min) <= q_last:
+        return p_min                       # в пределе действует ограничение
+    # xtol = 1 Па: отклонение дебита от q_last ~ xtol / (p_e - p_wf*) ~ 1e-7
+    return float(brentq(lambda x: _rate_closed(config, clo, pb, x) - q_last,
+                        p_min, p_e, xtol=1.0, rtol=1e-12))
+
+
 def solve_closed(config, pvt, relperm, r):
     """Замкнутое решение (3)+(2) на сетке r. Возвращает dict.
 
-    Ключи: q_o (дебит, м³ст/с), p [N], Sg [N], pb, r_b, closure.
+    Ключи: q_o (дебит, м³ст/с), p_wf (Па), p [N], Sg [N], pb, r_b, closure.
 
     Результат кэшируется: квадратура (3) и интегрирование (2) стоят заметно
     дороже словаря, а вызывают функцию несколько overlay подряд. В ключ
@@ -142,29 +187,30 @@ def solve_closed(config, pvt, relperm, r):
     r = np.asarray(r, float)
     Rs0 = config.initial_conditions.Rs0
     p_e = config.initial_conditions.p0
-    # p_wf ПОСЛЕДНЕГО интервала: стационар — предел t -> inf при
-    # удержании последнего режима. У примеров с постоянным p_wf это то
-    # же значение; у 13a первый интервал — 14.4 МПа, последний — 6 МПа
-    # (FEAT-022).
-    p_wf = config.time.history[-1].p_wf
     k = config.rock.permeability
     h = config.geometry.h
     r_w, R_e = config.geometry.r_well, config.geometry.R_ext
 
-    key = (float(r[0]), float(r[-1]), len(r), Rs0, p_e, p_wf, k, h,
+    # Ключ — по параметрам последнего интервала, а не по вычисленному
+    # p_wf: при управлении по дебиту обращение (3) стоит 1.2-4 с (FEAT-020).
+    last = config.time.history[-1]
+    key = (float(r[0]), float(r[-1]), len(r), Rs0, p_e, last.control,
+           last.p_wf, last.q_oil, last.min_bhp, k, h,
            config.pvt.model, config.relperm.model)
     if key in _CACHE:
         return _CACHE[key]
+
+    # p_wf стационара — предел t -> inf при удержании последнего режима:
+    # при давлении — уставка последнего интервала (у 13a первый интервал —
+    # 14.4 МПа, последний — 6 МПа, FEAT-022), при дебите — обращение (3)
+    # по его дебиту (FEAT-020).
+    p_wf = stationary_pwf(config, pvt, relperm)
 
     clo = Closure(pvt, relperm, Rs0)
     pb = float(pvt.pb(np.array([Rs0]))[0])
 
     # ── Дебит по формуле (3) ──
-    # points=[pb]: подынтегральная функция негладкая в точке насыщения
-    # (ниже pb включается разгазирование, kro начинает падать).
-    integral, _err = quad(clo.mob_o, p_wf, p_e, points=[pb],
-                          limit=200, epsabs=1e-13, epsrel=1e-13)
-    q_o = 2.0 * np.pi * k * h / np.log(R_e / r_w) * integral
+    q_o = _rate_closed(config, clo, pb, p_wf)
 
     # ── Профиль по уравнению (2), от контура внутрь ──
     C = q_o / (2.0 * np.pi * k * h)
@@ -182,7 +228,8 @@ def solve_closed(config, pvt, relperm, r):
     # модуля, у Кори с порогом S_gc второй критерий занижает r_b на 13 %.
     r_b = _front_radius(r, p_ana, pb)
 
-    _CACHE[key] = dict(q_o=q_o, p=p_ana, Sg=Sg_ana, pb=pb, r_b=r_b, closure=clo)
+    _CACHE[key] = dict(q_o=q_o, p_wf=p_wf, p=p_ana, Sg=Sg_ana, pb=pb, r_b=r_b,
+                       closure=clo)
     return _CACHE[key]
 
 
@@ -282,12 +329,17 @@ def report_closed(config, history, grid, simulator) -> dict:
     Sg_num = history.states[-1].Sg
     q_num = abs(history.hydro_results[-1].G_o[0])
     # Та же депрессия, по которой построено решение (solve_closed)
-    dep = config.initial_conditions.p0 - config.time.history[-1].p_wf
+    dep = config.initial_conditions.p0 - cl["p_wf"]
     d_p = float(np.abs(cl["p"] - p_num).max())
 
     print("── Замкнутое решение (GOR = Rs0): из расчёта ничего не берётся ──")
     print(f"  q_o: {cl['q_o']:.6e} аналитика vs {q_num:.6e} расчёт "
           f"({abs(cl['q_o'] - q_num) / q_num * 100:.3f} %)")
+    if config.time.history[-1].control == "rate":
+        # При заданном дебите решение построено обращением (3) по нему:
+        # совпадение q_o — по построению, содержательна сверка профиля p.
+        print(f"  (дебит задан: совпадение q_o по построению; "
+              f"p_wf* = {cl['p_wf'] / 1e6:.4f} МПа)")
     print(f"  max|p_ана - p_чис| = {d_p / 1e3:.2f} кПа "
           f"({d_p / dep * 100:.3f} % депрессии)")
     print(f"  Sg макс: {cl['Sg'].max():.5f} аналитика vs "

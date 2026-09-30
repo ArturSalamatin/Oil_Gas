@@ -73,7 +73,7 @@ numerical_solver/
 │   │   └── tridiag.py          # TridiagEnergySolver
 │   │
 │   ├── fluxes.py               # Вычисление потоков: G, Q, u, m, Gm + upstream
-│   ├── bc.py                   # Граничные условия: ABC WellControl, PressureControl
+│   ├── bc.py                   # Управление скважиной (данные): WellControl, PressureControl, RateControl (FEAT-020)
 │   ├── simulator.py            # 6. Оркестратор: Simulator, TimeSchedule, ScheduleInterval
 │   ├── factory.py              # 7.1. Фабрика: SimulatorFactory.from_config()
 │   ├── log.py                  # Логирование: user + dev уровни
@@ -156,6 +156,14 @@ numerical_solver/
 | `velocities(state) → (u_o, u_g)` | Скорости Дарси на гранях |
 
 Контракт минимален — чтобы внешний модуль коллеги мог быть обёрнут через Adapter с минимальными усилиями.
+
+**Единый источник гидродинамических величин (FEAT-020, 2026-09-30).** Результат
+шага — `HydroResult` — целиком формирует модуль гидродинамики: потоки, расходы,
+новое состояние и фактическое давление на забойной грани `p_wf`. Энергия и
+`Simulator` берут гидродинамику только из него и к управлению скважиной
+(`bc.well`) не обращаются; `WellControl` — данные, их читает только
+гидродинамика. Причина: при управлении по дебиту $p_{wf}$ до шага неизвестно,
+а второй путь его вычисления разошёлся бы с первым (ср. DEBT-021).
 
 ### 5. EnergySolver — теплоперенос
 

@@ -59,7 +59,8 @@ def _zero_hydro(state, N_cells):
     Z = np.zeros(N_cells + 1)
     return HydroResult(
         state=state, G_o=Z, G_g=Z, G_free_gas=Z,
-        Q_o=Z, Q_g=Z, u_o=Z, u_g=Z, m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z)
+        Q_o=Z, Q_g=Z, u_o=Z, u_g=Z, m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z,
+        p_wf=state.p[0])   # потока нет: давление на забое = p[0]
 
 
 def _make_pvt(mu_JT_oil=0.0, mu_JT_gas=0.0, L_degas=0.0):
@@ -1336,3 +1337,86 @@ class TestAdvectiveFormDetectors:
             "при N = 1 правая часть собрана неверно")
         assert a[0] == 0.0 and c[0] == 0.0, (
             "при N = 1 связей с соседями нет")
+
+
+# ═══════════════════════════════════════════════════════════
+# Источник p_wf для энергии — только HydroResult (FEAT-020)
+# ═══════════════════════════════════════════════════════════
+
+class _NoAccessWell:
+    """Управление-ловушка: любое обращение к атрибуту — ошибка теста."""
+
+    def __getattr__(self, name):
+        raise AssertionError(f"энергия обратилась к bc.well.{name}")
+
+
+class TestWellPressureSource:
+    """Энергия берёт давление на забойной грани из HydroResult, не из bc.well.
+
+    JT-вклад забойной грани (eq:QJT_disc) для ячейки 0 равен
+    μ_JT·Φ⁺_{1/2}·(p[0] − p_wf): схема против потока берёт левую грань с Φ⁺.
+    При добыче Φ_{1/2} < 0, Φ⁺ = 0, и p_wf на T не влияет (BUG-015); при
+    притоке через забой (Φ⁺ > 0) — влияет. Это единственный режим, где
+    источник p_wf наблюдаем.
+    """
+
+    @staticmethod
+    def _production():
+        """Однофазная добыча: лог-профиль p(r), потоки к скважине (Q_o[0] < 0)."""
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N, K_PERM)
+        pvt = _make_pvt(mu_JT_oil=4e-7)
+        p = _log_pressure_profile(grid, P_WF, P0)
+        state = SimulationState(p=p, Sg=np.zeros(N), Rs=np.full(N, RS0),
+                                T=np.full(N, T0), regime=np.full(N, 2, dtype=int),
+                                t=0.0)
+        hydro = compute_fluxes(state, grid, pvt, CoreyRP(0.2, 0.05, 2.0, 2.0),
+                               _bc(T_EXT))
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+        # Управление-ловушка: энергия не вправе читать bc.well
+        bc_trap = BoundaryConditions(well=_NoAccessWell(), p_ext=P0,
+                                     T_ext=T_EXT, Rs_ext=RS0)
+        return solver, state, hydro, bc_trap
+
+    def test_energy_does_not_read_well_control(self):
+        """Шаг энергии проходит, не обращаясь к bc.well; T конечна.
+
+        Ловит: обход HydroResult — чтение p_wf из граничного условия.
+        """
+        solver, state, hydro, bc_trap = self._production()
+        T_new = solver.solve(hydro, state, DT, bc_trap)
+        assert np.all(np.isfinite(T_new))
+
+    def test_inflow_temperature_depends_on_hydro_pwf(self):
+        """Приток через забой: T[0] зависит от hydro_result.p_wf.
+
+        HydroResult строится подменой потока на забойной грани, а не через
+        compute_fluxes с p_wf > p[0]: план DEBT-019 запрещает там приток.
+        Энергия приток не запрещает, её путь с Φ⁺_{1/2} > 0 проверяем.
+        Условия: Q_o[0] = +|Q_o[0]| (~1e-2 м³/с), μ_JT = 4e-7 К/Па,
+        p_wf меняется на 1 МПа. Ожидание: |ΔT[0]| > 1e-3 К (замер аудита
+        FEAT-020: 0.40 К).
+        Ловит: энергия игнорирует hydro_result.p_wf.
+        """
+        from dataclasses import replace
+        solver, state, hydro, bc_trap = self._production()
+        Q_o = hydro.Q_o.copy()
+        Q_o[0] = abs(Q_o[0])
+        h_in = replace(hydro, Q_o=Q_o)
+        assert h_in.Q_o[0] > 0.0
+
+        T_a = solver.solve(h_in, state, DT, bc_trap)
+        T_b = solver.solve(replace(h_in, p_wf=h_in.p_wf - 1e6), state, DT, bc_trap)
+        assert np.all(np.isfinite(T_a)) and np.all(np.isfinite(T_b))
+        assert abs(T_a[0] - T_b[0]) > 1e-3
+
+    def test_production_temperature_independent_of_pwf(self):
+        """Добыча: T побитово не зависит от p_wf (Φ⁺_{1/2} = 0).
+
+        Фиксирует факт eq:QJT_disc при потоке к скважине (см. BUG-015).
+        Ловит: случайное появление забойного вклада при добыче (двойной учёт).
+        """
+        from dataclasses import replace
+        solver, state, hydro, bc_trap = self._production()
+        T_a = solver.solve(hydro, state, DT, bc_trap)
+        T_b = solver.solve(replace(hydro, p_wf=1e5), state, DT, bc_trap)
+        assert np.array_equal(T_a, T_b)

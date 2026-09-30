@@ -6,6 +6,7 @@ Eq. 8, 9, 24 problem_statement.tex. Конвенция: >0 = от скважин
 import numpy as np
 
 from .state import SimulationState, HydroResult, BoundaryConditions
+from .bc import PressureControl
 from .grid.base import Grid
 from .pvt.base import HydroPVT, RelPermModel
 
@@ -40,8 +41,14 @@ def compute_fluxes(state: SimulationState, grid: Grid,
     mob_g = krg / (mu_g * Bg)       # krg/(μg·Bg) — для G_free_gas
     lam_g = krg / mu_g              # krg/μg — для Q_g
 
-    # Забойное давление
-    p_wf = bc.well.boundary_pressure(state, grid, pvt, relperm)
+    # Забойное давление. compute_fluxes — гидродинамический путь тестов
+    # и дублёров и сам читает управление (FEAT-020). Заданный дебит здесь
+    # не поддержан: p_wf пришлось бы искать итерациями.
+    if not isinstance(bc.well, PressureControl):
+        raise NotImplementedError(
+            f"compute_fluxes поддерживает только PressureControl, "
+            f"получено {type(bc.well).__name__}")
+    p_wf = bc.well.p_wf
 
     # PVT на контуре (однофазная зона: Sg=0)
     p_ext_arr = np.array([bc.p_ext])
@@ -167,4 +174,5 @@ def compute_fluxes(state: SimulationState, grid: Grid,
         u_o=u_o, u_g=u_g,
         m_o=m_o, m_g=m_g,
         Gm_o=Gm_o, Gm_g=Gm_g,
+        p_wf=p_wf,
     )

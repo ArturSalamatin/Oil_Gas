@@ -200,6 +200,25 @@ class TestSimulatorRun:
         times = np.array(history.times)
         assert np.all(np.diff(times) > 0)
 
+    def test_well_data_pwf_from_hydro_result(self):
+        """p_wf в записи скважины — из HydroResult, а не из граничного условия.
+
+        Единый источник гидродинамических величин (FEAT-020): при управлении
+        по дебиту p_wf известно только после гидро-шага, поэтому Simulator
+        обязан брать его из результата шага. Запись 0 — начальное состояние:
+        и WellData, и нулевой HydroResult несут p[0] (simulator.py, _zero_*).
+        Ловит: второй источник p_wf в выводе.
+        """
+        grid, pvt, hydro, energy, _ = _make_simulator()
+        schedule = _single_interval_schedule(dt_hist=7200.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        history = sim.run(_initial_state())
+
+        assert history.well_data[0].p_wf == history.states[0].p[0]
+        assert history.hydro_results[0].p_wf == history.states[0].p[0]
+        for n in range(1, history.n_saved):
+            assert history.well_data[n].p_wf == history.hydro_results[n].p_wf
+
 
 # ═══════════════════════════════════════════════════════════
 # C. Factory: from_config → run

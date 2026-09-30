@@ -51,7 +51,7 @@ from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 14 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 15 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -69,6 +69,7 @@ ALL_EXAMPLES = [
     "11_degassing_at_boundary",
     "12_large_drainage_radius",
     "13a_pwf_ramp_down",
+    "15_oil_rate_ramp_up",
 ]
 
 # Порог сверки. Ниже 1e-13 начинается шум разного порядка суммирования
@@ -599,10 +600,11 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
 
     Q_T_internal, Q_T_ext = _ref_conductive(grid, props['lambda_eff'])
 
-    # Забойное давление задано НА ГРАНИ и входит в JT-вклад забойной
-    # грани как значение "за гранью" (eq:QJT_disc, ssec:bc_disc).
+    # Забойное давление на ГРАНИ — фактическое давление шага из HydroResult
+    # (FEAT-020, тот же источник, что у решателя); входит в JT-вклад
+    # забойной грани как значение "за гранью" (eq:QJT_disc, ssec:bc_disc).
     # Для температуры и состава такого значения нет — там вклад нулевой.
-    p_wf = bc.well.boundary_pressure(st, grid, pvt, None)
+    p_wf = hydro_result.p_wf
 
     J_jt = _ref_jt(Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
                    hydro_result.Q_o, hydro_result.Q_g, st.p, N, ext, p_wf)

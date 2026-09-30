@@ -23,7 +23,7 @@ from gpn_multiphase_solver.state import (
     SimulationState, HydroResult, BoundaryConditions,
     WellData, SimulationHistory,
 )
-from gpn_multiphase_solver.bc import WellControl, PressureControl
+from gpn_multiphase_solver.bc import WellControl, PressureControl, RateControl
 from gpn_multiphase_solver.fluxes import compute_fluxes
 
 
@@ -69,7 +69,7 @@ def _compute_reference_face(pvt, rp, grid, state, bc, f):
     krg = rp.krg(Sg)
 
     if f == 0:
-        p_wf = bc.well.boundary_pressure(state, grid, pvt, rp)
+        p_wf = bc.well.p_wf    # эталон: только PressureControl
         dp = p_wf - p[0]
         T_f = grid.trans_well
         up = 0
@@ -676,7 +676,8 @@ class TestSimulationHistory:
             m_o=np.array([-9.0, -9.0]),
             m_g=np.zeros(2),
             Gm_o=np.array([-8.5, -8.5]),
-            Gm_g=np.array([-0.425, -0.425]))
+            Gm_g=np.array([-0.425, -0.425]),
+            p_wf=1e7)
         wd = WellData(q_o_std=0.01, q_g_std=0.5, m_o_well=8.5,
                       m_g_well=0.425, p_wf=1e7, T_wf=350.0)
 
@@ -698,7 +699,8 @@ class TestSimulationHistory:
                 state=s, G_o=np.zeros(2), G_g=np.zeros(2),
                 G_free_gas=np.zeros(2), Q_o=np.zeros(2), Q_g=np.zeros(2),
                 u_o=np.zeros(2), u_g=np.zeros(2), m_o=np.zeros(2),
-                m_g=np.zeros(2), Gm_o=np.zeros(2), Gm_g=np.zeros(2))
+                m_g=np.zeros(2), Gm_o=np.zeros(2), Gm_g=np.zeros(2),
+                p_wf=1e7)
             wd = WellData(q_o_std=0.0, q_g_std=0.0, m_o_well=0.0,
                           m_g_well=0.0, p_wf=1e7, T_wf=350.0)
             h.append(t=float(i), state=s, hydro=hr, well=wd)
@@ -720,7 +722,19 @@ class TestPressureControl:
 
     def test_returns_p_wf(self):
         pc = PressureControl(15e6)
-        assert pc.boundary_pressure(None, None, None, None) == 15e6
+        assert pc.p_wf == 15e6
 
     def test_isinstance_well_control(self):
         assert isinstance(PressureControl(1e7), WellControl)
+
+    def test_rate_control_not_supported(self, state_1ph, grid_1ph, pvt, relperm):
+        """compute_fluxes — путь тестов и дублёров, управление по дебиту не поддержано.
+
+        При заданном дебите p_wf здесь пришлось бы искать итерациями; в
+        рабочем расчёте его выражает прототип (FEAT-020). Ловит: молчаливый
+        расчёт с неверным p_wf вместо явного отказа.
+        """
+        bc = BoundaryConditions(well=RateControl(1e-3, 101325.0), p_ext=P_EXT,
+                                T_ext=350.0, Rs_ext=RS0)
+        with pytest.raises(NotImplementedError):
+            compute_fluxes(state_1ph, grid_1ph, pvt, relperm, bc)

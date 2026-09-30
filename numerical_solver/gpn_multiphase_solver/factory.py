@@ -20,7 +20,7 @@ from .pvt.hydro_to_blackoil_adapter import HydroPVTtoBlackOilAdapter
 from .hydro.prototype_adapter import PrototypeHydroAdapter
 from .energy.tridiag import TridiagEnergySolver
 from .state import SimulationState, BoundaryConditions
-from .bc import PressureControl
+from .bc import PressureControl, RateControl
 from .simulator import Simulator, TimeSchedule, ScheduleInterval
 from .io.config import SimulationConfig
 from .units import BAR_TO_PA, CP_TO_PA_S, M2_TO_MD
@@ -188,7 +188,10 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     # прототипа, а не управление скважиной по ходу расчёта (им занимается
     # WellControl каждого интервала), поэтому первого интервала достаточно
     # даже при расписании из десятков интервалов (DEBT-013).
-    p_bhp_bar = config.time.history[0].p_wf / BAR_TO_PA
+    # При заданном дебите p_wf в конфиге нет — берём min_bhp (обязателен при
+    # control='rate', FEAT-020); до первого solve() значение не используется.
+    h0 = config.time.history[0]
+    p_bhp_bar = (h0.p_wf if h0.control == "pressure" else h0.min_bhp) / BAR_TO_PA
     p_outer_bar = ic.p0 / BAR_TO_PA
 
     model = RadialBlackOilModel(
@@ -318,7 +321,7 @@ def _create_schedule(config: SimulationConfig) -> TimeSchedule:
     """Создать TimeSchedule из TimeConfig + InitialConfig.
 
     Преобразует HistoryInterval (данные из JSON) → ScheduleInterval (runtime):
-      HistoryInterval.control + p_wf → PressureControl → BoundaryConditions.
+      HistoryInterval.control + p_wf / q_oil, min_bhp → WellControl → BoundaryConditions.
     """
     ic = config.initial_conditions
 
@@ -341,10 +344,11 @@ def _create_schedule(config: SimulationConfig) -> TimeSchedule:
 
 
 def _create_well_control(hist, index: int):
-    """Создать WellControl из HistoryInterval."""
+    """Создать WellControl из HistoryInterval (control проверен в _validate)."""
     if hist.control == "pressure":
         return PressureControl(hist.p_wf)
-    else:
-        raise ValueError(
-            f"history[{index}]: control='{hist.control}' не поддерживается. "
-            f"Доступные: 'pressure'.")
+    if hist.control == "rate":
+        return RateControl(hist.q_oil, hist.min_bhp)
+    raise ValueError(
+        f"history[{index}]: control='{hist.control}' не поддерживается. "
+        f"Доступные: 'pressure', 'rate'.")

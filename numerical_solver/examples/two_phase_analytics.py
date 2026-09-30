@@ -373,8 +373,9 @@ def report(history, grid, config, pvt) -> dict:
     p_num = history.states[-1].p
     q_num = abs(history.hydro_results[-1].G_o[0])
     dp_max = float(np.abs(cl["p"] - p_num).max())
-    # Та же депрессия, по которой solve_closed строит решение (FEAT-022)
-    dep = config.initial_conditions.p0 - config.time.history[-1].p_wf
+    # Та же депрессия, по которой solve_closed строит решение (FEAT-022);
+    # p_wf берётся из решения — при управлении по дебиту оно вычислено (FEAT-020)
+    dep = config.initial_conditions.p0 - cl["p_wf"]
     print("  E. Замкнутое решение (дебит квадратурой, профиль ОДУ):")
     print(f"     q_o = {cl['q_o']:.6e} м³ст/с (аналитика) vs "
           f"{q_num:.6e} (расчёт), расхожд. {abs(cl['q_o']-q_num)/q_num*100:.3f} %")

@@ -77,8 +77,8 @@ def measure(example: str):
             props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'], N, ext)
 
-        # Забойное давление задано НА ГРАНИ
-        p_wf = bc.well.boundary_pressure(st, grid, solver._pvt, None)
+        # Забойное давление на ГРАНИ — фактическое давление шага (FEAT-020)
+        p_wf = hydro_result.p_wf
 
         snap.append(dict(
             rw=float(grid.r_faces[0]),

@@ -3,7 +3,9 @@
 Конвертирует:
   - давление: Па ↔ бар (на входе и выходе)
   - режим: gas_active ↔ regime
-  - управление: WellControl → set_bhp_control
+  - управление: PressureControl → set_bhp_control (Па → бар),
+    RateControl → set_oil_rate_control (м³ст/с → м³ст/сут, Па → бар)
+  - забойное давление: bhp_bar прототипа → HydroResult.p_wf (Па)
 
 НЕ конвертирует:
   - Rs, Sg (безразмерные)
@@ -24,8 +26,8 @@ from .base import HydroSolver
 from ..state import SimulationState, HydroResult, BoundaryConditions
 from ..grid.base import Grid
 from ..pvt.base import HydroPVT
-from ..bc import PressureControl
-from ..units import BAR_TO_PA
+from ..bc import PressureControl, RateControl
+from ..units import BAR_TO_PA, DAY_TO_S
 from ..log import user_log, dev_log
 
 
@@ -56,12 +58,19 @@ class PrototypeHydroAdapter(HydroSolver):
         from radial_blackoil.state import BlackOilState
 
         # ── Шаг 1: управление скважиной ──
+        # Прототип ждёт бар и м³ст/сут; конфиг и WellControl — в СИ.
         well = bc.well
         if isinstance(well, PressureControl):
             self._model.set_bhp_control(well.p_wf / BAR_TO_PA)
+        elif isinstance(well, RateControl):
+            # Дебит нефти: p_bhp выражается из уравнения притока внутри
+            # Ньютона (blackoil.py, _well_fluxes; eq:bc_rate_pwf); min_bhp —
+            # нижняя граница, при p[0] <= min_bhp скважина закрыта.
+            self._model.set_oil_rate_control(well.q_oil * DAY_TO_S,
+                                             well.min_bhp / BAR_TO_PA)
         else:
             raise NotImplementedError(
-                f"PrototypeHydroAdapter поддерживает только PressureControl, "
+                f"PrototypeHydroAdapter поддерживает PressureControl и RateControl, "
                 f"получено {type(well).__name__}")
 
         # ── A-retry: подшаги при расходимости ──
@@ -228,6 +237,13 @@ class PrototypeHydroAdapter(HydroSolver):
         Gm_o = self._pvt.rho_o_std * G_o
         Gm_g = self._pvt.rho_g_std * G_g
 
+        # ── Шаг 9: фактическое забойное давление ──
+        # Результат шага при любом управлении: при OIL_RATE прототип
+        # выражает p_bhp из уравнения притока (blackoil.py, _well_fluxes),
+        # при BHP и p[0] <= уставки скважина закрыта и p_bhp = p[0].
+        # well_rates считает на том же new_proto, что и потоки выше.
+        p_wf = self._model.well_rates(new_proto)['bhp_bar'] * BAR_TO_PA
+
         return HydroResult(
             state=new_state,
             G_o=G_o, G_g=G_g, G_free_gas=G_free_gas,
@@ -235,5 +251,6 @@ class PrototypeHydroAdapter(HydroSolver):
             u_o=u_o, u_g=u_g,
             m_o=m_o, m_g=m_g,
             Gm_o=Gm_o, Gm_g=Gm_g,
+            p_wf=p_wf,
             n_substeps=n_substeps,
         )

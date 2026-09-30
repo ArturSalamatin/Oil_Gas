@@ -45,8 +45,9 @@ class LogProfileHydroStub(HydroSolver):
         grid = self._grid
         N = grid.N
 
-        # Забойное давление из стратегии управления
-        p_wf = bc.well.boundary_pressure(state, grid, self._pvt, self._relperm)
+        # Забойное давление из стратегии управления: двойник — модуль
+        # гидродинамики, он сам читает управление (только PressureControl)
+        p_wf = bc.well.p_wf
 
         # Логарифмический профиль давления (точное решение стационарного
         # уравнения фильтрации при постоянных свойствах)

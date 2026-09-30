@@ -162,14 +162,14 @@ class Simulator:
                 # Члены баланса накоплены по ВСЕМ подшагам интервала,
                 # поэтому запись реже подшага их не портит.
                 if step == n_sub - 1:
-                    p_wf = interval.bc.well.boundary_pressure(
-                        state, self._grid, self._pvt, None)
                     well = WellData(
                         q_o_std=-hydro_result.G_o[0],
                         q_g_std=-hydro_result.G_g[0],
                         m_o_well=self._pvt.rho_o_std * (-hydro_result.G_o[0]),
                         m_g_well=self._pvt.rho_g_std * (-hydro_result.G_g[0]),
-                        p_wf=p_wf,
+                        # Фактическое давление шага из HydroResult (FEAT-020):
+                        # при управлении по дебиту оно не задано, а вычислено.
+                        p_wf=hydro_result.p_wf,
                         T_wf=state.T[0],
                     )
                     history.append(t=state.t, state=state,
@@ -255,10 +255,12 @@ class Simulator:
         """HydroResult с нулевыми потоками (для начального состояния)."""
         N = self._grid.N
         Z = np.zeros(N + 1)
+        # p_wf = p[0]: потока нет — то же значение, что в _zero_well_data
         return HydroResult(
             state=state, G_o=Z, G_g=Z, G_free_gas=Z,
             Q_o=Z, Q_g=Z, u_o=Z, u_g=Z,
-            m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z)
+            m_o=Z, m_g=Z, Gm_o=Z, Gm_g=Z,
+            p_wf=state.p[0])
 
     def _zero_well_data(self, state: SimulationState) -> WellData:
         """WellData с нулевыми дебитами (для начального состояния)."""

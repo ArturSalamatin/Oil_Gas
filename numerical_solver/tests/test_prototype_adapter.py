@@ -140,10 +140,9 @@ class TestSetControl:
         assert model.p_bhp_bar == pytest.approx(P_WF_PA / BAR_TO_PA, rel=1e-14)
 
     def test_unsupported_control_raises(self, adapter, initial_state):
-        """Не-PressureControl → NotImplementedError."""
+        """Неизвестное адаптеру управление → NotImplementedError."""
         class FakeControl(WellControl):
-            def boundary_pressure(self, state, grid, pvt, relperm):
-                return 1e7
+            pass
         bc_fake = BoundaryConditions(
             well=FakeControl(), p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)
         with pytest.raises(NotImplementedError):

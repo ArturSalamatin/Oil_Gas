@@ -54,7 +54,6 @@ date: 2026-07-02
 | Martin 1959 | Теоретическое обоснование многофазного PTA | [[Martin 1959 — многофазный PTA]] |
 | Ozkan, Brown, Raghavan, Kazemi 2011 | Tri-linear flow для SRV | [[Ozkan Raghavan Chen 2011 — tri-linear flow для SRV]] |
 | Palacio, Blasingame 1993 | Decline curve type curves для газовых скважин | [[Palacio Blasingame 1993 — decline curve type curves для газа]] |
-| Panfilov, Rasoulzadeh 2010 | Метод отрицательных насыщенностей с диффузией и капиллярностью | [[Panfilov Rasoulzadeh 2010 — отрицательные насыщенности с диффузией и капиллярностью]] |
 | Perrine 1956 | PTA при многофазном потоке, суммарная подвижность | [[Perrine 1956 — PTA при многофазном потоке]] |
 | Raghavan et al 1999 | PTA для газоконденсатных скважин | [[Raghavan 1999 — PTA газоконденсат]] |
 | Raghavan ~1979 | Влияние $t_p$ на type curve analysis | [[Raghavan — влияние tp на type curve]] |

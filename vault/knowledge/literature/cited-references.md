@@ -16,13 +16,18 @@ date: 2026-07-02
 | Al-Hussainy, Ramey 1966 | Применение $m(p)$ к ГДИС и прогнозу дебитов | [[Al-Hussainy Ramey 1966 — применение m(p) к ГДИС]] |
 | Aronofsky, Jenkins 1954 | Нестационарный радиальный поток газа, жидкостная аналогия | [[Aronofsky Jenkins 1954 — нестационарный радиальный поток газа]] |
 | Ayan, Lee 1988 | Buildup при многофазном потоке, критика Perrine–Martin | [[Ayan Lee 1988 — buildup при многофазном потоке]] |
+| Bedrikovetsky 1993 | Математическая теория вытеснения, дробный поток, смешивающееся вытеснение | [[Bedrikovetsky 1993 — математическая теория вытеснения нефти и газа]] |
 | Behmanesh, Hamdi, Clarkson 2015 | Двухфазный поток в tight oil HF | [[Behmanesh Hamdi Clarkson 2015 — двухфазный поток в tight oil HF]] |
+| Ben-Omran, Green 1978 | Композиционная модель, неравновесный источник вместо переключения переменных | [[Ben-Omran Green 1978 — композиционная модель с методом подвижных точек]] |
 | Blasingame, Lee 1986 | Variable-rate PSS для газа | [[Blasingame Lee 1986 — variable-rate reservoir limits testing]] |
 | Bourdet 2002 | Монография ГДИС, radial composite, derivative | [[Bourdet 2002 — монография ГДИС]] |
 | Bostic, Agarwal, Carter 1979 | Анализ промысловых данных MHF gas well | [[Bostic Agarwal Carter 1979 — MHF gas well]] |
 | Brown, Ozkan, Raghavan, Kazemi 2011 | PTA для HF в нетрадиционных коллекторах | [[Brown Ozkan Raghavan Kazemi 2011 — PTA для HF в нетрадиционных коллекторах]] |
+| Bruining, Van Duijn 2006 | Бегущие волны при конечной скорости конденсации пара | [[Bruining Van Duijn 2006 — бегущие волны при конечной скорости конденсации пара]] |
+| Брусиловский 2002 | Фазовые превращения при разработке месторождений | [[Брусиловский 2002 — фазовые превращения при разработке месторождений]] |
 | Carslaw, Jaeger 1959 | Теплопроводность в твёрдых телах, аналитические решения | [[Carslaw Jaeger 1959 — теплопроводность в твёрдых телах]] |
 | Carter 1962 | Нестационарный радиальный поток реального газа, wellbore storage | [[Carter 1962 — нестационарный радиальный поток газа]] |
+| Chen, Huan, Ma 2006 | Монография по численным методам многофазной фильтрации, стандартное переключение переменных | [[Chen Huan Ma 2006 — вычислительные методы многофазной фильтрации]] |
 | Chu, Reynolds, Raghavan 1986 | PTA двухфазного потока | [[Chu Reynolds Raghavan 1986 — PTA двухфазного потока]] |
 | Corbett, Hamdi, Gurav 2012 | Ramp-эффект в layered reservoirs | [[Corbett Hamdi Gurav 2012 — ramp-эффект в layered reservoirs]] |
 | Cinco-Ley, Samaniego, Dominguez 1978 | Трещина конечной проводимости, type curves | [[Cinco-Ley Samaniego 1978 — трещина конечной проводимости]] |
@@ -34,6 +39,7 @@ date: 2026-07-02
 | Fraim, Wattenbarger 1988 | Decline curve при многофазном потоке | [[Fraim Wattenbarger 1988 — decline curve при многофазном потоке]] |
 | Earlougher 1977 | ГДИС, монография SPE | [[Earlougher 1977 — ГДИС монография]] |
 | Eilerts, Sumner, Potts 1965 | Радиальный поток газоконденсата | [[Eilerts 1965 — радиальный поток газоконденсата]] |
+| Ентов 1997 | Нелинейные волны в физико-химической гидродинамике ПНП | [[Ентов 1997 — нелинейные волны в физико-химической гидродинамике ПНП]] |
 | Gringarten et al. 2000 | PTA газоконденсата с rate-dependent ОФП | [[Gringarten 2000 — PTA газоконденсата с rate-dependent ОФП]] |
 | He 1997 | Sensitivity coefficients для обратных задач ГДИС | [[He 1997 — sensitivity coefficients для обратных задач ГДИС]] |
 | Gringarten, Ramey, Raghavan 1974 | Типовые кривые для вертикальной трещины бесконечной проводимости | [[Gringarten Ramey Raghavan 1974 — типовые кривые для вертикальной трещины]] |
@@ -44,23 +50,31 @@ date: 2026-07-02
 | Jones, Vo, Raghavan 1989 | Buildup в газоконденсатных скважинах | [[Jones Vo Raghavan 1989 — buildup в газоконденсатных скважинах]] |
 | Kamal 2009 | Монография ГДИС, SPE Monograph 23 | [[Kamal 2009 — монография ГДИС SPE 23]] |
 | Kamal, Pan 2010 | Абсолютная проницаемость и насыщенности из PTA | [[Kamal Pan 2010 — абсолютная проницаемость из PTA]] |
+| Lake 1989 | Методы увеличения нефтеотдачи, теория дробного потока, упрощение $U \approx H$ | [[Lake 1989 — методы увеличения нефтеотдачи]] |
 | Martin 1959 | Теоретическое обоснование многофазного PTA | [[Martin 1959 — многофазный PTA]] |
 | Ozkan, Brown, Raghavan, Kazemi 2011 | Tri-linear flow для SRV | [[Ozkan Raghavan Chen 2011 — tri-linear flow для SRV]] |
 | Palacio, Blasingame 1993 | Decline curve type curves для газовых скважин | [[Palacio Blasingame 1993 — decline curve type curves для газа]] |
+| Panfilov, Rasoulzadeh 2010 | Метод отрицательных насыщенностей с диффузией и капиллярностью | [[Panfilov Rasoulzadeh 2010 — отрицательные насыщенности с диффузией и капиллярностью]] |
 | Perrine 1956 | PTA при многофазном потоке, суммарная подвижность | [[Perrine 1956 — PTA при многофазном потоке]] |
 | Raghavan et al 1999 | PTA для газоконденсатных скважин | [[Raghavan 1999 — PTA газоконденсат]] |
 | Raghavan ~1979 | Влияние $t_p$ на type curve analysis | [[Raghavan — влияние tp на type curve]] |
 | Raghavan 1976 | Псевдодавление для solution gas drive (→ расширенная) | [[Raghavan 1976 — псевдодавление для solution gas drive]] |
+| Rhee, Aris, Amundson 1986 | Уравнения в частных производных первого порядка, условия Гюгонио | [[Rhee Aris Amundson 1986 — уравнения в частных производных первого порядка]] |
 | Scott 1979 | Трещины в tight gas, точечные функции $(\mu c_t)(t)$ | [[Scott 1979 — трещины в tight gas]] |
 | Shahamat, Clarkson 2016 | Многоскважинный FMB | [[Shahamat Clarkson 2016 — многоскважинный FMB]] |
 | Tabatabaie, Pooladi-Darvish 2017 | Многофазный линейный поток в tight oil | [[Tabatabaie Pooladi-Darvish 2017 — многофазный линейный поток в tight oil]] |
 | Uzun, Kurtoglu, Kazemi 2016 | RTA при многофазном потоке, Bakken | [[Uzun Kurtoglu Kazemi 2016 — RTA при многофазном потоке]] |
 | Vogel 1968 | IPR для газонапорного режима | [[Vogel 1968 — IPR для газонапорного режима]] |
+| Voskov 2010 | Набор переменных на основе параметризации композиционного пространства | [[Voskov 2010 — набор переменных на основе параметризации композиционного пространства]] |
+| Voskov, Tchelepi 2009 | Параметризация композиционного пространства, продолженные коноды | [[Voskov Tchelepi 2009 — параметризация композиционного пространства]] |
+| Wahanik, Eftekhari, Bruining, Marchesin 2010 | Аналитические решения для закачки CO₂ с водой в геотермальный пласт | [[Wahanik 2010 — аналитические решения для закачки CO₂ с водой в геотермальный пласт]] |
+| Whitson, Michelsen 1989 | Отрицательный флэш-расчёт | [[Whitson Michelsen 1989 — отрицательный флэш-расчёт]] |
 | Баренблатт 1982 | Автомодельность и промежуточная асимптотика | [[Баренблатт 1982 — автомодельность и промежуточная асимптотика]] |
 | Muskat 1945 | Дифференциальный материальный баланс gas drive | [[Muskat 1945 — дифференциальный материальный баланс gas drive]] |
 | Muskat 1949 | Теория потенциометрических моделей | [[Muskat 1949 — теория потенциометрических моделей]] |
 | O'Dell, Miller 1966 | Двухзонная модель газоконденсата | [[O'Dell Miller 1966 — двухзонная модель газоконденсата]] |
 | Oliver 1990 | Kernel function для оценки проницаемости из PTA | [[Oliver 1990 — kernel function для оценки проницаемости из PTA]] |
+| Orr 2002 | Теория процессов закачки газа | [[Orr 2002 — теория процессов закачки газа]] |
 | Osorio, Stewart, Danesh et al. 2005 | Долгосрочная продуктивность газоконденсата из PTA | [[Osorio Stewart Danesh 2005 — долгосрочная продуктивность газоконденсата из PTA]] |
 | van Everdingen, Hurst 1949 | Преобразование Лапласа для пластовых задач | [[van Everdingen Hurst 1949 — преобразование Лапласа для пластовых задач]] |
 | Краснов, Юдин, Лубнин 2010 | Идентификация параметров пласта | [[Краснов 2010 — идентификация параметров пласта]] |

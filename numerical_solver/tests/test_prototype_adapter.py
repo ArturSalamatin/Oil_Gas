@@ -567,6 +567,10 @@ class TestAdapterPwfUpStep:
         # Добыча: поток к скважине, по конвенции знаков G < 0. Замер −4.47e-3.
         assert r.G_o[0] < 0.0
         assert r.state.p[0] >= 114e5            # замер 116.57 бар
+        # Запасной путь прототипа пропускает S_g < 0 только на итерациях Ньютона;
+        # в принятом состоянии 0 <= S_g < 1.
+        assert r.state.Sg.min() >= 0.0
+        assert r.state.Sg.max() < 1.0
 
     def test_short_upstep_well_shut(self, adapter, drawn_down):
         # p_wf 80 → 190 бар, шаг 60 с: за минуту p[0] до 190 бар не дорастает —
@@ -578,3 +582,5 @@ class TestAdapterPwfUpStep:
         assert r.G_g[0] == 0.0
         assert r.G_free_gas[0] == 0.0
         assert r.state.p[0] < 190e5             # замер 157.09 бар
+        assert r.state.Sg.min() >= 0.0          # см. test_long_upstep_single_substep
+        assert r.state.Sg.max() < 1.0

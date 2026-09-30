@@ -82,6 +82,19 @@ def _assert_restored(model):
     assert model._sg_lower_bound == SG_BOUND_DEFAULT
 
 
+def _assert_physical_sg(state):
+    """Принятое состояние физично: 0 <= S_g < 1, у однофазных ячеек S_g = 0 ровно.
+
+    В запасном пути нижней границы S_g в поиске по направлению нет — итерации
+    Ньютона уходят в S_g < 0. Физичность ответа обеспечивает цикл набора фаз
+    (_advance_phases): ячейка с S_g < −1e-9 переводится в однофазный режим и шаг
+    решается заново; остаток из [−1e-9, 0) обнуляется.
+    """
+    assert state.sg.min() >= 0.0
+    assert state.sg.max() < 1.0
+    assert np.all(state.sg[~state.gas_active] == 0.0)
+
+
 def _install_fake_phases(model, plan):
     """Подменить model._advance_phases: ответ по ключу (ветка, граница) в момент вызова.
 
@@ -141,6 +154,7 @@ class TestAdvanceUpstep:
         assert _fields(rep) == (True, "open", 1, True)
         assert new.pressure_bar[0] >= 150.0               # замер 152.605 бар
         assert model.well_rates(new)["oil_sm3_s"] > 0.0   # добыча, замер 2.14e-5 ст.м³/с
+        _assert_physical_sg(new)
         _assert_restored(model)
 
     def test_long_upstep_near_reservoir_stays_shut(self, drawn_down):
@@ -154,6 +168,7 @@ class TestAdvanceUpstep:
         p0 = new.pressure_bar[0]
         assert 111.672 < p0 <= 195.0                      # замер 170.743 бар
         assert model.well_rates(new)["oil_sm3_s"] == 0.0
+        _assert_physical_sg(new)
         _assert_restored(model)
 
     def test_short_upstep_original_path(self, drawn_down):
@@ -208,6 +223,36 @@ class TestFallbackInvariants:
         inv_oil, inv_gas = model.component_inventories(drawn_down)
         assert abs(err_oil) / inv_oil.sum() <= 1e-12
         assert abs(err_gas) / inv_gas.sum() <= 1e-12
+
+    @pytest.mark.parametrize("bhp_bar", [150.0, 195.0])
+    def test_negative_iterates_not_accepted(self, drawn_down, bhp_bar):
+        # Где живёт отрицательная S_g. В запасном пути итерации Ньютона уходят за
+        # снятую границу −0.05 (замер: до −0.447 в обоих случаях) — это гладкое
+        # продолжение уравнений ячейки. В принятое состояние S_g < 0 не попадает:
+        # ячейки, где газ растворился, цикл набора фаз переводит в однофазный
+        # режим и решает шаг заново (двухфазных 5 → 4 при 150 бар, 5 → 3 при 195).
+        # Итерации перехватываются на экземпляре: finite_difference_jacobian
+        # вызывается на каждой итерации Ньютона с текущей точкой z.
+        model = _model(bhp_bar)
+        n = model.grid.n
+        iter_min = []
+        jacobian = model.finite_difference_jacobian
+
+        def recording(z, state_old, dt_s, gas_active, *args, **kwargs):
+            x = np.asarray(z)[n:][np.asarray(gas_active, bool)]   # S_g двухфазных ячеек
+            if x.size:
+                iter_min.append(float(x.min()))
+            return jacobian(z, state_old, dt_s, gas_active, *args, **kwargs)
+
+        model.finite_difference_jacobian = recording
+        new, rep = model.advance(drawn_down, 3600.0)
+        assert rep.converged and rep.fallback
+        # Граница действительно пересекалась — иначе тест ничего не проверяет
+        assert min(iter_min) < SG_BOUND_DEFAULT
+        # Газ растворился хотя бы в одной ячейке: она стала однофазной
+        assert rep.phase_switches >= 1
+        assert np.count_nonzero(new.gas_active) < np.count_nonzero(drawn_down.gas_active)
+        _assert_physical_sg(new)
 
     def test_exception_in_original_call(self, drawn_down):
         # Исключение в исходном вызове пробрасывается наружу; атрибуты запасного

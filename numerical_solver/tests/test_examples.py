@@ -1488,3 +1488,78 @@ class TestPwfRampDown:
         """
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
         assert 'overlays={"Sg": None}' in text
+
+
+# ═══════════════════════════════════════════════════════════
+# N. Замкнутое решение при управлении по дебиту (FEAT-020)
+# ═══════════════════════════════════════════════════════════
+
+def _closed_form():
+    """Общий модуль examples/closed_form.py."""
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import closed_form
+    return closed_form
+
+
+class TestStationaryPwf:
+    """p_wf стационара — предел t -> inf при удержании последнего интервала.
+
+    При управлении по давлению — уставка последнего интервала (FEAT-022),
+    при управлении по дебиту — обращение квадратуры (3) closed_form по дебиту
+    (FEAT-020). Обращение стоит 1.2–4 с, поэтому PVT, ОФП и сетка — общие
+    на класс, а solve_closed зовётся не чаще раза на тест.
+    """
+
+    @pytest.fixture(scope="class")
+    def base(self):
+        """Конфиг примера 12, его PVT, ОФП и сетка (r центров ячеек)."""
+        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
+        cfg = load_config(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
+        g = cfg.geometry
+        grid = LogRadialGrid(r_well=g.r_well, R_ext=g.R_ext, h=g.h,
+                             N=cfg.grid.N, k=cfg.rock.permeability)
+        return cfg, _pvt_of_config(cfg), _create_relperm(cfg), grid.r_centers
+
+    @staticmethod
+    def _rate_config(cfg, q_oil_sm3_day):
+        """Копия конфига с одним интервалом управления по дебиту, min_bhp = 1 атм."""
+        import copy
+        from gpn_multiphase_solver.io.config import HistoryInterval
+        c = copy.deepcopy(cfg)
+        c.time.history = [HistoryInterval(dt=86400.0, control="rate",
+                                          q_oil=q_oil_sm3_day / 86400.0,
+                                          min_bhp=101325.0)]
+        return c
+
+    def test_pressure_control_uses_last_interval(self):
+        """Управление по давлению: уставка последнего интервала (13a — 6 МПа)."""
+        cfg = load_config(EXAMPLES_DIR / "13a_pwf_ramp_down" / "config.json")
+        assert _closed_form().stationary_pwf(cfg, None, None) == 6.0e6
+
+    def test_rate_control_inverts_last_rate(self, base):
+        """Дебит 270 м³ст/сут: p_wf* = 6.59493 МПа, q_o решения = заданному.
+
+        Только solve_closed: внутри — одно обращение, отдельный вызов
+        stationary_pwf удвоил бы стоимость. Порог по дебиту: brentq с
+        xtol = 1 Па даёт |Δq|/q ≲ 1 Па / (p_e − p_wf*) ≈ 1.1e-7, замер
+        аудита 1.96e-8. Ловит: неверное обращение, возврат к p_wf из конфига.
+        """
+        cfg, pvt, rp, r = base
+        cl = _closed_form().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
+        assert cl["p_wf"] == pytest.approx(6.59493e6, rel=1e-5)
+        assert cl["q_o"] == pytest.approx(270.0 / 86400.0, rel=1e-6)
+
+    def test_unreachable_rate_gives_min_bhp(self, base):
+        """Дебит 1000 м³ст/сут выше стационарного максимума (412 при 1 атм):
+        стационар при min_bhp — ограничение активно."""
+        cfg, pvt, rp, _ = base
+        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
+        assert pw == 101325.0
+
+    def test_zero_rate_gives_contour_pressure(self, base):
+        """Нулевой дебит: депрессии нет, p_wf* = p_e."""
+        cfg, pvt, rp, _ = base
+        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
+        assert pw == cfg.initial_conditions.p0

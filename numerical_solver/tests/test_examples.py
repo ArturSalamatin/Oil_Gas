@@ -40,6 +40,7 @@ ALL_EXAMPLES = [
     "11_degassing_at_boundary",
     "12_large_drainage_radius",
     "13a_pwf_ramp_down",
+    "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
 ]
 
@@ -55,7 +56,7 @@ NEEDS_SG_SECTION = [
     "07_degassing_adiabatic_only", "08_degassing_jt",
     "09_degassing_latent_heat", "10_deep_degassing",
     "11_degassing_at_boundary", "12_large_drainage_radius",
-    "13a_pwf_ramp_down", "15_oil_rate_ramp_up",
+    "13a_pwf_ramp_down", "14_high_gor_cooling", "15_oil_rate_ramp_up",
 ]
 
 
@@ -1683,3 +1684,104 @@ class TestOilRateRampUp:
         """
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
         assert 'overlays={"p": None, "Sg": None}' in text
+
+
+# ═══════════════════════════════════════════════════════════
+# P. Сценарий 14: высокий газовый фактор, охлаждение забоя (FEAT-024)
+# ═══════════════════════════════════════════════════════════
+
+class TestHighGorCooling:
+    """Сценарий 14: R_s0 = 150 (p_b = 24 МПа), S_gc = 0.1, 12 × 30 сут.
+
+    Конфиг 12, в котором p0 = 24.5 МПа, R_s0 = 150, ОФП Кори n_g = 3 с
+    порогом S_gc = 0.1 (таблица с шагом 0.05), шаг интегрирования 1 сут.
+    Забой охлаждается на 5.55-5.77 К: теплота выделения газа и расширение
+    газа сильнее нагрева нефти при дросселировании (mu_JT,o < 0).
+    """
+
+    NAME = "14_high_gor_cooling"
+
+    def test_wellbore_cools_by_5_to_10_K(self, results):
+        """На каждой записи 1..12 забой холоднее T0 на 5-10 К.
+
+        Смысл примера (запрос руководителя: охлаждение на 5-10 К).
+        Замер плана FEAT-024: -5.554 К на 30 сут, -5.769 К на 360 сут,
+        T(r_w) = 344.231 К. Ловит: смену знака mu_JT, потерю скрытой
+        теплоты, регрессию схемы энергии на суточном шаге.
+        """
+        r = results[self.NAME]
+        T0 = r["config"].initial_conditions.T0
+        dT = np.array([st.T[0] - T0 for st in r["history"].states[1:]])
+        assert np.all(dT < -5.0) and np.all(dT > -10.0), f"ΔT(r_w) = {dT}"
+        assert r["T_well"] == pytest.approx(344.231, abs=2e-3)
+
+    def test_gor_below_Rs0_and_rising(self, results):
+        """GOR ниже R_s0 и строго растёт: свободный газ копится в пласте.
+
+        Замер: 137.63 (30 сут) -> 146.36 (360 сут) при R_s0 = 150. При малой
+        S_g газ малоподвижен (k_rg кубическая и нулевая до S_gc = 0.1), он
+        копится, пока S_g не выйдет на стационарный профиль, и газа
+        добывается меньше, чем входит через контур растворённым.
+        Ловит: смену характера подхода к стационару (GOR сверху, как при
+        газе, подвижном с малых S_g) и скачки GOR от излома k_rg (линейная
+        k_rg над порогом: 139-148 немонотонно). Потерю самого порога этот
+        тест НЕ ловит (при S_gc = 0 GOR тоже растёт снизу: 144.18 -> 149.67),
+        её ловит test_well_saturation_matches_relperm.
+        """
+        r = results[self.NAME]
+        # Запись 0 — начальное состояние с нулевыми дебитами, пропускаем
+        gor = r["q_g"][1:] / r["q_o"][1:]
+        assert np.all(np.diff(gor) > 0.0), f"GOR не растёт монотонно: {gor}"
+        assert np.all(gor < r["Rs0"]), f"GOR >= R_s0: {gor}"
+
+    def test_well_saturation_matches_relperm(self, results):
+        """S_g у забоя на 360 сут = 0.2291 — её задаёт форма k_rg над порогом.
+
+        Тождество Дарси на забойной грани: k_rg/k_ro(S_g) = (GOR - R_s)·
+        mu_g·B_g/(mu_o·B_o) ≈ 0.010; корень определяется k_rg сразу над
+        S_gc. Замер плана FEAT-024: 0.2291 (Кори n_g = 3, S_gc = 0.1,
+        таблица с шагом 0.05); при S_gc = 0 — 0.1614, при линейной k_rg над
+        порогом — 0.1155.
+        Ловит: потерю порога S_gc или смену формы k_rg в relperm.csv.
+        """
+        # results[...]["Sg"] — поле последней записи (360 сут), [0] — ячейка у забоя
+        Sg_w = float(results[self.NAME]["Sg"][0])
+        assert Sg_w == pytest.approx(0.2291, abs=1e-3), f"S_g(r_w) = {Sg_w:.4f}"
+
+    def test_boundary_cell_stays_single_phase(self, results):
+        """Контурная ячейка однофазна на всей истории.
+
+        Замер плана FEAT-024: min_t p_{N-1} - p_b = +424.9 кПа.
+        """
+        r = results[self.NAME]
+        for n, st in enumerate(r["history"].states):
+            assert st.Sg[-1] == 0.0, \
+                f"запись {n}: S_g[N-1] = {st.Sg[-1]:.3e}, контурная ячейка двухфазна"
+            assert abs(st.Rs[-1] - r["Rs0"]) < 1e-10
+
+    def test_gas_active_cells_match_pressure(self, results):
+        """Двухфазные ячейки — ровно те, где p < p_b, на каждой записи.
+
+        Без ветки PVT выше R_s0 (R_s = 180 при 27.8 МПа) первый суточный
+        шаг оставляет ячейку на 137.3 м помеченной двухфазной (regime = 1,
+        S_g ~ 1e-16) при p - p_b = +125 кПа: R_s_sat выше последней точки
+        насыщения берётся на краю таблицы (= R_s0). Замер: с веткой 47 = 47
+        = 47 на записях 1..12, без ветки 48, 48 и 47.
+        Ловит: удаление ветки из oil_pvt.csv.
+        """
+        r = results[self.NAME]
+        pvt = _pvt_of_config(r["config"])
+        pb = float(pvt.pb(np.array([r["Rs0"]]))[0])
+        for n, st in enumerate(r["history"].states):
+            below = st.p < pb
+            assert np.array_equal(st.regime == 1, below), f"запись {n}: regime"
+            assert np.array_equal(st.Sg > 0.0, below), f"запись {n}: S_g > 0"
+
+    def test_main_disables_saturation_overlay(self):
+        """main.py 14 не рисует стационар на профилях S_g (как 13a).
+
+        Стационар давления остаётся (у 15 отключён и он): расхождение
+        профиля p 134.65 кПа — 0.73 % депрессии.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert 'overlays={"Sg": None}' in text

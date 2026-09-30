@@ -411,8 +411,7 @@
   "numerics": {
     "dt_min": 1.0,
     "dt_max": 86400,
-    "skin": 0.0,
-    "max_retries": 10
+    "skin": 0.0
   },
   "output": {
     "log_level": "INFO"

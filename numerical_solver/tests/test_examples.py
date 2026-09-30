@@ -40,6 +40,7 @@ ALL_EXAMPLES = [
     "11_degassing_at_boundary",
     "12_large_drainage_radius",
     "13a_pwf_ramp_down",
+    "15_oil_rate_ramp_up",
 ]
 
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
@@ -54,7 +55,7 @@ NEEDS_SG_SECTION = [
     "07_degassing_adiabatic_only", "08_degassing_jt",
     "09_degassing_latent_heat", "10_deep_degassing",
     "11_degassing_at_boundary", "12_large_drainage_radius",
-    "13a_pwf_ramp_down",
+    "13a_pwf_ramp_down", "15_oil_rate_ramp_up",
 ]
 
 
@@ -1502,25 +1503,27 @@ def _closed_form():
     return closed_form
 
 
+@pytest.fixture(scope="module")
+def stationary_base():
+    """Конфиг примера 12, его PVT, ОФП и сетка (r центров ячеек)."""
+    from gpn_multiphase_solver.factory import _create_relperm
+    from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
+    cfg = load_config(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
+    g = cfg.geometry
+    grid = LogRadialGrid(r_well=g.r_well, R_ext=g.R_ext, h=g.h,
+                         N=cfg.grid.N, k=cfg.rock.permeability)
+    return cfg, _pvt_of_config(cfg), _create_relperm(cfg), grid.r_centers
+
+
 class TestStationaryPwf:
     """p_wf стационара — предел t -> inf при удержании последнего интервала.
 
     При управлении по давлению — уставка последнего интервала (FEAT-022),
     при управлении по дебиту — обращение квадратуры (3) closed_form по дебиту
     (FEAT-020). Обращение стоит 1.2–4 с, поэтому PVT, ОФП и сетка — общие
-    на класс, а solve_closed зовётся не чаще раза на тест.
+    (фикстура stationary_base уровня модуля), а solve_closed зовётся не чаще
+    раза на тест.
     """
-
-    @pytest.fixture(scope="class")
-    def base(self):
-        """Конфиг примера 12, его PVT, ОФП и сетка (r центров ячеек)."""
-        from gpn_multiphase_solver.factory import _create_relperm
-        from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
-        cfg = load_config(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
-        g = cfg.geometry
-        grid = LogRadialGrid(r_well=g.r_well, R_ext=g.R_ext, h=g.h,
-                             N=cfg.grid.N, k=cfg.rock.permeability)
-        return cfg, _pvt_of_config(cfg), _create_relperm(cfg), grid.r_centers
 
     @staticmethod
     def _rate_config(cfg, q_oil_sm3_day):
@@ -1538,7 +1541,7 @@ class TestStationaryPwf:
         cfg = load_config(EXAMPLES_DIR / "13a_pwf_ramp_down" / "config.json")
         assert _closed_form().stationary_pwf(cfg, None, None) == 6.0e6
 
-    def test_rate_control_inverts_last_rate(self, base):
+    def test_rate_control_inverts_last_rate(self, stationary_base):
         """Дебит 270 м³ст/сут: p_wf* = 6.59493 МПа, q_o решения = заданному.
 
         Только solve_closed: внутри — одно обращение, отдельный вызов
@@ -1546,20 +1549,135 @@ class TestStationaryPwf:
         xtol = 1 Па даёт |Δq|/q ≲ 1 Па / (p_e − p_wf*) ≈ 1.1e-7, замер
         аудита 1.96e-8. Ловит: неверное обращение, возврат к p_wf из конфига.
         """
-        cfg, pvt, rp, r = base
+        cfg, pvt, rp, r = stationary_base
         cl = _closed_form().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
         assert cl["p_wf"] == pytest.approx(6.59493e6, rel=1e-5)
         assert cl["q_o"] == pytest.approx(270.0 / 86400.0, rel=1e-6)
 
-    def test_unreachable_rate_gives_min_bhp(self, base):
+    def test_unreachable_rate_gives_min_bhp(self, stationary_base):
         """Дебит 1000 м³ст/сут выше стационарного максимума (412 при 1 атм):
         стационар при min_bhp — ограничение активно."""
-        cfg, pvt, rp, _ = base
+        cfg, pvt, rp, _ = stationary_base
         pw = _closed_form().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
         assert pw == 101325.0
 
-    def test_zero_rate_gives_contour_pressure(self, base):
+    def test_zero_rate_gives_contour_pressure(self, stationary_base):
         """Нулевой дебит: депрессии нет, p_wf* = p_e."""
-        cfg, pvt, rp, _ = base
+        cfg, pvt, rp, _ = stationary_base
         pw = _closed_form().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
         assert pw == cfg.initial_conditions.p0
+
+
+# ═══════════════════════════════════════════════════════════
+# O. Сценарий 15: пуск с линейно растущим дебитом нефти (FEAT-020)
+# ═══════════════════════════════════════════════════════════
+
+class TestOilRateRampUp:
+    """Сценарий 15: конфиг 12, скважина управляется по дебиту нефти.
+
+    Сутки k = 1..15: q_oil = 18·k м³ст/сут (0 → 270 по записям), min_bhp =
+    1 атм. Запись раз в сутки: 15 интервалов, 16 записей. p_wf — результат
+    расчёта: выражается из уравнения притока (eq:bc_rate_pwf).
+    """
+
+    NAME = "15_oil_rate_ramp_up"
+
+    def test_config_is_rate_controlled(self, results):
+        """Конфиг: 15 суточных интервалов по дебиту, p_wf не задан.
+
+        Ловит: опечатку генератора, потерю полей управления.
+        """
+        hist = results[self.NAME]["config"].time.history
+        assert len(hist) == 15
+        for k, h in enumerate(hist, start=1):
+            assert h.control == "rate"
+            assert h.dt == 86400.0
+            assert h.min_bhp == 101325.0
+            assert h.p_wf is None
+            assert h.q_oil == pytest.approx(18.0 * k / 86400.0, rel=1e-15)
+
+    def test_rate_follows_schedule(self, results):
+        """Дебит записей совпадает с расписанием (замер: точно).
+
+        Запись 0 — начальное состояние с нулевым дебитом. Ловит: сдвиг
+        расписания на интервал, ошибку единиц м³ст/с ↔ м³ст/сут.
+        """
+        q = results[self.NAME]["q_o"]
+        assert q[0] == 0.0
+        for k in range(1, 16):
+            assert q[k] == pytest.approx(18.0 * k / 86400.0, rel=1e-12), \
+                f"сутки {k}: q_o = {q[k] * 86400:.6f} м³ст/сут, ожидалось {18 * k}"
+
+    def test_pwf_decreases_and_stays_above_min_bhp(self, results):
+        """p_wf строго убывает по записям и не доходит до min_bhp.
+
+        Физика: дебит растёт, а пласт истощается — депрессия нарастает.
+        Ожидание (замер плана FEAT-020): 15.5 МПа (запись 0 — p[0]) →
+        6.12991 МПа на 15 сут; ограничение 1 атм не срабатывает.
+        Ловит: срабатывание ограничения, запись уставки вместо p_wf шага.
+        """
+        pwf = np.array([w.p_wf for w in results[self.NAME]["history"].well_data])
+        assert np.all(np.diff(pwf) < 0.0), f"p_wf не убывает: {pwf}"
+        assert np.all(pwf > 101325.0)
+        assert pwf[-1] == pytest.approx(6.12991e6, rel=1e-4)
+
+    def test_boundary_cell_stays_single_phase(self, results):
+        """Контурная ячейка однофазна на всей истории.
+
+        Замер плана FEAT-020: min_t p_{N-1} − p_b = +428.9 кПа.
+        """
+        r = results[self.NAME]
+        for n, st in enumerate(r["history"].states):
+            assert st.Sg[-1] == 0.0, \
+                f"запись {n}: S_g[N-1] = {st.Sg[-1]:.3e}, контурная ячейка двухфазна"
+            assert abs(st.Rs[-1] - r["Rs0"]) < 1e-10
+
+    def test_closed_form_hooks_run_for_rate_control(self, results):
+        """Постобработка примера при управлении по дебиту не падает.
+
+        Прежде closed_form брал p_wf последнего интервала из конфига — при
+        управлении по дебиту там None. Теперь стационар строится обращением
+        по дебиту 270 м³ст/сут: p_wf* = 6.5949 МПа (замер плана FEAT-020).
+        Наложение давления и report_closed зовут solve_closed с одним
+        ключом кэша — обращение считается один раз (≤ 4 с).
+        """
+        import contextlib
+        import io
+        import types
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        cf = _closed_form()
+
+        r = results[self.NAME]
+        cfg, history, grid = r["config"], r["history"], r["grid"]
+        # closed_form берёт PVT как simulator._energy._pvt (_prepare)
+        sim = types.SimpleNamespace(
+            _energy=types.SimpleNamespace(_pvt=_pvt_of_config(cfg)))
+
+        fig, ax = plt.subplots()
+        try:
+            cf.make_overlay_pressure(cfg)(ax, history, grid, sim)
+        finally:
+            plt.close(fig)
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cf.report_closed(cfg, history, grid, sim)
+        out = buf.getvalue()
+        assert "дебит задан" in out
+        assert "6.5949" in out
+
+    def test_main_plots_six_moments(self):
+        """main.py 15 рисует профили на 6 моментах: 0, 3, ..., 15 сут (как 13a)."""
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=6" in text
+
+    def test_main_disables_saturation_overlay(self):
+        """main.py 15 не рисует стационар на профилях S_g (как 13a).
+
+        При нарастающем дебите пласт не на стационаре: S_g^max 0.038 против
+        0.018 у замыкания GOR = Rs0 — на графике это выглядит как ошибка.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert 'overlays={"Sg": None}' in text

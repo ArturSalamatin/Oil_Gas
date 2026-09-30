@@ -10,14 +10,14 @@ model_level: null
 status: готов к реализации
 audit:
   date: 2026-09-29
-  round: 1
-  found: 14
-  auto-fixed: 13
-  manual-required: 1  # решено пользователем 2026-09-29: FEAT-020 раньше DEBT-019 (§0, решение 11)
-  note: раунд 1 — предметная суть; прогоном (probes/audit_checks.py) проверены сценарии тестов адаптера, stationary_pwf (6.59493 МПа, 1.2–4 с), тест притока (|ΔT0| = 0.40 К), смешанное расписание; базовый прогон дерева с чужими правками — 904 собрано, 903 passed, 1 failed (чужая смена знака μ_JT)
+  round: 2
+  found: 10
+  auto-fixed: 10
+  manual-required: 0
+  note: раунд 2 — реализуемость (API, сигнатуры, порядок шагов, тесты); граф зависимостей шагов, условие остановки шага 1 (чужая работа в дереве растёт — теперь и tests/test_examples.py), уточнения тестов шагов 3, 6-9; сбор 904 теста подтверждён. Раунд 1 (14 находок, 13 исправлено, порядок с DEBT-019 решён пользователем) — probes/audit_checks.py
 ---
 
-# FEAT-020: Управление скважиной по дебиту нефти + пример 14 (пуск с линейно растущим дебитом)
+# FEAT-020: Управление скважиной по дебиту нефти + пример 15 (пуск с линейно растущим дебитом)
 
 ## Цель
 
@@ -34,7 +34,7 @@ audit:
    `HydroResult.p_wf` — фактическое давление на забойной грани после шага.
    `WellControl.boundary_pressure` удаляется: обойти `HydroResult` через `bc.well`
    становится нечем.
-3. Пример 14 `examples/14_oil_rate_ramp_up/`: конфиг примера 12, 15 сут, дебит
+3. Пример 15 `examples/15_oil_rate_ramp_up/`: конфиг примера 12, 15 сут, дебит
    нефти по записям истории растёт линейно от нуля (пуск) до 270 м³ст/сут.
 4. Замкнутое стационарное решение (`examples/closed_form.py`) при управлении по
    дебиту строится обращением по дебиту последнего интервала.
@@ -55,13 +55,13 @@ audit:
 |---|---|---|---|
 | 1 | Откуда энергия и вывод берут $p_{wf}$ | из результата шага гидродинамики: `HydroResult.p_wf` (вариант 2 записи реестра) | 2026-09-29 |
 | 2 | Принцип | температура берёт **все** гидродинамические величины из одного места — `HydroResult`; модуль гидродинамики сам формирует этот объект | 2026-09-29 |
-| 3 | `min_bhp` | **обязателен** при `control = "rate"`; в примере 14 — 1 атм = 101 325 Па | 2026-09-29 |
-| 4 | Пример 14 | конфиг примера 12 (как у 13a), 15 сут, с другими примерами не сравнивается | 2026-09-29 |
+| 3 | `min_bhp` | **обязателен** при `control = "rate"`; в примере 15 — 1 атм = 101 325 Па | 2026-09-29 |
+| 4 | Пример 15 | конфиг примера 12 (как у 13a), 15 сут, с другими примерами не сравнивается | 2026-09-29 |
 | 5 | Дебит | внутри интервала постоянен; по записям истории растёт линейно от нуля (пуск, $t = 0$) до 270 м³ст/сут на последней записи | 2026-09-29 |
-| 6 | Переход «дебит → давление» | в пример 14 не закладывается | 2026-09-29 |
-| 7 | Нумерация | выбор Claude: `14_oil_rate_ramp_up`; папки [[FEAT-019]] — `15_*…17_*` | 2026-09-29 |
+| 6 | Переход «дебит → давление» | в пример 15 не закладывается | 2026-09-29 |
+| 7 | Нумерация | выбор Claude: `15_oil_rate_ramp_up`; папки [[FEAT-019]] — `16_*…18_*` | 2026-09-29 |
 | 8 | `WellControl.boundary_pressure` | **убрать** из ABC; `WellControl` — базовый класс без абстрактных методов, управление читают только модули гидродинамики | 2026-09-29 |
-| 9 | Стационар при управлении по дебиту | **обращать по $q_{last}$**: $p_{wf}^*$ из $q_{\text{стац}}(p_{wf}^*) = q_{last}$; если недостижимо при `min_bhp` — стационар при `min_bhp`. Наложение $S_g$ в примере 14 отключается, как у 13a | 2026-09-29 |
+| 9 | Стационар при управлении по дебиту | **обращать по $q_{last}$**: $p_{wf}^*$ из $q_{\text{стац}}(p_{wf}^*) = q_{last}$; если недостижимо при `min_bhp` — стационар при `min_bhp`. Наложение $S_g$ в примере 15 отключается, как у 13a | 2026-09-29 |
 | 10 | Расхождение по JT-вкладу забойной грани | отдельная запись [[BUG-015]], FEAT-020 не блокирует; в FEAT-020 только не повторять ложное утверждение в новом тексте | 2026-09-29 |
 | 11 | Порядок с [[DEBT-019]] (оба правят `compute_fluxes` и `PrototypeHydroAdapter._build_result`) | **FEAT-020 первым**; план DEBT-019 после этого сверяет номера строк и блоки «До:» заново (аудит, раунд 1) | 2026-09-29 |
 
@@ -93,7 +93,7 @@ audit:
   источник («задано ГУ» → «`HydroResult.p_wf`»); физические утверждения о вкладе
   забойной грани правит [[BUG-015]]. Комментарий `tridiag.py:114-117` заменяется
   целиком (строка кода меняется) — новый текст верен (§2.3).
-- **Генератор конфига** — `vault/issues/feat-020/probes/make_14_config.py`
+- **Генератор конфига** — `vault/issues/feat-020/probes/make_15_config.py`
   (одноразовый, как `make_13a_config.py`).
 - **Главный тест согласованности** — новый файл `tests/test_rate_control.py`.
 - **Подпись пунктира давления** в `make_overlay_pressure` не меняется.
@@ -117,13 +117,16 @@ audit:
      04a, 08, 10–13a);
    - README всех примеров 02–13a, `examples/02_single_phase_jt/{main,check_slopes}.py`,
      `examples/temperature_asymptotics.py`, `tests/test_config.py` (+4/−2 строки;
-     шаг 5 плана правит тот же файл);
+     шаг 5 плана правит тот же файл), `tests/test_examples.py` (аудит, раунд 2:
+     тепловые тесты в строках 272–431 — `test_thermal_effects_cool` →
+     `test_thermal_effects_sign`, +9 строк; шаги 8–9 плана правят тот же файл,
+     ссылки плана ниже строки ~430 при их вливании сдвинутся на ~+9);
    - правки записи BUG-014 в `vault/roadmap/известные баги и технический долг.md`;
    - неотслеживаемая папка `vault/issues/bug-014/`.
 
    `git checkout -b` унесёт их в ветку FEAT-020. **Шаг 1 останавливается**, если
    они ещё в дереве, и спрашивает пользователя. Если смена знака $\mu_{JT}$
-   будет закоммичена в базу до реализации — гидродинамика примера 14 не меняется,
+   будет закоммичена в базу до реализации — гидродинамика примера 15 не меняется,
    но числа $T$ в §3.1 (столбец $T(r_w)$) и $T$-часть README придётся перемерить
    (шаг 10); тест согласованности (§3.3) от знака не зависит — он сравнивает два
    прогона одного конфига.
@@ -135,7 +138,9 @@ audit:
    — невязка баланса энергии примера 10 $1.9\cdot10^{-10}$ при пороге
    $10^{-10}$; конфиг 10 входит в чужую смену знака $\mu_{JT}$. Чистую базу
    без чужих правок аудит не мерил (чужую работу не трогал) — шаг 1 меряет
-   её сам. Предупреждение — `PytestRemovedIn10Warning` в
+   её сам. Ожидание «904 passed» — вывод, а не замер: на `a8e7e6c` тот же тест
+   с тем же конфигом 10 проходил (902 passed), `2dbe070` конфигов и ядра не
+   меняет, а два его теста в прогоне аудита прошли. Предупреждение — `PytestRemovedIn10Warning` в
    `test_val002.py::TestCaseC_MeshConvergence`, к задаче не относится.
 
 ---
@@ -252,7 +257,7 @@ $q_{last}$:
 `set_oil_rate_control`, $p_{wf}$ берёт из `model._last_effective_bhp_bar`) — это не
 образец реализации. Вывод — `plan_numbers.out.txt` рядом.
 
-### 3.1 Пример 14 (часть A)
+### 3.1 Пример 15 (часть A)
 
 `sim.run` 12.6 с; **360 подшагов по 3600 с, дробления нет**; `min_bhp` не
 срабатывает ни разу; контурная ячейка однофазна
@@ -349,19 +354,19 @@ $q_{last}$:
 | `numerical_solver/tests/test_fluxes.py` | 72, 667, 697, 712-726 | `p_wf`; `TestPressureControl` без `boundary_pressure`; тест `RateControl` в `compute_fluxes` |
 | `numerical_solver/tests/test_output.py` | 259, 358 | `p_wf=` в конструкторах |
 | `numerical_solver/tests/test_val002.py` | 65-70, 168-172 | `p_wf=`; `hydro.p_wf` |
-| `numerical_solver/tests/test_energy_matrix_examples.py` | 57-72, 602-605 | `"14_oil_rate_ramp_up"`; `hydro_result.p_wf` |
+| `numerical_solver/tests/test_energy_matrix_examples.py` | 57-72, 602-605 | `"15_oil_rate_ramp_up"`; `hydro_result.p_wf` |
 | `numerical_solver/tests/test_hydro.py` | 12 | docstring: «p_wf из bc.well.p_wf» |
 | `numerical_solver/tests/test_prototype_adapter.py` | 144-146 + новые классы | `FakeControl` без `boundary_pressure`; `p_wf` адаптера, управление по дебиту |
 | `numerical_solver/tests/test_simulator.py` | новый тест | `WellData.p_wf` из `HydroResult` |
 | `numerical_solver/tests/test_config.py` | классы `TestValidationTime`, `TestHistoryIntervalDefaults` | валидация rate |
 | `numerical_solver/tests/test_rate_control.py` | **новый** | `RateControl`, конфиг → фабрика → расчёт, согласованность управлений |
-| `numerical_solver/tests/test_examples.py` | 28-58, новый класс | `14_oil_rate_ramp_up` в списках; `TestOilRateRampUp`; тесты `stationary_pwf` |
+| `numerical_solver/tests/test_examples.py` | 28-58, новый класс | `15_oil_rate_ramp_up` в списках; `TestOilRateRampUp`; тесты `stationary_pwf` |
 | `numerical_solver/examples/closed_form.py` | 1-71, 132-186, 277-305 | `stationary_pwf`; ключ `p_wf` в результате; `report_closed` |
 | `numerical_solver/examples/two_phase_analytics.py` | 376-377 | `dep` по `cl["p_wf"]` |
 | `numerical_solver/examples/{verify_balance_vs_solver,probe_recurrence_vs_time,probe_advective_asymptotics,measure_jt_well_halfstep,measure_jt_form,measure_divergence_term}.py` | 87 / 73 / 110 / 81 / 71 / 90 | `hydro_result.p_wf` |
-| `numerical_solver/examples/14_oil_rate_ramp_up/` | **новая папка** | `config.json`, CSV, `main.py`, `README.md` |
-| `numerical_solver/examples/README.md` | 24, 100-104, 129-138, 219-266, 277-303, 316-346, 365-376, 431-450 | пример 14 |
-| `vault/issues/feat-020/probes/make_14_config.py` | **новый** | генератор конфига 14 |
+| `numerical_solver/examples/15_oil_rate_ramp_up/` | **новая папка** | `config.json`, CSV, `main.py`, `README.md` |
+| `numerical_solver/examples/README.md` | 24, 100-104, 129-138, 219-266, 277-303, 316-346, 365-376, 431-450 | пример 15 |
+| `vault/issues/feat-020/probes/make_15_config.py` | **новый** | генератор конфига 15 |
 | vault: `knowledge/decisions/модули-bc-граничные-условия.md`, `P1-адаптер-единицы.md`, `словарь-код-физика.md`, `архитектура библиотеки numerical_solver.md`; реестр; `00-home/index.md` | — | §8, шаг 14 |
 
 Прототип (`HydroSolverPrototype/`) **не меняется**.
@@ -412,7 +417,7 @@ Docstring каждой новой функции — одна строка + с�
 | Двойной расчёт потоков в `_build_result` | ✅ | `well_rates` повторно зовёт `face_component_fluxes_sm3s` — $O(N)$, $N = 50$, пренебрежимо |
 | Import-цепочки | ✅ | `fluxes.py` импортирует `bc` (у `bc.py` рантайм-импортов нет); `prototype_adapter.py` уже импортирует `bc` |
 | `quad` с `points` вне отрезка | ⚠️ | `points=[pb]` только при `p_wf < pb < p_e` (§2.4) |
-| Связь с задачами — физика | ✅ | [[BUG-014]] (скачок $p_{wf}$ вверх) — в 14 дебит только растёт, $p_{wf}$ только падает; [[DEBT-019]] — приток через забой не возникает; [[BUG-015]] — только не повторять ложное утверждение |
+| Связь с задачами — физика | ✅ | [[BUG-014]] (скачок $p_{wf}$ вверх) — в 15 дебит только растёт, $p_{wf}$ только падает; [[DEBT-019]] — приток через забой не возникает; [[BUG-015]] — только не повторять ложное утверждение |
 | Связь с задачами — те же файлы | ⚠️ | (аудит) План [[DEBT-019]] (готов к реализации) правит `fluxes.py` (~108, `ValueError` при $p_{wf} > p_0$) и `prototype_adapter.py` (`_build_result`, ~196, `ValueError` при $G_o[0] > 0$) — те же функции, что шаги 3-4 FEAT-020. Кто реализуется вторым — сверяет номера строк и блоки «До:» заново. Семантически совместимы: при управлении по дебиту приток не возникает (`q_oil >= 0`, закрытие вместо разворота), тест притока FEAT-020 строится подменой потоков, а не через `compute_fluxes`. [[BUG-014]] (параллельная сессия; ветки ещё нет) предлагает менять A-retry адаптера и контракт `n_substeps` (направление фикса 3) — то же `PrototypeHydroAdapter.solve` |
 | Стоимость `stationary_pwf` | ⚠️ | (аудит) 1.2–4 с на обращение; кэш `solve_closed` строится до обращения, тесты — фикстура уровня класса (шаг 8) |
 | Эталон и двойник читают `boundary_pressure` | ⚠️ | (аудит) `test_fluxes.py:72` (эталон `_compute_reference_face`), `tests/_doubles.py:49`, `FakeControl` в `test_prototype_adapter.py:144-146` — все в шаге 4 |
@@ -423,14 +428,26 @@ Docstring каждой новой функции — одна строка + с�
 
 ## 8. Шаги реализации
 
+**Зависимости шагов** (аудит, раунд 2): 1 → 2 → 3 → 4 → {5, 8}; 6 требует 4 и 5
+(ветка `RateControl` в фабрике и адаптере, валидированный конфиг); 7 требует 6;
+9 требует 5, 6, 8 (при импорте `test_examples.py` конфиг 15 проходит
+`load_config` — `TABLE_PVT`, `test_examples.py:739-743` на HEAD; сессионная фикстура
+`results` считает 15 через фабрику; тест постобработки — `stationary_pwf`);
+10 требует 9; 11–12 требуют 10; 13 — после всех; 14 — последний. Шаг 8 не
+зависит от 5–7 (`HistoryInterval` с `control="rate"` собирается в тесте
+напрямую, без валидации и фабрики) — допустимо сделать его раньше 6–7.
+
 ### Шаг 1: Подготовка
 
 **Цель:** ветка от актуальной базы, зелёный базовый уровень.
 
 1. `git log --oneline -5 numerical_scheme/implementation` — есть `718ff0b`
-   (vault FEAT-020). `git status` — если в дереве остались чужие изменения §1.2
-   (`config.json` со сменой знака `mu_JT_oil`, BUG-014), **остановиться** и
-   спросить пользователя; их не трогать и в ветку FEAT-020 не уносить.
+   (vault FEAT-020). `git status --short -uno` — отслеживаемые файлы должны быть
+   **без изменений**. Любое изменение (в том числе чужое, §1.2 — список там
+   неполон: чужая работа в дереве растёт) — **остановиться** и спросить
+   пользователя; чужое не трогать и в ветку FEAT-020 не уносить. Чужие
+   неотслеживаемые файлы (`vault/issues/bug-014/`, `vault/plans/bug-014 …md`)
+   ветвлению не мешают — не добавлять их в коммиты.
 2. `git ls-tree numerical_scheme/implementation --name-only | Select-String numerical_solver` — база содержит солвер.
 3. `git checkout numerical_scheme/implementation; git checkout -b feat/feat-020/oil-rate-control`.
 4. Базовый прогон: `cd numerical_solver; .venv\Scripts\python -m pytest tests/ -q` →
@@ -624,8 +641,9 @@ Docstring каждой новой функции — одна строка + с�
 **Проверка:**
 - `.venv\Scripts\python -m pytest tests/test_prototype_adapter.py tests/test_energy.py tests/test_simulator.py -q`
 - полный прогон: **904 + новые**, прежние тесты без изменений (бит-в-бит по $T$ — §7).
-- `.venv\Scripts\python examples\measure_jt_form.py` отрабатывает без ошибки
-  (выборочная проверка скриптов).
+- `.venv\Scripts\python examples\measure_jt_form.py 08_degassing_jt` отрабатывает
+  без ошибки (выборочная проверка скриптов; без аргумента скрипт гоняет три
+  примера — `measure_jt_form.py:112-113`).
 
 **Зависимости:** требует шаг 1; блокирует шаг 4.
 **Оценка:** ~80 строк кода, ~90 строк тестов, 1 ч.
@@ -817,6 +835,10 @@ Docstring каждой новой функции — одна строка + с�
 
 - `tests/test_prototype_adapter.py`, новый класс `TestAdapterRateControl` (фикстуры
   модуля; $p_0$ = 200 бар, $N = 20$, $R = 50$ м):
+  Граничные условия — по образцу `bc_fake` (`test_prototype_adapter.py:147-148`):
+  `bc_rate = BoundaryConditions(well=RateControl(q, p_min), p_ext=P0_PA, T_ext=T0, Rs_ext=RS0)`;
+  фикстуры `model` и `adapter` функциональные, внутри теста это одна модель —
+  `model.well_rates(...)` смотрит на ту же модель, что и адаптер.
   - `test_rate_honoured` — `RateControl(2.0/86400, 100e5)`, `adapter.solve(initial_state, DT, bc_rate)`:
     `-result.G_o[0] == approx(2.0/86400, rel=1e-12)`; `result.p_wf > 100e5`;
     `result.p_wf < result.state.p[0]`. Эталон $p_{wf}$ — прототип напрямую:
@@ -924,9 +946,12 @@ $|\Delta S_g| = 8.4\cdot10^{-12}$, $|\Delta R_s| = 3.1\cdot10^{-10}$,
 $|\Delta T| = 6.8\cdot10^{-12}$ К, $|\Delta p_{wf}| = 1.0\cdot10^{-4}$ Па.
 
 **Проверки** (пороги — с запасом ~300× к замеру §3.3):
-- дробления нет: энергия вызвана ровно 24 раза в каждом прогоне (обёртка
-  `_CountingEnergySolver`, как в `test_simulator.py:418`) — иначе совпадение не
-  обязано выполняться;
+- дробления нет: энергия вызвана ровно 24 раза в каждом прогоне — иначе
+  совпадение не обязано выполняться. Обёртку-счётчик определить в
+  `test_rate_control.py` по образцу `_CountingEnergySolver`
+  (`test_simulator.py:418-433`; из соседнего тестового модуля не импортировать)
+  и подставить `simulator._energy = _Counting(simulator._energy)` после
+  `SimulatorFactory.from_config` и до `simulator.run`;
 - ограничение неактивно: $p_{wf} > $ `min_bhp` на всех записях Б;
 - прогон Б: `q_o_std` записей $k$ = заданному `q_oil` интервала, `rel=1e-12`
   (для интервалов `rate`);
@@ -952,14 +977,15 @@ Docstring теста — физика выше, пороги и замер, и �
 - `test_pressure_control_uses_last_interval` — конфиг 13a: `stationary_pwf == 6.0e6` точно.
 Конфиг для трёх тестов с дебитом — **конфиг примера 12** (`copy.deepcopy`) с
 историей из одного интервала `HistoryInterval(dt=86400.0, control="rate",
-q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не зависят (он создаётся в шаге 9).
+q_oil=…, min_bhp=101325.0)`; от примера 15 тесты не зависят (он создаётся в шаге 9).
 Обращение стоит 1.2–4 с (замер аудита, P2: `brentq` — 8 квадратур по ~50 мс плюс
 квадратура на всём отрезке $[p_{\min}, p_e]$ ~1–2 с), поэтому PVT, ОФП и сетку
 брать из фикстуры уровня класса (`scope="class"`), а `solve_closed` звать не
 чаще одного раза на тест.
-- `test_rate_control_inverts_last_rate` — `q_oil = 270/86400`:
-  $p_{wf}^* \approx 6.59493\cdot10^6$ Па (`rel=1e-5`; замер 6 594 933.9 Па);
-  `cl = solve_closed(...)`: `cl["p_wf"] == p_wf*`, `cl["q_o"] == approx(270/86400, rel=1e-6)`.
+- `test_rate_control_inverts_last_rate` — `q_oil = 270/86400`; **только**
+  `cl = solve_closed(...)` (внутри — одно обращение; отдельный вызов
+  `stationary_pwf` удвоил бы стоимость): `cl["p_wf"] == approx(6.59493e6, rel=1e-5)`
+  (замер 6 594 933.9 Па), `cl["q_o"] == approx(270/86400, rel=1e-6)`.
   Порог: `brentq` с `xtol = 1` Па даёт $|\Delta q|/q \lesssim x_{tol}/(p_e - p_{wf}^*)
   \approx 1.1\cdot10^{-7}$; замер $1.96\cdot10^{-8}$. Порог `1e-9` недостижим.
 - `test_unreachable_rate_gives_min_bhp` — `q_oil = 1000/86400`
@@ -1051,10 +1077,10 @@ q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не завис
 **Проверка:** `pytest tests/test_examples.py -k "StationaryPwf or PwfRampDown" -q`.
 **Оценка:** ~60 строк кода, ~60 строк тестов, 40 мин.
 
-### Шаг 9: Папка примера 14 — конфиг, данные, `main.py`, списки тестов
+### Шаг 9: Папка примера 15 — конфиг, данные, `main.py`, списки тестов
 
-1. `vault/issues/feat-020/probes/make_14_config.py` — по образцу
-   `vault/issues/feat-022/probes/make_13a_config.py`: `DST = EX / "14_oil_rate_ramp_up"`,
+1. `vault/issues/feat-020/probes/make_15_config.py` — по образцу
+   `vault/issues/feat-022/probes/make_13a_config.py`: `DST = EX / "15_oil_rate_ramp_up"`,
    копия трёх CSV из `12_large_drainage_radius`, история:
    ```python
    # q_k = 270·k/15 = 18·k м³ст/сут (решение пользователя 2026-09-29: линейный рост
@@ -1064,15 +1090,15 @@ q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не завис
        for k in range(1, 16)
    ]
    ```
-   Запуск: `.venv\Scripts\python ..\vault\issues\feat-020\probes\make_14_config.py`.
-2. `examples/14_oil_rate_ramp_up/main.py`:
+   Запуск: `.venv\Scripts\python ..\vault\issues\feat-020\probes\make_15_config.py`.
+2. `examples/15_oil_rate_ramp_up/main.py`:
    ```python
-   """Сценарий 14: пуск скважины, дебит нефти 18 -> 270 м³ст/сут за 15 сут (R_ext = 200 м)."""
+   """Сценарий 15: пуск скважины, дебит нефти 18 -> 270 м³ст/сут за 15 сут (R_ext = 200 м)."""
    ...  # как 13a
        run_example(
            config_path=here / "config.json",
            output_dir=here / "output",
-           title="14: пуск скважины с линейно растущим дебитом нефти",
+           title="15: пуск скважины с линейно растущим дебитом нефти",
            # 6 моментов равномерно по времени: 0, 3, ..., 15 сут (как 13a)
            n_profiles=6,
            # Без стационарного решения на профилях S_g (как 13a, решение
@@ -1082,12 +1108,12 @@ q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не завис
            overlays={"Sg": None},
        )
    ```
-3. `tests/test_examples.py`: `"14_oil_rate_ramp_up"` в `ALL_EXAMPLES` (после 13a) и
+3. `tests/test_examples.py`: `"15_oil_rate_ramp_up"` в `ALL_EXAMPLES` (после 13a) и
    в `NEEDS_SG_SECTION` (табличная ОФП, $S_g$ ~ 4 %).
    `tests/test_energy_matrix_examples.py:57-72` — в `ALL_EXAMPLES`; комментарий
    «Те же 14 сценариев» → «Те же 15 сценариев».
 4. Новый класс `TestOilRateRampUp` (после `TestPwfRampDown`), раздел
-   `# N. Сценарий 14: пуск с линейно растущим дебитом (FEAT-020)`; `NAME = "14_oil_rate_ramp_up"`:
+   `# N. Сценарий 15: пуск с линейно растущим дебитом (FEAT-020)`; `NAME = "15_oil_rate_ramp_up"`:
    - `test_config_is_rate_controlled` — 15 интервалов; у всех `control == "rate"`,
      `dt == 86400.0`, `min_bhp == 101325.0`, `p_wf is None`,
      `q_oil == approx(18*k/86400, rel=1e-15)`. Ловит: опечатку генератора, потерю полей.
@@ -1106,7 +1132,8 @@ q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не завис
      истории из `results`: `sim = types.SimpleNamespace(_energy=types.SimpleNamespace(_pvt=_pvt_of_config(cfg)))`
      (`_prepare` берёт PVT как `simulator._energy._pvt`, `closed_form.py:211`);
      `make_overlay_pressure(cfg)(ax, history, grid, sim)` на осях `plt.subplots()`
-     (бэкенд Agg — как в `example_runner.py:54`) не падает; `report_closed(cfg,
+     не падает (в тесте явно `matplotlib.use("Agg")` до `import matplotlib.pyplot`,
+     как в `example_runner.py:52-55`, и `plt.close(fig)` в конце); `report_closed(cfg,
      history, grid, sim)` под `contextlib.redirect_stdout` печатает «дебит задан»
      и $p_{wf}^*$ = 6.5949 МПа. Ловит: падение постобработки на `p_wf = None`.
      Стоимость: одно обращение (≤ 4 с) — кэш общий для наложения и отчёта.
@@ -1118,7 +1145,7 @@ q_oil=…, min_bhp=101325.0)`; от примера 14 тесты не завис
 ### Шаг 10: Прогон `main.py` и сверка чисел
 
 ```powershell
-cd numerical_solver; .venv\Scripts\python examples\14_oil_rate_ramp_up\main.py
+cd numerical_solver; .venv\Scripts\python examples\15_oil_rate_ramp_up\main.py
 ```
 Сверить с §3.1 (таблица по суткам — до 4-го знака; допуск на изменение
 реализации — нет: гидродинамика та же, что в пробе, $T$ от $p_{wf}$ не зависит) и
@@ -1126,9 +1153,9 @@ cd numerical_solver; .venv\Scripts\python examples\14_oil_rate_ramp_up\main.py
 причину, не подгонять. Зафиксировать: время расчёта, `report_rs`, `report_pvt`,
 баланс энергии, асимптотику $T$ однофазной зоны — числа нужны для README (шаги 11-12).
 
-### Шаг 11: README примера 14
+### Шаг 11: README примера 15
 
-**Файл:** `numerical_solver/examples/14_oil_rate_ramp_up/README.md` — по структуре
+**Файл:** `numerical_solver/examples/15_oil_rate_ramp_up/README.md` — по структуре
 README 13a. Обязательно (тесты `TestReadme`): разделы «Как модифицировать»,
 «Как увеличить газонасыщенность», классы `PrototypeHydroAdapter`,
 `TridiagEnergySolver`. Разделы:
@@ -1159,10 +1186,10 @@ README 13a. Обязательно (тесты `TestReadme`): разделы «�
 подраздел «Управление по дебиту нефти» после «Переменное забойное давление»
 (строки 100-104) с таблицей: папка, расписание 18 → 270 м³ст/сут, 15 сут, запись
 раз в сутки, $T(r_w)$ на 15 сут; время прогона (строка 138); замкнутое решение
-(строки 219-266: строка 14 таблицы; абзац о $p_{wf}$ стационара — «у 14 —
+(строки 219-266: строка 15 таблицы; абзац о $p_{wf}$ стационара — «у 15 —
 обращение по дебиту последнего интервала»); проверка $R_s$ (302-303); баланс
 энергии (329, 346); асимптотика (376); общие параметры (435-450: $R_e$ 200 м,
-$p_0$ 15.5 МПа, длительность, $\lambda$ у 10-14).
+$p_0$ 15.5 МПа, длительность, $\lambda$ у 10-15).
 
 ### Шаг 13: Регрессия
 
@@ -1170,7 +1197,7 @@ $p_0$ 15.5 МПа, длительность, $\lambda$ у 10-14).
 cd numerical_solver; .venv\Scripts\python -m pytest tests/ -q
 ```
 Ожидание: **все зелёные**; число — 904 + новые (оценка ≈ 955; зафиксировать
-фактическое). Время — базовое + ~1 мин (пример 14 в сессионном кэше
+фактическое). Время — базовое + ~1 мин (пример 15 в сессионном кэше
 `test_examples` ~13 с, в `test_energy_matrix_examples` ~30 с, `test_rate_control` ~8 с).
 Проверить, что результаты 01–13a не изменились: `test_examples` фиксирует
 замеренные числа 12 и 13a; дополнительно `examples\13a_pwf_ramp_down\main.py` —
@@ -1206,8 +1233,8 @@ $T(r_w)$ на 15 сут = 345.682 К, $p_{wf}$ записей = уставки. 
 | Аналитические | `test_rate_control_inverts_last_rate` — квадратура (3) против заданного дебита; `test_rate_honoured` — прототип напрямую как эталон $p_{wf}$ |
 | Предельные случаи | `q_oil = 0`; `min_bhp ≥ p_0` (закрыта); недостижимый дебит (ограничение); стационар при $q = 0$ и недостижимом $q$ |
 | Сходимость / точность | `TestControlConsistency` — совпадение с управлением по давлению до допуска Ньютона |
-| Инвариантные | единый источник: `_NoAccessWell` в энергии; `WellData.p_wf == HydroResult.p_wf`; нет `boundary_pressure`; $T$ при добыче не зависит от $p_{wf}$; баланс энергии 14 (`TestSharedChecks`) |
-| Интеграционные | `test_factory_builds_rate_control` (конфиг → фабрика → расчёт); `test_closed_form_hooks_run_for_rate_control` (постобработка примера 14 — наложение давления и `report_closed`) |
+| Инвариантные | единый источник: `_NoAccessWell` в энергии; `WellData.p_wf == HydroResult.p_wf`; нет `boundary_pressure`; $T$ при добыче не зависит от $p_{wf}$; баланс энергии 15 (`TestSharedChecks`) |
+| Интеграционные | `test_factory_builds_rate_control` (конфиг → фабрика → расчёт); `test_closed_form_hooks_run_for_rate_control` (постобработка примера 15 — наложение давления и `report_closed`) |
 | Регрессия | 904 прежних теста; бит-в-бит $T$ для управления по давлению (§7); матрица энергии всех 15 примеров |
 
 Главная проверка температуры — `TestControlConsistency`: при одном и том же поле
@@ -1220,10 +1247,10 @@ $T(r_w)$ на 15 сут = 345.682 К, $p_{wf}$ записей = уставки. 
 ## 10. Критерии завершения
 
 - [ ] `eq:bc_rate_well`, `eq:bc_rate_pwf` в постановке; PDF собирается без неразрешённых ссылок
-- [ ] `HydroResult.p_wf` заполнен во всех девяти конструкторах; `boundary_pressure` нигде не встречается
+- [ ] `HydroResult.p_wf` заполнен во всех девяти конструкторах; вызовов `.boundary_pressure(` нет (проверка шага 4)
 - [ ] `RateControl` + валидация + фабрика + адаптер; конфиг с `"control": "rate"` считается
 - [ ] `TestControlConsistency` (3 параметризации) зелёный
-- [ ] `stationary_pwf` + тесты; пример 14 с README и строками в `examples/README.md`
+- [ ] `stationary_pwf` + тесты; пример 15 с README и строками в `examples/README.md`
 - [ ] Прежние 904 теста зелёные, результаты 01–13a не изменились
 - [ ] Docstring-и новых функций — одна строка + уравнение
 - [ ] Vault обновлён; issue #41 прокомментирован

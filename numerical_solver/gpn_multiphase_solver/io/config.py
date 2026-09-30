@@ -110,15 +110,15 @@ class HistoryInterval:
     dt: float                        # длительность, с
     control: str = "pressure"        # тип управления: "pressure" или "rate"
     p_wf: Optional[float] = None     # забойное давление, Па (для pressure)
-    # Дебит НЕФТИ в стандартных условиях, м³ст/с (для rate, FEAT-020).
-    # Именно нефти, не суммарный расход: прототип исключает p_bhp из
-    # уравнения притока нефти (blackoil.py:61, в знаменателе одна λ_o),
+    # Дебит НЕФТИ в стандартных условиях, м³ст/с (control='rate', FEAT-020).
+    # Именно нефти, не суммарный расход: прототип выражает p_bhp из
+    # уравнения притока нефти (blackoil.py, _well_fluxes: в знаменателе одна λ_o),
     # а свободный газ досчитывается по тому же перепаду и не управляется.
     # Прежнее имя q_total обещало суммарный расход, которого нет.
     # Единицы СИ, как у остальных полей; конверсию в м³ст/сут,
     # ожидаемые прототипом, делает адаптер — там же, где Па → бар.
     q_oil: Optional[float] = None
-    min_bhp: Optional[float] = None  # минимальное забойное давление, Па (для rate)
+    min_bhp: Optional[float] = None  # минимальное забойное давление, Па (обязательно при control='rate')
 
 
 @dataclass
@@ -279,10 +279,35 @@ def _validate(cfg: SimulationConfig) -> None:
     for i, h in enumerate(cfg.time.history):
         if h.dt <= 0:
             raise ValueError(f"history[{i}].dt должен быть > 0, получено {h.dt}")
-        if h.control == "pressure" and h.p_wf is None:
-            raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
-        if h.control == "pressure" and h.p_wf is not None and h.p_wf <= 0:
-            raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
+        if h.control == "pressure":
+            if h.p_wf is None:
+                raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
+            if h.p_wf <= 0:
+                raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
+            # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
+            for name in ("q_oil", "min_bhp"):
+                if getattr(h, name) is not None:
+                    raise ValueError(
+                        f"history[{i}]: control='pressure' не использует {name} — "
+                        f"уберите поле или задайте control='rate'")
+        elif h.control == "rate":
+            # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
+            if h.q_oil is None:
+                raise ValueError(f"history[{i}]: control='rate', но q_oil не задан")
+            if h.q_oil < 0:
+                raise ValueError(f"history[{i}].q_oil должен быть >= 0, получено {h.q_oil}")
+            # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
+            if h.min_bhp is None:
+                raise ValueError(f"history[{i}]: control='rate', но min_bhp не задано")
+            if h.min_bhp <= 0:
+                raise ValueError(f"history[{i}].min_bhp должно быть > 0, получено {h.min_bhp}")
+            if h.p_wf is not None:
+                raise ValueError(
+                    f"history[{i}]: control='rate' не использует p_wf — забойное "
+                    f"давление при заданном дебите вычисляется")
+        else:
+            raise ValueError(
+                f"history[{i}].control = '{h.control}': допустимы 'pressure', 'rate'")
 
     # max_retries управляет числом попыток A-retry (2**max_retries подшагов).
     # bool исключается явно: в Python bool — подкласс int, а True как лимит бессмыслен.

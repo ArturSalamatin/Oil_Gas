@@ -1673,11 +1673,13 @@ class TestOilRateRampUp:
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
         assert "n_profiles=6" in text
 
-    def test_main_disables_saturation_overlay(self):
-        """main.py 15 не рисует стационар на профилях S_g (как 13a).
+    def test_main_disables_closed_form_overlays(self):
+        """main.py 15 не рисует стационар на профилях давления и S_g.
 
-        При нарастающем дебите пласт не на стационаре: S_g^max 0.038 против
-        0.018 у замыкания GOR = Rs0 — на графике это выглядит как ошибка.
+        На 15 сут у забоя избыток свободного газа (GOR 58.1 против Rs0 = 30,
+        S_g^max 0.038 против 0.018 у замыкания GOR = Rs0), давление ниже
+        стационарного на 464 кПа — на графике это выглядит как ошибка.
+        Сверка остаётся в консоли (report_closed).
         """
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert 'overlays={"Sg": None}' in text
+        assert 'overlays={"p": None, "Sg": None}' in text

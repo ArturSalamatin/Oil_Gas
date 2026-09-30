@@ -77,7 +77,8 @@ from pvt_plot import plot_pvt, report_pvt  # noqa: E402
 
 def run_example(config_path: str | Path, output_dir: str | Path,
                 title: str, overlays: dict | None = None,
-                n_profiles: int | None = None) -> tuple:
+                n_profiles: int | None = None,
+                steady_state: bool = True) -> tuple:
     """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
 
     Возвращает (elapsed, history, grid, config):
@@ -98,6 +99,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     времени от начала до конца расчёта (ближайшие записи истории). None —
     четыре опорных момента по номеру записи, как у всех примеров до
     FEAT-022. 13a задаёт 6: 0, 3, ..., 15 сут.
+
+    steady_state — строить ли стационарную аналитику: замкнутое решение
+    на профилях p и S_g, его сверку report_closed и асимптотику
+    температуры report_asymptotics. Все они — пределы t -> inf при
+    удержании одного режима скважины. False снимает их (13b: режим
+    меняется каждые сутки); явный overlay примера по-прежнему рисуется.
+    Проверка R_s (наложение и report_rs) от флага не зависит.
     """
     config_path = Path(config_path)
     output_dir = Path(output_dir)
@@ -141,10 +149,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # сценариям. Пример может задать свой overlay — он имеет приоритет,
     # а None отключает наложение (см. _pick_overlay).
     two_phase = config.initial_conditions.Rs0 > 0.0
+    # Стационарные наложения — только при steady_state: при смене режима
+    # скважины на каждых сутках (13b) предела t -> inf у записей нет.
+    steady = two_phase and steady_state
     p_overlay = _pick_overlay(overlays, "p",
-                              make_overlay_pressure(config) if two_phase else None)
+                              make_overlay_pressure(config) if steady else None)
     sg_overlay = _pick_overlay(overlays, "Sg",
-                               make_overlay_saturation(config) if two_phase else None)
+                               make_overlay_saturation(config) if steady else None)
 
     _plot_field(history, grid, times_to_plot, "p",
                 f"{title}\nПрофили давления",
@@ -220,8 +231,9 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     if config.initial_conditions.Rs0 > 0.0:
         print()
         report_rs(config, history, simulator._energy._pvt)
-        print()
-        report_closed(config, history, grid, simulator)
+        if steady_state:
+            print()
+            report_closed(config, history, grid, simulator)
 
     # ── PVT: числовая сводка ──
     # Безусловно, в отличие от report_rs: у однофазных примеров (Rs0 = 0)
@@ -242,7 +254,13 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # не сворачивается. Схема верифицируется сверкой матрицы с постановкой
     # и балансом энергии.
     print()
-    report_asymptotics(config, history, grid, simulator)
+    if steady_state:
+        report_asymptotics(config, history, grid, simulator)
+    else:
+        # Одна строка вместо двух отчётов: без неё пропажа сверок в
+        # консоли выглядела бы как сбой подключения модулей.
+        print("── Стационарная аналитика отключена (steady_state=False): "
+              "замкнутое решение и асимптотика температуры не строятся ──")
 
     return elapsed, history, grid, config
 

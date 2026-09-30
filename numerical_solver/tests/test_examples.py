@@ -545,6 +545,55 @@ def test_pick_overlay_none_disables_default():
     assert _pick_overlay({"Sg": None}, "Sg", default) is None
 
 
+def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
+    """steady_state=False снимает стационарную аналитику, проверку R_s — нет.
+
+    Решения пользователя: 2026-09-29 (FEAT-022, реш. 7) — стационарные
+    наложения и сверки отключаются флагом run_example; 2026-09-30
+    (FEAT-023) — проверка R_s остаётся. Стационар и асимптотика
+    температуры — пределы t -> inf при удержании одного режима; у 13b
+    режим меняется каждые сутки, и сверки печатали бы 7085 % и 0.94 К.
+
+    Функции проверок подменяются шпионами: тест смотрит, что они НЕ
+    вызываются, а не разбирает PNG. Пример 05 — самый быстрый двухфазный
+    (~5 с). Путь по умолчанию (steady_state=True) покрыт
+    test_energy_balance_reported_for_all_examples («Асимптотика
+    температуры» в выводе).
+    Ловит: флаг снимает не всё (наложение или один из отчётов остался)
+    или снимает лишнее (report_rs).
+    """
+    import contextlib
+    import io
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import example_runner
+
+    called = []
+
+    def spy(name):
+        def f(*args, **kwargs):
+            called.append(name)
+            # make_overlay_* вернули бы функцию рисования; None — «без наложения»
+            return None
+        return f
+
+    for name in ("make_overlay_pressure", "make_overlay_saturation",
+                 "report_closed", "report_asymptotics", "report_rs"):
+        monkeypatch.setattr(example_runner, name, spy(name))
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        example_runner.run_example(
+            config_path=EXAMPLES_DIR / "05_standing_table_rp" / "config.json",
+            output_dir=tmp_path,
+            title="тест steady_state",
+            steady_state=False,
+        )
+
+    assert called == ["report_rs"], f"вызваны: {called}"
+    assert "Стационарная аналитика отключена" in buf.getvalue()
+
+
 # ═══════════════════════════════════════════════════════════
 # I. Общие проверки: баланс энергии у всех примеров (FEAT-016)
 # ═══════════════════════════════════════════════════════════

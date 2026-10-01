@@ -7,7 +7,7 @@ issue: FEAT-023
 github: 40
 branch: feat/feat-023/alternating-bhp-example
 model_level: null
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-09-30
   round: 2

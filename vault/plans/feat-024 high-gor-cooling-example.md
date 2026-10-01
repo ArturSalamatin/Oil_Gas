@@ -878,3 +878,4 @@ cd numerical_solver
 - [[feat-021 large-drainage-radius-example]] — образец плана примера
 - [[bug-014 well-shutin-active-set]] — запасной путь `advance` (влит)
 - `vault/issues/feat-024/` — тело issue, комментарии, пробы
+- [[теплота дегазации следует из Rs(p,T) по Клапейрону и падает с ростом давления насыщения]] — при $p_b \approx 24$ МПа согласованная оценка $L \approx 65$ кДж/кг против заданных 168 (вопрос открыт)

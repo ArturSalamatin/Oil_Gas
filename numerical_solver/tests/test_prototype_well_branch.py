@@ -349,13 +349,14 @@ class TestAdvanceBranchLogic:
         _assert_restored(model)
 
     def test_all_fail(self, drawn_down):
-        # Отказ везде: после двух веток запасной путь сдаётся, converged = False —
-        # адаптер раздробит шаг, как раньше.
+        # Отказ везде: после двух веток запасной путь сдаётся; третья ступень
+        # (BUG-016) повторяет его с ||F||_2 и ограничителем dS_g — тоже отказ.
+        # converged = False — адаптер раздробит шаг, как раньше.
         model = _model(150.0)
         calls = _install_fake_phases(model, {
             ORIGINAL: (False, 0.0), ("shut", None): (False, 0.0), ("open", None): (False, 0.0)})
         _, rep = model.advance(drawn_down, 3600.0)
-        assert calls == [ORIGINAL, ("shut", None), ("open", None)]
+        assert calls == [ORIGINAL, ("shut", None), ("open", None), ("shut", None), ("open", None)]
         assert _fields(rep) == (False, "open", 1, True)
         _assert_restored(model)
 
@@ -363,11 +364,12 @@ class TestAdvanceBranchLogic:
         # Обе ветки сходятся, но несогласованы: «закрыта» с p[0] = 160 > p_wf
         # (должна была добывать), «открыта» с p[0] = 140 < p_wf (закачка).
         # Не более двух решений — без зацикливания; converged = False.
+        # Третья ступень (BUG-016) повторяет обе ветки — снова несогласованы.
         model = _model(150.0)
         calls = _install_fake_phases(model, {
             ORIGINAL: (False, 0.0), ("shut", None): (True, 160.0), ("open", None): (True, 140.0)})
         _, rep = model.advance(drawn_down, 3600.0)
-        assert calls == [ORIGINAL, ("shut", None), ("open", None)]
+        assert calls == [ORIGINAL, ("shut", None), ("open", None), ("shut", None), ("open", None)]
         assert _fields(rep) == (False, "open", 1, True)
         _assert_restored(model)
 

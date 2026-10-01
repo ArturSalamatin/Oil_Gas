@@ -7,7 +7,7 @@ date: 2026-09-30
 issue: BUG-016
 github: 44
 branch: fix/bug-016/newton-line-search-norm
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-01
   round: 3

@@ -8,6 +8,12 @@ issue: BUG-017
 github: 45
 branch: fix/bug-017/rs0-table-range-check
 status: готов к реализации
+audit:
+  date: 2026-10-01
+  round: 2
+  found: 6
+  auto-fixed: 6
+  manual-required: 0
 ---
 
 # BUG-017: проверка начального состояния против PVT — $R_{s,0}$ внутри таблицы, старт недонасыщенный, диагностика выхода за таблицы
@@ -81,7 +87,7 @@ status: готов к реализации
 
 ### 1.4 Тесты — кто вызывает `from_config` с нестандартным начальным состоянием
 
-Проба `vault/issues/bug-017/probes/check_ic_plugin.py` — pytest-плагин: оборачивает `SimulatorFactory.from_config`, вычисляет обе проверки и пишет нарушения в `check_ic_violations.txt`, исходники не меняет. Полный прогон `tests/` (рабочая копия 2026-10-01, 1035 тестов — на один больше HEAD из-за незакоммиченной правки `test_examples.py` параллельной сессии, 530 с): **нарушений нет** — ни один вызов `from_config` в тестах не нарушил бы ни одну из проверок (файл нарушений не создан). 8 падений того прогона — тесты примера 14 (`test_examples.py::TestHighGorCooling` ×4, `test_energy_matrix_examples.py[14_high_gor_cooling]`, `test_prototype_globalization.py` ×3): вызваны незакоммиченными правками конфига и таблицы примера 14 в рабочей копии, к BUG-017 не относятся (плагин результатов не меняет).
+Проба `vault/issues/bug-017/probes/check_ic_plugin.py` — pytest-плагин: оборачивает `SimulatorFactory.from_config`, вычисляет обе проверки и пишет нарушения в `check_ic_violations.txt`, исходники не меняет. Полный прогон `tests/` (рабочая копия 2026-10-01, 1035 тестов — на один больше тогдашнего HEAD `cc12520` из-за незакоммиченной правки `test_examples.py` параллельной сессии, позже вошедшей в `707fd10`; 530 с): **нарушений нет** — ни один вызов `from_config` в тестах не нарушил бы ни одну из проверок (файл нарушений не создан). 8 падений того прогона — тесты примера 14 (`test_examples.py::TestHighGorCooling` ×4, `test_energy_matrix_examples.py[14_high_gor_cooling]`, `test_prototype_globalization.py` ×3): вызваны незакоммиченными правками конфига и таблицы примера 14 в рабочей копии, к BUG-017 не относятся (плагин результатов не меняет).
 
 Статически: `p0`/`Rs0` в коде меняют только `tests/test_config.py:366, 378` (отрицательные значения — отказ в `_validate` раньше фабрики). `_create_pvt` напрямую зовут `tests/test_examples.py:817`, `examples/pvt_plot.py:92`, пробы `examples/measure_spurious_degas_heat.py:31`, `examples/measure_negative_sg_scale.py:48` — проверка 1 (внутри `_create_pvt`) сработает и там; все они берут штатные конфиги — проходят.
 
@@ -109,7 +115,7 @@ $env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3"
 1. **Вход.** `io/config.py:271-272` (`_validate`) проверяет только $R_{s,0} \ge 0$; таблицу `_validate` не читает (CSV читаются в фабрике).
 2. **PVT.** `factory.py:107-123` строит `BlackOilPVT` без сверки с `Rs0`. `BlackOilPVT` (`HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/pvt.py:32-35, 52`) обрезает $R_s$ крайними ветками.
 3. **Начальное состояние.** `factory.py:74-81`: $S_g = 0$, `regime = 2` при любом соотношении $p_0$ и $p_b(R_{s,0})$.
-4. **Решатель.** `blackoil.py:124` — запас газа с полным $R_s$; `blackoil.py:272` — активация при $R_s > R_s^{sat}(p) + 10^{-5}$; `blackoil.py:277-279` — начальное $S_g$ «закрытого сосуда».
+4. **Решатель.** `blackoil.py:131` — запас газа с полным $R_s$; `blackoil.py:306` — активация при $R_s > R_s^{sat}(p) + 10^{-5}$; `blackoil.py:312-313` — начальное $S_g$ «закрытого сосуда»; `blackoil.py:207` — отказ пробного вектора при $R_s > 1.5\,R_s^{max}$. Номера строк — на `cc12520` (после BUG-016; в записи реестра — прежние 124/200/272/277-279).
 5. **Проявление.** Отказ (`prototype_adapter.py:137-143`, ложный совет) или молча нефизичный скачок давления (§1.1, §1.2).
 
 ### 2.3 Целевое состояние
@@ -125,7 +131,7 @@ $env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3"
 |---|---|---|---|
 | **A** | Проверка 1 (диапазон) — в табличной ветке `_create_pvt`, где локально доступен `proto_pvt.rs_values` | без нового API и приватных цепочек; срабатывает и при прямых вызовах `_create_pvt` (тесты, `pvt_plot.py`) | `_create_pvt` получает обязанность проверки (уже бросает `ValueError` для неизвестной модели) |
 | B | Проверка 1 в `from_config` через новое публичное свойство диапазона у `PrototypePVTAdapter`/`TableFullPVT` | проверки в одном месте | новый API ради одной проверки; правка двух классов и их ABC-контракта |
-| **C** | Проверка 2 как $R_{s,0} \le R_s^{eq}(p_0) + 10^{-5}$ в `from_config` после `_create_pvt` | ровно критерий активации решателя (`blackoil.py:272`, `rs_switch_tol = 1e-5`); дегазированная нефть ($R_{s,0} = 0$) при $p_0 <$ табличного $p_b(0)$ допустима | — |
+| **C** | Проверка 2 как $R_{s,0} \le R_s^{eq}(p_0) + 10^{-5}$ в `from_config` после `_create_pvt` | ровно критерий активации решателя (`blackoil.py:306`, `rs_switch_tol = 1e-5`); дегазированная нефть ($R_{s,0} = 0$) при $p_0 <$ табличного $p_b(0)$ допустима | — |
 | D | Проверка 2 как $p_0 \ge p_b(R_{s,0})$ (формулировка issue) | буквально как в спецификации | ложная ошибка для $R_{s,0} = 0$ при $p_0 < p_b(0)$ таблицы (демо-таблица: $p_b(0) = 5$ МПа, хотя $R_s^{sat}(p) = 0 = R_{s,0}$ и пересыщения нет); на обрезанном $p_b$ таблицы молчит при $R_{s,0} > R_s^{max}$ |
 | **E** | Диагностика — в `_create_prototype_hydro` сразу после создания модели, только `isinstance(pvt, TableFullPVT)` | модель локальна; состояние строится из `ic` | английский текст прототипа — с русским префиксом |
 | F | Диагностика в адаптере (`PrototypeHydroAdapter.solve`) на первом шаге | ближе к месту расчёта | адаптер не знает «первый ли шаг»; лишний флаг состояния |
@@ -134,7 +140,9 @@ $env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3"
 
 **A + C + E.** A — проще B и без нового API; C — точнее D и совпадает с решателем; E — по решению 4, без флагов в адаптере. Отклонение от анализа issue #45: там вариант 2 сформулирован как $p_0 \ge p_b(R_{s,0})$ (D) и помечен «в одиночку наш случай не ловит». Формулировка C ловит и выход выше таблицы ($R_s^{eq} \le R_s^{max}$ при любом $p_0$), но проверка A всё равно нужна: (1) нижняя граница (решение 2); (2) понятное сообщение «таблица не покрывает `Rs0`» вместо «пересыщено» с обрезанным $p_b$.
 
-**Допуск C = $10^{-5}$ м³ст/м³ст** — `rs_switch_tol` решателя (`blackoil.py:32`, `RadialBlackOilModel` создаётся фабрикой без этого аргумента, `factory.py:197-205` — значит, всегда по умолчанию). Проверка отвергает ровно те начальные состояния, которые решатель на первом шаге объявил бы пересыщенными. Округление ввода: Стендинг, $R_{s,0} = 50$, $dR_s/dp \approx 6.4\cdot10^{-6}$ м³ст/м³ст на Па — $p_0$ на 1 Па ниже $p_b$ даёт избыток $6\cdot10^{-6} < 10^{-5}$, проходит.
+**Допуск C = $10^{-5}$ м³ст/м³ст** — `rs_switch_tol` решателя (`blackoil.py:32`, `RadialBlackOilModel` создаётся фабрикой без этого аргумента, `factory.py:197-205` — значит, всегда по умолчанию). Проверка отвергает ровно те начальные состояния, которые решатель при давлении $p_0$ счёл бы пересыщенными (сам решатель применяет критерий к пробному состоянию после шага, при новом давлении; выделение газа там, где давление упало ниже $p_b$, — штатная физика, не ошибка ввода). Округление ввода: Стендинг, $R_{s,0} = 50$, $dR_s/dp \approx 6.4\cdot10^{-6}$ м³ст/м³ст на Па — $p_0$ на 1 Па ниже $p_b$ даёт избыток $6\cdot10^{-6} < 10^{-5}$, проходит.
+
+**Слепое пятно C (принято, не исправляется).** $R_s^{eq}(p)$ таблицы ниже $p_b$ первой ветки обрезан до $R_s^{min}$. Если первая ветка $R_s^{min} > 0$, $R_{s,0} = R_s^{min}$ и $p_0 < p_b(R_s^{min})$, то $R_s^{eq}(p_0) = R_{s,0}$ — проверка C проходит, хотя состояние пересыщено; решатель газ не выделит (для него кривая насыщения ниже таблицы — константа $R_s^{min}$). Предупреждения нет: `pvt_range_warnings` проверяет кривую насыщения только в ячейках с газом. Случай практически недостижим: у лабораторной PVTO первая ветка — при давлении порядка атмосферного, $p_0$ ниже не бывает. При $R_s^{min} = 0$ (все таблицы проекта) пятна нет: $R_{s,0} = 0$ не пересыщена ни при каком $p_0$. Родственная задача — [[DEBT-027]] (выход за таблицы в ходе расчёта); `pvt_range_warnings` этот случай не ловит и там.
 
 ### 2.6 Подводные камни
 
@@ -150,10 +158,12 @@ $env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3"
 | Порядок вызовов | ✅ | A внутри `_create_pvt` (шаг 2 `from_config`) раньше C (сразу после) раньше E (шаг 4 `from_config`); в E модель уже создана |
 | Состояние при ошибке | ✅ | `ValueError` до создания `Simulator` — частично созданных объектов наружу нет; `setup_logging` уже вызван — безвредно |
 | Численная устойчивость | ✅ | сравнения скаляров, без вычитаний близких величин |
-| Связь с задачами | ⚠️ | [[DEBT-008]] правит `_validate` (другие поля) — конфликта нет; [[BUG-016]] влит — §1.1 измерен после него. Параллельные сессии правят рабочее дерево основного каталога (пример 14, `test_examples.py`, vault) — работать в worktree (§6) |
+| Связь с задачами | ⚠️ | [[DEBT-008]] правит `_validate` (другие поля) — конфликта нет; [[BUG-016]] влит — §1.1 измерен после него. [[DEBT-006]] (открыт) переписывает выбор пути в `_create_prototype_hydro` (`hasattr` → контракт ABC) — при его реализации учесть новый вызов `_warn_initial_table_range`; здесь условие уже через `isinstance(pvt, TableFullPVT)`, не через приватные атрибуты. Параллельные сессии правят рабочее дерево основного каталога (пример 14, README 15, `test_examples.py`, vault) — работать в worktree (§6) |
+| Советы README противоречат новой проверке | ✅ (шаг 5) | README 11, 12, 13a, 13b, 15 (раздел «Как увеличить газонасыщенность», п. 3) советуют «Увеличить `Rs0`», а `Rs0 = 30` у них — последняя ветка таблицы 0/30: после правки такой конфиг не загрузится (до правки — ровно сценарий бага). Шаг 5 дополняет пять README тем же предупреждением, что README 04 |
+| Слепое пятно проверки C | ✅ (принято) | $R_{s,0} = R_s^{min} > 0$ при $p_0 < p_b(R_s^{min})$ — см. §2.5; у таблиц проекта $R_s^{min} = 0$ |
 | Import-цепочки | ✅ | `radial_blackoil.state`, `radial_blackoil.diagnostics` — импорт внутри функции, как `radial_blackoil.pvt` в `_create_pvt`; `user_log` — из `.log` (уже импортируется `setup_logging`) |
 | Журнал в тестах | ✅ | логгер `gpn_multiphase_solver` не отключает `propagate` (`log.py:16-28`) — `caplog` его видит |
-| Соответствие формулам | ✅ | физика не меняется; критерий C = критерий активации `blackoil.py:272` |
+| Соответствие формулам | ✅ | физика не меняется; критерий C = критерий активации `blackoil.py:306` при $p = p_0$ |
 
 ### 2.7 Новые проблемы
 
@@ -162,12 +172,28 @@ $env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3"
 
 ## 3. Шаги
 
+### Затронутые файлы
+
+| Файл | Шаг | Что меняется |
+|---|---|---|
+| `numerical_solver/gpn_multiphase_solver/factory.py` | 2, 3, 4 | проверки A и C, предупреждения E; импорт `user_log` |
+| `numerical_solver/tests/test_factory_prototype.py` | 1 | раздел F: `TestInitialStateVsTable` (8), `TestInitialRangeWarnings` (2) |
+| `numerical_solver/tests/test_factory_standing_hydro.py` | 1 | `TestStandingInitialState` (4) |
+| `vault/knowledge/decisions/json-config-schema.md` | 5 | `Rs0` обязателен, ограничения начального состояния |
+| `vault/knowledge/decisions/P8-формат-ввода-json.md` | 5 | §5 «Валидация» — проверки начального состояния |
+| `numerical_solver/examples/04_table_table/README.md` | 5 | «Рычаг 2» — `Rs0 > 30` не загрузится |
+| `numerical_solver/examples/{11,12,13a,13b,15}_*/README.md` | 5 | «Увеличить `Rs0`» — оговорка о последней ветке таблицы |
+| `vault/roadmap/известные баги и технический долг.md` | 7 | BUG-017 — результат, статус |
+| `vault/issues/bug-017/05-comment-done.md` | 7 | комментарий в issue #45 (каталог в `.gitignore`) |
+
+Код решателя и прототипа (`HydroSolverPrototype/`) не меняется.
+
 ### Шаг 0: Подготовка
 
 **Предусловия:**
-1. Этот план закоммичен в `numerical_scheme/implementation` (worktree читает закоммиченную версию). Проверка: `git status --short -- "vault/plans/bug-017 rs0-table-range-check.md"` — пусто.
-2. С `cc12520` не менялись затронутые места: `git diff --stat cc12520 numerical_scheme/implementation -- numerical_solver/gpn_multiphase_solver/factory.py numerical_solver/tests/test_factory_prototype.py numerical_solver/tests/test_factory_standing_hydro.py` — пусто; иначе сверить блоки «До» шагов 2–4.
-3. **База зелёная.** На `cc12520` красные 7 тестов примера 14 (см. Baseline ниже) — внесены коммитами `bc91297` «fix example 14 config» и `cc12520` «fix» (конфиг и таблицы примера 14 изменены, тесты — нет); в рабочей копии основного каталога идёт незакоммиченная доработка примера 14 (`oil_pvt.csv`, `config.json`, `test_examples.py`). К BUG-017 не относится, но по CLAUDE.md регрессии блокируют работу: старт — после того, как пример 14 доведён и закоммичен, а прогон базы даёт 0 failed. Старт на красной базе — только с явного согласия пользователя; тогда критерий шага 6 — те же падения, ни одного нового.
+1. Этот план закоммичен в `numerical_scheme/implementation` (worktree читает закоммиченную версию). Первая версия — в `f4277c9`; правки аудита (2026-10-01) — закоммитить. Проверка: `git status --short -- "vault/plans/bug-017 rs0-table-range-check.md"` — пусто.
+2. С `f4277c9` не менялись затронутые места (factory и тесты не менялись и с `cc12520`; README 15 изменён в `707fd10`, строка «До» шага 5 — та же, строка 272): `git diff --stat f4277c9 numerical_scheme/implementation -- numerical_solver/gpn_multiphase_solver/factory.py numerical_solver/tests/test_factory_prototype.py numerical_solver/tests/test_factory_standing_hydro.py numerical_solver/examples/04_table_table/README.md numerical_solver/examples/11_degassing_at_boundary/README.md numerical_solver/examples/12_large_drainage_radius/README.md numerical_solver/examples/13a_pwf_ramp_down/README.md numerical_solver/examples/13b_pwf_alternating/README.md numerical_solver/examples/15_oil_rate_ramp_up/README.md vault/knowledge/decisions/json-config-schema.md vault/knowledge/decisions/P8-формат-ввода-json.md` — пусто; иначе сверить блоки «До» шагов 2–5.
+3. **База зелёная.** На `cc12520` и на `f4277c9` красные 7 тестов примера 14 (см. Baseline ниже) — внесены коммитами `bc91297` «fix example 14 config» и `cc12520` «fix» (конфиг и таблицы примера 14 изменены, тесты — нет); в рабочей копии основного каталога идёт незакоммиченная доработка примера 14 (`oil_pvt.csv`, `config.json`, README). К BUG-017 не относится, но по CLAUDE.md регрессии блокируют работу: старт — после того, как пример 14 доведён и закоммичен, а прогон базы даёт 0 failed. Старт на красной базе — только с явного согласия пользователя; тогда критерий шага 6 — те же падения, ни одного нового.
 
 ```powershell
 cd D:\Lessons\Grants\2026\GPN\Oil_Gas
@@ -176,9 +202,17 @@ cd .worktrees\bug-017\numerical_solver
 D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/ -q -p no:cacheprovider
 ```
 
-Baseline на `cc12520` (2026-10-01, временный отсоединённый worktree, 465 с): **1034 теста — 1027 passed, 7 failed, 1 warning**. Падения — только пример 14: `test_energy_matrix_examples.py::test_matrix_matches_reference[14_high_gor_cooling]`, `test_examples.py::TestHighGorCooling::{test_wellbore_cools_by_5_to_10_K, test_well_saturation_matches_relperm, test_main_disables_saturation_overlay}`, `test_prototype_globalization.py::TestFirstStepConverges::{test_example14_fine_grid_first_step[100-…], [150-…], test_sg_step_limited_in_third_stage}` (предусловие 3). На зелёной базе ожидается 1034 passed — перемерить. venv — основного каталога (в worktree `.venv` нет). pytest из `<worktree>\numerical_solver` берёт код worktree (`tests/conftest.py` подключает прототип worktree). Скрипты вне pytest — только с `$env:PYTHONPATH` на worktree (память «Worktree и PYTHONPATH»).
+Baseline на `cc12520` (2026-10-01, временный отсоединённый worktree, 465 с): **1034 теста — 1027 passed, 7 failed, 1 warning**. Падения — только пример 14: `test_energy_matrix_examples.py::test_matrix_matches_reference[14_high_gor_cooling]`, `test_examples.py::TestHighGorCooling::{test_wellbore_cools_by_5_to_10_K, test_well_saturation_matches_relperm, test_main_disables_saturation_overlay}`, `test_prototype_globalization.py::TestFirstStepConverges::{test_example14_fine_grid_first_step[100-…], [150-…], test_sg_step_limited_in_third_stage}` (предусловие 3). Перемер аудита (2026-10-01, экспорт `git archive` в каталог проб): `cc12520` — 1034 теста, 1027 passed, 7 failed, 488 с (совпадает); `f4277c9` (после `707fd10`: +1 тест в `test_examples.py`) — **1035 тестов, 1028 passed, 7 failed** (те же 7), 499 с. Тот же `f4277c9` с кодом шагов 1–4 этого плана — 1042 passed, 7 failed (+14, набор падений тот же). На зелёной базе ожидается 1035 passed (если `test_examples.py` не менялся) — перемерить. venv — основного каталога (в worktree `.venv` нет). pytest из `<worktree>\numerical_solver` берёт код worktree (`tests/conftest.py` подключает прототип worktree). Скрипты вне pytest — только с `$env:PYTHONPATH` на worktree (память «Worktree и PYTHONPATH»).
 
-Воспроизвести баг в worktree (команда §2.1 с `$env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3;" + (Get-Location).Path`) — `RuntimeError`.
+Воспроизвести баг в worktree — команда §2.1, но с venv основного каталога (в worktree `.venv` нет, относительный `.venv\Scripts\python` не найдётся) и `PYTHONPATH` на worktree:
+
+```powershell
+cd D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-017\numerical_solver
+$env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3;" + (Get-Location).Path
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -c "from gpn_multiphase_solver.io.config import load_config; from gpn_multiphase_solver.factory import SimulatorFactory; c=load_config('examples/12_large_drainage_radius/config.json'); c.initial_conditions.Rs0=150.0; s,st=SimulatorFactory.from_config(c); s.run(st)"
+```
+
+Ожидание — `RuntimeError: HydroSolver не сошёлся …`. Во всех командах ниже `pytest` — это `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest`, запуск из `<worktree>\numerical_solver`.
 
 **Оценка:** ~15 мин (прогон ~8 мин).
 
@@ -189,7 +223,22 @@ Baseline на `cc12520` (2026-10-01, временный отсоединённы
 
 **Что сделать:**
 
-1. `numerical_solver/tests/test_factory_prototype.py`: в шапку модуля (докстринг, строки 3-8) добавить пункт `- Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)`. Импорты: добавить `import logging`, `import shutil` к стандартным (после `from pathlib import Path`).
+1. `numerical_solver/tests/test_factory_prototype.py`: в шапку модуля (докстринг, строки 3-8) добавить пункт `- Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)` — последней строкой списка, после `- Ошибки: отсутствие CSV файла`. Импорты (строки 11-14):
+
+До:
+```text
+from pathlib import Path
+
+import numpy as np
+```
+После:
+```text
+import logging
+import shutil
+from pathlib import Path
+
+import numpy as np
+```
 2. Там же — в конец файла (после `TestConfigErrors`, строка ~275) новый раздел:
 
 ```python
@@ -373,7 +422,7 @@ class TestStandingInitialState:
         assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 ```
 
-Импорт `import logging` — в начало `test_factory_standing_hydro.py` (после `from pathlib import Path`). `BASELINE`, `np`, `pytest`, `load_config`, `SimulatorFactory` там уже импортированы (строки 8-23).
+Импорт `logging` в `test_factory_standing_hydro.py` (строки 8-10) — так же, перед `from pathlib import Path`: `import logging` отдельной строкой над ней. `BASELINE`, `np`, `pytest`, `load_config`, `SimulatorFactory` там уже импортированы (строки 8-23).
 
 **Проверка после шага:**
 ```powershell
@@ -432,16 +481,16 @@ def _check_rs0_in_table(Rs0: float, rs_values, oil_pvt_file: str) -> None:
             f"Rs0 в этих пределах.")
 ```
 
-**Проверка после шага:** тесты шага 1 — `test_rs0_above_last_branch_raises`, `test_rs0_below_guard_threshold_raises`, `test_rs0_below_first_branch_raises` зелёные; `test_supersaturated_start_raises` (оба), `test_p0_above_tables_warns` — ещё красные. Регрессия (проверка 1 стоит в `_create_pvt`, который `test_examples.py:817` зовёт для всех табличных примеров): `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/test_factory_prototype.py tests/test_examples.py -q -p no:cacheprovider -m "not slow"` (маркер `slow` объявлен в `numerical_solver/pyproject.toml:29-31`).
+**Проверка после шага:** тесты шага 1 — `test_rs0_above_last_branch_raises`, `test_rs0_below_guard_threshold_raises`, `test_rs0_below_first_branch_raises` зелёные; `test_supersaturated_start_raises` (оба), `test_p0_above_tables_warns` — ещё красные. Регрессия (проверка 1 стоит в `_create_pvt`, который `test_examples.py:817` зовёт для всех табличных примеров): `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/test_factory_prototype.py tests/test_examples.py -q -p no:cacheprovider -m "not slow"` (маркер `slow` объявлен в `numerical_solver/pyproject.toml:28-30`). Замер аудита (раунд 2, `f4277c9` + шаги 1–4): 341 тест, 4 мин 15 с; на красной базе 3 падения `TestHighGorCooling` — ожидаемы (предусловие 3), других быть не должно.
 
-**Зависимости:** шаг 1. **Оценка:** ~20 строк, 10 мин.
+**Зависимости:** шаг 1. **Оценка:** ~20 строк, 10 мин + регрессия ~4 мин.
 
 ### Шаг 3: Проверка недонасыщенного старта (вариант C)
 
 **Цель:** $R_{s,0} > R_s^{eq}(p_0) + 10^{-5}$ → `ValueError` для обеих моделей PVT.
 **Файл:** `numerical_solver/gpn_multiphase_solver/factory.py`
 
-**Контекст:** `pvt` — `FullPVT` с методами `Rs_eq(p)` и `pb(Rs)` (`pvt/base.py:39, 64`; массивы на входе и выходе). Решатель включает газ в ячейке при $R_s > R_s^{sat}(p) + $ `rs_switch_tol` (`blackoil.py:272`, `rs_switch_tol = 1e-5` по умолчанию, `blackoil.py:32`; фабрика его не задаёт, `factory.py:197-205`).
+**Контекст:** `pvt` — `FullPVT` с методами `Rs_eq(p)` и `pb(Rs)` (`pvt/base.py:39, 64`; массивы на входе и выходе). Решатель включает газ в ячейке при $R_s > R_s^{sat}(p) + $ `rs_switch_tol` (`blackoil.py:306`, `rs_switch_tol = 1e-5` по умолчанию, `blackoil.py:32`; фабрика его не задаёт, `factory.py:197-205`).
 
 **Изменения:**
 
@@ -464,7 +513,7 @@ def _check_rs0_in_table(Rs0: float, rs_values, oil_pvt_file: str) -> None:
 ```python
 # Допуск пересыщения на старте, м³ст/м³ст, — rs_switch_tol решателя
 # (RadialBlackOilModel, blackoil.py:32; фабрика его не меняет): проверка
-# отвергает ровно те состояния, которые решатель на первом шаге объявил бы
+# отвергает ровно те состояния, которые решатель при давлении p0 счёл бы
 # пересыщенными. Округление ввода не мешает: p0 на 1 Па ниже p_b даёт избыток
 # ~6e-6 (Стендинг, Rs0 = 50) и 3e-6 (таблица 0/30).
 _RS0_SUPERSAT_TOL = 1e-5
@@ -492,7 +541,7 @@ def _check_undersaturated_start(ic, pvt) -> None:
 
 Формат `{pb / 1e6:.6g}` при $p_b(20) = 11.6667$ МПа печатает `11.6667` — на это опирается `test_supersaturated_start_raises` (табличный).
 
-**Проверка после шага:** все 14 тестов шага 1, кроме `test_p0_above_tables_warns`, зелёные. Регрессия: `pytest tests/test_factory_prototype.py tests/test_factory_standing_hydro.py tests/test_config.py -q -p no:cacheprovider`.
+**Проверка после шага:** все 14 тестов шага 1, кроме `test_p0_above_tables_warns`, зелёные. Регрессия (`pytest` — venv основного каталога, см. шаг 0): `pytest tests/test_factory_prototype.py tests/test_factory_standing_hydro.py tests/test_config.py -q -p no:cacheprovider` — 133 passed, ~6 с (замер аудита на `f4277c9` + шаги 1–4).
 
 **Зависимости:** шаг 2 (порядок проверок). **Оценка:** ~30 строк, 15 мин.
 
@@ -501,7 +550,7 @@ def _check_undersaturated_start(ic, pvt) -> None:
 **Цель:** табличный путь — `pvt_range_warnings` прототипа для начального состояния в `user_log.warning`.
 **Файл:** `numerical_solver/gpn_multiphase_solver/factory.py`
 
-**Контекст:** `radial_blackoil/diagnostics.py:22-53` — `pvt_range_warnings(model, state)` возвращает список строк (английский текст прототипа): давление вне газовой таблицы, `Rs` вне веток, давление выше последней строки ветки, насыщенная кривая (только для ячеек с газом), `S_g` вне таблицы ОФП. Использует `model.pvt.gp`, `rs_values`, `pb`, `max_pressure_of_rs` и `model.relperm.sg` — у `HydroPVTtoBlackOilAdapter` (Стендинг) `gp` и `max_pressure_of_rs` нет, поэтому только `TableFullPVT`. ОФП Кори табулируется фабрикой в `TabulatedRelPerm` (`factory.py:225-238`) — `sg` есть на обоих путях ОФП. `BlackOilState` — dataclass `radial_blackoil/state.py:5-9` (`pressure_bar`, `rs_sm3_sm3`, `sg`, `gas_active`).
+**Контекст:** `radial_blackoil/diagnostics.py:22-53` — `pvt_range_warnings(model, state)` возвращает список строк (английский текст прототипа): давление вне газовой таблицы, `Rs` вне веток, давление выше последней строки ветки, насыщенная кривая (только для ячеек с газом), `S_g` вне таблицы ОФП. Использует `model.pvt.gp`, `rs_values`, `pb`, `max_pressure_of_rs` и `model.relperm.sg` — у `HydroPVTtoBlackOilAdapter` (Стендинг) `gp` и `max_pressure_of_rs` нет, поэтому только `TableFullPVT`. ОФП Кори табулируется фабрикой в `TabulatedRelPerm` (`factory.py:225-238`) — `sg` есть на обоих путях ОФП. `BlackOilState` — dataclass `radial_blackoil/state.py:5-9` (`pressure_bar`, `rs_sm3_sm3`, `sg`, `gas_active`); конструктор однофазного однородного состояния — `BlackOilState.undersaturated(n, pressure_bar, rs)` (`state.py:11-13`: `np.full` давления и $R_s$, $S_g = 0$, `gas_active = False`).
 
 **Изменения:**
 
@@ -550,24 +599,19 @@ def _warn_initial_table_range(model, ic) -> None:
 
     # Начальное состояние однородно (p0, Rs0, S_g = 0, газ неактивен), а
     # pvt_range_warnings смотрит только min/max — одной ячейки достаточно.
-    state = BlackOilState(
-        pressure_bar=np.array([ic.p0 / BAR_TO_PA]),
-        rs_sm3_sm3=np.array([float(ic.Rs0)]),
-        sg=np.zeros(1),
-        gas_active=np.zeros(1, dtype=bool),
-    )
+    state = BlackOilState.undersaturated(1, ic.p0 / BAR_TO_PA, ic.Rs0)
     for warning in pvt_range_warnings(model, state):
         user_log.warning(f"Начальное состояние вне таблиц: {warning}")
 ```
 
-**Проверка после шага:** все 14 тестов шага 1 зелёные. Регрессия: `pytest tests/test_factory_prototype.py tests/test_factory_standing_hydro.py -q -p no:cacheprovider`. Вручную — примеры не печатают `[WARNING]`: запуск одного табличного (`examples/04_table_table/main.py` с `$env:PYTHONPATH` на worktree) — в консоли нет строк `Начальное состояние вне таблиц`.
+**Проверка после шага:** все 14 тестов шага 1 зелёные. Регрессия (`pytest` — venv основного каталога, см. шаг 0): `pytest tests/test_factory_prototype.py tests/test_factory_standing_hydro.py -q -p no:cacheprovider`. Вручную — примеры не печатают `[WARNING]`: запуск одного табличного (`examples/04_table_table/main.py` с `$env:PYTHONPATH` на worktree) — в консоли нет строк `Начальное состояние вне таблиц`.
 
 **Зависимости:** шаг 3. **Оценка:** ~25 строк, 15 мин.
 
 ### Шаг 5: Документация
 
 **Цель:** спецификация и README согласованы с кодом.
-**Файлы:** `vault/knowledge/decisions/json-config-schema.md`, `numerical_solver/examples/04_table_table/README.md`.
+**Файлы:** `vault/knowledge/decisions/json-config-schema.md`, `vault/knowledge/decisions/P8-формат-ввода-json.md`, `numerical_solver/examples/04_table_table/README.md`, `numerical_solver/examples/{11_degassing_at_boundary,12_large_drainage_radius,13a_pwf_ramp_down,13b_pwf_alternating,15_oil_rate_ramp_up}/README.md`.
 
 1. `vault/knowledge/decisions/json-config-schema.md`, строки 104 и 106 (решение 3):
 
@@ -598,13 +642,38 @@ def _warn_initial_table_range(model, ic) -> None:
 покрывала $R_{s,0}$). Для больших $R_s$ нужна своя PVTO-таблица.
 ```
 
-**Проверка после шага:** `git diff --stat` — два файла.
-**Оценка:** 10 мин.
+3. README примеров 11, 12, 13a, 13b, 15 — раздел «Как увеличить газонасыщенность», пункт 3 «**Увеличить `Rs0`**» (строки: 11 — 116, 12 — 190, 13a — 199, 13b — 214, 15 — 272; на `f4277c9`). У всех пяти таблица `oil_pvt.csv` с ветками 0/30 и `Rs0 = 30` — последняя ветка: совет без оговорки ведёт ровно в сценарий бага, после правки — в `ValueError`. В каждом файле после строки
+
+До:
+```markdown
+3. **Увеличить `Rs0`** — больше растворённого газа на единицу объёма нефти.
+```
+После:
+```markdown
+3. **Увеличить `Rs0`** — больше растворённого газа на единицу объёма нефти.
+   Сейчас `Rs0 = 30` — последняя ветка `oil_pvt.csv` ($R_s \in \{0, 30\}$):
+   с большим `Rs0` конфиг не загрузится, пока в таблицу не добавлены ветки,
+   покрывающие его (фабрика требует, чтобы таблица покрывала $R_{s,0}$).
+```
+Следующие строки пункта (⚠️ про $p_b$ и зазор $p_0 - p_b$) не меняются. Строка «До» в каждом файле встречается ровно один раз.
+
+4. `vault/knowledge/decisions/P8-формат-ввода-json.md`, §5 «Валидация» — после блока «Общая валидация (geometry, grid) — наш Factory» (строки 206-208) добавить:
+
+```markdown
+
+Начальное состояние против PVT — наш Factory (`from_config`, BUG-017):
+- табличная PVT: `Rs0` в диапазоне веток `oil_pvt.csv` — иначе `ValueError`
+- обе модели PVT: недонасыщенный старт `Rs0 <= Rs_eq(p0)` (допуск 1e-5 м³ст/м³ст) — иначе `ValueError`
+- табличная PVT: выход начального состояния за PVT- и ОФП-таблицы прототипа — предупреждение в журнале
+```
+
+**Проверка после шага:** `git diff --stat` — восемь файлов (2 vault, 6 README).
+**Оценка:** 20 мин.
 
 ### Шаг 6: Верификация
 
-1. Полный прогон в worktree: `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/ -q -p no:cacheprovider` — **baseline + 14 passed** (шаг 1: 10 в `test_factory_prototype.py`, 4 в `test_factory_standing_hydro.py`): при базе 1034 — **1048 passed, 0 failed**. Время прогона почти не меняется (новые тесты не считают, только строят объекты; ~1 с).
-2. Воспроизведение §2.1 в worktree (`$env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3;" + (Get-Location).Path`): `ValueError: Rs0 = 150 м³ст/м³ст вне диапазона таблицы oil_pvt.csv: ветки R_s от 0 до 30 м³ст/м³ст …` — из `from_config`, расчёт не начинается.
+1. Полный прогон в worktree: `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe -m pytest tests/ -q -p no:cacheprovider` — **baseline + 14 passed** (шаг 1: 10 в `test_factory_prototype.py`, 4 в `test_factory_standing_hydro.py`), **0 failed**; baseline — число из прогона шага 0. Время прогона почти не меняется (новые тесты не считают, только строят объекты; ~1 с).
+2. Воспроизведение в worktree — та же команда, что в шаге 0 (venv основного каталога, `$env:PYTHONPATH` на worktree): `ValueError: Rs0 = 150 м³ст/м³ст вне диапазона таблицы oil_pvt.csv: ветки R_s от 0 до 30 м³ст/м³ст …` — из `from_config`, расчёт не начинается.
 3. Все конфиги загружаются без ошибок и `[WARNING]` (скрипт §1.3; запуск с `$env:PYTHONPATH` на worktree):
    ```powershell
    cd D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-017\numerical_solver
@@ -620,7 +689,7 @@ def _warn_initial_table_range(model, ic) -> None:
 
 1. Реестр `vault/roadmap/известные баги и технический долг.md`, запись BUG-017: поле `**Результат:**` (что сделано, тестов было → стало), статус `✅ ИСПРАВЛЕНО (<дата>)`.
 2. Комментарий в issue #45 — `vault/issues/bug-017/05-comment-done.md`, `gh issue comment 45 --repo ArturSalamatin/Oil_Gas --body-file …`.
-3. Коммиты (по CLAUDE.md): код и тесты — `fix: BUG-017 — проверка начального состояния против PVT в фабрике`; README 04 — `docs: README 04 — Rs0 выше таблицы не загрузится (BUG-017)`; vault (схема, реестр, план) — отдельным коммитом `vault: …`.
+3. Коммиты (по CLAUDE.md): код и тесты — `fix: BUG-017 — проверка начального состояния против PVT в фабрике`; README 04, 11, 12, 13a, 13b, 15 — `docs: README табличных примеров — Rs0 выше таблицы не загрузится (BUG-017)`; vault (схема, P8, реестр, план) — отдельным коммитом `vault: …`.
 
 ## 4. Тестовая стратегия
 
@@ -646,19 +715,20 @@ def _warn_initial_table_range(model, ic) -> None:
 ## 5. Критерии завершения
 
 - [ ] 14 новых тестов зелёные; до правки — 6 красных (шаг 1)
-- [ ] Все существующие тесты зелёные (baseline + 14; на зелёной базе `cc12520`+ — 1048 passed)
+- [ ] Все существующие тесты зелёные: passed = baseline шага 0 + 14, failed = 0 (число baseline — из прогона шага 0, а не из этого плана: база меняется параллельной работой над примерами)
 - [ ] Воспроизведение §2.1 даёт `ValueError` из `from_config`
 - [ ] Все конфиги проекта грузятся без ошибок и `[WARNING]` (шаг 6.3)
-- [ ] `json-config-schema.md` и README 04 обновлены
+- [ ] `json-config-schema.md`, `P8-формат-ввода-json.md`, README 04, 11, 12, 13a, 13b, 15 обновлены
 - [ ] Реестр, issue #45 — обновлены
 
 ## 6. Как начать работу по этому плану
 
 1. Прочитать этот файл целиком и запись BUG-017 в [[известные баги и технический долг]].
-2. Шаг 0: worktree `.worktrees/bug-017` от `numerical_scheme/implementation` — рабочее дерево основного каталога делят параллельные сессии (незакоммиченные правки примера 14, `test_examples.py`, vault).
+2. Шаг 0: worktree `.worktrees/bug-017` от `numerical_scheme/implementation` — рабочее дерево основного каталога делят параллельные сессии (незакоммиченные правки примера 14 и vault; на 2026-10-01 правки примера 15 и `test_examples.py` уже закоммичены в `707fd10`).
 3. venv — основного каталога: `D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python.exe`. pytest из `<worktree>\numerical_solver` берёт код worktree; скрипты вне pytest — с `$env:PYTHONPATH = "HydroSolverPrototype/Prototype_1.0.3;" + (Get-Location).Path` в той же команде.
 4. Baseline (шаг 0), затем шаг 1 — тесты красные, шаги 2–4 — по одному, после каждого — указанная проверка.
 5. Проба §1.4 (`vault/issues/bug-017/probes/check_ic_plugin.py`) — в `.gitignore`, в worktree её нет; для повторного замера запускать из основного каталога: `cd numerical_solver; $env:PYTHONPATH = "../vault/issues/bug-017/probes;HydroSolverPrototype/Prototype_1.0.3"; .venv\Scripts\python -m pytest tests/ -q -p check_ic_plugin -p no:cacheprovider`.
+6. Пробы аудита (там же, `vault/issues/bug-017/probes/`): `apply_plan.py` — применяет python-блоки плана (шаг 1 — `tests`, шаги 2–4 — `s2`/`s3`/`s4` по одному или `fix` разом) к экспорту `git archive <коммит> numerical_solver` в каталоге проб, без правки исходников; `spot_first_step.py` — первый шаг `advance` для замеров §1.1–1.2 (111.0 / 20.14 / 13.78 / 9.417 МПа на коде до правки). Порядок запуска — в их докстрингах.
 
 ## 7. Связанные
 

@@ -50,3 +50,12 @@
 - `BlackOilNewtonReport`: new fields `well_branch` (BHP control, branch of the accepted step), `well_switches`, `fallback` — with defaults, positional construction unchanged.
 - Physics, residual equations, tolerances and well semantics (producer only, no injection) are unchanged. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
 - Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/42; plan: `vault/plans/bug-014 well-shutin-active-set.md` of the GPN project.
+
+## Local changes — GPN project (BUG-016)
+- Problem: with a high initial Rs (Rs0 = 150) and a sharp BHP drop, the first step did not converge on grids N >= 100 at any step split. The phase active set activates tens of cells at once with a closed-flash Sg guess (0.55-0.71 against 0.22 in the solution); the Newton direction then does not decrease ||F||_inf for any alpha, and the line search (12 halvings) stalls. The BUG-014 fallback fails the same way.
+- `advance()`: a third stage, only when the original algorithm and the BUG-014 fallback both fail — the fallback (moved verbatim into `_fallback()`) is run again with `_line_search_l2 = True` (a Newton step is accepted on a decrease of ||F||_2; the convergence test stays on ||F||_inf) and `_sg_step_max = 0.2` (the whole update is scaled so that |dSg| of two-phase cells <= 0.2, as ds_max in OPM Flow). Wherever the first two stages converge, results are bitwise the same as before.
+- Outside `advance()` both attributes keep their defaults (`False`, `None`), also after an exception (`try/finally`).
+- `BlackOilNewtonReport`: new field `globalized` (the third stage ran), default `False`.
+- Effect on the GPN examples: 13 of 17 bitwise; 04a, 11, 12, 13b no longer split their first step (99.8 -> 40 s, 6.6 -> 3.6 s, 27.6 -> 15 s, 69.6 -> 56.8 s); first-step splitting of 04a on N = 150...500 drops from 512...16384 to 1...8 substeps.
+- Physics, residual equations, tolerances and well semantics are unchanged. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
+- Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/44; plan: `vault/plans/bug-016 newton-line-search-norm.md` of the GPN project.

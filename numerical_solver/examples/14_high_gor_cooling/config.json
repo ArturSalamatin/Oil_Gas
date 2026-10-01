@@ -32,7 +32,7 @@
     "c_p_gas": 1000.0,
     "mu_JT_oil": -4e-07,
     "mu_JT_gas": 4e-06,
-    "L_degas": 275000.0
+    "L_degas": 230000.0
   },
   "initial_conditions": {
     "p0": 24500000.0,

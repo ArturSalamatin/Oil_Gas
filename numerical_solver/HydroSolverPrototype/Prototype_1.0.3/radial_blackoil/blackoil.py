@@ -25,6 +25,7 @@ class BlackOilNewtonReport:
     well_branch: str = ''     # BHP control: branch of the accepted step ('open'/'shut'), BUG-014
     well_switches: int = 0    # branch changes in advance's fallback, BUG-014
     fallback: bool = False    # step solved by advance's fallback, BUG-014
+    globalized: bool = False  # advance's third stage ran (||F||_2 line search, Sg step limit), BUG-016
 
 class RadialBlackOilModel:
     def __init__(self, grid, rock, pvt, relperm, p_bhp_bar, p_outer_bar,
@@ -44,6 +45,12 @@ class RadialBlackOilModel:
         # well branch for the whole nonlinear solve (None -> chosen from p0);
         # _sg_lower_bound is the line-search bound on Sg of two-phase cells.
         self._well_branch=None; self._sg_lower_bound=-0.05
+        # BUG-016: set by advance's third stage only.  _line_search_l2 accepts a
+        # Newton step on a decrease of ||F||_2 instead of ||F||_inf (the Newton
+        # direction is a descent direction of ||F||_2^2, not of ||F||_inf);
+        # _sg_step_max limits |dSg| of two-phase cells per Newton update by
+        # scaling the whole update (Appleyard-type chop, as ds_max in OPM Flow).
+        self._line_search_l2=False; self._sg_step_max=None
         if jacobian_mode not in ('grouped','reference'): raise ValueError("jacobian_mode must be 'grouped' or 'reference'")
         if linear_solver not in ('sparse','dense'): raise ValueError("linear_solver must be 'sparse' or 'dense'")
         self.jacobian_mode=jacobian_mode; self.linear_solver=linear_solver
@@ -210,23 +217,32 @@ class RadialBlackOilModel:
         return True
     def _newton_fixed_active_set(self,z0,state_old,dt_s,gas_active,max_iter=15,rtol=1e-8,atol_sm3s=1e-11):
         z=np.asarray(z0,float).copy(); f_initial=self.residual(z,state_old,dt_s,gas_active); scale=max(np.linalg.norm(f_initial,np.inf),1e-9)
+        # BUG-016: norm of the line search; the convergence test stays on ||F||_inf.
+        # With defaults the comparison is norm(ft,inf)<nrm, bitwise as before.
+        merit=(lambda v: np.linalg.norm(v)) if self._line_search_l2 else (lambda v: np.linalg.norm(v,np.inf))
         for it in range(1,max_iter+1):
             J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active); nrm=np.linalg.norm(f,np.inf)
             if nrm<=atol_sm3s+rtol*scale: return z,BlackOilNewtonReport(True,it-1,float(nrm))
             try: dz=self._linear_solve(J,-f)
             except Exception: return z,BlackOilNewtonReport(False,it,float(nrm))
-            alpha=1.0; accepted=False
+            if self._sg_step_max is not None:
+                # BUG-016: scale the whole update (p and Sg together, the Newton
+                # direction is kept) so that |dSg| of two-phase cells <= limit
+                dsg=np.abs(dz[self.grid.n:][gas_active])
+                if dsg.size and dsg.max()>self._sg_step_max: dz=dz*(self._sg_step_max/dsg.max())
+            mf=merit(f); alpha=1.0; accepted=False
             for _ in range(12):
                 trial=z+alpha*dz
                 if self._trial_is_reasonable(trial,gas_active):
                     ft=self.residual(trial,state_old,dt_s,gas_active)
-                    if np.linalg.norm(ft,np.inf)<nrm: z=trial; accepted=True; break
+                    if merit(ft)<mf: z=trial; accepted=True; break
                 alpha*=0.5
             if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
         f=self.residual(z,state_old,dt_s,gas_active); return z,BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)))
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
-        BHP well branch as an outer constraint and no lower bound on Sg (BUG-014)."""
+        BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
+        if that fails too, the fallback again with a globalized Newton (BUG-016)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -237,6 +253,24 @@ class RadialBlackOilModel:
         # Fallback only: where the original algorithm converges, results stay
         # bitwise; with the bound removed always, deep drawdowns needed more
         # step splitting than before (BUG-014 audit).
+        new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+        if rep.converged: return new,rep
+        # Third stage (BUG-016), only where the fallback fails too, so every step
+        # the first two stages solve stays bitwise.  Mass phase activation with a
+        # closed-flash Sg guess (0.55-0.71 at Rs0 = 150 against 0.22 in the
+        # solution) stalls the ||F||_inf line search; step splitting does not help.
+        # Measured alternatives: in the fallback itself example 03 got worse, in
+        # every step example 10 got worse (plan BUG-016, 1.3).
+        self._line_search_l2=True; self._sg_step_max=0.2
+        try:
+            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+            rep.globalized=True; return new,rep
+        finally:
+            self._line_search_l2=False; self._sg_step_max=None
+    def _fallback(self,state_old,dt_s,max_active_iter,max_newton):
+        """BUG-014 fallback: no lower bound on Sg; BHP control fixes the well branch
+        (start from the old state's branch, accept a consistent result only, try the
+        other branch once); OIL_RATE control: a plain retry without the Sg bound."""
         self._sg_lower_bound=None
         try:
             if self.control_mode!='BHP':

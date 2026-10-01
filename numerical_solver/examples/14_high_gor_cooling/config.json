@@ -5,7 +5,7 @@
     "h": 10.0
   },
   "grid": {
-    "N": 50,
+    "N": 350,
     "type": "log_radial"
   },
   "rock": {
@@ -32,7 +32,7 @@
     "c_p_gas": 1000.0,
     "mu_JT_oil": -4e-07,
     "mu_JT_gas": 4e-06,
-    "L_degas": 168000.0
+    "L_degas": 275000.0
   },
   "initial_conditions": {
     "p0": 24500000.0,
@@ -108,7 +108,8 @@
   "numerics": {
     "dt_min": 1.0,
     "dt_max": 86400,
-    "skin": 0.0
+    "skin": 0.0,
+    "max_retries": 12
   },
   "output": {
     "log_level": "INFO"

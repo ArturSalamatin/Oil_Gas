@@ -131,16 +131,23 @@ class PrototypeHydroAdapter(HydroSolver):
                 return self._build_result(current_state, new_proto, bc,
                                           n_substeps=n_sub)
 
-        # Подсказка называет обе известные первопричины (DEBT-007, BUG-003).
-        # Про dt_integration намеренно не пишем: при высокой Sg уменьшение dt
-        # не помогает — A-retry уже дробит шаг внутри с тем же лимитом.
+        # Сообщение — факты, а не догадка о причине. Отказ бывает из-за
+        # величины шага (DEBT-007, BUG-003: тогда помогает дробление глубже) и
+        # не из-за неё (BUG-017 и BUG-018 до исправления, BUG-019: шаг не
+        # сходится и при 512-4096 подшагах) — адаптер их не различает.
+        # Начало «HydroSolver не сошёлся после N подшагов» цитируют README
+        # примеров 03, 06, 07, 10 — не менять. Про dt_integration не пишем:
+        # A-retry уже дробит шаг внутри с тем же лимитом.
+        n_two = int(np.count_nonzero(state.regime == 1))
         raise RuntimeError(
             f"HydroSolver не сошёлся после {2**self._max_retries} подшагов "
-            f"(dt_sub={dt / 2**self._max_retries:.2e} s). "
-            f"Увеличьте numerics.max_retries (сейчас {self._max_retries}). "
-            f"Более мелкие подшаги требуются при корреляционном PVT "
-            f"(нелинейность B_g) и при высокой газонасыщенности "
-            f"(обе фазы малоподвижны одновременно).")
+            f"(dt_sub={dt / 2**self._max_retries:.2e} s) на шаге с "
+            f"t = {state.t / DAY_TO_S:.4f} сут: двухфазных ячеек {n_two} из "
+            f"{state.p.size}, max S_g = {float(np.max(state.Sg)):.3f}. "
+            f"Если отказ вызван величиной шага, поможет больший "
+            f"numerics.max_retries (сейчас {self._max_retries}, допустимо "
+            f"до 20); если шаг не сходится и при мелких подшагах, причина "
+            f"не в его величине.")
 
     def _build_result(self, new_state: SimulationState,
                       new_proto, bc: BoundaryConditions,

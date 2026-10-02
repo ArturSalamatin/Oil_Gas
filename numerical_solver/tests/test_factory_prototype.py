@@ -6,8 +6,11 @@
 - Pipeline: from_config → run → history
 - PVT-согласованность: один BlackOilPVT в обёртке и в модели
 - Ошибки: отсутствие CSV файла
+- Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
 """
 
+import logging
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -272,3 +275,139 @@ class TestConfigErrors:
         config = load_config(cfg_path)
         with pytest.raises(ValueError, match="не найден"):
             SimulatorFactory.from_config(config)
+
+
+# ═══════════════════════════════════════════════════════════
+# F. Начальное состояние против PVT-таблиц (BUG-017)
+# ═══════════════════════════════════════════════════════════
+
+def _table_config_with_oil_csv(tmp_path, oil_csv_text):
+    """TABLE_CONFIG с подменённой oil_pvt.csv: копия CSV в tmp_path, config_dir → tmp_path."""
+    for name in ("gas_pvt.csv", "relperm.csv"):
+        shutil.copy(TABLE_CONFIG.parent / name, tmp_path / name)
+    (tmp_path / "oil_pvt.csv").write_text(oil_csv_text, encoding="utf-8")
+    config = load_config(TABLE_CONFIG)
+    config.config_dir = tmp_path
+    return config
+
+
+class TestInitialStateVsTable:
+    """Фабрика отвергает начальное состояние, которое таблица не описывает (BUG-017).
+
+    Таблица configs/table_pvt: ветки Rs = 0 (p_b = 5 МПа) и 30 (p_b = 15 МПа),
+    газ 5…30 МПа. BlackOilPVT не экстраполирует: Rs вне веток обрезается,
+    а запас газа считается с полным Rs0 — решатель видит пересыщение при
+    любом давлении (отказ или скачок давления до 111 МПа при Rs0 = 40).
+    """
+
+    def test_rs0_above_last_branch_raises(self):
+        """Rs0 = 150 > 30: ошибка про диапазон таблицы, а не про пересыщение.
+
+        Проверка диапазона идёт раньше проверки пересыщения: p_b(150) обрезан
+        до 15 МПа < p0, и сообщение о пересыщении было бы противоречивым.
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.Rs0 = 150.0
+        with pytest.raises(ValueError, match="вне диапазона таблицы") as exc:
+            SimulatorFactory.from_config(config)
+        assert "пересыщ" not in str(exc.value)
+        assert "Rs0 = 150" in str(exc.value)
+
+    def test_rs0_below_guard_threshold_raises(self):
+        """Rs0 = 40: ниже порога 1.5·Rs_max = 45 пробного вектора Ньютона.
+
+        До правки (после BUG-016) первый шаг молча «сходился» с давлением
+        111 МПа. Ловит проверку, ограниченную порогом решателя.
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.Rs0 = 40.0
+        with pytest.raises(ValueError, match="вне диапазона таблицы"):
+            SimulatorFactory.from_config(config)
+
+    def test_rs0_below_first_branch_raises(self, tmp_path):
+        """Таблица с ветками 5 и 30, Rs0 = 0 < 5: ошибка (решение 2 плана).
+
+        Ниже первой ветки нефть молча не разгазируется никогда
+        (R_s^sat(p) >= 5 > Rs0), а B_o, μ_o берутся с ветки 5.
+        """
+        config = _table_config_with_oil_csv(tmp_path, (
+            "Rs_sm3_sm3,pressure_Pa,Bo,mu_o_Pa_s\n"
+            "5.0,6000000,1.07,0.0028\n"
+            "5.0,30000000,1.06,0.0030\n"
+            "30.0,15000000,1.20,0.0015\n"
+            "30.0,30000000,1.18,0.0016\n"))
+        config.initial_conditions.Rs0 = 0.0
+        with pytest.raises(ValueError, match="вне диапазона таблицы"):
+            SimulatorFactory.from_config(config)
+
+    def test_rs0_on_last_branch_passes(self):
+        """Rs0 = 30 ровно на последней ветке, p0 = 20 МПа > p_b = 15 МПа — допустимо.
+
+        Граница включается: R_s^eq(p0) = 30 ровно (обрезка), Rs0 = 30.
+        Так стоят 13 из 14 табличных примеров.
+        """
+        config = load_config(TABLE_CONFIG)
+        assert config.initial_conditions.Rs0 == 30.0
+        SimulatorFactory.from_config(config)   # не бросает
+
+    def test_supersaturated_start_raises(self):
+        """Rs0 = 20 внутри таблицы, p0 = 10 МПа: R_s^eq(10 МПа) = 15 < 20 — ошибка.
+
+        p_b(20) = 11.67 МПа > p0. Решатель стартует только из однофазного
+        состояния; без проверки давление на первом шаге скачком росло бы к p_b.
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.Rs0 = 20.0
+        config.initial_conditions.p0 = 10e6
+        with pytest.raises(ValueError, match="пересыщено") as exc:
+            SimulatorFactory.from_config(config)
+        assert "11.6667" in str(exc.value)   # p_b(20) = 5 + 20/30·10 МПа
+
+    def test_p0_at_bubble_point_passes(self):
+        """p0 = p_b(30) = 15 МПа ровно: R_s^eq(p0) = Rs0 — допустимо (как пример 11, p0 = 15.05)."""
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.p0 = 15e6
+        SimulatorFactory.from_config(config)
+
+    def test_p0_1pa_below_pb_passes(self):
+        """p0 на 1 Па ниже p_b(30): избыток Rs 3e-6 < допуска 1e-5 — округление ввода не ошибка."""
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.p0 = 15e6 - 1.0
+        SimulatorFactory.from_config(config)
+
+    def test_dead_oil_below_table_pb0_passes(self):
+        """Rs0 = 0, p0 = 3 МПа ниже табличного p_b(0) = 5 МПа — допустимо.
+
+        R_s^eq(3 МПа) = 0 = Rs0: пересыщения нет, решатель газ не включит.
+        Ловит переход на формулировку p0 >= p_b(Rs0) — она дала бы ложную ошибку.
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.Rs0 = 0.0
+        config.initial_conditions.p0 = 3e6
+        SimulatorFactory.from_config(config)
+
+
+class TestInitialRangeWarnings:
+    """Предупреждения pvt_range_warnings прототипа для начального состояния (BUG-017)."""
+
+    def test_p0_above_tables_warns(self, caplog):
+        """p0 = 32 МПа выше газовой таблицы и веток нефти (до 30 МПа): два предупреждения.
+
+        Расчёт допустим (Rs0 = 30 = R_s^eq), но B_g и B_o молча берутся с краёв
+        таблиц — пользователь должен это видеть.
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.p0 = 32e6
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            SimulatorFactory.from_config(config)
+        text = "\n".join(r.getMessage() for r in caplog.records
+                         if r.levelno == logging.WARNING)
+        assert "GAS_PVT pressure above table" in text
+        assert "OIL_PVT branch pressure above supplied range" in text
+
+    def test_in_range_no_warnings(self, caplog):
+        """Штатный табличный конфиг: начальное состояние внутри всех таблиц — предупреждений нет."""
+        config = load_config(TABLE_CONFIG)
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            SimulatorFactory.from_config(config)
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]

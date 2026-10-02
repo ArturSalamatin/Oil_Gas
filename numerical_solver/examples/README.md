@@ -571,7 +571,6 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 
 **Что остаётся у примера.** Проверка, осмысленная только для своего
 сценария: `check_slopes` (02 — наклоны профиля под JT),
-`compare_with_corey` (05 — сравнение двух ОФП в одном прогоне),
 `spatial_convergence` (01), `grid_convergence` (04, 04a),
 `closed_form_convergence` (05).
 

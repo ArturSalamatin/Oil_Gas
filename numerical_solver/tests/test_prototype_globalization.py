@@ -3,7 +3,7 @@
 Исходный алгоритм advance и запасной путь BUG-014 принимают шаг Ньютона
 только при уменьшении ||F||_inf. При массовой активации газовой фазы с
 далёким начальным S_g («закрытый сосуд»: 0.55-0.71 при решении 0.22,
-пример 14, R_s0 = 150) направление Ньютона не уменьшает ||F||_inf ни при
+пример 14 в версии BUG-016, R_s0 = 150) направление Ньютона не уменьшает ||F||_inf ни при
 каком alpha — Ньютон стоит, дробление шага не помогает.
 
 Третья ступень (только при отказе первых двух): запасной путь BUG-014 с
@@ -31,10 +31,17 @@ from .test_prototype_well_branch import _build, _model, drawn_down  # noqa: F401
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 SG_STEP_MAX = 0.2   # ограничитель третьей ступени, |dS_g| за итерацию
 
+# Пример 14 в версии коммита BUG-016 (e2fdb43): ветки PVT R_s = 0/150/180,
+# p_b(150) = 24 МПа, p0 = 24.5 МПа. Позже пример сменил таблицу PVT (ffc5a46),
+# и его первый шаг стал сходиться без третьей ступени. Регрессии BUG-016 нужен
+# реальный шаг, который решает только третья ступень, — поэтому сценарий
+# заморожен в tests/data и вместе с примером НЕ обновляется.
+BUG016_CASE = Path(__file__).parent / "data" / "bug016_example14" / "config.json"
 
-def _first_step(name, N=None, retries=None):
-    """Первый шаг истории примера через адаптер (с дроблением A-retry)."""
-    cfg = load_config(EXAMPLES_DIR / name / "config.json")
+
+def _first_step(config_path, N=None, retries=None):
+    """Первый шаг истории конфига через адаптер (с дроблением A-retry)."""
+    cfg = load_config(config_path)
     if N is not None:
         cfg.grid.N = N
     if retries is not None:
@@ -62,14 +69,15 @@ class TestFirstStepConverges:
         (150, 0.224420, 6.130659),
     ])
     def test_example14_fine_grid_first_step(self, N, sg0, p0_MPa):
-        """Пример 14 (R_s0 = 150), скачок p_wf 24.5 -> 6 МПа, сутки — без дробления.
+        """Пример 14 версии BUG-016 (BUG016_CASE, R_s0 = 150), скачок p_wf 24.5 -> 6 МПа,
+        сутки — без дробления.
 
         До фикса: RuntimeError после 512 подшагов (N = 100: 512 × 169 с;
         N = 150 не проходит и 4096 × 0.88 с). Замер плана BUG-016 (§1.4):
         S_g[0], p[0] ниже; N = 50 — 0.223531 / 6.392927 МПа (сходится и без
         третьей ступени). Допуски — порядка точности Ньютона.
         """
-        _, res = _first_step("14_high_gor_cooling", N=N)
+        _, res = _first_step(BUG016_CASE, N=N)
         assert res.n_substeps == 1
         assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
         assert res.state.p[0] == pytest.approx(p0_MPa * 1e6, abs=100.0)
@@ -80,25 +88,25 @@ class TestFirstStepConverges:
         BUG-008: исходно нужно 4096 подшагов (12 удвоений) — при 9 отказ.
         Замер плана BUG-016 (§1.2): 1 подшаг; N = 300 — 2, N = 500 — 8.
         """
-        _, res = _first_step("04a_high_gas_saturation", N=200,
+        _, res = _first_step(EXAMPLES_DIR / "04a_high_gas_saturation" / "config.json", N=200,
                              retries=NumericsConfig().max_retries)
         assert res.n_substeps == 1
 
     def test_example12_first_hour_not_split(self):
         """Пример 12, первый час — без дробления (DEBT-025: было 128 × 28.125 с)."""
-        _, res = _first_step("12_large_drainage_radius")
+        _, res = _first_step(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
         assert res.n_substeps == 1
 
     def test_sg_step_limited_in_third_stage(self):
         """В третьей ступени |dS_g| между итерациями Ньютона <= 0.2.
 
-        Пример 14, N = 100, первый суточный шаг прямо на модели прототипа:
-        исходный путь и запасной отказывают, решает третья ступень. Точки, где
-        считается якобиан, — итерации Ньютона; они собираются по вызовам
-        _newton_fixed_active_set (набор фаз внутри вызова фиксирован) и только
-        при включённом ограничителе, то есть в третьей ступени.
+        Пример 14 версии BUG-016 (BUG016_CASE), N = 100, первый суточный шаг
+        прямо на модели прототипа: исходный путь и запасной отказывают, решает
+        третья ступень. Точки, где считается якобиан, — итерации Ньютона; они
+        собираются по вызовам _newton_fixed_active_set (набор фаз внутри вызова
+        фиксирован) и только при включённом ограничителе, то есть в третьей ступени.
         """
-        cfg = load_config(EXAMPLES_DIR / "14_high_gor_cooling" / "config.json")
+        cfg = load_config(BUG016_CASE)
         cfg.grid.N = 100
         sim, init = SimulatorFactory.from_config(cfg)
         model = sim._hydro._model

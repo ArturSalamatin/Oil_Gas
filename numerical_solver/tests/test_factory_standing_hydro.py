@@ -5,6 +5,7 @@
 Проверяем: адаптер создаётся, pipeline работает, ОФП согласованы.
 """
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -152,3 +153,44 @@ class TestCoreyToTabulated:
         Sg_test = np.array([0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0])
         np.testing.assert_allclose(
             proto_rp.krg(Sg_test), corey.krg(Sg_test), atol=1e-4)
+
+
+# ═══════════════════════════════════════════════════════════
+# Начальное состояние против корреляции (BUG-017)
+# ═══════════════════════════════════════════════════════════
+
+class TestStandingInitialState:
+    """Пересыщенный старт отвергается и для Стендинга; без таблиц — без предупреждений."""
+
+    def test_supersaturated_start_raises(self):
+        """Rs0 = 80, p0 = 10 МПа < p_b(80) = 14.0 МПа — ошибка.
+
+        Без проверки первый шаг молча поднимал давление до 13.78 МПа за час
+        (замер плана BUG-017, §1.2).
+        """
+        config = load_config(BASELINE)
+        config.initial_conditions.Rs0 = 80.0
+        config.initial_conditions.p0 = 10e6
+        with pytest.raises(ValueError, match="пересыщено"):
+            SimulatorFactory.from_config(config)
+
+    def test_p0_1pa_below_pb_passes(self):
+        """p0 = p_b(50) − 1 Па: избыток ~6e-6 < 1e-5 — допустимо (округление ввода)."""
+        config = load_config(BASELINE)
+        simulator, _ = SimulatorFactory.from_config(config)
+        pb = float(simulator._pvt.pb(np.array([50.0]))[0])
+        config.initial_conditions.p0 = pb - 1.0
+        SimulatorFactory.from_config(config)
+
+    def test_dead_oil_passes(self):
+        """Rs0 = 0: p_b(0) = −0.176 МПа < 0 — допустимо при любом p0 (примеры 01, 02)."""
+        config = load_config(BASELINE)
+        config.initial_conditions.Rs0 = 0.0
+        SimulatorFactory.from_config(config)
+
+    def test_no_range_warnings(self, caplog):
+        """Путь Стендинга не зовёт pvt_range_warnings (у адаптера нет газовой таблицы gp)."""
+        config = load_config(BASELINE)
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            SimulatorFactory.from_config(config)
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]

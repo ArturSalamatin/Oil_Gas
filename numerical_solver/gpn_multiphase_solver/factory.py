@@ -24,7 +24,7 @@ from .bc import PressureControl, RateControl
 from .simulator import Simulator, TimeSchedule, ScheduleInterval
 from .io.config import SimulationConfig
 from .units import BAR_TO_PA, CP_TO_PA_S, M2_TO_MD
-from .log import setup_logging
+from .log import setup_logging, user_log
 
 
 class SimulatorFactory:
@@ -51,6 +51,7 @@ class SimulatorFactory:
 
         # 2. PVT (FullPVT — гидро + тепловые)
         pvt = _create_pvt(config)
+        _check_undersaturated_start(config.initial_conditions, pvt)
 
         # 3. RelPerm
         relperm = _create_relperm(config)
@@ -112,6 +113,15 @@ def _create_pvt(config: SimulationConfig):
         from radial_blackoil.pvt import BlackOilPVT
         proto_pvt = BlackOilPVT(oil_rows, gas_rows)
 
+        # BUG-017: таблица обязана покрывать Rs0. BlackOilPVT не экстраполирует:
+        # B_o, μ_o берутся с крайней ветки, R_s^sat(p) и p_b(R_s) обрезаются, а
+        # запас газа в ячейке считается с полным Rs0. Выше последней ветки нефть
+        # «пересыщена» при любом давлении — отказ первого шага или нефизичный
+        # скачок давления (111 МПа при Rs0 = 40 на ветках 0/30); ниже первой —
+        # молча не разгазируется. Проверка — до проверки пересыщения в
+        # from_config: там p_b(Rs0) обрезан и сообщение было бы ложным.
+        _check_rs0_in_table(ic.Rs0, proto_pvt.rs_values, pc.oil_pvt_file)
+
         proto_adapter = PrototypePVTAdapter(proto_pvt, pc.rho_o_std, pc.rho_g_std)
         return TableFullPVT(
             hydro=proto_adapter,
@@ -124,6 +134,59 @@ def _create_pvt(config: SimulationConfig):
     else:
         raise ValueError(f"PVT model '{pc.model}' не поддерживается. "
                          f"Доступные: 'standing', 'table'.")
+
+
+def _check_rs0_in_table(Rs0: float, rs_values, oil_pvt_file: str) -> None:
+    """Rs0 внутри диапазона веток PVTO-таблицы, иначе ValueError (BUG-017)."""
+    rs_lo, rs_hi = float(rs_values[0]), float(rs_values[-1])
+    # Границы включаются: Rs0 ровно на крайней ветке — штатный случай
+    # (Rs0 = 30 на ветках 0/30 у 13 табличных примеров).
+    if not rs_lo <= Rs0 <= rs_hi:
+        raise ValueError(
+            f"Rs0 = {Rs0:g} м³ст/м³ст вне диапазона таблицы {oil_pvt_file}: "
+            f"ветки R_s от {rs_lo:g} до {rs_hi:g} м³ст/м³ст. Таблица не "
+            f"экстраполируется — добавьте ветки, покрывающие Rs0, или задайте "
+            f"Rs0 в этих пределах.")
+
+
+# Допуск пересыщения на старте, м³ст/м³ст, — rs_switch_tol решателя
+# (RadialBlackOilModel, blackoil.py:32; фабрика его не меняет): проверка
+# отвергает ровно те состояния, которые решатель при давлении p0 счёл бы
+# пересыщенными. Округление ввода не мешает: p0 на 1 Па ниже p_b даёт избыток
+# ~6e-6 (Стендинг, Rs0 = 50) и 3e-6 (таблица 0/30).
+_RS0_SUPERSAT_TOL = 1e-5
+
+
+def _check_undersaturated_start(ic, pvt) -> None:
+    """Начальное состояние недонасыщенное: Rs0 <= Rs_eq(p0), иначе ValueError (BUG-017)."""
+    # Начальное состояние всегда однофазное (S_g = 0, шаг 8 from_config) —
+    # инициализации со свободным газом нет. При Rs0 > Rs_eq(p0) решатель на
+    # первом шаге выделяет избыток «в закрытом сосуде», и давление молча
+    # скачет почти до p_b(Rs0) (Стендинг, Rs0 = 80, p0 = 10 МПа: 13.78 МПа
+    # за час). Критерий через Rs_eq(p0), а не p0 >= p_b(Rs0): у дегазированной
+    # нефти табличное p_b(0) условно (5 МПа в демо-таблице), а Rs_eq(p0) = 0 =
+    # Rs0 при любом p0 ниже — пересыщения нет.
+    Rs_eq = float(pvt.Rs_eq(np.array([ic.p0]))[0])
+    if ic.Rs0 > Rs_eq + _RS0_SUPERSAT_TOL:
+        pb = float(pvt.pb(np.array([ic.Rs0]))[0])
+        raise ValueError(
+            f"Начальное состояние пересыщено газом: Rs0 = {ic.Rs0:g} м³ст/м³ст "
+            f"больше равновесного Rs_eq(p0) = {Rs_eq:.6g} при p0 = "
+            f"{ic.p0 / 1e6:.6g} МПа (давление насыщения p_b(Rs0) = "
+            f"{pb / 1e6:.6g} МПа). Решатель стартует только из однофазного "
+            f"состояния (S_g = 0): задайте p0 >= p_b(Rs0) или уменьшите Rs0.")
+
+
+def _warn_initial_table_range(model, ic) -> None:
+    """Предупреждения pvt_range_warnings прототипа для начального состояния (BUG-017)."""
+    from radial_blackoil.state import BlackOilState
+    from radial_blackoil.diagnostics import pvt_range_warnings
+
+    # Начальное состояние однородно (p0, Rs0, S_g = 0, газ неактивен), а
+    # pvt_range_warnings смотрит только min/max — одной ячейки достаточно.
+    state = BlackOilState.undersaturated(1, ic.p0 / BAR_TO_PA, ic.Rs0)
+    for warning in pvt_range_warnings(model, state):
+        user_log.warning(f"Начальное состояние вне таблиц: {warning}")
 
 
 def _create_relperm(config: SimulationConfig):
@@ -203,6 +266,13 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
         jacobian_mode=nc.jacobian_mode,
         linear_solver=nc.linear_solver,
     )
+
+    # Выход начального состояния за PVT- и ОФП-таблицы (BUG-017): прототип
+    # берёт свойства с краёв таблиц без экстраполяции и молча. Только
+    # табличная PVT: у HydroPVTtoBlackOilAdapter (Стендинг) нет газовой
+    # таблицы gp — pvt_range_warnings упал бы AttributeError.
+    if isinstance(pvt, TableFullPVT):
+        _warn_initial_table_range(model, ic)
 
     # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
     our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt

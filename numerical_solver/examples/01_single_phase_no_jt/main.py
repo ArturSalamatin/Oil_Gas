@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from example_runner import run_example  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 
-# energy_balance.py лежит рядом с main.py — добавляем папку примера в sys.path
+# Папка примера — в sys.path для импорта соседних модулей.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 

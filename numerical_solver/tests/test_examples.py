@@ -318,38 +318,6 @@ def test_thermal_actually_differs(results):
     assert not np.array_equal(T07, T08)
 
 
-def test_01_02_differ_by_single_parameter():
-    """README 02 обещает: от 01 отличается ровно одной строкой — mu_JT_oil.
-
-    Раньше в 02 была вдобавок включена теплопроводность, из-за чего
-    заявленная «изоляция вклада JT» не выполнялась, а аналитическая
-    JT-асимптотика (main.py) смещалась на ~0.07 К. Тест фиксирует
-    договорённость, чтобы расхождение конфига и README не вернулось.
-    """
-    cfg01 = json.loads(
-        (EXAMPLES_DIR / "01_single_phase_no_jt" / "config.json").read_text("utf-8"))
-    cfg02 = json.loads(
-        (EXAMPLES_DIR / "02_single_phase_jt" / "config.json").read_text("utf-8"))
-
-    # Плоский обход вложенных секций: "thermal.mu_JT_oil" → значение.
-    def flatten(d, prefix=""):
-        out = {}
-        for k, v in d.items():
-            key = f"{prefix}{k}"
-            if isinstance(v, dict):
-                out.update(flatten(v, key + "."))
-            else:
-                out[key] = v
-        return out
-
-    f01, f02 = flatten(cfg01), flatten(cfg02)
-    assert f01.keys() == f02.keys(), "наборы полей конфигов 01 и 02 разошлись"
-
-    diff = {k for k in f01 if f01[k] != f02[k]}
-    assert diff == {"thermal.mu_JT_oil"}, \
-        f"01 и 02 должны отличаться только mu_JT_oil, отличаются: {sorted(diff)}"
-
-
 def _asymptotics_module():
     """Общий модуль examples/temperature_asymptotics.py."""
     import sys

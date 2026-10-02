@@ -7,7 +7,7 @@ issue: FEAT-025
 github: 46
 branch: feat/feat-025/standing-corey-cooling-examples
 model_level: null
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-02
   round: 2

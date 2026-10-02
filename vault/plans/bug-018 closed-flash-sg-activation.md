@@ -6,7 +6,7 @@ date: 2026-10-02
 issue: BUG-018
 github: 48
 branch: fix/bug-018/closed-flash-sg-activation
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-02
   found: 13

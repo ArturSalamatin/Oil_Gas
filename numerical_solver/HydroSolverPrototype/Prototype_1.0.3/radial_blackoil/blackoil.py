@@ -6,6 +6,8 @@ supports sparse or dense linear algebra as a numerical backend choice.
 Local changes (GPN project, BUG-014): when the original step fails, advance()
 retries with the BHP well branch as an outer active constraint and no lower
 bound on Sg of two-phase cells.
+BUG-018: the closed-flash Sg guess of a cell switching to two-phase is capped
+at the largest relperm-table Sg where kro > 0 (sg_activation_cap).
 """
 from dataclasses import dataclass
 import numpy as np
@@ -26,6 +28,13 @@ class BlackOilNewtonReport:
     well_switches: int = 0    # branch changes in advance's fallback, BUG-014
     fallback: bool = False    # step solved by advance's fallback, BUG-014
     globalized: bool = False  # advance's third stage ran (||F||_2 line search, Sg step limit), BUG-016
+
+def _sg_activation_cap(relperm):
+    """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
+    sg=np.asarray(getattr(relperm,'sg',()),float); kro=np.asarray(getattr(relperm,'kro_tab',()),float)
+    zero=np.flatnonzero(kro<=0.0)
+    if sg.size==0 or zero.size==0 or zero[0]==0: return None
+    return float(sg[zero[0]-1])
 
 class RadialBlackOilModel:
     def __init__(self, grid, rock, pvt, relperm, p_bhp_bar, p_outer_bar,
@@ -51,6 +60,15 @@ class RadialBlackOilModel:
         # _sg_step_max limits |dSg| of two-phase cells per Newton update by
         # scaling the whole update (Appleyard-type chop, as ds_max in OPM Flow).
         self._line_search_l2=False; self._sg_step_max=None
+        # BUG-018: a cell switching to two-phase starts Newton from the closed-
+        # flash Sg (all released gas stays in the cell, no flow during the step).
+        # With high Rs0 and a deep drawdown it exceeds 1 - S_or near the well
+        # (0.91 at Rs0 = 500, p_wf = 5 MPa against 0.41 in the solution), and
+        # Newton started there does not reach the solution: a guess capped at
+        # 0.79 converges, at 0.81 fails (S_or = 0.2).  The cap moves only the
+        # starting point; the equations and the converged state are unchanged
+        # (plan BUG-018, 2.2).  None: the table gives no cap (_sg_activation_cap).
+        self.sg_activation_cap=_sg_activation_cap(relperm)
         if jacobian_mode not in ('grouped','reference'): raise ValueError("jacobian_mode must be 'grouped' or 'reference'")
         if linear_solver not in ('sparse','dense'): raise ValueError("linear_solver must be 'sparse' or 'dense'")
         self.jacobian_mode=jacobian_mode; self.linear_solver=linear_solver
@@ -310,7 +328,11 @@ class RadialBlackOilModel:
             newmask=mask.copy(); newmask[activate]=True; newmask[deactivate]=False; guess=trial.copy(); guess.gas_active=newmask.copy()
             if np.any(activate):
                 pa=guess.pressure_bar[activate]; rtot=guess.rs_sm3_sm3[activate].copy(); rsat=self.pvt.rs_sat(pa); bo=self.pvt.bo(pa,rsat); bg=self.pvt.bg(pa); d=np.maximum(rtot-rsat,0.0)
-                guess.sg[activate]=np.maximum(d*bg/(bo+d*bg),1e-8); guess.rs_sm3_sm3[activate]=rsat
+                sg0=np.maximum(d*bg/(bo+d*bg),1e-8)
+                # BUG-018: keep the guess where oil is still mobile; np.minimum
+                # returns sg0 bitwise wherever it is below the cap
+                if self.sg_activation_cap is not None: sg0=np.minimum(sg0,self.sg_activation_cap)
+                guess.sg[activate]=sg0; guess.rs_sm3_sm3[activate]=rsat
             if np.any(deactivate): guess.sg[deactivate]=0.0; guess.rs_sm3_sm3[deactivate]=self.pvt.rs_sat(guess.pressure_bar[deactivate])
             mask=newmask
         r=self.residual(self.pack(guess,mask),state_old,dt_s,mask); return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),max_active_iter,total_switches)

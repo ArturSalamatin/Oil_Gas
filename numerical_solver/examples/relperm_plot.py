@@ -35,6 +35,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
+# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
+from figure_io import save_figure  # noqa: E402
+
 
 def _table_nodes(relperm):
     """Узлы таблицы (Sg, kro, krg), если модель табличная, иначе None.
@@ -184,7 +187,7 @@ def plot_relperm(config, history, output_dir: Path, title: str,
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     out = output_dir / "relperm.png"
-    fig.savefig(out, dpi=120)
+    save_figure(fig, out, dpi=120)
     plt.close(fig)
     return out
 

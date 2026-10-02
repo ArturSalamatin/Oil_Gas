@@ -59,6 +59,8 @@ for _p in (str(_ROOT), str(_EXAMPLES),
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from figure_io import save_figure, export_emf  # noqa: E402
+
 
 def run_series(config_base, values, apply: Callable, measure: Callable,
                log_level: str = "WARNING") -> list[dict]:
@@ -167,9 +169,12 @@ def plot_convergence(values, errors, x_label: str, title: str,
     fig.tight_layout()
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path, dpi=130)
+    save_figure(fig, out_path, dpi=130)
     plt.close(fig)
     print(f"Сохранён: {out_path}")
+    # У функции нет скрипта-хозяина, который сделал бы пакет в конце, —
+    # переводим SVG этого рисунка в EMF сразу (FEAT-026).
+    export_emf(out_path.parent)
     return order
 
 

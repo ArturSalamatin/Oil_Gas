@@ -78,6 +78,7 @@ for _p in (str(_ROOT), str(_EXAMPLES),
         sys.path.insert(0, _p)
 
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
+from figure_io import save_figure, export_emf  # noqa: E402
 
 
 # Шесть накапливаемых членов — их считает и складывает
@@ -178,7 +179,7 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / "energy_balance.png"
-    fig.savefig(out_path, dpi=130)
+    save_figure(fig, out_path, dpi=130)
     plt.close(fig)
     print(f"Сохранён: {out_path}")
 
@@ -249,3 +250,5 @@ if __name__ == "__main__":
     history = sim.run(initial_state)
 
     plot_energy_balance(history, sim._grid, config, folder / "output")
+    # Автономный запуск: SVG только что сохранённого рисунка — в EMF (FEAT-026).
+    export_emf(folder / "output")

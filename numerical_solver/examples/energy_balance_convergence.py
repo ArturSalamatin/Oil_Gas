@@ -95,6 +95,7 @@ from energy_balance import compute_balance  # noqa: E402
 # отрицателен и смысла не несёт, проверяется уровень (см. шапку модуля).
 from convergence import run_series  # noqa: E402
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
+from figure_io import save_figure, export_emf  # noqa: E402
 
 # Шаги по времени, с. Диапазон в 10 раз: проверяем, что уровень невязки
 # держится и при штатном шаге, и при десятикратно меньшем.
@@ -194,7 +195,7 @@ def plot_balance_convergence(results, output_dir: Path,
     # Стираем результат прошлого прогона. Остальные файлы в output/ пишет
     # main.py примера, и трогать их нельзя: этот скрипт их не восстановит.
     out_path.unlink(missing_ok=True)
-    fig.savefig(out_path, dpi=130)
+    save_figure(fig, out_path, dpi=130)
     plt.close(fig)
     print(f"\nСохранён: {out_path}")
 
@@ -251,6 +252,8 @@ if __name__ == "__main__":
 
     worst_fin, _ = plot_balance_convergence(results, folder / "output",
                                             f" — {folder.name}")
+    # SVG рисунка — в EMF до выхода по коду возврата (FEAT-026).
+    export_emf(folder / "output")
     # Ненулевой код возврата, чтобы запуск из скрипта или CI отличал
     # незамкнувшийся баланс от успешного прогона.
     raise SystemExit(0 if worst_fin < TOL_RESIDUAL else 1)

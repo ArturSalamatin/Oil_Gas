@@ -42,6 +42,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from example_runner import run_example  # noqa: E402
+from figure_io import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 import temperature_asymptotics as ta  # noqa: E402
 
@@ -74,7 +75,7 @@ def _add_dupuit_curve(history, grid, config, output_dir: Path, title: str):
     ax.legend()
     ax.set_title(f"{title}\nПрофили давления")
     fig.tight_layout()
-    fig.savefig(output_dir / "pressure_profiles.png", dpi=110)
+    save_figure(fig, output_dir / "pressure_profiles.png", dpi=110)
     plt.close(fig)
 
 
@@ -265,7 +266,7 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     ax.legend(fontsize=7, loc="lower right")
     ax.set_title(f"{title}\nПрофили температуры")
     fig.tight_layout()
-    fig.savefig(output_dir / "temperature_profiles.png", dpi=110)
+    save_figure(fig, output_dir / "temperature_profiles.png", dpi=110)
     plt.close(fig)
 
     # Ошибки для каждого рисуемого момента
@@ -306,3 +307,7 @@ if __name__ == "__main__":
 
     # Баланс энергии (ΔE = адиабатика + конвекция + JT) считает
     # run_example — общей проверкой для всех примеров (FEAT-016).
+
+    # Перестроенные выше рисунки — вторым пакетом: первый конвертировал
+    # run_example (FEAT-026).
+    export_emf(here / "output")

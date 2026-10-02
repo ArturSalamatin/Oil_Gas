@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
+from figure_io import save_figure, export_emf
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.units import S_TO_DAY
@@ -154,6 +155,8 @@ out_path.parent.mkdir(parents=True, exist_ok=True)
 # Стираем результат прошлого прогона. Остальные файлы в output/ пишет
 # main.py примера, и трогать их нельзя: этот скрипт их не восстановит.
 out_path.unlink(missing_ok=True)
-fig.savefig(out_path, dpi=130)
+save_figure(fig, out_path, dpi=130)
 plt.close(fig)
 print(f"\nСохранён: {out_path}")
+# SVG рисунка — в EMF (FEAT-026).
+export_emf(out_path.parent)

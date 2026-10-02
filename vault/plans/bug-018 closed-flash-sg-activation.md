@@ -6,7 +6,12 @@ date: 2026-10-02
 issue: BUG-018
 github: 48
 branch: fix/bug-018/closed-flash-sg-activation
-status: готов к реализации
+status: в процессе
+audit:
+  date: 2026-10-02
+  found: 13
+  auto-fixed: 13
+  manual-required: 0
 ---
 
 # BUG-018: начальное приближение $S_g$ «закрытого сосуда» выше $1 - S_{or}$ — ограничить по таблице ОФП
@@ -29,11 +34,11 @@ status: готов к реализации
 
 ## 1. Предусловия
 
-- **База:** `numerical_scheme/implementation`, HEAD на момент плана — `4bd1e8c` (после `5a8ef08`: тесты примера 14 исправлены, `RTOL = 1e-12`). **1035 passed** (замер плана с правкой в памяти, 584 с — см. §2.4; без правки пользователь сообщил «тесты зелёные»).
+- **База:** `numerical_scheme/implementation`, HEAD на момент аудита — `9f6151a` (влита [[BUG-017]]: проверка $R_{s,0}$ в фабрике, +14 тестов; `3189565` — XlsxWriter в зависимостях разработки). План писался на `4bd1e8c` (1035 тестов); `blackoil.py` и `prototype_adapter.py` с тех пор не менялись — номера строк плана в силе, у `factory.py` сдвинулись (§2.5). **1049 тестов** (`pytest --co`), исход базы — §1.1.
 - **Рабочее дерево:** перед созданием ветки `git status --short -uno -- numerical_solver` — пусто. Иначе остановиться и спросить пользователя.
-- **Параллельные задачи:** ветка `fix/bug-017/rs0-table-range-check` (worktree) — правит `factory.py`, `io/config.py`, тесты фабрики; `blackoil.py` и `prototype_adapter.py` не трогает (план BUG-017, §5). FEAT-026 — `examples/figure_io.py`. Пересечений по файлам нет.
-- **Тесты прототипа** (`HydroSolverPrototype/Prototype_1.0.3/tests`): **70 passed, 10 failed** — до и после правки одинаково; 10 падений — [[DEBT-024]] (нет `xlsxwriter`).
-- **Пробы** — `vault/issues/bug-018/probes/` (в `.gitignore`; в коде и README на них не ссылаться). Запуск из `numerical_solver`:
+- **Параллельные задачи:** BUG-017 влита (`9f6151a`), её фабрика замороженный сценарий принимает (проверено аудитом: $R_{s,0} = 500 \le R_s^{eq}(p_0)$). FEAT-026 (worktree, не влита) — `examples/figure_io.py`, `examples/*.py`, `tests/conftest.py`; с файлами этого плана не пересекается. Реестр багов правят обе задачи — при слиянии разные секции.
+- **Тесты прототипа** (`HydroSolverPrototype/Prototype_1.0.3/tests`): **80 passed** — до и после правки одинаково (замер аудита на `9f6151a`, 41 с; срабатываний ограничения 0). Если в venv нет `xlsxwriter` — 70 passed, 10 failed ([[DEBT-024]]), тоже одинаково.
+- **Пробы** — `vault/issues/bug-018/probes/` (в `.gitignore`; в коде и README на них не ссылаться). `cap_initial_sg.py`, `patch_cap.py`, `which_step_fails.py`, `freeze_case.py` строят конфиги генератором FEAT-025 (`vault/issues/feat-025/probes/make_configs.py`): если его наборы `SETS` изменены после 2026-10-02, числа §2.3 и шага 6 не воспроизведутся. Запуск из `numerical_solver`:
 
   | скрипт | что даёт |
   |---|---|
@@ -44,7 +49,13 @@ status: готов к реализации
   | `patch_cap.py rule=node cases` / `examples` | **правка плана в памяти**: отказные конфиги 30 сут; 17 примеров — срабатывания и побитовость |
   | `cap_plugin.py` | pytest-плагин: правка на уровне класса для всего прогона; срабатывания — в `cap_plugin_hits.txt` |
   | `plan_impl_plugin.py` + `test_prototype_activation_cap.py` | **код шагов 2–3 и тесты шага 4 до реализации** (с `data/bug018_rs500/config.json`) |
-  | `freeze_case.py` | пишет замороженный сценарий `frozen/bug018_rs500/config.json` и числа первого шага |
+  | `freeze_case.py` | **перезаписывает** замороженный сценарий `frozen/bug018_rs500/config.json` из генератора и печатает числа первого шага. При реализации **не запускать**: файл копируется в тесты (шаг 4.1), его содержимое должно остаться тем, на котором замерены числа тестов |
+
+### 1.1 База (замер аудита, 2026-10-02)
+
+- `tests/`: **1049 passed**, 590 с (`5c53527`; код решателя тот же, что в `9f6151a`). Прогон шёл параллельно с прогонами другой сессии — время завышено.
+- Тесты прототипа: **80 passed**, 41 с.
+- В рабочем дереве во время замера были незакоммиченные правки примеров (README, `examples/05_standing_table_rp/main.py`, `tests/test_examples.py`). Шаг 1 требует чистого дерева — после их коммита базу перемерить; если число тестов изменится, ожидание шага 5 — новая база + 10.
 
 ## 2. Физика и замеры
 
@@ -68,7 +79,7 @@ status: готов к реализации
 | **0.79** | **сходится**, без дробления | — |
 | 0.75, 0.50 | сходится, без дробления | сходится, без дробления |
 
-Порог — ровно $1 - S_{or} = 0.80$.
+Порог лежит между 0.79 и 0.81 — совпадает с $1 - S_{or} = 0.80$ с точностью до шага опыта.
 
 **Почему Ньютон не выходит из этой области** — объяснение, по итерациям не проверенное: при $S_g \ge 1 - S_{or}$ обе ОФП Кори на полках ($k_{ro} = 0$, $k_{rg} = k_{rg}^{max}$), производные потоков по $S_g$ нулевые; на границе — излом $k_{rg}$ (наклон 3.4 → 0). В трассировке третья ступень останавливается на $\max S_g = 0.802$. Для исправления механизм не нужен: опыт показывает, что достаточно не стартовать за границей.
 
@@ -112,14 +123,14 @@ status: готов к реализации
 `np.minimum(x, cap)` возвращает $x$ побитово при $x \le$ cap. Значит, где ограничение не срабатывает, результат побитово прежний. Замеры:
 
 - **17 примеров** (`patch_cap.py rule=node examples`): срабатываний **0** во всех. Наибольшее $S_g^{закр}$ — 0.6526 у 14 (граница 0.79); у табличных 04, 07–13, 15 — до 0.32 при границе 0.6; у 04a — 0.36 при 0.99.
-- **Весь `tests/`** с правкой на уровне класса (`cap_plugin.py`): **1035 passed**, 584 с, срабатываний **0** (`cap_plugin_hits.txt` пуст).
-- **Тесты прототипа** с правкой: 70 passed, 10 failed — как без правки; срабатываний 0.
+- **Весь `tests/`** с правкой на уровне класса (`cap_plugin.py`): на `4bd1e8c` — **1035 passed**, 584 с, срабатываний **0** (`cap_plugin_hits.txt` пуст). Аудит на `9f6151a` дополнительно прогнал с правкой файлы тестов BUG-017 (`test_factory_prototype.py`, `test_factory_standing_hydro.py`): 40 passed, срабатываний 0.
+- **Тесты прототипа** с правкой (аудит, `9f6151a`): 80 passed — как без правки; срабатываний 0.
 
 Следствие: числа README всех примеров, пороги `max_retries` README 03/04 и тесты не меняются.
 
 ### 2.5 Граница по таблице
 
-Прототип знает ОФП только таблицей (`TabulatedRelPerm`: `sg`, `kro_tab`, `krg_tab`; `relperm.py`). Для `CoreyRP` фабрика табулирует ОФП на 101 узле (`factory.py:225-238`), для табличной ОФП берёт CSV как есть.
+Прототип знает ОФП только таблицей (`TabulatedRelPerm`: `sg`, `kro_tab`, `krg_tab`; `relperm.py`). Для `CoreyRP` фабрика табулирует ОФП на 101 узле (`factory.py:295-308`, `_get_or_create_proto_rp`; на `4bd1e8c` было 225-238), для табличной ОФП берёт CSV как есть. Узел $1 - S_{or}$ у Кори получает $k_{ro} = 0$ точно: `CoreyRP._S_star` обрезает $S^*$ на 1 (`pvt/relperm.py:32-38`), поэтому граница — всегда узел строго ниже $1 - S_{or}$, где $k_{ro} > 0$. Проверено аудитом для $S_{or}$ = 0.05…0.35 и $S_{gc}$ = 0…0.2: граница $= 1 - S_{or} - 0.01$, $k_{ro}$ в ней $1.1\cdot10^{-4}$…$4.9\cdot10^{-4}$. Между узлами прототип интерполирует линейно (`np.interp`, `radial_blackoil/relperm.py:7`): от границы до следующего узла $k_{ro} > 0$.
 
 - граница = `sg[j - 1]`, где `j` — первый узел с `kro_tab <= 0`;
 - нет узла с $k_{ro} = 0$ → ограничения нет (`None`);
@@ -137,17 +148,17 @@ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02
 высокой газонасыщенности (обе фазы малоподвижны одновременно).
 ```
 
-Совет верен, когда отказ вызван величиной шага ([[DEBT-007]]: README 03 и 10 приводят пороги `max_retries`), и неверен, когда шаг не сходится при любом дроблении (BUG-018 до исправления, [[BUG-017]], [[BUG-019]]). Причину адаптер не диагностирует. Новый текст сообщает факты — шаг, подшаги, время, число двухфазных ячеек, $\max S_g$ — и оба исхода дробления, без догадки о причине. Начало «HydroSolver не сошёлся после N подшагов» сохраняется: его цитируют README 03 (строка 416), 06 (105), 07 (133), 10 (105). Тестов на текст сообщения сейчас нет (`grep "raises(RuntimeError" tests/` — только без `match`).
+Совет верен, когда отказ вызван величиной шага ([[DEBT-007]], [[BUG-003]]: README 03 и 10 приводят пороги `max_retries`), и неверен, когда шаг не сходится и при глубоком дроблении: [[BUG-017]] до исправления (решения нет), BUG-018 до исправления (отказ и при 4096 подшагах), [[BUG-019]] (отказ при 512). Причину адаптер не диагностирует. Новый текст сообщает факты — шаг, подшаги, время, число двухфазных ячеек, $\max S_g$ — и оба исхода дробления, без догадки о причине. Начало «HydroSolver не сошёлся после N подшагов» сохраняется: его цитируют README 03, 06, 07, 10 (`grep -rn "не сошёлся после" numerical_solver/examples`; номера строк не приводим — README правятся). Цитаты не устаревают: они приводят только начало текста и советуют `max_retries` для своих примеров, где отказ вызван величиной шага. Полный прежний текст приводит заметка [[P4-адаптивный-шаг]] — её обновляет шаг 7. Тестов на текст сообщения сейчас нет (`grep "raises(RuntimeError" tests/` — только без `match`).
 
 ## 3. Затронутые файлы
 
-| файл | что | строки (на `4bd1e8c`) |
+| файл | что | строки (на `9f6151a`; у кода — те же, что на `4bd1e8c`) |
 |---|---|---|
 | `numerical_solver/HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/blackoil.py` | докстринг модуля; функция `_sg_activation_cap`; атрибут `sg_activation_cap` в `__init__`; ограничение в `_advance_phases` | 1-9, перед 30 (после `BlackOilNewtonReport`), 53, 312-313 |
 | `numerical_solver/gpn_multiphase_solver/hydro/prototype_adapter.py` | текст `RuntimeError` и комментарий над ним | 134-143 |
 | `numerical_solver/tests/test_prototype_activation_cap.py` | **новый** — 10 тестов | — |
 | `numerical_solver/tests/data/bug018_rs500/config.json` | **новый** — замороженный сценарий | — |
-| `vault/roadmap/известные баги и технический долг.md`, `vault/00-home/index.md`, issue #48 | шаг 7 | |
+| `vault/roadmap/известные баги и технический долг.md`, `vault/00-home/index.md`, `vault/knowledge/decisions/P4-адаптивный-шаг.md`, issue #48 | шаг 7 | P4: 73-79, 218 |
 
 Не меняются: `factory.py`, `pvt/relperm.py` (`CoreyRP`), примеры и их README, прочие тесты.
 
@@ -160,6 +171,7 @@ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02
 | 3. Гашение цикла active set | не переключать ячейку повторно за шаг | убирает зацикливание при 169 с | при варианте 1 до 169 с не доходит; меняет логику прототипа |
 | 4. Лимит итераций Ньютона 15 → 25–30 в третьей ступени | — | тривиально | причину не устраняет: при крупном шаге Ньютон стоит на границе при любом лимите |
 | 5. Передать $S_{or}$ из `CoreyRP` в прототип | точная $1 - S_{or}$ | не зависит от табуляции | у табличной ОФП $S_{or}$ нет; новый интерфейс фабрика → прототип |
+| 6. Поэтапная активация (направление 2 реестра) | сначала ячейки с меньшим пересыщением | стартовая точка ближе к решению без порога по ОФП | не проверялась; меняет цикл active set на любом шаге, где за один обход активируются ячейки разного пересыщения (старт разгазирования в примерах), — побитовость примеров не гарантирована, в отличие от варианта 1 (§2.4); опыт с вариантом 1 показал, что достаточно ограничить стартовую точку |
 
 ## 5. Подводные камни
 
@@ -173,6 +185,11 @@ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02
 - ✅ **Производительность:** одно `np.minimum` на активацию — ничтожно.
 - ✅ **Import-цепочки:** новая функция в модуле `blackoil.py`, импорт в тесте `from radial_blackoil.blackoil import _sg_activation_cap`.
 - ✅ **Соответствие постановке:** уравнения не меняются; `problem_statement.tex` не затрагивается.
+- ✅ **Решение выше границы допустимо:** ограничивается только стартовое $S_g$ ячеек, переходящих в двухфазный режим; уже двухфазные ячейки и итерации Ньютона не ограничены. Если в решении $S_g$ у забоя выше границы (долгая выработка), Ньютон дойдёт до него снизу — B.4 показывает, что корень от стартовой точки не зависит.
+- ✅ **Граница выше 0.98** (04a: 0.99): стартовое приближение `_trial_is_reasonable` не проверяет (только пробные векторы, граница $S_g \le 0.98$, `blackoil.py:216`); хуже, чем без правки, не становится — у 04a ограничение не срабатывает ($S_g^{закр}$ до 0.36).
+- ✅ **Почему «во всех ступенях», хотя [[BUG-016]] включил правку только третьей ступенью:** там правка меняла каждый шаг Ньютона (норма поиска), и включение «всегда» сломало побитовость и ухудшило пример 10 ([[линейный поиск по норме ∞ стоит при массовой активации газа — поиск по норме 2 с ограничителем ΔSg снимает отказ]]). Здесь `np.minimum` ниже границы возвращает аргумент побитово, и на существующих расчётах срабатываний 0 (§2.4).
+- ⚠️ **Замороженный сценарий не перезаписывать:** `freeze_case.py` пересобирает `frozen/bug018_rs500/config.json` генератором FEAT-025. Шаг 1 воспроизводит баг без него, шаг 4.1 сверяет хеш файла перед копированием.
+- ⚠️ **Устаревшая заметка:** [[P4-адаптивный-шаг]] приводит прежний текст сообщения (строки 73-79) и пишет «Первое, что делает пользователь, — увеличивает `max_retries`» (строка 218) — обновить в шаге 7.
 - 🔵 **Связь с FEAT-025:** после вливания примеры 19–21 могут вернуть $S_{or} = 0.2$ вместо обхода 0.05 — это решение FEAT-025 (числа его плана тогда перемерить), в эту задачу не входит.
 
 ## 6. Шаги реализации
@@ -186,17 +203,17 @@ git checkout numerical_scheme/implementation
 git log -1 --oneline                                 # записать HEAD
 git checkout -b fix/bug-018/closed-flash-sg-activation
 cd numerical_solver
-.venv\Scripts\python -m pytest tests/ -q                                      # baseline: ожидание 1035 passed
-.venv\Scripts\python -m pytest HydroSolverPrototype/Prototype_1.0.3/tests -q  # ожидание 70 passed, 10 failed (DEBT-024)
+.venv\Scripts\python -m pytest tests/ -q                                      # baseline: ожидание 1049 passed (§1.1)
+.venv\Scripts\python -m pytest HydroSolverPrototype/Prototype_1.0.3/tests -q  # ожидание 80 passed (без xlsxwriter — 70/10, DEBT-024)
 ```
 
-Воспроизведение бага (до правки):
+Воспроизведение бага (до правки) — по замороженному сценарию, файл не перезаписывается (не `freeze_case.py`, см. §5):
 
 ```powershell
-.venv\Scripts\python ..\vault\issues\bug-018\probes\freeze_case.py
+.venv\Scripts\python -c "import sys; sys.path.insert(0,'HydroSolverPrototype/Prototype_1.0.3'); from gpn_multiphase_solver.io.config import load_config; from gpn_multiphase_solver.factory import SimulatorFactory; c=load_config(r'..\vault\issues\bug-018\probes\frozen\bug018_rs500\config.json'); c.output.log_level='ERROR'; s,st=SimulatorFactory.from_config(c); s.run(st); print('СОШЁЛСЯ')"
 ```
 
-Ожидание: «N = 50, без правки: ОТКАЗ», «N = 350, без правки: ОТКАЗ».
+Ожидание (замер аудита, 4 с): `RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02 s). Увеличьте numerics.max_retries (сейчас 9). …` — $N = 50$, одни сутки.
 
 ### Шаг 2: Ограничение в прототипе
 
@@ -226,9 +243,7 @@ at the largest relperm-table Sg where kro > 0 (sg_activation_cap).
 
 ```python
 def _sg_activation_cap(relperm):
-    """BUG-018: upper bound of the closed-flash Sg guess -- the largest Sg node of
-    the relperm table where kro > 0 (oil still mobile).  None when kro never
-    reaches zero or is zero from the first node: then no cap applies."""
+    """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
     sg=np.asarray(getattr(relperm,'sg',()),float); kro=np.asarray(getattr(relperm,'kro_tab',()),float)
     zero=np.flatnonzero(kro<=0.0)
     if sg.size==0 or zero.size==0 or zero[0]==0: return None
@@ -239,11 +254,13 @@ def _sg_activation_cap(relperm):
 
 ```python
         # BUG-018: a cell switching to two-phase starts Newton from the closed-
-        # flash Sg (all released gas stays in the cell).  With high Rs0 and a deep
-        # drawdown it exceeds 1 - S_or (0.91 at Rs0 = 500, p_wf = 5 MPa against
-        # 0.41 in the solution) and Newton never gets back below the kro = 0
-        # plateau; the cap only moves the starting point, the equations and the
-        # converged state are unchanged (plan BUG-018, 2.2).
+        # flash Sg (all released gas stays in the cell, no flow during the step).
+        # With high Rs0 and a deep drawdown it exceeds 1 - S_or near the well
+        # (0.91 at Rs0 = 500, p_wf = 5 MPa against 0.41 in the solution), and
+        # Newton started there does not reach the solution: a guess capped at
+        # 0.79 converges, at 0.81 fails (S_or = 0.2).  The cap moves only the
+        # starting point; the equations and the converged state are unchanged
+        # (plan BUG-018, 2.2).  None: the table gives no cap (_sg_activation_cap).
         self.sg_activation_cap=_sg_activation_cap(relperm)
 ```
 
@@ -267,14 +284,16 @@ def _sg_activation_cap(relperm):
                 guess.sg[activate]=sg0; guess.rs_sm3_sm3[activate]=rsat
 ```
 
-**Проверка** (`cap=nan` — проба ничего не подставляет, работает код из файла):
+Контракт `_sg_activation_cap` (докстринг — одна строка по правилу CLAUDE.md, подробности здесь): возвращает `float` — `sg[j - 1]`, где `j` — первый узел с `kro_tab <= 0`; `None`, если такого узла нет, если он первый (`j = 0`) или у объекта нет `sg` / `kro_tab` (тесты A.1–A.4).
+
+**Проверка** — та же команда, что воспроизводила баг в шаге 1:
 
 ```powershell
-.venv\Scripts\python ..\vault\issues\bug-018\probes\cap_initial_sg.py cap=nan ex=20 S_or=0.2 N=50 k=1e-13 days=1
+.venv\Scripts\python -c "import sys; sys.path.insert(0,'HydroSolverPrototype/Prototype_1.0.3'); from gpn_multiphase_solver.io.config import load_config; from gpn_multiphase_solver.factory import SimulatorFactory; c=load_config(r'..\vault\issues\bug-018\probes\frozen\bug018_rs500\config.json'); c.output.log_level='ERROR'; s,st=SimulatorFactory.from_config(c); s.run(st); print('СОШЁЛСЯ')"
 .venv\Scripts\python -m pytest tests/test_prototype_globalization.py tests/test_prototype_well_branch.py -q
 ```
 
-Ожидание: «СОШЁЛСЯ, вызовов advance 1 на 1 интервалов, …» (до правки — «ОТКАЗ»); тесты ступеней `advance` зелёные.
+Ожидание: «СОШЁЛСЯ» (до правки — `RuntimeError`); тесты ступеней `advance` зелёные.
 
 ### Шаг 3: Сообщение адаптера
 
@@ -297,11 +316,12 @@ def _sg_activation_cap(relperm):
 
 ```python
         # Сообщение — факты, а не догадка о причине. Отказ бывает из-за
-        # величины шага (DEBT-007: тогда помогает дробление глубже) и при любом
-        # шаге (BUG-017, BUG-018 до исправления, BUG-019) — адаптер их не
-        # различает. Начало «HydroSolver не сошёлся после N подшагов» цитируют
-        # README примеров 03, 06, 07, 10 — не менять. Про dt_integration не
-        # пишем: A-retry уже дробит шаг внутри с тем же лимитом.
+        # величины шага (DEBT-007, BUG-003: тогда помогает дробление глубже) и
+        # не из-за неё (BUG-017 и BUG-018 до исправления, BUG-019: шаг не
+        # сходится и при 512-4096 подшагах) — адаптер их не различает.
+        # Начало «HydroSolver не сошёлся после N подшагов» цитируют README
+        # примеров 03, 06, 07, 10 — не менять. Про dt_integration не пишем:
+        # A-retry уже дробит шаг внутри с тем же лимитом.
         n_two = int(np.count_nonzero(state.regime == 1))
         raise RuntimeError(
             f"HydroSolver не сошёлся после {2**self._max_retries} подшагов "
@@ -318,7 +338,14 @@ def _sg_activation_cap(relperm):
 
 ### Шаг 4: Тесты
 
-**4.1.** Создать `numerical_solver/tests/data/bug018_rs500/config.json` — скопировать `vault/issues/bug-018/probes/frozen/bug018_rs500/config.json` без изменений (`Copy-Item`). Содержимое — генератор FEAT-025 (`make_configs.build("20", …, S_or=0.2, N=50, k=1e-13, days=1, log=INFO)`): PVT `standing` (800 / 1.014), Кори $S_{gc} = 0.1$, $S_{or} = 0.2$, $n_o = 2$, $n_g = 3$, $k_{rg}^{max} = 0.8$; $T_0 = 380$ К, $R_{s,0} = 500$, $p_0 = 46.9$ МПа; одна история 86 400 с при $p_{wf} = 5$ МПа; `max_retries = 9`.
+**4.1.** Создать `numerical_solver/tests/data/bug018_rs500/config.json` — скопировать `vault/issues/bug-018/probes/frozen/bug018_rs500/config.json` без изменений (`Copy-Item`). Перед копированием сверить хеш — на этом файле замерены числа тестов B.1:
+
+```powershell
+(Get-FileHash ..\vault\issues\bug-018\probes\frozen\bug018_rs500\config.json).Hash
+# ожидание: D8954AA98EFC47E1CEFDD5F9127DEEED2AC95C3BA2FEB675B6EC3FE3AD7A84CA; иначе стоп — файл пересобран
+```
+
+Содержимое — генератор FEAT-025 (`make_configs.build("20", …, S_or=0.2, N=50, k=1e-13, days=1, log=INFO)`): PVT `standing` (800 / 1.014), Кори $S_{gc} = 0.1$, $S_{or} = 0.2$, $n_o = 2$, $n_g = 3$, $k_{rg}^{max} = 0.8$; $T_0 = 380$ К, $R_{s,0} = 500$, $p_0 = 46.9$ МПа; одна история 86 400 с при $p_{wf} = 5$ МПа; `max_retries = 9`.
 
 **4.2.** Создать `numerical_solver/tests/test_prototype_activation_cap.py` — скопировать `vault/issues/bug-018/probes/test_prototype_activation_cap.py` без изменений. Состав (10 тестов):
 
@@ -335,7 +362,7 @@ def _sg_activation_cap(relperm):
 | B.4 `test_solution_independent_of_cap` | граница 0.79 против 0.3 | $\max|\Delta p| < 10^{-3}$ Па, $\max|\Delta S_g| < 10^{-9}$, $\max|\Delta R_s| < 10^{-7}$ (замер $6\cdot10^{-6}$, $10^{-12}$, $7.5\cdot10^{-11}$) |
 | C `test_failure_message_reports_state_not_guess` | текст `RuntimeError` при всегда отказывающем `advance`, `max_retries = 1` | начинается с «HydroSolver не сошёлся после 2 подшагов», содержит «t = 0.0000 сут», «двухфазных ячеек 0 из 50», не содержит «малоподвижны» |
 
-Все 10 тестов проверены до реализации: `plan_impl_plugin.py` подставляет в память код шагов 2 и 3 (функцию, атрибут, ограничение и тот же f-string сообщения) — **10 passed** за 2.2 с. Команда: `$env:PYTHONPATH = "..\vault\issues\bug-018\probes"; .venv\Scripts\python -m pytest ..\vault\issues\bug-018\probes\test_prototype_activation_cap.py -p plan_impl_plugin -v`. Пример нового текста (тот же сценарий без ограничения, `max_retries = 0`):
+Все 10 тестов проверены до реализации: `plan_impl_plugin.py` подставляет в память код шагов 2 и 3 (функцию, атрибут, ограничение и тот же f-string сообщения) — **10 passed** за 2.2 с (повторено аудитом на `9f6151a` после правки докстрингов модуля и B.1: «ни при каком дроблении» → «и при 4096 подшагах», «при любом N» → «при N = 50 и 350»). Команда: `$env:PYTHONPATH = "..\vault\issues\bug-018\probes"; .venv\Scripts\python -m pytest ..\vault\issues\bug-018\probes\test_prototype_activation_cap.py -p plan_impl_plugin -v`. Пример нового текста (тот же сценарий без ограничения, `max_retries = 0`):
 
 ```
 HydroSolver не сошёлся после 1 подшагов (dt_sub=8.64e+04 s) на шаге с t = 0.0000 сут: двухфазных
@@ -355,8 +382,8 @@ numerics.max_retries (сейчас 0, допустимо до 20); если ша
 ### Шаг 5: Регрессия
 
 ```powershell
-.venv\Scripts\python -m pytest tests/ -q                                       # 1035 + 10 = 1045 passed
-.venv\Scripts\python -m pytest HydroSolverPrototype/Prototype_1.0.3/tests -q   # 70 passed, 10 failed — те же
+.venv\Scripts\python -m pytest tests/ -q                                       # 1049 + 10 = 1059 passed
+.venv\Scripts\python -m pytest HydroSolverPrototype/Prototype_1.0.3/tests -q   # 80 passed — как в базе
 ```
 
 Побитовость 17 примеров — по построению (§2.4); дополнительно `examples\run_all.py` не обязателен: тесты примеров сверяют числа README.
@@ -368,13 +395,14 @@ numerics.max_retries (сейчас 0, допустимо до 20); если ша
 .venv\Scripts\python ..\vault\issues\bug-018\probes\cap_initial_sg.py cap=nan ex=19 S_or=0.2 days=30
 ```
 
-`cap=nan` — проба ничего не подставляет, работает код из файла. Ожидание: «СОШЁЛСЯ, вызовов advance 30 на 30 интервалов»; на 30 сут $T(r_w) = 371.426$ К / $S_g(r_w) = 0.4223$ (20) и 396.344 К / 0.3831 (19) — как в §2.3.
+`cap=nan` — проба ничего не подставляет, работает код из файла. Ожидание: «СОШЁЛСЯ, вызовов advance 30 на 30 интервалов»; на 30 сут $T(r_w) = 371.426$ К / $S_g(r_w) = 0.4223$ (20) и 396.344 К / 0.3831 (19) — как в §2.3 (первую строку аудит перемерил на `9f6151a`: совпадает до знака). Конфиги строит генератор FEAT-025: если его `SETS` изменены после 2026-10-02 — числа не сверять, достаточно «СОШЁЛСЯ … 30 на 30».
 
 ### Шаг 7: Vault и issue
 
-1. Реестр, BUG-018: «Результат» (тестов 1035 → 1045, время; числа шагов 5–6), «Отклонения от плана», статус ✅ ИСПРАВЛЕНО <дата>.
+1. Реестр, BUG-018: «Результат» (тестов 1049 → 1059, время; числа шагов 5–6), «Отклонения от плана», статус ✅ ИСПРАВЛЕНО <дата>.
 2. Реестр, [[BUG-019]]: в «Файл»/«Симптом» — новое сообщение адаптера (текст после шага 3).
 3. `vault/00-home/index.md` — строка плана: «Реализовано <дата>».
+3а. `vault/knowledge/decisions/P4-адаптивный-шаг.md`: блок кода (строки 73-79) — новый текст сообщения из шага 3; абзац «Первый подшаг всегда расходится» (строка 218) — дополнить: отказ бывает и не из-за величины шага (BUG-017 и BUG-018 до исправления, BUG-019), поэтому сообщение сообщает состояние и не называет причину; `max_retries` помогает, только когда дело в величине шага.
 4. Комментарий в #48: `vault/issues/bug-018/05-comment-done.md`.
 5. Коммиты (`/implement`): код + тесты + данные — `fix:`; vault — отдельно `vault:`.
 
@@ -393,9 +421,9 @@ numerics.max_retries (сейчас 0, допустимо до 20); если ша
 ## 8. Критерии завершения
 
 - [ ] `test_prototype_activation_cap.py` — 10 passed.
-- [ ] `tests/` — 1045 passed; тесты прототипа — 70 passed, 10 failed (те же).
+- [ ] `tests/` — 1059 passed; тесты прототипа — 80 passed.
 - [ ] Отказные конфиги шага 6 сходятся без дробления, числа §2.3.
-- [ ] Реестр (BUG-018, BUG-019), индекс vault, комментарий в #48.
+- [ ] Реестр (BUG-018, BUG-019), индекс vault, заметка P4, комментарий в #48.
 
 ## 9. Новые проблемы
 
@@ -412,4 +440,6 @@ numerics.max_retries (сейчас 0, допустимо до 20); если ша
 
 - [[известные баги и технический долг]] — BUG-018, BUG-019, BUG-016, BUG-014, DEBT-007, DEBT-024
 - [[bug-016 newton-line-search-norm]] — третья ступень `advance`
+- [[линейный поиск по норме ∞ стоит при массовой активации газа — поиск по норме 2 с ограничителем ΔSg снимает отказ]] — тот же старт Ньютона из $S_g$ «закрытого сосуда», почему BUG-016 включён только третьей ступенью
+- [[P4-адаптивный-шаг]] — A-retry и текст сообщения (шаг 7)
 - [[feat-025 standing-corey-cooling-examples]] — обход $S_{or} = 0.05$

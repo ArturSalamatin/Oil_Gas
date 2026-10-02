@@ -7,7 +7,7 @@ issue: FEAT-026
 github: 47
 branch: feat/feat-026/emf-figure-export
 model_level: null
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-02
   round: 1

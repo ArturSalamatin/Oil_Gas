@@ -450,7 +450,6 @@ cd numerical_solver
 | `grid_convergence.py` | сходимость по сетке $N$ = 25…150, ~3 мин |
 | `plot_profiles_50k.py` | профили на 0…50 000 с по готовому `output/profiles.csv`, секунды |
 | `rewrite_history.py` | перегенерация блока `time.history` (864 × 300 с) |
-| `diag_n_threshold.py`, `diag_n500_aset.py` | диагностика сходимости первого шага на подробной сетке |
 | `config.json`, `oil_pvt.csv`, `gas_pvt.csv` | конфигурация и PVT-таблицы |
 
 Выход — в `output/`: `profiles.csv` (~11 МБ), `well_history.csv` и графики

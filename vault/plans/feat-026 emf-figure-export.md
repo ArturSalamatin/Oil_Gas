@@ -555,4 +555,4 @@ Worktree `.worktrees/feat-026`, ветка `feat/feat-026/emf-figure-export` о�
 
 **Отклонение от кода плана.** Модульный docstring `figure_io.py`: «`GPN_EXAMPLES_EMF = "0"` — ни SVG, ни EMF, только PNG» вместо «EMF не делать» — после решения 5 выключатель отключает обе векторные копии.
 
-Предложено пользователю: запись DEBT про мёртвую `convergence.plot_convergence`.
+Мёртвая `convergence.plot_convergence` (и ещё три функции модуля без вызывающих) — зарегистрирован [[DEBT-029]] (решение пользователя 2026-10-02).

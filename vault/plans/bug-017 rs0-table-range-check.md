@@ -7,7 +7,7 @@ date: 2026-10-01
 issue: BUG-017
 github: 45
 branch: fix/bug-017/rs0-table-range-check
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-01
   round: 2

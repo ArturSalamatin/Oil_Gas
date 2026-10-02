@@ -16,6 +16,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    # Вывод results.xlsx в HydroSolverPrototype (run_prototype.py и его тесты);
+    # пакет gpn_multiphase_solver его не импортирует.
+    "XlsxWriter>=3.2",
 ]
 
 [tool.setuptools.packages.find]

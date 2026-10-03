@@ -9,7 +9,7 @@ PrototypeHydroAdapter выполняет 8 шагов:
   4. BlackOilState (бар) → SimulationState (Па)
   5. face_component_fluxes_sm3s → dict
   6. Инверсия знака ТОЛЬКО well-потоков
-  7. Q, u, m из G через upstream PVT
+  7. Q, u, m из G через upstream PVT (общий шаг fluxes.phase_fluxes_from_components)
   8. Gm_o, Gm_g, сборка HydroResult
 
 Эталон для потоков — прямой вызов прототипа (face_component_fluxes_sm3s),
@@ -429,8 +429,8 @@ class TestDerivedFluxes:
         Bo = our_pvt.Bo(p, Rs)
 
         for f in range(1, N):
-            # Upstream по знаку G_o
-            up = f if result.G_o[f] < 0 else f - 1
+            # Выше по потоку — по перепаду давления, как прототип (DEBT-028)
+            up = f - 1 if p[f - 1] - p[f] >= 0 else f
             Q_o_expected = result.G_o[f] * Bo[up]
             assert result.Q_o[f] == pytest.approx(Q_o_expected, rel=1e-12), \
                 f"Q_o mismatch at face {f}"
@@ -441,7 +441,7 @@ class TestDerivedFluxes:
         Bg = our_pvt.Bg(p)
 
         for f in range(1, N):
-            up = f if result.G_o[f] < 0 else f - 1
+            up = f - 1 if p[f - 1] - p[f] >= 0 else f
             Q_g_expected = result.G_free_gas[f] * Bg[up]
             assert result.Q_g[f] == pytest.approx(
                 Q_g_expected, rel=1e-12, abs=1e-30), \
@@ -470,7 +470,7 @@ class TestDerivedFluxes:
         rho_o = our_pvt.rho_o(p, Rs)
 
         for f in range(1, N):
-            up = f if result.G_o[f] < 0 else f - 1
+            up = f - 1 if p[f - 1] - p[f] >= 0 else f
             m_o_expected = rho_o[up] * result.Q_o[f]
             assert result.m_o[f] == pytest.approx(m_o_expected, rel=1e-12), \
                 f"m_o mismatch at face {f}"
@@ -508,11 +508,62 @@ class TestGgDecomposition:
 
     def test_decomposition_internal(self, result):
         Rs = result.state.Rs
+        p = result.state.p
         for f in range(1, N):
-            up = f if result.G_o[f] < 0 else f - 1
+            up = f - 1 if p[f - 1] - p[f] >= 0 else f
             expected = Rs[up] * result.G_o[f] + result.G_free_gas[f]
             assert result.G_g[f] == pytest.approx(expected, rel=1e-10), \
                 f"G_g decomposition mismatch at face {f}"
+
+
+# ═══════════════════════════════════════════════════════════
+# F2. Выбор ячейки выше по потоку при k_ro = 0 (DEBT-028)
+# ═══════════════════════════════════════════════════════════
+
+class TestUpstreamWithZeroKro:
+    """Ячейка выше по потоку — по перепаду давления, как в прототипе.
+
+    При S_g = 0.8 табличная k_ro = 0 (KRO_TAB), и прототип отдаёт G_o = 0
+    (точнее −0.0) на грани, хотя Δp < 0 и свободный газ течёт к скважине.
+    Прототип выбирает ячейку по перепаду (blackoil.py,
+    face_component_fluxes_sm3s: left = dp >= 0) — ячейку f. Правило «по
+    знаку G_o» (до DEBT-028) брало f-1, ячейку ниже по потоку, и Q_g, u_g
+    получали B_g не той ячейки. m_g верен при любом выборе: ρ_g·B_g = ρ_g,ст.
+
+    _build_result вызывается напрямую: через solve состояние с S_g = 0.8
+    не задать — прототип за шаг его изменит.
+    """
+
+    def test_Q_g_uses_upstream_cell_by_pressure(self, adapter, our_pvt,
+                                                our_grid, bc):
+        """Грани 1, 2: G_o = 0, Q_g = G_free_gas · B_g[f] (ячейка f).
+
+        Условия: p растёт от 160 до 200 бар (Δp < 0 на всех гранях),
+        S_g = 0.8 в ячейках 0–2 (k_ro = 0, k_rg = 0.8), дальше S_g = 0.
+        Ловит: выбор ячейки ниже по потоку при G_o = 0 (до DEBT-028
+        Q_g[1] брал B_g[0], расхождение ~0.7 %).
+        """
+        p = np.linspace(160e5, 200e5, N)          # Δp < 0 на всех внутренних гранях
+        Sg = np.zeros(N)
+        Sg[:3] = 0.8                              # k_ro = 0 в ячейках 0–2
+        Rs = np.where(Sg > 0, our_pvt.Rs_eq(p), RS0)
+        state = SimulationState(p=p, Sg=Sg, Rs=Rs, T=np.full(N, T0),
+                                regime=np.where(Sg > 0, 1, 2), t=0.0)
+        proto = BlackOilState(pressure_bar=p / BAR_TO_PA, rs_sm3_sm3=Rs.copy(),
+                              sg=Sg.copy(), gas_active=(Sg > 0))
+        r = adapter._build_result(state, proto, bc)
+        Bg = our_pvt.Bg(p)
+        area = 2.0 * np.pi * our_grid.h * our_grid.r_faces
+        for f in (1, 2):
+            assert r.G_o[f] == 0.0                # k_ro(S_g = 0.8) = 0
+            assert r.G_free_gas[f] < 0.0          # газ течёт к скважине
+            # Контроль невырожденности: при равных B_g тест не различит ячейки
+            assert not np.isclose(Bg[f], Bg[f - 1], rtol=1e-6)
+            assert r.Q_g[f] == pytest.approx(r.G_free_gas[f] * Bg[f], rel=1e-14)
+            assert r.u_g[f] == pytest.approx(r.Q_g[f] / area[f], rel=1e-14)
+            # m_g от выбора ячейки не зависит: ρ_g·B_g = ρ_g,ст (pvt/base.py)
+            assert r.m_g[f] == pytest.approx(
+                our_pvt.rho_g_std * r.G_free_gas[f], rel=1e-12)
 
 
 # ═══════════════════════════════════════════════════════════

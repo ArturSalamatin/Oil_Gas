@@ -230,6 +230,20 @@ cd numerical_solver
 
 Время на всех графиках — в сутках.
 
+**Векторные копии рисунков (FEAT-026).** Каждый PNG дублируется в
+`output/emf/` в двух векторных форматах: `<имя>.svg` и `<имя>.emf` (EMF — для
+вставки в Word). matplotlib EMF не пишет, поэтому рисунок сохраняется в SVG,
+а в конце скрипта один запуск Inkscape переводит в EMF все SVG папки, у
+которых ещё нет EMF. Inkscape ищется так: переменная
+`INKSCAPE` (путь к `inkscape.com`), PATH, `C:\Program Files\Inkscape\bin\`.
+Без Inkscape печатается предупреждение, PNG и SVG создаются, EMF нет.
+`GPN_EXAMPLES_EMF=0` отключает обе векторные копии — так делает
+`tests/conftest.py`. Текст в SVG и EMF — кривыми: в Word выглядит как PNG, но
+не редактируется. Времена прогона выше в этом README сняты без векторных
+копий: они добавляют около 10 с на пример (замер 2026-10-02 на примере 14,
+9 рисунков: Inkscape 6.4 с, сохранение SVG около 3 с), у 01, 02 и 05 — ещё
+около 3 с на второй пакет перестроенных рисунков.
+
 `relperm.png` строится общим модулем [relperm_plot.py](relperm_plot.py) для
 любой модели ОФП — аналитической (Corey) и табличной; для табличной
 дополнительно отмечаются узлы. Вторая панель увеличивает рабочий диапазон:
@@ -594,6 +608,7 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 | [run_all.py](run_all.py) | последовательный прогон всех примеров (~10 мин) | `python examples\run_all.py` |
 | [relperm_plot.py](relperm_plot.py) | кривые ОФП и рабочий диапазон | — |
 | [pvt_plot.py](pvt_plot.py) | PVT-свойства и рабочий диапазон давления | — |
+| [figure_io.py](figure_io.py) | сохранение рисунков: PNG + SVG и EMF в `output/emf/` (Inkscape) | — |
 | [closed_form.py](closed_form.py) | замкнутое решение: дебит квадратурой, профили без данных расчёта | — |
 | [rs_analytics.py](rs_analytics.py) | $R_s = \min(R_s^{eq}(p), R_{s,0})$ | — |
 | [energy_balance.py](energy_balance.py) | баланс энергии, все пять членов безусловно | `python examples\energy_balance.py 03` |

@@ -73,6 +73,7 @@ from closed_form import (  # noqa: E402
 from energy_balance import plot_energy_balance  # noqa: E402
 from temperature_asymptotics import report_asymptotics  # noqa: E402
 from pvt_plot import plot_pvt, report_pvt  # noqa: E402
+from figure_io import save_figure, export_emf  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,
@@ -181,14 +182,14 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     plot_well_rate(history, ax=ax)
     ax.set_title(f"{title}\nДебиты скважины")
     fig.tight_layout()
-    fig.savefig(output_dir / "well_rates.png", dpi=110)
+    save_figure(fig, output_dir / "well_rates.png", dpi=110)
     plt.close(fig)
 
     fig, axes = plt.subplots(3, 1, sharex=True, figsize=(7, 8))
     plot_wellbore_dynamics(history, axes=axes)
     axes[0].set_title(f"{title}\nДинамика на забое")
     fig.tight_layout()
-    fig.savefig(output_dir / "wellbore_dynamics.png", dpi=110)
+    save_figure(fig, output_dir / "wellbore_dynamics.png", dpi=110)
     plt.close(fig)
 
     # ── ОФП ──
@@ -215,6 +216,11 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # на подшагах внутри решателя, а не восстанавливаются по записям.
     print()
     plot_energy_balance(history, grid, config, output_dir)
+
+    # ── EMF-копии рисунков (FEAT-026) ──
+    # Все рисунки run_example уже сохранены (PNG + SVG в emf/):
+    # один запуск Inkscape на пакет, а не на каждый рисунок.
+    export_emf(output_dir)
 
     _print_summary(history, elapsed, output_dir)
 
@@ -301,7 +307,7 @@ def _plot_field(history, grid, times_to_plot, field: str,
         ax.legend(fontsize=8)
     ax.set_title(title)
     fig.tight_layout()
-    fig.savefig(path, dpi=110)
+    save_figure(fig, path, dpi=110)
     plt.close(fig)
 
 

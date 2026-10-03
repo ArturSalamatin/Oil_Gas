@@ -43,6 +43,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from gpn_multiphase_solver.factory import SimulatorFactory, _create_relperm  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
+from figure_io import save_figure, export_emf  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
 
@@ -146,9 +147,11 @@ def main():
     fig.tight_layout()
     out = HERE / "output" / "closed_form_convergence.png"
     out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=130)
+    save_figure(fig, out, dpi=130)
     plt.close(fig)
     print(f"\nСохранён: {out}")
+    # SVG рисунка — в EMF (FEAT-026).
+    export_emf(out.parent)
 
 
 if __name__ == "__main__":

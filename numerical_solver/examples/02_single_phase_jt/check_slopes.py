@@ -38,6 +38,8 @@ HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
 sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
+# examples/ — для figure_io (FEAT-026).
+sys.path.insert(0, str(SOLVER_ROOT / "examples"))
 
 warnings.filterwarnings("ignore")
 
@@ -47,6 +49,7 @@ import matplotlib.pyplot as plt
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
+from figure_io import save_figure, export_emf
 
 # Множители mu_JT относительно конфига. 1.0 — базовый вариант.
 MU_FACTORS = [1.0, 2.0]
@@ -215,9 +218,11 @@ def main():
     # Стираем результат прошлого прогона. Остальные файлы в output/ пишет
     # main.py примера, и трогать их нельзя: этот скрипт их не восстановит.
     out_path.unlink(missing_ok=True)
-    fig.savefig(out_path, dpi=130)
+    save_figure(fig, out_path, dpi=130)
     plt.close(fig)
     print(f"\nСохранён: {out_path}")
+    # SVG рисунка — в EMF (FEAT-026).
+    export_emf(out_dir)
 
 
 if __name__ == "__main__":

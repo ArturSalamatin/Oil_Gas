@@ -10,6 +10,7 @@ output/profiles.csv (865 записей × 150 ячеек, шаг 300 с). Чи�
 берётся из самого файла, поэтому скрипт работает при любой сетке.
 """
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -19,6 +20,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 HERE = Path(__file__).parent
+# examples/ — для figure_io (FEAT-026).
+sys.path.insert(0, str(HERE.resolve().parent))
+
+from figure_io import save_figure, export_emf  # noqa: E402
+
 CSV = HERE / "output" / "profiles.csv"
 OUT = HERE / "output"
 
@@ -67,9 +73,12 @@ def main() -> None:
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, ncol=2)
         fig.tight_layout()
-        fig.savefig(OUT / fname, dpi=110)
+        save_figure(fig, OUT / fname, dpi=110)
         plt.close(fig)
         print(f"  {fname}")
+
+    # Четыре SVG — в EMF одним запуском Inkscape (FEAT-026).
+    export_emf(OUT)
 
     print(f"Моменты, с: {[f'{times[i]:.0f}' for i in idx]}")
 

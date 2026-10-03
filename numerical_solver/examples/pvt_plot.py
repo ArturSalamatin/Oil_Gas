@@ -78,6 +78,8 @@ from gpn_multiphase_solver.units import BAR_TO_PA  # noqa: E402
 # PVT берём у того же решателя, что считал задачу; помощник уже есть —
 # заводить второй способ доступа к одному объекту незачем.
 from temperature_asymptotics import _pvt_of  # noqa: E402
+# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
+from figure_io import save_figure  # noqa: E402
 
 
 def _get_pvt(config, simulator):
@@ -267,7 +269,7 @@ def plot_pvt(config, history, output_dir: Path, title: str,
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     out = output_dir / "pvt.png"
-    fig.savefig(out, dpi=120)
+    save_figure(fig, out, dpi=120)
     plt.close(fig)
     return out
 

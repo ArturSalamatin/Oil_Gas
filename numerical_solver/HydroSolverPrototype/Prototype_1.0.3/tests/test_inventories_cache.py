@@ -25,5 +25,25 @@ class InventoriesTests(unittest.TestCase):
         pv=m.rock.pore_volume_m3(m.grid.bulk_volumes_m3,p); bo=m.pvt.bo(p,rs); bg=m.pvt.bg(p)
         m.pvt=_NoViscosityPVT(m.pvt); oi,gi=m.component_inventories(s)
         self.assertEqual(oi.tobytes(),(pv*(1.0-sg)/bo).tobytes()); self.assertEqual(gi.tobytes(),(pv*(rs*(1.0-sg)/bo+sg/bg)).tobytes())
+    def test_old_inventories_once_per_state(self):
+        # Three residuals with one state_old, as inside a Jacobian: inventories of the new state every
+        # time, of state_old once -> 3 + 1 = 4 calls of component_inventories (6 before DEBT-036)
+        m,s,mask=_mixed_state(); z=m.pack(s,mask); calls=[]; inner=m.component_inventories
+        m.component_inventories=lambda st: (calls.append(st),inner(st))[1]
+        for d in (0.0,1e-3,-2e-3): m.residual(z+d,s,60.0,mask)
+        self.assertEqual(len(calls),4)
+    def test_residual_bitwise_fresh_model(self):
+        # With the cache filled, every residual equals bitwise the one of a fresh model (empty cache)
+        m,s,mask=_mixed_state(); z=m.pack(s,mask)
+        for d in (0.0,1e-3,-2e-3):
+            fresh,_,_=_mixed_state()
+            self.assertEqual(m.residual(z+d,s,60.0,mask).tobytes(),fresh.residual(z+d,s,60.0,mask).tobytes())
+    def test_old_inventories_follow_in_place_change(self):
+        # state_old changed in place between residuals (the same object): fresh inventories are
+        # used, not stale ones -- the key is the bytes of p, Rs, Sg, not the object
+        m,s,mask=_mixed_state(); z=m.pack(s,mask); m.residual(z,s,60.0,mask)
+        s.pressure_bar[2]+=0.7; s.sg[1]+=0.01
+        fresh,_,_=_mixed_state()
+        self.assertEqual(m.residual(z,s,60.0,mask).tobytes(),fresh.residual(z,s,60.0,mask).tobytes())
 
 if __name__=='__main__': unittest.main()

@@ -74,6 +74,8 @@ class RadialBlackOilModel:
         if jacobian_mode not in ('grouped','reference'): raise ValueError("jacobian_mode must be 'grouped' or 'reference'")
         if linear_solver not in ('sparse','dense'): raise ValueError("linear_solver must be 'sparse' or 'dense'")
         self.jacobian_mode=jacobian_mode; self.linear_solver=linear_solver
+        # DEBT-036: (key, oil, gas) inventories of the last state_old of physical_residual (_old_inventories)
+        self._old_inventories_cache=None
 
     def set_bhp_control(self,bhp_bar):
         self.control_mode='BHP'; self.p_bhp_bar=float(bhp_bar)
@@ -150,6 +152,18 @@ class RadialBlackOilModel:
         bo=self.pvt.bo(p,state.rs_sm3_sm3); bg=self.pvt.bg(p)
         pv=self.rock.pore_volume_m3(self.grid.bulk_volumes_m3,p)
         return pv*so/bo, pv*(state.rs_sm3_sm3*so/bo+sg/bg)
+    def _old_inventories(self,state_old):
+        """Inventories of state_old, recomputed only when its p, Rs or Sg change (DEBT-036)."""
+        # Within a step every residual (7 per Jacobian plus the line search) has the same state_old.
+        # The key is the bytes of p, Rs, Sg, not the object: a state changed in place gets fresh
+        # inventories, equal bytes give bitwise the same ones (key 1.8 us at N = 350 against
+        # 0.1-0.6 ms for the inventories).  grid, rock and pvt are fixed for the model's life.
+        # The returned arrays are the cached ones: callers must not modify them in place.
+        key=(state_old.pressure_bar.tobytes(),state_old.rs_sm3_sm3.tobytes(),state_old.sg.tobytes())
+        c=self._old_inventories_cache
+        if c is None or c[0]!=key:
+            c=self._old_inventories_cache=(key,)+tuple(self.component_inventories(state_old))
+        return c[1],c[2]
     def _phase_mobilities_surface(self,p,rs,sg):
         p=np.asarray(p,float); rs=np.asarray(rs,float); sg=np.asarray(sg,float)
         bo=self.pvt.bo(p,rs); muo=self.pvt.mu_o(p,rs); bg=self.pvt.bg(p); mug=self.pvt.mu_g(p)
@@ -175,7 +189,7 @@ class RadialBlackOilModel:
             oil[:-1]+=f['oil_internal']; oil[1:]-=f['oil_internal']; gas[:-1]+=f['gas_component_internal']; gas[1:]-=f['gas_component_internal']
         oil[-1]+=f['oil_outer']; gas[-1]+=f['gas_component_outer']; return oil,gas
     def physical_residual(self,z,state_old,dt_s,gas_active):
-        new=self.unpack(z,gas_active); oi1,gi1=self.component_inventories(new); oi0,gi0=self.component_inventories(state_old); qo,qg=self.net_component_outflow(new)
+        new=self.unpack(z,gas_active); oi1,gi1=self.component_inventories(new); oi0,gi0=self._old_inventories(state_old); qo,qg=self.net_component_outflow(new)
         return np.concatenate([(oi1-oi0)/float(dt_s)+qo,(gi1-gi0)/float(dt_s)+qg])
     def residual(self,z,state_old,dt_s,gas_active):
         r=self.physical_residual(z,state_old,dt_s,gas_active); r[self.grid.n:]/=self.gas_residual_scale; return r

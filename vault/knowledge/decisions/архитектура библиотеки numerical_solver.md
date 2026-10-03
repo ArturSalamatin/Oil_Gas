@@ -72,7 +72,7 @@ numerical_solver/
 │   │   ├── base.py             # ABC: EnergySolver
 │   │   └── tridiag.py          # TridiagEnergySolver
 │   │
-│   ├── fluxes.py               # Вычисление потоков: G, Q, u, m, Gm + upstream
+│   ├── fluxes.py               # G по Дарси (путь тестов) + общий шаг Q, u, m, Gm обоих гидро-путей (DEBT-028)
 │   ├── bc.py                   # Управление скважиной (данные): WellControl, PressureControl, RateControl (FEAT-020)
 │   ├── simulator.py            # 6. Оркестратор: Simulator, TimeSchedule, ScheduleInterval
 │   ├── factory.py              # 7.1. Фабрика: SimulatorFactory.from_config()

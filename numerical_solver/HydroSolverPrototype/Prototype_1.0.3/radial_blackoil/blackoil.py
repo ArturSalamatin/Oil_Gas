@@ -194,6 +194,25 @@ class RadialBlackOilModel:
         if room_plus <= 1.25*h and room_minus > h: return -h
         if room_minus <= 1.25*h and room_plus > h: return h
         return h
+    def _fd_steps(self,z,gas_active,p_rel_step=1e-6,p_abs_step=1e-4,rs_abs_step=1e-5,sg_abs_step=1e-7):
+        """DEBT-033: finite-difference steps of all 2n unknowns at once (pressure block, then Rs/Sg)."""
+        # Elementwise the same float64 arithmetic as _pressure_fd_step and the Rs/Sg
+        # step rule of the column loop, hence bitwise the same steps.
+        z=np.asarray(z,float); mask=np.asarray(gas_active,dtype=bool); n=self.grid.n
+        p,x=z[:n],z[n:]
+        h=np.maximum(p_abs_step,p_rel_step*np.maximum(np.abs(p),1.0))
+        knots=np.asarray(self.pvt.pb,float)
+        if knots.size:
+            # Gas-active cells: step down where the step up would straddle the next
+            # Rs_sat(p) knot (see _pressure_fd_step); its second rule returns +h,
+            # the default, and needs no counterpart here.
+            idx=np.searchsorted(knots,p,side='left')
+            lower=np.where(idx>0,knots[np.maximum(idx-1,0)],-np.inf)
+            upper=np.where(idx<knots.size,knots[np.minimum(idx,knots.size-1)],np.inf)
+            down=mask&(upper-p<=1.25*h)&(p-lower>h)
+            h=np.where(down,-h,h)
+        hx=np.where(mask,sg_abs_step,np.maximum(rs_abs_step,1e-6*np.maximum(np.abs(x),1.0)))
+        return np.concatenate([h,hx])
 
     def finite_difference_jacobian_reference(self,z,state_old,dt_s,gas_active,p_rel_step=1e-6,p_abs_step=1e-4,rs_abs_step=1e-5,sg_abs_step=1e-7):
         z=np.asarray(z,float); f0=self.residual(z,state_old,dt_s,gas_active); J=np.empty((z.size,z.size)); n=self.grid.n

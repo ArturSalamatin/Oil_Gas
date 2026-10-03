@@ -11,4 +11,27 @@ class GroupedJacobianTests(unittest.TestCase):
     def test_sparse_dense_same_step(self):
         _,ms,s=model_and_state(n=8,linear='sparse'); _,md,_=model_and_state(n=8,linear='dense'); a,ra=ms.advance(s,60); b,rb=md.advance(s,60); self.assertTrue(ra.converged and rb.converged); self.assertLess(np.max(abs(a.pressure_bar-b.pressure_bar)),1e-8)
 
+# DEBT-033: the grouped Jacobian is assembled vectorized, directly as a CSC matrix.
+# It must stay bitwise the former matrix: the Newton steps and the prototype
+# regression against golden/ (abs 2e-7 / rel 2e-10) depend on it.  The bitwise
+# reference is the column-by-column mode: the former dense grouped matrix equalled
+# it bitwise on 488 Newton states of five GPN examples (DEBT-033 probe).
+class GroupedJacobianSparseTests(unittest.TestCase):
+    def test_fd_steps_equal_scalar_rule(self):
+        # _fd_steps gives bitwise the steps of _pressure_fd_step (one-sided step at the
+        # Rs_sat(p) knots) and of the Rs/Sg rule of the column loop.  Pressures straddle
+        # every PVTO knot at 0.5...2 steps, where the step direction flips; Rs below
+        # and above 1 hits both branches of max(|Rs|, 1).
+        _,m0,_=model_and_state(n=3); knots=np.asarray(m0.pvt.pb,float)
+        hk=np.maximum(1e-4,1e-6*np.maximum(np.abs(knots),1.0))
+        offs=np.array([-2,-1.3,-1.25,-1,-0.5,0,0.5,1,1.25,1.3,2])
+        p=np.concatenate([(knots[:,None]+offs*hk[:,None]).ravel(),[0.5,1.0,knots[-1]+10.0,300.0]])
+        n=p.size; _,m,_=model_and_state(n=n); flipped=[]
+        for mask in (np.ones(n,bool),np.arange(n)%2==0):
+            x=np.where(mask,0.02,np.resize([0.5,30.0,120.0],n)); h=m._fd_steps(np.concatenate([p,x]),mask)
+            hp=np.array([m._pressure_fd_step(pi,bool(gi)) for pi,gi in zip(p,mask)])
+            hx=np.array([1e-7 if gi else max(1e-5,1e-6*max(abs(xi),1.0)) for xi,gi in zip(x,mask)])
+            self.assertTrue(np.array_equal(h,np.concatenate([hp,hx]))); flipped.append(np.any(hp<0))
+        self.assertTrue(flipped[0])   # the knot rule was exercised, not only the default +h
+
 if __name__=='__main__': unittest.main()

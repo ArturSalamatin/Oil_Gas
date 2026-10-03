@@ -377,6 +377,7 @@ numerical_solver/gpn_multiphase_solver/pvt/
 ├── standing.py         # StandingFullPVT (корреляции)
 ├── prototype_adapter.py # PrototypePVTAdapter (обёртка BlackOilPVT → HydroPVT)
 ├── table_full.py       # TableFullPVT (табличные гидро + скалярные тепловые)
+├── consistency.py      # проверка согласованности PVT: c_ot, c_g, c_o (BUG-019)
 └── relperm.py          # RelPermModel, CoreyRP, PrototypeRPAdapter
 ```
 

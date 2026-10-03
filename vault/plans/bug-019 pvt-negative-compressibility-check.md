@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: BUG-019
 github: 49
 branch: fix/bug-019/newton-stall-developed-gas-zone
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-03
   round: 1

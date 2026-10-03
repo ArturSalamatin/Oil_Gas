@@ -7,6 +7,11 @@
     RateControl → set_oil_rate_control (м³ст/с → м³ст/сут, Па → бар)
   - забойное давление: bhp_bar прототипа → HydroResult.p_wf (Па)
 
+Q, u, m, Gm из потоков компонентов — общий шаг
+fluxes.phase_fluxes_from_components, тот же, что у compute_fluxes
+(DEBT-028): выбор ячейки выше по потоку — по перепаду давления, как
+в прототипе.
+
 НЕ конвертирует:
   - Rs, Sg (безразмерные)
   - Потоки G (м³ст/с — уже SI в прототипе)
@@ -28,6 +33,7 @@ from ..grid.base import Grid
 from ..pvt.base import HydroPVT
 from ..bc import PressureControl, RateControl
 from ..units import BAR_TO_PA, DAY_TO_S
+from ..fluxes import phase_fluxes_from_components
 from ..log import user_log, dev_log
 
 
@@ -152,7 +158,7 @@ class PrototypeHydroAdapter(HydroSolver):
     def _build_result(self, new_state: SimulationState,
                       new_proto, bc: BoundaryConditions,
                       n_substeps: int = 1) -> HydroResult:
-        """Шаги 5–8: извлечь потоки из прототипа, вычислить Q, u, m, Gm.
+        """Шаги 5–9: потоки компонентов из прототипа, Q, u, m, Gm — общим шагом fluxes.py.
 
         n_substeps — фактическое дробление A-retry, уходит в HydroResult
         для синхронного дробления шага энергии (BUG-010).
@@ -181,69 +187,6 @@ class PrototypeHydroAdapter(HydroSolver):
         G_free_gas[1:N] = fluxes['free_gas_internal']
         G_free_gas[N] = fluxes['free_gas_outer']
 
-        # ── Шаг 7: Q, u, m из PVT (единый self._pvt) ──
-        p = new_state.p
-        Rs = new_state.Rs
-
-        Bo = self._pvt.Bo(p, Rs)
-        Bg = self._pvt.Bg(p)
-        rho_o = self._pvt.rho_o(p, Rs)
-        rho_g = self._pvt.rho_g(p)
-
-        face_area = 2.0 * np.pi * self._grid.h * self._grid.r_faces
-
-        Q_o = np.empty(N + 1)
-        Q_g = np.empty(N + 1)
-        u_o = np.empty(N + 1)
-        u_g = np.empty(N + 1)
-        m_o = np.empty(N + 1)
-        m_g = np.empty(N + 1)
-
-        # Внутренние грани: upstream по знаку G_o
-        for f in range(1, N):
-            up = f if G_o[f] < 0 else f - 1
-            Q_o[f] = G_o[f] * Bo[up]
-            Q_g[f] = G_free_gas[f] * Bg[up]
-            u_o[f] = Q_o[f] / face_area[f]
-            u_g[f] = Q_g[f] / face_area[f]
-            m_o[f] = rho_o[up] * Q_o[f]
-            m_g[f] = rho_g[up] * Q_g[f]
-
-        # Забой (f=0): upstream = ячейка 0
-        Q_o[0] = G_o[0] * Bo[0]
-        Q_g[0] = G_free_gas[0] * Bg[0]
-        u_o[0] = Q_o[0] / face_area[0]
-        u_g[0] = Q_g[0] / face_area[0]
-        m_o[0] = rho_o[0] * Q_o[0]
-        m_g[0] = rho_g[0] * Q_g[0]
-
-        # Контур (f=N): upstream зависит от направления
-        if G_o[N] < 0:
-            # Типичный приток из контура → upstream = контур
-            p_ext_a = np.array([bc.p_ext])
-            Rs_ext_a = np.array([bc.Rs_ext])
-            Bo_up_N = self._pvt.Bo(p_ext_a, Rs_ext_a)[0]
-            Bg_up_N = self._pvt.Bg(p_ext_a)[0]
-            rho_o_up_N = self._pvt.rho_o(p_ext_a, Rs_ext_a)[0]
-            rho_g_up_N = self._pvt.rho_g(p_ext_a)[0]
-        else:
-            # Отток из пласта → upstream = ячейка N-1
-            Bo_up_N = Bo[N - 1]
-            Bg_up_N = Bg[N - 1]
-            rho_o_up_N = rho_o[N - 1]
-            rho_g_up_N = rho_g[N - 1]
-
-        Q_o[N] = G_o[N] * Bo_up_N
-        Q_g[N] = G_free_gas[N] * Bg_up_N
-        u_o[N] = Q_o[N] / face_area[N]
-        u_g[N] = Q_g[N] / face_area[N]
-        m_o[N] = rho_o_up_N * Q_o[N]
-        m_g[N] = rho_g_up_N * Q_g[N]
-
-        # ── Шаг 8: покомпонентные массовые расходы и сборка ──
-        Gm_o = self._pvt.rho_o_std * G_o
-        Gm_g = self._pvt.rho_g_std * G_g
-
         # ── Шаг 9: фактическое забойное давление ──
         # Результат шага при любом управлении: при OIL_RATE прототип
         # выражает p_bhp из уравнения притока (blackoil.py, _well_fluxes),
@@ -251,13 +194,9 @@ class PrototypeHydroAdapter(HydroSolver):
         # well_rates считает на том же new_proto, что и потоки выше.
         p_wf = self._model.well_rates(new_proto)['bhp_bar'] * BAR_TO_PA
 
-        return HydroResult(
-            state=new_state,
-            G_o=G_o, G_g=G_g, G_free_gas=G_free_gas,
-            Q_o=Q_o, Q_g=Q_g,
-            u_o=u_o, u_g=u_g,
-            m_o=m_o, m_g=m_g,
-            Gm_o=Gm_o, Gm_g=Gm_g,
-            p_wf=p_wf,
-            n_substeps=n_substeps,
-        )
+        # ── Шаги 7–8: Q, u, m, Gm — общий шаг с путём тестов (DEBT-028) ──
+        # Тот же код, что у compute_fluxes: правило выбора ячейки выше по
+        # потоку и формулы записаны в одном месте (fluxes.py).
+        return phase_fluxes_from_components(G_o, G_g, G_free_gas,
+                                            new_state, self._grid, self._pvt, bc,
+                                            p_wf, n_substeps=n_substeps)

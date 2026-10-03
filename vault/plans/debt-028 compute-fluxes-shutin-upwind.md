@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-028
 github: 60
 branch: refactor/debt-028/compute-fluxes-shutin-upwind
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-10-03
   found: 8
@@ -1043,3 +1043,21 @@ Select-String -Path gpn_multiphase_solver\*.py, gpn_multiphase_solver\*\*.py, te
 Снимок `planned` снят с первой редакцией `planned_code.compute_fluxes` (закрытие скважины явными нулями вместо `dp_w = 0.0`); на рабочий путь это не влияет — адаптер `compute_fluxes` не вызывает. Текущая редакция проверена тестами пробы и быстрыми модулями (`test_planned_debt028.py`, `test_fluxes.py`, `test_hydro.py`, `test_energy.py`, `test_val002.py` с плагином: 281 passed, 11 failed — те же тесты старой фикстуры).
 
 Запуск проб — в docstring каждой. Плагин и тесты пробы — из `numerical_solver` с `$env:PYTHONPATH = "..\vault\issues\debt-028\probes"`.
+
+## Результат реализации (2026-10-03)
+
+Worktree `.worktrees/debt-028`, ветка `refactor/debt-028/compute-fluxes-shutin-upwind` от `38df988`.
+
+| Шаг | Коммит | Проверка |
+|---|---|---|
+| 1. Подготовка | — | 1223 теста; быстрый уровень 999 passed, 80 с; снимок `base_impl` — код из worktree, 20 примеров |
+| 2. Фикстура на добычу | `d1e932e` | `test_fluxes.py` 130 passed; быстрый 999 |
+| 3. Закрытие скважины | `1bc3860` | до правки `TestWellShutIn`: 12 failed, 2 passed (как в плане); после — 14 passed; быстрый 1013 |
+| 4. Общий шаг | `ee13c81` | до правки — ошибка импорта (функции нет); после — `test_fluxes.py` 147 passed; быстрый 1016 |
+| 5. Адаптер | `e66f97c` | до правки `TestUpstreamWithZeroKro` падал: $\mathcal{Q}_g[1] = -0.23951$ ($G\cdot B_g[0]$) вместо $-0.23777$ ($G\cdot B_g[1]$), 0.73 %; после — 45 passed; быстрый 1017; `compare base_impl new_impl` — 20 × «побитово», «итого: различий 0» |
+| 6. Ссылки на строки | — | grep `fluxes\.py:\d|prototype_adapter\.py:\d` по `numerical_solver` — пусто |
+| 7. Vault | vault-коммит | реестр (DEBT-028 ✅, DEBT-021 ✅), заметки `свойства-фаз-…`, `архитектура…`, `P1-адаптер-единицы.md`, `index.md` |
+
+Полный прогон на вершине кода (`e66f97c`): **1241 passed, 527 с**. Прототип не менялся (`git diff numerical_scheme/implementation -- HydroSolverPrototype` пуст).
+
+Отклонения от плана: нет. Баги/долг, обнаруженные при реализации: нет.

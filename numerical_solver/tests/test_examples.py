@@ -780,6 +780,45 @@ class TestSharedChecks:
             "у примера 10 есть газ — отчёт должен сообщить, что "
             "двухфазной аналитики больше нет")
 
+    def test_rs_check_all_two_phase_examples(self, results):
+        """Проверка R_s проходит у всех примеров с газом, включая 12 и 13b (DEBT-026).
+
+        Ячейки с газом (Sg > 1e-8): |Rs - Rs_eq(p)| <= 1e-10 (замер
+        2026-10-03: 0 побитово у 03-10, 19-21, не больше 2.8e-14 у
+        остальных). Ячейки без газа: пересыщенных (Rs > Rs_eq(p) + 1e-5)
+        нет. У 12 и 13b на последней записи есть нефть без газа ниже p_b —
+        недонасыщенная после восстановления давления (замер: 1 и 30).
+        Прежняя проверка min(Rs_eq(p), Rs0) печатала на них «не совпадают»;
+        условие >= 1 гарантирует, что тест действительно проходит через
+        этот случай, а не только через падающее давление.
+        Ловит: возврат к формуле min(...) во всех ячейках, задержку
+        выделения газа и рассогласование PVT (ошибка в ячейках с газом),
+        растворение газа сверх равновесия (пересыщение).
+        """
+        import contextlib
+        import io
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from rs_analytics import report_rs
+
+        reps = {}
+        for name in TWO_PHASE:
+            r = results[name]
+            pvt = _pvt_of_config(r["config"])
+            # report_rs печатает отчёт примера — в выводе теста он не нужен.
+            with contextlib.redirect_stdout(io.StringIO()):
+                reps[name] = report_rs(r["config"], r["history"], pvt)
+
+        bad = {n: (rep["max_abs"], rep["n_supersaturated"])
+               for n, rep in reps.items()
+               if rep["max_abs"] > 1e-10 or rep["n_supersaturated"] > 0}
+        assert not bad, f"проверка R_s не прошла (max_abs, пересыщенных): {bad}"
+
+        for name in ("12_large_drainage_radius", "13b_pwf_alternating"):
+            assert reps[name]["n_single_below_pb"] >= 1, (
+                f"{name}: нет недонасыщенной нефти ниже p_b — тест больше не "
+                f"проверяет случай восстановления давления")
+
 
 # ═══════════════════════════════════════════════════════════
 # J. Графики PVT: слой оформителя (FEAT-017)

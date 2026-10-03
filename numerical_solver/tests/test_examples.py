@@ -10,7 +10,7 @@
   G. README: обязательные разделы на месте
 
 Расчёты кэшируются на уровне сессии (фикстура results): каждый сценарий
-считается один раз, при первом обращении; все 20 — около 230 с.
+считается один раз, при первом обращении; все 21 — около 255 с.
 Тесты на фикстуре помечены slow (хук в tests/conftest.py, DEBT-032).
 """
 
@@ -44,6 +44,7 @@ ALL_EXAMPLES = [
     "13b_pwf_alternating",
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
+    "16_well_shut_in",
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
@@ -55,6 +56,14 @@ SINGLE_PHASE = ["01_single_phase_no_jt", "02_single_phase_jt"]
 # Семейства 2 и 3: pwf < pb → разгазирование обязано произойти.
 TWO_PHASE = [n for n in ALL_EXAMPLES if n not in SINGLE_PHASE]
 
+# Сценарии, заканчивающиеся остановом скважины (FEAT-019): на последней
+# записи дебит нулевой, свободный газ растворился. Утверждения «скважина
+# добывает» и «газ выделяется» на последней записи для них неверны по смыслу;
+# у них то же проверяется на конце добычи — в классе сценария (TestWellShutIn).
+ENDS_SHUT_IN = ["16_well_shut_in"]
+PRODUCING_AT_END = [n for n in ALL_EXAMPLES if n not in ENDS_SHUT_IN]
+TWO_PHASE_AT_END = [n for n in TWO_PHASE if n not in ENDS_SHUT_IN]
+
 # Сценарии с табличной ОФП (Sg мала) — им нужен раздел про увеличение Sg.
 NEEDS_SG_SECTION = [
     "04_table_table", "06_table_corey_rp",
@@ -62,6 +71,7 @@ NEEDS_SG_SECTION = [
     "09_degassing_latent_heat", "10_deep_degassing",
     "11_degassing_at_boundary", "12_large_drainage_radius",
     "13a_pwf_ramp_down", "13b_pwf_alternating", "14_high_gor_cooling", "15_oil_rate_ramp_up",
+    "16_well_shut_in",
 ]
 
 
@@ -121,7 +131,7 @@ class _LazyResults(dict):
 def results():
     """Сценарии ALL_EXAMPLES: расчёт при первом обращении, один раз на сессию."""
     # Ленивый расчёт (DEBT-032): выборочный запуск теста на одном примере
-    # стоит одного расчёта, а не двадцати (~230 с). Имя фикстуры читает
+    # стоит одного расчёта, а не двадцати одного (~255 с). Имя фикстуры читает
     # хук tests/conftest.py: тесты на ней получают метку slow.
     return _LazyResults()
 
@@ -222,7 +232,7 @@ class TestRunAll:
         assert np.all(r["Sg"] >= 0.0) and np.all(r["Sg"] <= 1.0), \
             f"{name}: Sg вне [0, 1]"
 
-    @pytest.mark.parametrize("name", ALL_EXAMPLES)
+    @pytest.mark.parametrize("name", PRODUCING_AT_END)
     def test_oil_production(self, results, name):
         """Скважина добывает нефть: q_o > 0 на последнем шаге.
 
@@ -254,7 +264,7 @@ class TestSinglePhase:
 class TestTwoPhase:
     """Семейства 2 и 3: pwf < pb → разгазирование обязано произойти."""
 
-    @pytest.mark.parametrize("name", TWO_PHASE)
+    @pytest.mark.parametrize("name", TWO_PHASE_AT_END)
     def test_gas_appears(self, results, name):
         """Ключевой тест: ловит регрессию «pwf выше pb».
 
@@ -271,7 +281,7 @@ class TestTwoPhase:
         assert r["Rs"].min() < r["Rs0"], \
             f"{name}: Rs не уменьшилось относительно Rs0={r['Rs0']}"
 
-    @pytest.mark.parametrize("name", TWO_PHASE)
+    @pytest.mark.parametrize("name", TWO_PHASE_AT_END)
     def test_gas_produced(self, results, name):
         """Дебит газа положителен — газ выносится в скважину."""
         assert results[name]["q_g"][-1] > 0.0

@@ -166,7 +166,11 @@ class RadialBlackOilModel:
         return c[1],c[2]
     def _phase_mobilities_surface(self,p,rs,sg):
         p=np.asarray(p,float); rs=np.asarray(rs,float); sg=np.asarray(sg,float)
-        bo=self.pvt.bo(p,rs); muo=self.pvt.mu_o(p,rs); bg=self.pvt.bg(p); mug=self.pvt.mu_g(p)
+        # DEBT-036: Bo and mu_o from one PVTO pass where the PVT has it (BlackOilPVT); the
+        # Standing adapter (HydroPVTtoBlackOilAdapter) has bo and mu_o only
+        bo_mu_o=getattr(self.pvt,'bo_mu_o',None)
+        bo,muo=bo_mu_o(p,rs) if bo_mu_o is not None else (self.pvt.bo(p,rs),self.pvt.mu_o(p,rs))
+        bg=self.pvt.bg(p); mug=self.pvt.mu_g(p)
         return self.relperm.kro(sg)/(muo*CP_TO_PA_S)/bo, self.relperm.krg(sg)/(mug*CP_TO_PA_S)/bg
     def face_component_fluxes_sm3s(self,state):
         p,rs,sg=state.pressure_bar,state.rs_sm3_sm3,state.sg; n=self.grid.n

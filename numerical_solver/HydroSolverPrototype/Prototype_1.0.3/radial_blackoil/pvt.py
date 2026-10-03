@@ -90,5 +90,8 @@ class BlackOilPVT:
         return [(v0+w*(v1-v0)).reshape(shape) for v0,v1 in zip(*sides)]
     def bo(self,p,rs): return self._oil_props(p,rs,(self._BO,))[0]
     def mu_o(self,p,rs): return self._oil_props(p,rs,(self._MU,))[0]
+    def bo_mu_o(self,p,rs):
+        """Bo and mu_o in one pass: the segment and row search is shared (DEBT-036)."""
+        bo,mu=self._oil_props(p,rs,(self._BO,self._MU)); return bo,mu
     def bg(self,p): return np.interp(np.asarray(p,float),self.gp,self.gbg)
     def mu_g(self,p): return np.interp(np.asarray(p,float),self.gp,self.gmu)

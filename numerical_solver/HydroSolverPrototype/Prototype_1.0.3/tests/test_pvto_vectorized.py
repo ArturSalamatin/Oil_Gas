@@ -1,5 +1,6 @@
 import unittest, numpy as np
 from radial_blackoil.pvt import BlackOilPVT
+from radial_blackoil.units import CP_TO_PA_S
 from tests.helpers import model_and_state
 
 # DEBT-036: BlackOilPVT interpolates PVTO for all cells at once (_oil_props).  Bo and mu_o enter
@@ -83,5 +84,31 @@ class PvtoVectorizedTests(unittest.TestCase):
         # every cell, the run failed later); now the table is rejected when built
         with self.assertRaisesRegex(ValueError,'Rs branches'):
             BlackOilPVT([(10,50,1.1,2.0),(10,100,1.09,2.1)],GAS)
+    def test_bo_mu_o_one_pass(self):
+        # bo_mu_o shares the segment and row search of Bo and mu_o: bitwise bo and mu_o called apart
+        for name,pvt in _tables():
+            p,rs=_points(pvt)
+            with np.errstate(invalid='ignore'):
+                bo,mu=pvt.bo_mu_o(p,rs)
+                self.assertEqual(bo.tobytes(),pvt.bo(p,rs).tobytes(),name); self.assertEqual(mu.tobytes(),pvt.mu_o(p,rs).tobytes(),name)
+    def test_mobilities_one_pvto_pass(self):
+        # _phase_mobilities_surface takes Bo and mu_o from one bo_mu_o call where the PVT has it
+        # (BlackOilPVT); the mobilities are bitwise those from bo and mu_o
+        _,m,s=model_and_state(n=5,p0=160); p,rs,sg=s.pressure_bar,s.rs_sm3_sm3,np.full(5,0.05)
+        calls=[]; real=m.pvt
+        class Spy:
+            def __getattr__(self,name):
+                calls.append(name); return getattr(real,name)
+        m.pvt=Spy(); lo,lg=m._phase_mobilities_surface(p,rs,sg); m.pvt=real
+        self.assertIn('bo_mu_o',calls); self.assertNotIn('mu_o',calls)
+        lo_ref=m.relperm.kro(sg)/(real.mu_o(p,rs)*CP_TO_PA_S)/real.bo(p,rs); lg_ref=m.relperm.krg(sg)/(real.mu_g(p)*CP_TO_PA_S)/real.bg(p)
+        self.assertEqual(lo.tobytes(),lo_ref.tobytes()); self.assertEqual(lg.tobytes(),lg_ref.tobytes())
+        # A PVT without bo_mu_o (as the Standing adapter): bo and mu_o apart, the same mobilities
+        class NoOnePass:
+            def __getattr__(self,name):
+                if name=='bo_mu_o': raise AttributeError(name)
+                return getattr(real,name)
+        m.pvt=NoOnePass(); lo2,lg2=m._phase_mobilities_surface(p,rs,sg); m.pvt=real
+        self.assertEqual(lo2.tobytes(),lo_ref.tobytes()); self.assertEqual(lg2.tobytes(),lg_ref.tobytes())
 
 if __name__=='__main__': unittest.main()

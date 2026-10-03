@@ -183,6 +183,15 @@ def _nodes_in_range(nodes, p_lo: float, p_hi: float) -> int:
     return int(np.sum((p_all >= p_lo) & (p_all <= p_hi)))
 
 
+def _p_range(history) -> tuple[float, float]:
+    """Рабочий диапазон давления, Па: min и max по всем ячейкам всех записей истории."""
+    # По ВСЕЙ истории, а не по последней записи: после останова скважины
+    # (пример 16) давление выравнивается до p_ext, и последняя запись
+    # вырождает диапазон в точку, хотя расчёт прошёл 6.1…15.5 МПа (FEAT-019).
+    p = np.concatenate([s.p for s in history.states])
+    return float(p.min()), float(p.max())
+
+
 def plot_pvt(config, history, output_dir: Path, title: str,
              simulator=None) -> Path:
     """Построить pvt.png: свойства PVT по давлению в стиле таблицы PVTO.
@@ -203,11 +212,10 @@ def plot_pvt(config, history, output_dir: Path, title: str,
     pvt = _get_pvt(config, simulator)
     Rs0 = float(config.initial_conditions.Rs0)
 
-    # Рабочий диапазон — ФАКТИЧЕСКИЙ, из состояния, а не p_wf/p0 из конфига:
+    # Рабочий диапазон — ФАКТИЧЕСКИЙ, из состояний, а не p_wf/p0 из конфига:
     # забойное давление достигается на грани, и центр первой ячейки всегда
-    # выше p_wf.
-    p_state = history.states[-1].p
-    p_lo, p_hi = float(p_state.min()), float(p_state.max())
+    # выше p_wf. Охват — вся история (_p_range).
+    p_lo, p_hi = _p_range(history)
 
     # Ширина панели прежняя — 4.6 дюйма: на неё рассчитана подпись _describe.
     fig, axes = plt.subplots(2, 3, figsize=(4.6 * 3, 9))
@@ -240,8 +248,7 @@ def report_pvt(config, history, simulator=None) -> dict:
     pvt = _get_pvt(config, simulator)
     Rs0 = float(config.initial_conditions.Rs0)
 
-    p_state = history.states[-1].p
-    p_lo, p_hi = float(p_state.min()), float(p_state.max())
+    p_lo, p_hi = _p_range(history)
     pb = float(pvt.pb(np.array([Rs0]))[0])
     two_phase = Rs0 > 0.0
 

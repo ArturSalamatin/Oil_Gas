@@ -1017,8 +1017,9 @@ class TestPvtPlot:
     def test_table_nodes_in_working_range(self, results):
         """В рабочий диапазон примера 04 попадает ровно один узел.
 
-        Демонстрационные таблицы грубы: рабочий диапазон 8.17…19.89 МПа,
-        а узлы стоят на 5, 15 и 30 МПа — внутрь попадает только p_b = 15.
+        Демонстрационные таблицы грубы: рабочий диапазон 8.17…20.00 МПа
+        (по всей истории: верх — начальное p_0, FEAT-019), а узлы стоят на
+        5, 15 и 30 МПа — внутрь попадает только p_b = 15.
         Вся кривая между краями получена интерполяцией через две точки,
         и график обязан делать это видимым. Тест ловит и 0 (фильтр
         «внутри диапазона» слишком строг), и 3 (фильтра нет вовсе).
@@ -1271,6 +1272,96 @@ class TestPvtPlot:
         assert has_twinx, (
             "панель плотностей обязана использовать twinx: нефть ~800, "
             "газ ~100 кг/м³, на одной оси газовая кривая нечитаема")
+
+
+# ═══════════════════════════════════════════════════════════
+# J2. Рабочий диапазон рисунков — по всей истории (FEAT-019)
+# ═══════════════════════════════════════════════════════════
+
+def _relperm_module():
+    """Общий модуль examples/relperm_plot.py."""
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import relperm_plot
+    return relperm_plot
+
+
+def _shut_in_like_history():
+    """Синтетическая история «добыча → останов»: газ и воронка есть только в середине.
+
+    Записи: начальное состояние (p = 15.5 МПа, газа нет), конец добычи
+    (воронка 6.1…15.4 МПа, S_g до 0.05 у забоя), конец останова (p = 15.5 МПа
+    всюду, газ растворился). Расчёта нет — проверяется только охват.
+    """
+    from types import SimpleNamespace
+    n = 50
+    states = [
+        SimpleNamespace(p=np.full(n, 15.5e6), Sg=np.zeros(n)),
+        SimpleNamespace(p=np.linspace(6.1e6, 15.4e6, n),
+                        Sg=np.linspace(0.05, 0.0, n)),
+        SimpleNamespace(p=np.full(n, 15.5e6), Sg=np.zeros(n)),
+    ]
+    return SimpleNamespace(states=states)
+
+
+class TestWorkingRange:
+    """Рисунки PVT и ОФП берут рабочий диапазон по всем записям (FEAT-019).
+
+    Прежде диапазон брался по последней записи. У примера 16 (останов
+    после добычи) давление к концу выравнивается, газ растворяется, и
+    relperm.png объявлял расчёт однофазным, а pvt.png сжимал диапазон в
+    точку 15.5 МПа.
+    """
+
+    CFG = EXAMPLES_DIR / "12_large_drainage_radius" / "config.json"
+
+    def test_pvt_range_spans_all_records(self):
+        """_p_range — min/max по всем записям, а не по последней (там 15.5…15.5)."""
+        lo, hi = _pvt_module()._p_range(_shut_in_like_history())
+        assert lo == 6.1e6
+        assert hi == 15.5e6
+
+    def test_relperm_range_spans_all_records(self):
+        """_sg_range — максимум S_g за всю историю (0.05), хотя на последней записи газа нет."""
+        lo, hi = _relperm_module()._sg_range(_shut_in_like_history())
+        assert lo == 0.0
+        assert hi == pytest.approx(0.05, abs=1e-15)
+
+    def test_report_relperm_not_single_phase_after_shut_in(self, capsys):
+        """Сводка ОФП не объявляет расчёт однофазным, если газ был, а к концу растворился.
+
+        Таблица ОФП примера 12; ожидается строка «рабочий диапазон: S_g =
+        0.000000 … 0.050000» вместо «расчёт однофазный».
+        """
+        from gpn_multiphase_solver.factory import _create_relperm
+        cfg = load_config(self.CFG)
+        _relperm_module().report_relperm(cfg, _shut_in_like_history(),
+                                         _create_relperm(cfg))
+        out = capsys.readouterr().out
+        assert "расчёт однофазный" not in out
+        assert "рабочий диапазон: S_g = 0.000000 … 0.050000" in out
+
+    def test_plot_relperm_two_panels_when_gas_only_in_past(self, monkeypatch, tmp_path):
+        """relperm.png получает вторую панель (рабочий диапазон), а не пометку S_g ≡ 0.
+
+        Число панелей задаёт вызов plt.subplots(1, n_panels): 2 у двухфазного
+        расчёта, 1 у однофазного. Перехват вызова — тот же приём, что в
+        test_plot_pvt_layout_2x3.
+        """
+        from gpn_multiphase_solver.factory import _create_relperm
+        rp_mod = _relperm_module()
+        calls = []
+        orig = rp_mod.plt.subplots
+
+        def spy(*args, **kwargs):
+            calls.append(args)
+            return orig(*args, **kwargs)
+
+        monkeypatch.setattr(rp_mod.plt, "subplots", spy)
+        cfg = load_config(self.CFG)
+        rp_mod.plot_relperm(cfg, _shut_in_like_history(), tmp_path, "16-синт",
+                            _create_relperm(cfg))
+        assert calls[0][:2] == (1, 2), f"панелей: {calls[0][:2]}"
 
 
 # ═══════════════════════════════════════════════════════════

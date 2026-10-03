@@ -13,6 +13,7 @@ mob_o = kro/(μ_o·Bo) = 1/(μ_o·Bo) = const → формулы точные.
   u·r=const rel=1e-10, GOR=Rs0 rel=1e-12, T→T_ext atol=1 К.
 """
 
+import functools
 from pathlib import Path
 
 import numpy as np
@@ -220,3 +221,77 @@ class TestPipeline:
         assert data['p'].shape == (25, 20)
         assert data['T'].shape == (25, 20)
         assert data['r'].shape == (20,)
+
+
+# ═══════════════════════════════════════════════════════════
+# E. Вязкость Била выше p_b: решение Кирхгофа (FEAT-027)
+# ═══════════════════════════════════════════════════════════
+#
+# Тот же приток, но μ_o = μ_ob + β(p − p_b) (Бил–Стендинг). При S_g = 0,
+# c_o = 0 (B_o = const), k_ro = 1 и несжимаемой породе поток несжимаем,
+# решение за шаг стационарно. Подстановка Кирхгофа m(p) = ∫dp/μ сводит
+# задачу к Дюпюи:
+#   q_o_std = 2πkh/(B_o·ln(R/rw)) · ∫_{p_wf}^{p_ext} dp/μ
+#           = 2πkh/(B_o·ln(R/rw)) · ln(μ_ext/μ_wf)/β,       p_wf > p_b.
+# Здесь p_wf = 15 > p_b = 9.43 МПа. Подвижность на гранях берётся из ячейки
+# выше по потоку (blackoil.py:158-160) — схема первого порядка; без Била
+# подвижность постоянна, и VAL-001 точна до округления (тесты A).
+
+@functools.lru_cache(maxsize=None)
+def _run_val001_beal(N):
+    """val001.json с вязкостью Била выше p_b и сеткой N; вернуть q_o_std в конце."""
+    config = load_config(VAL001_PATH)
+    config.pvt.mu_o_undersaturated = "beal"
+    config.grid.N = N
+    simulator, initial = SimulatorFactory.from_config(config)
+    return simulator.run(initial).well_data[-1].q_o_std
+
+
+def _q_kirchhoff_beal():
+    """Точный дебит при μ_o = μ_ob + β(p − p_b): ∫dp/μ = ln(μ_e/μ_wf)/β (Кирхгоф)."""
+    pvt = StandingFullPVT(rho_o_std=850.0, rho_g_std=0.85, T0=T0, Rs0=RS0,
+                          mu_o_undersaturated="beal")
+    Rs = np.array([RS0])
+    Bo = pvt.Bo(np.array([P_EXT]), Rs)[0]
+    mu_e = pvt.mu_o(np.array([P_EXT]), Rs)[0]
+    mu_w = pvt.mu_o(np.array([P_WF]), Rs)[0]
+    # β — по двум точкам: μ линейна по p выше p_b (P_WF = 15 > p_b = 9.43 МПа)
+    beta = (mu_e - mu_w) / (P_EXT - P_WF)
+    return (2.0 * np.pi * K * H / (Bo * np.log(R_EXT / R_WELL))
+            * np.log(mu_e / mu_w) / beta)
+
+
+class TestKirchhoffBeal:
+    """VAL-001 с вязкостью Била сходится к решению Кирхгофа с порядком 1."""
+
+    def test_kirchhoff_reference_value(self):
+        """Эталон: q = 4.2597423435e-3 м³ст/с, на 6.8 % ниже Дюпюи с μ_ob.
+
+        Числа — из пробы vault/issues/feat-027/probes/val001_beal.py
+        (β там из формулы, здесь — по двум точкам). Ловит ошибку в самом эталоне.
+        """
+        q = _q_kirchhoff_beal()
+        assert q == pytest.approx(4.2597423435e-3, rel=1e-9)
+        assert q / Q_EXACT == pytest.approx(0.932299, rel=1e-6)
+
+    def test_rate_matches_kirchhoff(self):
+        """N = 20: дебит схемы против Кирхгофа, e = q/q_точн − 1 ≈ −1.02e-3.
+
+        Знак минус: при притоке ячейка выше по потоку — внешняя, давление и
+        вязкость там выше, подвижность и дебит занижены. Если бы ветвь Била
+        не дошла до гидродинамики (прототип), было бы e ≈ +7.3 %.
+        """
+        e = _run_val001_beal(20) / _q_kirchhoff_beal() - 1.0
+        assert -1.5e-3 < e < -0.5e-3
+
+    def test_first_order_convergence(self):
+        """Ошибка убывает вдвое при удвоении N: e(20)/e(40) ≈ 1.973 (проба).
+
+        Порядок 1 — подвижность против потока. Ошибка, не убывающая с
+        сеткой, значила бы, что эталон описывает не ту задачу (например,
+        разная вязкость на путях расчёта).
+        """
+        q_ex = _q_kirchhoff_beal()
+        e20 = _run_val001_beal(20) / q_ex - 1.0
+        e40 = _run_val001_beal(40) / q_ex - 1.0
+        assert 1.8 < e20 / e40 < 2.2

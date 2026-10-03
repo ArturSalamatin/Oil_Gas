@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-035
 github: 57
 branch: refactor/debt-035/readme-bug018-fixed
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   found: 7

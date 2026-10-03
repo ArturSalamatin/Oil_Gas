@@ -2176,6 +2176,162 @@ class TestPwfAlternating:
 
 
 # ═══════════════════════════════════════════════════════════
+# Q2. Сценарий 16: останов скважины после добычи (FEAT-019)
+# ═══════════════════════════════════════════════════════════
+
+class TestWellShutIn:
+    """Сценарий 16: конфиг 12, 15 сут добычи при 6 МПа, затем 15 сут останова.
+
+    Останов — управление по дебиту q_oil = 0 (eq:bc_rate_well): потоки
+    компонентов через забой нулевые, p_wf = p[0] (eq:bc_rate_pwf при q = 0).
+    Записи: 0 — начальное состояние; 1..15 — концы суток добычи; 16..39 —
+    часы первых суток останова (запись 15 + k — момент 15 сут + k ч);
+    40..53 — концы суток 17..30. Числа — замер плана FEAT-019
+    (vault/issues/feat-019/probes/plan_numbers.out.txt).
+    """
+
+    NAME = "16_well_shut_in"
+    END_PROD = 15        # запись конца добычи (15 сут)
+
+    def test_config_follows_decisions(self):
+        """Расписание: 15 суточных интервалов при 6 МПа, 24 часовых и 14 суточных с q_oil = 0.
+
+        Решения пользователя 2026-10-03: останов — по дебиту, min_bhp = 1 атм
+        (обязателен по конфигу, при q = 0 не действует). Ловит: возврат к
+        управлению по давлению, потерю часовой записи первых суток останова
+        (на графиках пропадёт восстановление давления).
+        """
+        cfg = load_config(EXAMPLES_DIR / self.NAME / "config.json")
+        hist = cfg.time.history
+        assert len(hist) == 15 + 24 + 14
+        assert cfg.time.dt_integration == 3600.0
+        for h in hist[:15]:
+            assert (h.control, h.dt, h.p_wf) == ("pressure", 86400.0, 6.0e6)
+        for k, h in enumerate(hist[15:]):
+            assert h.control == "rate" and h.q_oil == 0.0
+            assert h.min_bhp == 101325.0 and h.p_wf is None
+            assert h.dt == (3600.0 if k < 24 else 86400.0)
+
+    def test_production_phase_degasses(self, results):
+        """На конце добычи скважина добывает нефть и газ, газ выделился в пласте.
+
+        Утверждения общих тестов test_oil_production, test_gas_appears,
+        test_gas_produced — на записи 15 вместо последней (16 исключён из
+        них списком ENDS_SHUT_IN). Замер: q_o = 3.2365e-3, q_g = 0.11871
+        м³ст/с, S_g(r_w) = 0.02394, R_s мин 3.373 < R_s0 = 30.
+        """
+        r = results[self.NAME]
+        st = r["history"].states[self.END_PROD]
+        assert r["q_o"][self.END_PROD] == pytest.approx(3.2365e-3, rel=1e-4)
+        assert r["q_g"][self.END_PROD] > 0.0
+        assert st.Sg.max() > 0.0
+        assert st.Rs.min() < r["Rs0"]
+
+    def test_shut_in_stops_flow_through_well(self, results):
+        """На всех записях останова q_o = q_g = 0 точно, фактическое p_wf = p[0].
+
+        Знак: q_o_std = -G_o[0]; при q_oil = 0 прототип ставит потоки забоя
+        ровно 0 (blackoil.py, _well_fluxes, ветка OIL_RATE: bhp = p0).
+        Замер: max|p_wf - p[0]| = 0 Па. Ловит: утечку через забой (закачку
+        или отбор) при останове, запись уставки вместо фактического p_wf.
+        """
+        r = results[self.NAME]
+        h = r["history"]
+        for n in range(self.END_PROD + 1, len(h.states)):
+            assert r["q_o"][n] == 0.0 and r["q_g"][n] == 0.0, f"запись {n}"
+            assert h.well_data[n].p_wf == h.states[n].p[0], f"запись {n}"
+
+    def test_pressure_builds_up_past_pb(self, results):
+        """p(r_w) не убывает после останова, выше p_b — с 12 ч, на финале p = p_ext.
+
+        Замер: 6.1242 МПа (15 сут) → 12.635 (1 ч) → 15.0326 (запись 27,
+        15.5 сут — первая выше p_b = 15 МПа) → 15.4207 (16 сут); финал
+        max|p - p_ext| = 0.013 Па. Ловит: потерю притока через контур,
+        «залипание» давления у забоя.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        pw = np.array([s.p[0] for s in states])
+        assert np.all(np.diff(pw[self.END_PROD:]) >= 0.0)
+        pb = float(_pvt_of_config(r["config"]).pb(np.array([r["Rs0"]]))[0])
+        above = [n for n in range(self.END_PROD, len(pw)) if pw[n] > pb]
+        assert above[0] == 27, f"выше p_b с записи {above[0]}"
+        p_ext = r["config"].initial_conditions.p0
+        assert np.max(np.abs(states[-1].p - p_ext)) < 1.0
+
+    def test_gas_redissolves_and_rs_freezes(self, results):
+        """Свободный газ растворяется за 7 ч, R_s застывает неоднородным и ниже равновесного.
+
+        Физика: давление поднимается, газ растворяется в пределах своего
+        запаса; когда газ кончается, нефть остаётся недонасыщенной. Течения
+        после выравнивания давления нет, диффузии в модели нет — профиль R_s
+        больше не меняется и к R_s0 не возвращается.
+        Замер: двухфазных ячеек нет с записи 22 (15 сут + 7 ч, p(r_w) =
+        14.48 МПа < p_b); финал R_s(r_w) = 4.792, max(R_s - R_s^eq(p)) =
+        2.8e-14; max|R_s(20 сут) - R_s(30 сут)| = 7.6e-5.
+        Ловит: пересыщение нефти «из ниоткуда», возврат R_s к R_s0 (утечку
+        газа через контур или забой), залипание ячеек в двухфазном режиме.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        for n in range(22, len(states)):
+            assert np.all(states[n].regime == 2), f"запись {n}: есть двухфазные"
+            assert np.all(states[n].Sg == 0.0), f"запись {n}: есть газ"
+        assert np.count_nonzero(states[21].regime == 1) > 0   # на 6 ч газ ещё есть
+        final = states[-1]
+        rs_eq = _pvt_of_config(r["config"]).Rs_eq(final.p)
+        assert np.max(final.Rs - rs_eq) <= 1e-10
+        assert final.Rs[0] == pytest.approx(4.792, abs=1e-3)
+        assert np.max(np.abs(states[43].Rs - final.Rs)) < 1e-3   # 20 сут против 30
+
+    def test_wellbore_heats_then_relaxes(self, results):
+        """T(r_w) скачком растёт при останове (сжатие), пик на 2 ч, дальше монотонно убывает.
+
+        Физика: давление у забоя за 2 ч растёт на 7.3 МПа — адиабатическое
+        сжатие (за первые сутки останова +4.86e10 Дж из ΔE = +5.17e10 Дж),
+        растворение газа добавляет +2.9e9 Дж. Конвекции через забой нет,
+        дальше тепло уходит теплопроводностью. Замер: 350.3507 (15 сут) →
+        350.6596 (запись 17, максимум) → 350.3133 К (30 сут).
+        Ловит: потерю адиабатического члена (нагрева не будет), остаток
+        конвекции через забой при останове (релаксация пойдёт иначе).
+        """
+        T = np.array([s.T[0] for s in results[self.NAME]["history"].states])
+        k = self.END_PROD + int(np.argmax(T[self.END_PROD:]))
+        assert k == 17
+        assert T[k] == pytest.approx(350.6596, abs=2e-4)
+        assert T[k] - T[self.END_PROD] > 0.25
+        assert np.all(np.diff(T[k:]) < 0.0)
+        assert T[-1] == pytest.approx(350.3133, abs=2e-4)
+
+    def test_plots_cover_production_phase(self, results):
+        """pvt.png и relperm.png 16 показывают диапазон добычи, а не только останов.
+
+        На последней записи p = 15.5 МПа всюду и S_g ≡ 0. По всей истории:
+        p 6.1224…15.5 МПа (p_b = 15 МПа внутри, один узел таблицы), S_g до
+        0.048261 (запись 1). Ловит возврат к диапазону по последней записи.
+        """
+        r = results[self.NAME]
+        rep = _pvt_module().report_pvt(r["config"], r["history"])
+        assert rep["p_lo"] == pytest.approx(6.1224e6, rel=1e-4)
+        assert rep["p_lo"] < rep["pb"] < rep["p_hi"]
+        assert rep["nodes_in_range"] == 1
+        _lo, hi = _relperm_module()._sg_range(r["history"])
+        assert hi == pytest.approx(0.048261, rel=1e-4)
+        assert r["Sg"].max() == 0.0        # на последней записи газа нет
+
+    def test_main_settings(self):
+        """main.py 16: 7 моментов профилей, без стационарной аналитики, наложения штатные.
+
+        Решения пользователя 2026-10-03 (5, 6): профили равномерно; наложение
+        R_s не отключается — после DEBT-026 на финале без газа кружков нет.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=7" in text
+        assert "steady_state=False" in text
+        assert "overlays=" not in text
+
+
+# ═══════════════════════════════════════════════════════════
 # R. Сценарии 19–21: охлаждение забоя на корреляциях (FEAT-025)
 # ═══════════════════════════════════════════════════════════
 

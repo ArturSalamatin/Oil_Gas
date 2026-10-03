@@ -233,6 +233,71 @@ def test_stepped_schedule_matches_uniform(example, tmp_path):
 
 
 # ──────────────────────────────────────────────────────────────
+# FEAT-019: структура истории не влияет на расчёт и через останов
+# ──────────────────────────────────────────────────────────────
+
+def test_stepped_schedule_matches_uniform_across_shut_in(tmp_path):
+    """Ступенчатое расписание совпадает с равномерным и через смену режима (FEAT-019).
+
+    Тест из записи FEAT-019 («скачок ГУ одним интервалом и половинными —
+    решение на общем моменте совпадает»). test_stepped_schedule_matches_uniform
+    проверяет то же при постоянном p_wf; здесь 2 ч добычи при 6 МПа, затем
+    2 ч останова (q_oil = 0) — смена и вида управления, и знака изменения
+    давления. Конфиг примера 16, N = 25, шаг интегрирования 300 с делит все
+    интервалы обоих расписаний:
+      равномерно — 48 записей по 300 с;
+      ступенчато — в каждом режиме 6 записей по 300 с, затем 3 по 1800 с.
+    Длительность — 2 + 2 ч, а не 6 + 6: тест без метки slow идёт в быстрый
+    уровень, табличный PVT считается медленно (6 + 6 ч — 20 с).
+    Смена управления в обоих расписаниях — на границе интервала, подшаги
+    одни и те же, поэтому на общих моментах записи состояние, данные скважины
+    и накопленный баланс совпадают ПОБИТОВО (допуска нет — как в тесте FEAT-018).
+    """
+    src = _EXAMPLES / "16_well_shut_in" / "config.json"
+    raw = json.loads(src.read_text(encoding="utf-8"))
+    prod = {"control": "pressure", "p_wf": 6.0e6}
+    shut = {"control": "rate", "q_oil": 0.0, "min_bhp": 101325.0}
+
+    def run(name, blocks):
+        raw["time"]["history"] = blocks
+        raw["time"]["dt_integration"] = _DT_INT_SCHEDULE
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        config = load_config(path)
+        # Таблицы PVT и ОФП фабрика ищет относительно конфига — каталог примера
+        config.config_dir = src.parent
+        config.grid.N = 25
+        config.output.log_level = "WARNING"
+        simulator, initial_state = SimulatorFactory.from_config(config)
+        return simulator.run(initial_state)
+
+    uniform = run("uniform", [{"dt": 300.0, "repeat": 24, **prod},
+                              {"dt": 300.0, "repeat": 24, **shut}])
+    stepped = run("stepped", [{"duration": 1800.0, "dt_out": 300.0, **prod},
+                              {"duration": 5400.0, "dt_out": 1800.0, **prod},
+                              {"duration": 1800.0, "dt_out": 300.0, **shut},
+                              {"duration": 5400.0, "dt_out": 1800.0, **shut}])
+
+    assert uniform.n_saved == 1 + 48
+    assert stepped.n_saved == 1 + 2 * (6 + 3)
+    # Режимы действительно разные: на конце добычи (2 ч, запись 24) дебит
+    # положителен и газ у забоя есть, на останове дебит — ноль
+    # (q_o_std = -G_o[0], конвенция знаков)
+    assert uniform.well_data[24].q_o_std > 0.0
+    assert uniform.states[24].Sg.max() > 0.0
+    assert uniform.well_data[-1].q_o_std == 0.0
+
+    index = {t: k for k, t in enumerate(uniform.times)}
+    for j, t in enumerate(stepped.times):
+        k = index[t]        # KeyError — момент записи ступенчатой истории сдвинулся
+        for name in ("p", "Sg", "Rs", "T", "regime"):
+            assert np.array_equal(getattr(stepped.states[j], name),
+                                  getattr(uniform.states[k], name)), (t, name)
+        assert stepped.well_data[j] == uniform.well_data[k], t
+        assert stepped.balance[j] == uniform.balance[k], t
+
+
+# ──────────────────────────────────────────────────────────────
 # Регрессия BUG-007: конвективный член на слое T^{n+1}
 # ──────────────────────────────────────────────────────────────
 

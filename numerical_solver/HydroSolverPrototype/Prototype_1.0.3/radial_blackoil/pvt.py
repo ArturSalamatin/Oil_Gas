@@ -7,6 +7,8 @@ class BlackOilPVT:
     For undersaturated oil, interpolation is performed in pressure-above-bubble
     coordinate before interpolation between adjacent Rs branches. This is the
     validated 1.0.3 interpolation; implementation is vectorized only for speed.
+    DEBT-036: all cells at once from padded branch tables (_oil_props), bitwise the
+    former per-segment np.interp; bo_mu_o gives Bo and mu_o from one pass.
     """
     def __init__(self, oil_rows, gas_rows):
         rs_unique=sorted(set(float(r[0]) for r in oil_rows))

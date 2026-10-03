@@ -294,6 +294,18 @@ def compute_Cp(p, T, Sg, fluid, rock):
 - Новый код не мёржится без зелёных тестов.
 - Регрессии блокируют работу — сначала починить.
 
+Уровни прогона (DEBT-032, `numerical_solver`, команды из `numerical_solver/`):
+
+| Уровень | Команда | Время | Когда |
+|---|---|---|---|
+| Число тестов | `.venv\Scripts\python -m pytest tests/ --collect-only -q` | ~3 с | baseline в `/audit-plan`; шаги, меняющие только документы |
+| Быстрый | `.venv\Scripts\python -m pytest tests/ -m "not slow" -q` | ~70 с | после каждого шага; baseline в `/implement` |
+| Полный | `.venv\Scripts\python -m pytest tests/ -q` | ~10 мин | конец `/implement`; шаги с «Регресс: полный» |
+
+- Метка `slow`: тесты на фикстуре `results` (`tests/test_examples.py`; ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference`, тесты на сгущённой сетке.
+- После падения — `pytest tests/ --lf -q`: только упавшие в прошлый раз.
+- Ключ `-q`, не `-v`: построчный вывод 1100+ тестов засоряет контекст.
+
 ## Файлы и код
 
 - Не трогай существующие файлы без явной просьбы.

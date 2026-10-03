@@ -819,6 +819,24 @@ def _pvt_of_config(cfg):
     return _create_pvt(cfg)
 
 
+def _pvto_lines(ax, gid):
+    """Кривые панели с разметкой gid (ядро размечает кривые PVTO через set_gid)."""
+    return [ln for ln in ax.get_lines() if ln.get_gid() == gid]
+
+
+def _table_pvto_axes(name, p_range):
+    """Рисунок ядра по табличному PVT примера name без расчёта: (fig, axes, pvt, Rs0)."""
+    import matplotlib.pyplot as plt
+    from gpn_multiphase_solver.io.output import plot_pvt_properties
+    cfg = load_config(EXAMPLES_DIR / name / "config.json")
+    pvt = _pvt_of_config(cfg)
+    Rs0 = float(cfg.initial_conditions.Rs0)
+    fig, axes = plt.subplots(2, 3)
+    plot_pvt_properties(pvt, Rs0, p_range, axes=axes,
+                        table_nodes=_pvt_module()._pvt_table_nodes(pvt, Rs0))
+    return fig, axes, pvt, Rs0
+
+
 class TestPvtPlot:
     """Оформитель графика PVT: pvt.png, сводка, узлы таблиц.
 
@@ -1007,6 +1025,63 @@ class TestPvtPlot:
         assert set(nodes) >= {"p_gas", "p_oil"}, "ключи должны быть раздельны"
         assert "p_all" not in nodes, (
             "объединение делает _nodes_in_range, а не сам сборщик узлов")
+
+    def test_table_branches_are_pvto_rows(self):
+        """Ветви табличного PVT — строки таблицы; легенда не растёт с их числом.
+
+        Пример 14: строки 0, 10, …, 180; на оси 4.8…26.95 МПа (p_range
+        6…24.5 МПа) видны все, кроме 180 (p_b = 27.63 МПа); 150 = R_s,0
+        рисуется отдельно → 17 тонких ветвей + 1 жирная.
+        """
+        import matplotlib.pyplot as plt
+        fig, axes, _, _ = _table_pvto_axes("14_high_gor_cooling", (6e6, 24.5e6))
+        ax = axes[0, 0]
+        n_thin, n_rs0 = (len(_pvto_lines(ax, "pvto_branch")),
+                         len(_pvto_lines(ax, "pvto_rs0")))
+        n_labels = len(ax.get_legend().get_texts())
+        plt.close(fig)
+        assert (n_thin, n_rs0) == (17, 1)
+        assert n_labels <= 5, f"записей легенды {n_labels} при 17 ветвях"
+
+    def test_table_extrapolation_dashed_outside_rows(self):
+        """Насыщенная кривая вне [p_b(R_s,min), p_b(R_s,max)] — пунктир.
+
+        Таблица 04: строки 0 и 30, p_b = 5 и 15 МПа. rs_sat прототипа —
+        np.interp, за краями R_s^eq зажата: это экстраполяция, а не данные
+        таблицы. На оси 3.2…22 МПа (p_range 4…20 МПа, как у 04a) — пунктир
+        слева до 5 МПа и справа от 15 МПа, сплошная ровно 5…15 МПа.
+        """
+        import matplotlib.pyplot as plt
+        fig, axes, _, _ = _table_pvto_axes("04_table_table", (4e6, 20e6))
+        ext = _pvto_lines(axes[0, 0], "pvto_saturated_extrap")
+        sol = _pvto_lines(axes[0, 0], "pvto_saturated")
+        plt.close(fig)
+        assert len(ext) == 2 and len(sol) == 1
+        assert ext[0].get_xdata().max() == pytest.approx(5.0)
+        assert ext[1].get_xdata().min() == pytest.approx(15.0)
+        assert sol[0].get_xdata().min() == pytest.approx(5.0)
+        assert sol[0].get_xdata().max() == pytest.approx(15.0)
+
+    def test_table_start_nodes_on_own_branch(self):
+        """Маркер начала строки PVTO стоит на своей ветви, а не на ветви R_s,0.
+
+        Пример 14: p_b(160) = 25.0376 МПа > p_b(150). До FEAT-028 ординаты
+        узлов считались по «физическому» R_s = min(R_s^eq, R_s,0) = 150, и
+        маркер строки 160 стоял на mu_o(p_b, 150) = 5.1727e-4 Па·с вместо
+        mu_o(p_b, 160) = 4.8926e-4 — на 5.4 % выше начала своей ветви.
+        """
+        import matplotlib.pyplot as plt
+        fig, axes, pvt, _ = _table_pvto_axes("14_high_gor_cooling", (6e6, 24.5e6))
+        pb160 = float(pvt.pb(np.array([160.0]))[0])
+        starts = [ln for ln in axes[0, 0].get_lines()
+                  if ln.get_marker() == "o" and ln.get_color() == "C3"]
+        plt.close(fig)
+        assert len(starts) == 1, "маркеры начал строк — одной серией"
+        i = np.flatnonzero(np.isclose(starts[0].get_xdata(), pb160 / 1e6,
+                                      rtol=0.0, atol=1e-9))
+        assert i.size == 1
+        mu160 = float(pvt.mu_o(np.array([pb160]), np.array([160.0]))[0])
+        assert starts[0].get_ydata()[i[0]] == pytest.approx(mu160, rel=1e-12)
 
     def test_p_branch_follows_rs0_row(self):
         """Узлы ветви R_s,0 — только если R_s,0 совпадает со строкой таблицы.

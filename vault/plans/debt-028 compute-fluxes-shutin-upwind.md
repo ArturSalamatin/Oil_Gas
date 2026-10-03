@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-028
 github: 60
 branch: refactor/debt-028/compute-fluxes-shutin-upwind
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   found: 8

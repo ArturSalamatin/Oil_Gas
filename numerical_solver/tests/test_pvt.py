@@ -238,6 +238,157 @@ class TestMuO:
         assert 1e-4 < mu < 0.1
 
 
+# ── mu_o выше p_b: Бил–Стендинг (FEAT-027) ───────────────────
+#
+# μ_o = μ_ob + 0.001·(p − p_b)·(0.024·μ_ob^1.6 + 0.038·μ_ob^0.56), сП и psi;
+# μ_ob — Беггс–Робинсон при том же Rs. Опция mu_o_undersaturated="beal",
+# по умолчанию "none" — вязкость только через Rs, как до FEAT-027.
+# Эталонные числа сняты пробой vault/issues/feat-027/probes/beal_numbers.py.
+
+@pytest.fixture
+def pvt_beal():
+    """Та же нефть, что в фикстуре pvt, но с ветвью Била выше p_b."""
+    return StandingFullPVT(
+        rho_o_std=RHO_O_STD, rho_g_std=RHO_G_STD, T0=T0, Rs0=RS0,
+        co_undersaturated=CO_UNDER,
+        c_p_oil=1880.0, c_p_gas=2800.0,
+        mu_JT_oil_val=4e-7, mu_JT_gas_val=-4e-6, L_degas_val=168000.0,
+        mu_o_undersaturated="beal",
+    )
+
+
+def _beal_expected(pvt_none, p, Rs):
+    """Бил–Стендинг вручную: mu_ob из пути "none" (= Беггс–Робинсон), сП и psi."""
+    mu_ob = pvt_none.mu_o(p, Rs)               # Па·с
+    mu_cP = mu_ob * 1e3
+    dp_psi = np.maximum(p - pvt_none.pb(Rs), 0.0) * PA_TO_PSI
+    return (mu_cP + 1e-3 * dp_psi * (0.024 * mu_cP ** 1.6 + 0.038 * mu_cP ** 0.56)) * 1e-3
+
+
+class TestMuOUndersaturated:
+    def test_default_none_ignores_co(self, pvt):
+        """По умолчанию ветви нет даже при c_o > 0: ровно Беггс–Робинсон.
+
+        Фикстура pvt — с CO_UNDER = 5e-10 и без опции. p = 20 МПа выше
+        p_b(Rs) при всех Rs набора (p_b(50) = 6.16 МПа). До FEAT-027 ветвь
+        включалась флагом c_o > 0; связь снята — иначе пример 20 (c_o > 0)
+        и все расчёты со сжимаемостью молча сменили бы вязкость.
+        """
+        Rs = np.array([0.0, 10.0, 30.0, 50.0])
+        p = np.full(4, 20e6)
+        assert np.array_equal(pvt.mu_o(p, Rs), pvt._mu_o_beggs(Rs))
+
+    def test_unknown_option_raises(self):
+        """Опечатка в имени модели — ValueError, а не молчаливое "none"."""
+        with pytest.raises(ValueError, match="mu_o_undersaturated"):
+            StandingFullPVT(rho_o_std=RHO_O_STD, rho_g_std=RHO_G_STD, T0=T0,
+                            Rs0=RS0, mu_o_undersaturated="vasquez_beggs")
+
+    @pytest.mark.parametrize("Rs, ratio_ref", [
+        (10.0, 1.196301), (30.0, 1.151919), (50.0, 1.126037)])
+    def test_beal_formula(self, pvt, pvt_beal, Rs, ratio_ref):
+        """Формула Била вручную и измеренное отношение μ_o/μ_ob при p = 20 МПа.
+
+        Независимый расчёт в сП и psi (как записана корреляция) против кода
+        в СИ — ловит ошибки коэффициентов и перевода единиц. Отношения —
+        из пробы: рост вязкости на 13–20 % на 14–18 МПа выше p_b.
+        """
+        p = np.array([20e6])
+        Rs_a = np.array([Rs])
+        mu = pvt_beal.mu_o(p, Rs_a)[0]
+        assert mu == pytest.approx(_beal_expected(pvt, p, Rs_a)[0], rel=1e-12)
+        assert mu / pvt.mu_o(p, Rs_a)[0] == pytest.approx(ratio_ref, rel=1e-6)
+
+    def test_beal_continuous_at_pb(self, pvt, pvt_beal):
+        """На стыке p = p_b(Rs) ветви совпадают: скачка вязкости на фронте нет.
+
+        p_b = 1.4891 / 3.9679 / 6.1558 / 27.8382 МПа. Ровно при p_b прибавка
+        β·0 = 0 — совпадение точное; на 1e-9 выше — относительная разница
+        β·p_b·1e-9/μ_ob, по пробе не больше 2.8e-10.
+        """
+        for Rs in (10.0, 30.0, 50.0, 300.0):
+            Rs_a = np.array([Rs])
+            pb = pvt.pb(Rs_a)
+            mu_ob = pvt.mu_o(pb, Rs_a)[0]
+            assert pvt_beal.mu_o(pb, Rs_a)[0] == mu_ob
+            mu_up = pvt_beal.mu_o(pb * (1.0 + 1e-9), Rs_a)[0]
+            assert abs(mu_up / mu_ob - 1.0) < 1e-8
+
+    def test_beal_below_pb_unchanged(self, pvt, pvt_beal):
+        """Ниже p_b (насыщенная ветвь при фиксированном Rs) опция ничего не меняет."""
+        for Rs in (10.0, 30.0, 50.0):
+            Rs_a = np.array([Rs])
+            p = 0.5 * pvt.pb(Rs_a)
+            assert pvt_beal.mu_o(p, Rs_a)[0] == pvt.mu_o(p, Rs_a)[0]
+
+    def test_beal_linear_in_p(self, pvt_beal):
+        """При фиксированном Rs вязкость линейна по p; наклон β — из пробы.
+
+        Rs = 30: μ_ob = 2.191 сП, β = 2.076451e-2 сП/МПа = 2.076451e-11 Па·с/Па.
+        Ловит p вместо p − p_b и ошибку перевода сП/psi → Па·с/Па.
+        """
+        Rs = np.full(4, 30.0)
+        pb = pvt_beal.pb(Rs[:1])[0]
+        p = pb + np.array([1.0, 2.0, 3.0, 4.0]) * 1e6
+        dmu = np.diff(pvt_beal.mu_o(p, Rs))
+        np.testing.assert_allclose(dmu, dmu[0], rtol=1e-9, atol=0.0)
+        assert dmu[0] / 1e6 == pytest.approx(2.076451e-11, rel=1e-6)
+
+    def test_beal_negative_pb_finite(self, pvt, pvt_beal):
+        """Rs = 0: у Стендинга p_b = −0.1757 МПа < 0, прибавка конечна.
+
+        Главное отличие от Васкеса–Беггса (p/p_b)^m: тот при p_b < 0 даёт NaN.
+        Отношения μ_o/μ_ob — из пробы.
+        """
+        Rs = np.array([0.0])
+        assert pvt.pb(Rs)[0] < 0.0
+        for p_val, ratio_ref in ((2e6, 1.026356), (33e6, 1.401884)):
+            p = np.array([p_val])
+            mu = pvt_beal.mu_o(p, Rs)[0]
+            assert np.isfinite(mu)
+            assert mu / pvt.mu_o(p, Rs)[0] == pytest.approx(ratio_ref, rel=1e-6)
+
+    def test_beal_bounded_near_zero_pb(self, pvt, pvt_beal):
+        """Около p_b = 0 (Rs* = 0.666) вязкость ограничена и гладка по Rs.
+
+        p = 33 МПа, Rs от 0 до 2 через Rs*. У Васкеса–Беггса здесь особенность
+        (×52 при Rs = 0.61 для нефти примера 20). По пробе: максимум 1.401884
+        при Rs = 0, монотонное убывание, скачок соседних точек 6.2e-4.
+        """
+        Rs = np.linspace(0.0, 2.0, 41)
+        p = np.full(41, 33e6)
+        ratio = pvt_beal.mu_o(p, Rs) / pvt.mu_o(p, Rs)
+        assert np.all(np.isfinite(ratio))
+        assert ratio.max() <= 1.4019
+        assert np.all(np.diff(ratio) < 0.0)
+        assert np.abs(np.diff(ratio)).max() < 1e-3
+
+    def test_beal_close_to_vasquez_beggs_near_pb(self):
+        """Около p_b Бил согласуется с независимой корреляцией Васкеса–Беггса.
+
+        Нефть примера 20 (800 / 1.014 / 380 К / Rs0 = 300, p_b = 30.29 МПа),
+        p = 33 МПа: Бил 1.033892, Васкес–Беггс μ_ob·(p/p_b)^m — 1.034385,
+        m = 2.6·p^1.187·exp(−11.513 − 8.98e-5·p), p в psia. Расхождение 5e-4:
+        вблизи p_b обе применимы — ловит ошибку порядка величины эффекта.
+        """
+        args = (800.0, 1.014, 380.0, 300.0, 3.3e-9)
+        none = StandingFullPVT(*args)
+        beal = StandingFullPVT(*args, mu_o_undersaturated="beal")
+        p, Rs = np.array([33e6]), np.array([300.0])
+        r_beal = beal.mu_o(p, Rs)[0] / none.mu_o(p, Rs)[0]
+        p_psia = p[0] * PA_TO_PSI
+        m = 2.6 * p_psia ** 1.187 * np.exp(-11.513 - 8.98e-5 * p_psia)
+        r_vb = (p[0] / none.pb(Rs)[0]) ** m
+        assert r_beal == pytest.approx(1.033892, rel=1e-6)
+        assert abs(r_beal - r_vb) < 1e-3
+
+    def test_beal_bo_unaffected(self, pvt, pvt_beal):
+        """Опция вязкости не трогает B_o — ни выше, ни ниже p_b."""
+        p = np.array([2e6, 20e6])
+        Rs = np.array([30.0, 30.0])
+        assert np.array_equal(pvt_beal.Bo(p, Rs), pvt.Bo(p, Rs))
+
+
 # ── mu_g: Lee-Gonzalez-Eakin ──────────────────────────────────
 
 class TestMuG:

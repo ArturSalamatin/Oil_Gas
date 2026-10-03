@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-034
 github: 53
 branch: refactor/debt-034/example-20-rs300-sync
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   found: 9

@@ -7,7 +7,7 @@ issue: FEAT-018
 github: 50
 branch: feat/feat-018/stepped-history-schedule
 model_level: null
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   round: 1

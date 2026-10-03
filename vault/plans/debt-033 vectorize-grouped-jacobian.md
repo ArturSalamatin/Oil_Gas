@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-033
 github: 52
 branch: refactor/debt-033/vectorize-grouped-jacobian
-status: готов к реализации
+status: реализован
 audit:
   date: 2026-10-03
   found: 7

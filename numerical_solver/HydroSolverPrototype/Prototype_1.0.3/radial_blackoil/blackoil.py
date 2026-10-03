@@ -8,11 +8,13 @@ retries with the BHP well branch as an outer active constraint and no lower
 bound on Sg of two-phase cells.
 BUG-018: the closed-flash Sg guess of a cell switching to two-phase is capped
 at the largest relperm-table Sg where kro > 0 (sg_activation_cap).
+DEBT-033: the grouped Jacobian is assembled vectorized, directly as a CSC matrix
+(bitwise the former dense one); _linear_solve takes sparse or dense J.
 """
 from dataclasses import dataclass
 import numpy as np
 from scipy.linalg import solve as dense_solve
-from scipy.sparse import csc_matrix
+from scipy.sparse import coo_matrix, csc_matrix, issparse
 from scipy.sparse.linalg import splu
 from .state import BlackOilState
 from .units import BAR_TO_PA, CP_TO_PA_S
@@ -194,6 +196,25 @@ class RadialBlackOilModel:
         if room_plus <= 1.25*h and room_minus > h: return -h
         if room_minus <= 1.25*h and room_plus > h: return h
         return h
+    def _fd_steps(self,z,gas_active,p_rel_step=1e-6,p_abs_step=1e-4,rs_abs_step=1e-5,sg_abs_step=1e-7):
+        """DEBT-033: finite-difference steps of all 2n unknowns at once (pressure block, then Rs/Sg)."""
+        # Elementwise the same float64 arithmetic as _pressure_fd_step and the Rs/Sg
+        # step rule of the column loop, hence bitwise the same steps.
+        z=np.asarray(z,float); mask=np.asarray(gas_active,dtype=bool); n=self.grid.n
+        p,x=z[:n],z[n:]
+        h=np.maximum(p_abs_step,p_rel_step*np.maximum(np.abs(p),1.0))
+        knots=np.asarray(self.pvt.pb,float)
+        if knots.size:
+            # Gas-active cells: step down where the step up would straddle the next
+            # Rs_sat(p) knot (see _pressure_fd_step); its second rule returns +h,
+            # the default, and needs no counterpart here.
+            idx=np.searchsorted(knots,p,side='left')
+            lower=np.where(idx>0,knots[np.maximum(idx-1,0)],-np.inf)
+            upper=np.where(idx<knots.size,knots[np.minimum(idx,knots.size-1)],np.inf)
+            down=mask&(upper-p<=1.25*h)&(p-lower>h)
+            h=np.where(down,-h,h)
+        hx=np.where(mask,sg_abs_step,np.maximum(rs_abs_step,1e-6*np.maximum(np.abs(x),1.0)))
+        return np.concatenate([h,hx])
 
     def finite_difference_jacobian_reference(self,z,state_old,dt_s,gas_active,p_rel_step=1e-6,p_abs_step=1e-4,rs_abs_step=1e-5,sg_abs_step=1e-7):
         z=np.asarray(z,float); f0=self.residual(z,state_old,dt_s,gas_active); J=np.empty((z.size,z.size)); n=self.grid.n
@@ -202,23 +223,36 @@ class RadialBlackOilModel:
             zp=z.copy(); zp[j]+=h; J[:,j]=(self.residual(zp,state_old,dt_s,gas_active)-f0)/h
         return J,f0
     def finite_difference_jacobian_grouped(self,z,state_old,dt_s,gas_active,p_rel_step=1e-6,p_abs_step=1e-4,rs_abs_step=1e-5,sg_abs_step=1e-7):
-        z=np.asarray(z,float); f0=self.residual(z,state_old,dt_s,gas_active); n=self.grid.n; J=np.zeros((2*n,2*n),float)
+        """Coloured finite-difference Jacobian as a CSC matrix, bitwise csc_matrix() of the reference one (DEBT-033)."""
+        # The residual of cell i depends on cells i-1, i, i+1 only, so cells i, i+3,
+        # i+6, ... are perturbed together: 2 blocks x 3 colours = 6 residual
+        # evaluations.  Steps, residual evaluations and their order, and the entries
+        # df/h are those of the former per-cell loop (DEBT-033 probe: bitwise equal
+        # to the reference on 488 Newton states of five GPN examples).
+        z=np.asarray(z,float); f0=self.residual(z,state_old,dt_s,gas_active); n=self.grid.n
+        h=self._fd_steps(z,gas_active,p_rel_step,p_abs_step,rs_abs_step,sg_abs_step)
+        rows=[]; cols=[]; vals=[]
         for block in (0,1):
             for color in range(3):
-                zp=z.copy(); cols=[]
-                for i in range(color,n,3):
-                    j=i if block==0 else n+i
-                    h=self._pressure_fd_step(z[j],bool(gas_active[i]),p_rel_step,p_abs_step) if block==0 else (sg_abs_step if gas_active[i] else max(rs_abs_step,1e-6*max(abs(z[j]),1.0)))
-                    zp[j]+=h; cols.append((i,j,h))
+                cells=np.arange(color,n,3); j=cells+block*n; hj=h[j]
+                zp=z.copy(); zp[j]+=hj
                 df=self.residual(zp,state_old,dt_s,gas_active)-f0
-                for i,j,h in cols:
-                    rows=np.arange(max(0,i-1),min(n,i+2)); J[rows,j]=df[rows]/h; J[n+rows,j]=df[n+rows]/h
+                for d in (-1,0,1):
+                    # oil (row r) and gas (row n+r) residuals of the neighbour r=i+d
+                    ok=(cells+d>=0)&(cells+d<n); r=cells[ok]+d; c=j[ok]; hc=hj[ok]
+                    rows+=[r,n+r]; cols+=[c,c]; vals+=[df[r]/hc,df[n+r]/hc]
+        J=coo_matrix((np.concatenate(vals),(np.concatenate(rows),np.concatenate(cols))),shape=(2*n,2*n)).tocsc()
+        # csc_matrix(dense) of the former loop dropped exact zeros (downstream
+        # entries, dkrg/dSg = 0 below Sgc).  Explicit zeros would change the sparsity
+        # pattern, SuperLU's column ordering and the Newton step at round-off level.
+        J.eliminate_zeros()
         return J,f0
     def finite_difference_jacobian(self,*args,**kwargs):
+        # DEBT-033: grouped returns a CSC matrix, reference a dense array; _linear_solve takes both
         return self.finite_difference_jacobian_reference(*args,**kwargs) if self.jacobian_mode=='reference' else self.finite_difference_jacobian_grouped(*args,**kwargs)
     def _linear_solve(self,J,b):
-        if self.linear_solver=='sparse': return splu(csc_matrix(J)).solve(b)
-        return dense_solve(J,b,assume_a='gen',check_finite=True)
+        if self.linear_solver=='sparse': return splu(J if issparse(J) else csc_matrix(J)).solve(b)
+        return dense_solve(J.toarray() if issparse(J) else J,b,assume_a='gen',check_finite=True)
     def _trial_is_reasonable(self,z,gas_active):
         n=self.grid.n; p=z[:n]; x=z[n:]
         if not np.all(np.isfinite(z)) or np.any(p<=1.0): return False

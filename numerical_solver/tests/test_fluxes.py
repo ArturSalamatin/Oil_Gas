@@ -38,6 +38,10 @@ K_PERM = 1e-13
 
 P_EXT = 20e6
 P_WF = 10e6
+# Забойное давление двухфазной фикстуры: ниже p[0] = 8 МПа — добыча.
+# При P_WF = 10 МПа > p[0] скважина закрыта (eq:bc_pwf_shutin), и тесты
+# грани 0 проверяли бы нули вместо формулы притока (DEBT-028).
+P_WF_2PH = 6e6
 T0 = 350.0
 
 RHO_O_STD = 850.0
@@ -346,7 +350,7 @@ def state_2ph(grid_2ph, pvt):
 @pytest.fixture
 def bc_2ph():
     return BoundaryConditions(
-        well=PressureControl(P_WF), p_ext=P_EXT,
+        well=PressureControl(P_WF_2PH), p_ext=P_EXT,
         T_ext=T0, Rs_ext=RS0, Sg_ext=0.0)
 
 
@@ -356,7 +360,7 @@ def result_2ph(state_2ph, grid_2ph, pvt, relperm, bc_2ph):
 
 
 class TestTwoPhaseAllFields:
-    """Формула на каждой грани × каждое поле (72 проверки)."""
+    """Формула на каждой грани × каждое поле (66 проверок: 11 полей × 6 граней)."""
 
     FIELDS = ["G_o", "G_g", "G_free_gas", "Q_o", "Q_g",
               "u_o", "u_g", "m_o", "m_g", "Gm_o", "Gm_g"]

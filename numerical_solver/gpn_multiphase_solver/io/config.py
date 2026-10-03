@@ -58,6 +58,7 @@ class PVTConfig:
     rho_g_std: float        # плотность газа при ст. условиях, кг/м³
     # Для Standing
     co_undersaturated: float = 0.0   # сжимаемость нефти при p > pb, 1/Па
+    mu_o_undersaturated: str = "none"  # μ_o при p > pb: "none" | "beal" (FEAT-027)
     # Для табличного PVT — имена CSV-файлов (относительно JSON)
     oil_pvt_file: Optional[str] = None
     gas_pvt_file: Optional[str] = None

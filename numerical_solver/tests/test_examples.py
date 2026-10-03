@@ -1129,6 +1129,36 @@ class TestPvtPlot:
                                     tmp_path / name, name, grid=r["grid"])
             assert out.is_file()
 
+    def test_describe_mu_o_branch(self):
+        """Подпись Стендинга перечисляет свойства, горизонтальные выше p_b (FEAT-027).
+
+        B_o горизонтальна при c_o = 0, μ_o — без ветви Била. Без фикстуры
+        results — быстрый уровень. Сочетания (0, none) и (>0, none) дают ту же
+        подпись, что до FEAT-027: PNG примеров не меняются.
+        """
+        pvt_plot = _pvt_module()
+        cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
+        only_rs = r"от $p$ — только через $R_s$"
+        cases = {
+            (0.0, "none"): (r"($B_o$, $\mu_o$ " + only_rs, None),
+            (3.3e-9, "none"): (r"($\mu_o$ " + only_rs, None),
+            (0.0, "beal"): (r"($B_o$ " + only_rs, "— Бил"),
+            (3.3e-9, "beal"): (None, "— Бил"),
+        }
+        for (co, mu_model), (flat_text, beal_text) in cases.items():
+            cfg.pvt.co_undersaturated = co
+            cfg.pvt.mu_o_undersaturated = mu_model
+            s = pvt_plot._describe(cfg)
+            where = f"c_o = {co}, {mu_model}: {s!r}"
+            if flat_text is None:
+                assert "только через" not in s, where
+            else:
+                assert flat_text in s, where
+            if beal_text is None:
+                assert "Бил" not in s, where
+            else:
+                assert beal_text in s, where
+
     def test_formatter_delegates_drawing_to_core(self):
         """Оформитель не дублирует построение, а вызывает ядро.
 

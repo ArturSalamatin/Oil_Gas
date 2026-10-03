@@ -24,19 +24,32 @@ def _gas_specific_gravity(rho_g_st):
     return rho_g_st / RHO_AIR_STD
 
 
+# Модели вязкости недонасыщенной нефти (p > pb(Rs)), FEAT-027.
+MU_O_UNDERSATURATED_MODELS = ("none", "beal")
+
+
 class StandingFullPVT(FullPVT):
-    """Корреляции Standing (Rs, Bo), Beggs-Robinson (μ_o), LGE (μ_g) + скалярные тепловые."""
+    """Корреляции Standing (Rs, Bo), Beggs-Robinson и Бил (μ_o), LGE (μ_g) + скалярные тепловые."""
 
     def __init__(self, rho_o_std: float, rho_g_std: float, T0: float,
                  Rs0: float,
                  co_undersaturated: float = 0.0,
                  c_p_oil: float = 2000.0, c_p_gas: float = 1000.0,
                  mu_JT_oil_val: float = 0.0, mu_JT_gas_val: float = 0.0,
-                 L_degas_val: float = 0.0):
+                 L_degas_val: float = 0.0,
+                 mu_o_undersaturated: str = "none"):
         """
         Rs0 — начальное газосодержание, м³ст/м³ст. Определяет pb.
         co_undersaturated — сжимаемость нефти при p > pb, 1/Па.
+        mu_o_undersaturated — μ_o при p > pb(Rs): "none" — только через Rs,
+            "beal" — линейный рост с p по Билу–Стендингу (FEAT-027).
         """
+        # Проверка до присваиваний: при ошибке объект не создаётся частично.
+        if mu_o_undersaturated not in MU_O_UNDERSATURATED_MODELS:
+            raise ValueError(
+                f"mu_o_undersaturated = {mu_o_undersaturated!r} не поддерживается. "
+                f"Доступные: {MU_O_UNDERSATURATED_MODELS}.")
+        self._mu_under = mu_o_undersaturated
         self._rho_o_std = float(rho_o_std)
         self._rho_g_std = float(rho_g_std)
         self._T0 = float(T0)
@@ -58,7 +71,6 @@ class StandingFullPVT(FullPVT):
         self._pb_val = float(self.pb(np.array([Rs0]))[0])
         self._Bo_at_pb = self._Bo_standing(
             np.array([self._pb_val]), np.array([Rs0]))[0]
-        self._mu_o_at_pb = self._mu_o_beggs(np.array([Rs0]))[0]
 
     @property
     def rho_o_std(self) -> float:
@@ -122,16 +134,25 @@ class StandingFullPVT(FullPVT):
         mu_o_cP = A * mu_od_cP ** B
         return mu_o_cP * 1e-3
 
+    def _beal_slope(self, mu_ob):
+        """∂μ_o/∂p|_Rs выше pb по Билу–Стендингу, Па·с/Па (vault: pvt-корреляции-стендинг.md)."""
+        mu_ob_cP = np.asarray(mu_ob, float) * 1e3
+        # Корреляция записана в сП и psi: наклон в сП/psi → Па·с/Па.
+        slope_cP_per_psi = 1e-3 * (0.024 * mu_ob_cP ** 1.6 + 0.038 * mu_ob_cP ** 0.56)
+        return slope_cP_per_psi * 1e-3 * PA_TO_PSI
+
     def mu_o(self, p, Rs):
         p = np.asarray(p, float)
         Rs = np.asarray(Rs, float)
-        mu_sat = self._mu_o_beggs(Rs)
-        if self._co_under == 0:
-            return mu_sat
-        pb_local = self.pb(Rs)
-        above = p >= pb_local
-        mu_at_pb = self._mu_o_beggs(Rs)
-        return np.where(above, mu_at_pb, mu_sat)
+        # Беггс–Робинсон: вязкость насыщенной нефти, зависит только от Rs.
+        mu_ob = self._mu_o_beggs(Rs)
+        if self._mu_under == "none":
+            return mu_ob
+        # Выше pb(Rs) нефть недонасыщена: при том же Rs вязкость растёт с p
+        # линейно (Бил–Стендинг). Ниже pb прибавка 0 — насыщенная ветвь;
+        # при pb < 0 (Rs < Rs*, Стендинг) p - pb > 0 и прибавка конечна.
+        dp_above = np.maximum(p - self.pb(Rs), 0.0)
+        return mu_ob + self._beal_slope(mu_ob) * dp_above
 
     # ── μ_g ──
 

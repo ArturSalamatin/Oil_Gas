@@ -84,6 +84,17 @@ class TestBaselinePVT:
         """co_undersaturated не задан в JSON → default = 0."""
         assert cfg.pvt.co_undersaturated == 0.0
 
+    def test_mu_o_undersaturated_default(self, cfg):
+        """mu_o_undersaturated не задан в JSON → "none": старые конфиги прежние (FEAT-027)."""
+        assert cfg.pvt.mu_o_undersaturated == "none"
+
+    def test_mu_o_undersaturated_read(self, tmp_path):
+        """Значение "beal" из секции pvt доходит до PVTConfig (FEAT-027)."""
+        raw = _minimal_raw()
+        raw["pvt"]["mu_o_undersaturated"] = "beal"
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.pvt.mu_o_undersaturated == "beal"
+
 
 class TestBaselineRelPerm:
     def test_model(self, cfg):

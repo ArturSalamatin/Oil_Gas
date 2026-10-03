@@ -13,7 +13,7 @@ import pytest
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import (
-    SimulatorFactory, _get_or_create_proto_rp,
+    SimulatorFactory, _get_or_create_proto_rp, _create_pvt,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.pvt.standing import StandingFullPVT
@@ -22,6 +22,7 @@ from gpn_multiphase_solver.units import BAR_TO_PA
 
 
 BASELINE = Path(__file__).parent.parent / "configs" / "baseline.json"
+TABLE_PVT = Path(__file__).parent.parent / "configs" / "table_pvt" / "config.json"
 EXAMPLE_03 = (Path(__file__).parent.parent / "examples"
               / "03_standing_corey" / "config.json")
 
@@ -78,6 +79,31 @@ class TestFactoryStandingHydro:
         p_exact = p_wf_last + (P0 - p_wf_last) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         np.testing.assert_allclose(
             history.states[-1].p, p_exact, rtol=1e-2)
+
+    def test_beal_reaches_pvt(self):
+        """pvt.mu_o_undersaturated = "beal" доходит до StandingFullPVT (FEAT-027).
+
+        PVT baseline.json: 850 / 0.85 / 350 К / Rs0 = 50, p_b = 9.43 МПа.
+        При p = 20 МПа вязкость по Билу выше Беггса–Робинсона в 1.095309 раза
+        (проба vault/issues/feat-027/probes/val001_beal.py, μ(p_e)/μ_ob).
+        """
+        config = load_config(BASELINE)
+        config.pvt.mu_o_undersaturated = "beal"
+        pvt = _create_pvt(config)
+        p, Rs = np.array([20e6]), np.array([50.0])
+        ratio = pvt.mu_o(p, Rs)[0] / pvt._mu_o_beggs(Rs)[0]
+        assert ratio == pytest.approx(1.095309, rel=1e-6)
+
+    def test_beal_with_table_raises(self):
+        """Опция Била при табличном PVT — ValueError (FEAT-027).
+
+        У таблицы вязкость выше p_b задают её недонасыщенные ветви; молча
+        проигнорировать опцию нельзя — пользователь ждал бы эффекта.
+        """
+        config = load_config(TABLE_PVT)
+        config.pvt.mu_o_undersaturated = "beal"
+        with pytest.raises(ValueError, match="mu_o_undersaturated"):
+            _create_pvt(config)
 
 
 class TestStandingDeepDrawdownDenseGrid:

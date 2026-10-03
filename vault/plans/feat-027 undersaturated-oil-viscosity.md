@@ -7,7 +7,7 @@ issue: FEAT-027
 github: 54
 branch: feat/feat-027/undersaturated-oil-viscosity
 model_level: — (PVT-модель, ядро решателя)
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   found: 8
@@ -514,7 +514,7 @@ else:
 **Оформление:**
 
 18. **`test_describe_mu_o_branch`** (`test_examples.py`, без фикстуры `results`)
-    - Сценарий: `_pvt_module()._describe(cfg)` для четырёх сочетаний $c_o \in \{0, 3.3\cdot10^{-9}\}$ × `"none"`/`"beal"`. Здесь `cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")` (константа `EXAMPLES_DIR` — `test_examples.py:26`), в нём подменяются `cfg.pvt.co_undersaturated` и `cfg.pvt.mu_o_undersaturated`. `load_config` импортировать в теле теста, если на уровне модуля его нет.
+    - Сценарий: `_pvt_module()._describe(cfg)` для четырёх сочетаний $c_o \in \{0, 3.3\cdot10^{-9}\}$ × `"none"`/`"beal"`. Здесь `cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")` (константа `EXAMPLES_DIR` — `test_examples.py:26`), в нём подменяются `cfg.pvt.co_undersaturated` и `cfg.pvt.mu_o_undersaturated`. `load_config` уже импортирован (`test_examples.py:24`).
     - Ожидание:
       - (0, none) → содержит `$B_o$, $\mu_o$ от $p$`;
       - (>0, none) → `($\mu_o$ от $p$`;

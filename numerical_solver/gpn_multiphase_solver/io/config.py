@@ -277,37 +277,7 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError("history должна содержать хотя бы один интервал")
 
     for i, h in enumerate(cfg.time.history):
-        if h.dt <= 0:
-            raise ValueError(f"history[{i}].dt должен быть > 0, получено {h.dt}")
-        if h.control == "pressure":
-            if h.p_wf is None:
-                raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
-            if h.p_wf <= 0:
-                raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
-            # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
-            for name in ("q_oil", "min_bhp"):
-                if getattr(h, name) is not None:
-                    raise ValueError(
-                        f"history[{i}]: control='pressure' не использует {name} — "
-                        f"уберите поле или задайте control='rate'")
-        elif h.control == "rate":
-            # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
-            if h.q_oil is None:
-                raise ValueError(f"history[{i}]: control='rate', но q_oil не задан")
-            if h.q_oil < 0:
-                raise ValueError(f"history[{i}].q_oil должен быть >= 0, получено {h.q_oil}")
-            # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
-            if h.min_bhp is None:
-                raise ValueError(f"history[{i}]: control='rate', но min_bhp не задано")
-            if h.min_bhp <= 0:
-                raise ValueError(f"history[{i}].min_bhp должно быть > 0, получено {h.min_bhp}")
-            if h.p_wf is not None:
-                raise ValueError(
-                    f"history[{i}]: control='rate' не использует p_wf — забойное "
-                    f"давление при заданном дебите вычисляется")
-        else:
-            raise ValueError(
-                f"history[{i}].control = '{h.control}': допустимы 'pressure', 'rate'")
+        _validate_interval(h, f"history[{i}]")
 
     # max_retries управляет числом попыток A-retry (2**max_retries подшагов).
     # bool исключается явно: в Python bool — подкласс int, а True как лимит бессмыслен.
@@ -318,3 +288,38 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(
             f"numerics.max_retries должен быть в [0, 20], получено {mr}. "
             f"Верхняя граница защищает от опечатки: 2**20 подшагов недостижимо.")
+
+
+def _validate_interval(h: HistoryInterval, where: str) -> None:
+    """Проверка одного интервала истории; where — его место в JSON."""
+    if h.dt <= 0:
+        raise ValueError(f"{where}.dt должен быть > 0, получено {h.dt}")
+    if h.control == "pressure":
+        if h.p_wf is None:
+            raise ValueError(f"{where}: control='pressure', но p_wf не задано")
+        if h.p_wf <= 0:
+            raise ValueError(f"{where}.p_wf должно быть > 0, получено {h.p_wf}")
+        # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
+        for name in ("q_oil", "min_bhp"):
+            if getattr(h, name) is not None:
+                raise ValueError(
+                    f"{where}: control='pressure' не использует {name} — "
+                    f"уберите поле или задайте control='rate'")
+    elif h.control == "rate":
+        # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
+        if h.q_oil is None:
+            raise ValueError(f"{where}: control='rate', но q_oil не задан")
+        if h.q_oil < 0:
+            raise ValueError(f"{where}.q_oil должен быть >= 0, получено {h.q_oil}")
+        # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
+        if h.min_bhp is None:
+            raise ValueError(f"{where}: control='rate', но min_bhp не задано")
+        if h.min_bhp <= 0:
+            raise ValueError(f"{where}.min_bhp должно быть > 0, получено {h.min_bhp}")
+        if h.p_wf is not None:
+            raise ValueError(
+                f"{where}: control='rate' не использует p_wf — забойное "
+                f"давление при заданном дебите вычисляется")
+    else:
+        raise ValueError(
+            f"{where}.control = '{h.control}': допустимы 'pressure', 'rate'")

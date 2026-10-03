@@ -7,7 +7,7 @@ issue: FEAT-028
 github: 55
 branch: feat/feat-028/pvto-style-pvt-plot
 model_level: — (визуализация свойств PVT, не уровень М.N)
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   found: 10

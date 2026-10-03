@@ -8,6 +8,8 @@ retries with the BHP well branch as an outer active constraint and no lower
 bound on Sg of two-phase cells.
 BUG-018: the closed-flash Sg guess of a cell switching to two-phase is capped
 at the largest relperm-table Sg where kro > 0 (sg_activation_cap).
+DEBT-033: the grouped Jacobian is assembled vectorized, directly as a CSC matrix
+(bitwise the former dense one); _linear_solve takes sparse or dense J.
 """
 from dataclasses import dataclass
 import numpy as np

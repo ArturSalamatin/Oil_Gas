@@ -24,7 +24,7 @@ from gpn_multiphase_solver.io.config import load_config, RockConfig, OutputConfi
 from gpn_multiphase_solver.io.output import (
     history_to_arrays, save_npz, save_csv, save_well_csv,
     plot_profiles, plot_wellbore_dynamics, plot_well_rate, plot_2d_map,
-    plot_pvt_properties,
+    plot_pvt_properties, _round_rs_rows, _pvto_rows,
 )
 from ._doubles import LogProfileHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
@@ -410,21 +410,23 @@ class TestPvtPropertiesCore:
 
         Это ровно тот сценарий, ради которого слой ядра и вводится:
         пользователь пакета собрал PVT сам и хочет посмотреть свойства.
-        Rs0 = 50 м³ст/м³ст → расчёт двухфазный, на панели mu_o должны быть
-        три КРИВЫЕ (физическая + две ветви); вертикаль p_b в счёт не идёт,
-        она рисуется через axvline и в get_lines() тоже попадает, поэтому
-        считаем линии с двумя и более точками по оси x.
+        Rs0 = 50 м³ст/м³ст, ось 6.4…22 МПа: на панели mu_o насыщенная
+        кривая, 6 тонких ветвей R_s = 40, 60, …, 140 и жирная ветвь R_s,0
+        (FEAT-028). Кривые ищутся по gid, а не по числу линий: подсчёт
+        «линий с >2 точками» сбивают маркеры узлов и вертикали.
         """
+        import matplotlib.pyplot as plt
         pvt = StandingFullPVT(rho_o_std=850.0, rho_g_std=0.9,
                               T0=350.0, Rs0=50.0)
         axes = plot_pvt_properties(pvt, 50.0, (8e6, 20e6))
 
         assert axes.shape == (2, 3)
-        curves = [ln for ln in axes[0, 0].get_lines()
-                  if len(ln.get_xdata()) > 2]
-        assert len(curves) >= 3, (
-            f"на панели mu_o ожидались физическая кривая и две ветви, "
-            f"нашлось {len(curves)}")
+        counts = tuple(len(_pvto_lines(axes[0, 0], gid)) for gid in
+                       ("pvto_saturated", "pvto_branch", "pvto_rs0"))
+        plt.close(axes[0, 0].figure)
+        assert counts == (1, 6, 1), (
+            f"на панели mu_o ожидались насыщенная, 6 ветвей и R_s,0, "
+            f"нашлось {counts}")
 
     def test_core_pvt_plot_has_no_config_dependency(self):
         """io/output.py не импортирует factory и io.config.
@@ -453,3 +455,146 @@ class TestPvtPropertiesCore:
         assert not forbidden, (
             f"io/output.py тянет сборку моделей: {forbidden}. "
             f"Ядро обязано принимать готовый объект PVT, а не собирать его")
+
+
+# ═══════════════════════════════════════════════════════════
+# H. plot_pvt_properties в стиле таблицы PVTO (FEAT-028)
+# ═══════════════════════════════════════════════════════════
+
+def _pvto_lines(ax, gid):
+    """Кривые панели с разметкой gid (ядро размечает кривые PVTO через set_gid)."""
+    return [ln for ln in ax.get_lines() if ln.get_gid() == gid]
+
+
+def _standing_pvt(Rs0):
+    """PVT тестов ядра: rho_o_ст = 850, rho_g_ст = 0.9 кг/м³, T0 = 350 К."""
+    return StandingFullPVT(rho_o_std=850.0, rho_g_std=0.9, T0=350.0, Rs0=Rs0)
+
+
+class TestPvtoCore:
+    """Рисунок PVT как таблица PVTO на корреляции Стендинга — без конфига и расчёта.
+
+    На оси 6.4…22 МПа (p_range 8…20 МПа) R_s^eq = 33.55…145.14 м³ст/м³ст,
+    p_b(50) = 8.98 МПа (проба vault/issues/feat-028/probes/pvto_numbers.py).
+    """
+
+    def test_round_rs_rows_standing(self):
+        """Строки корреляции — кратные наименьшему шагу, дающему не больше 7 строк.
+
+        На оси 6.4…22 МПа R_s^eq = 33.55…145.14 м³ст/м³ст: шаг 10 дал бы
+        11 строк (40…140), шаг 20 — 6. Числа круглые, как строки настоящей
+        таблицы PVTO (решение 2026-10-03), а не 63.9, 81.3…
+        """
+        rows = _round_rs_rows(_standing_pvt(50.0), np.linspace(6.4e6, 22e6, 800))
+        assert rows.tolist() == [40.0, 60.0, 80.0, 100.0, 120.0, 140.0]
+
+    def test_pvto_rows_exclude_rs0(self):
+        """Ветвь R_s,0 из веера исключена — она рисуется отдельно, жирной.
+
+        При R_s,0 = 60, совпадающем со строкой, тонкой ветви 60 быть не должно:
+        иначе под жирной зелёной лежала бы серая той же формы.
+        """
+        rows = _pvto_rows(_standing_pvt(60.0), np.linspace(6.4e6, 22e6, 800),
+                          60.0, None)
+        assert rows.tolist() == [40.0, 80.0, 100.0, 120.0, 140.0]
+
+    def test_branches_start_on_saturated_curve(self):
+        """Ветвь начинается на насыщенной кривой: f(p_b(R_s,i), R_s,i) = f(p_b, R_s^eq(p_b)).
+
+        Это и есть смысл таблицы PVTO: строка R_s,i — нефть, насыщенная при
+        p_b(R_s,i) и сжимаемая выше. Требует R_s^eq(p_b(R)) = R (у Стендинга
+        5.7e-14) и вставки p_b(R_s,i) в сетку по p: первая точка ветви и точка
+        насыщенной при том же x вычислены из одного числа p. Проверяется на
+        всех четырёх панелях нефти; 6 тонких ветвей + R_s,0 = 7 стыков.
+        """
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(2, 3)
+        plot_pvt_properties(_standing_pvt(50.0), 50.0, (8e6, 20e6), axes=axes)
+        for ax in (axes[0, 0], axes[0, 1], axes[0, 2], axes[1, 2]):
+            sat = (_pvto_lines(ax, "pvto_saturated")
+                   + _pvto_lines(ax, "pvto_saturated_extrap"))
+            sx = np.concatenate([ln.get_xdata() for ln in sat])
+            sy = np.concatenate([ln.get_ydata() for ln in sat])
+            joined = 0
+            for ln in _pvto_lines(ax, "pvto_branch") + _pvto_lines(ax, "pvto_rs0"):
+                x0, y0 = ln.get_xdata()[0], ln.get_ydata()[0]
+                if x0 <= sx.min():
+                    continue        # ветвь начата левее оси — стыка на рисунке нет
+                idx = np.flatnonzero(sx == x0)
+                assert idx.size, f"{ax.get_ylabel()}: нет точки насыщенной при p = {x0} МПа"
+                assert y0 == pytest.approx(sy[idx[0]], rel=1e-9), (
+                    f"{ax.get_ylabel()}: ветвь при p = {x0} МПа оторвана от насыщенной")
+                joined += 1
+            assert joined == 7, f"{ax.get_ylabel()}: стыков {joined}, ожидалось 7"
+        plt.close(fig)
+
+    def test_rs0_branch_is_thickest(self):
+        """Ветвь R_s,0 на каждой панели нефти одна и толще всех тонких ветвей."""
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(2, 3)
+        plot_pvt_properties(_standing_pvt(50.0), 50.0, (8e6, 20e6), axes=axes)
+        for ax in (axes[0, 0], axes[0, 1], axes[0, 2], axes[1, 2]):
+            rs0 = _pvto_lines(ax, "pvto_rs0")
+            thin = max(ln.get_linewidth() for ln in _pvto_lines(ax, "pvto_branch"))
+            assert len(rs0) == 1 and rs0[0].get_linewidth() > thin, ax.get_ylabel()
+        plt.close(fig)
+
+    def test_mu_o_panel_log_scale(self):
+        """mu_o — в логарифмической шкале, B_o — в линейной (решение 2026-10-03).
+
+        У примера 14 веер mu_o 4.7e-4…1.6e-2 Па·с: на линейной оси рабочая
+        ветвь R_s,0 = 150 (0.51…0.53 сП) сжалась бы в нижние 3 % панели.
+        """
+        axes = plot_pvt_properties(_standing_pvt(50.0), 50.0, (8e6, 20e6))
+        assert axes[0, 0].get_yscale() == "log"
+        assert axes[0, 2].get_yscale() == "linear"
+        import matplotlib.pyplot as plt
+        plt.close(axes[0, 0].figure)
+
+    def test_legend_entries_independent_of_branch_count(self):
+        """В легенде mu_o три записи: насыщенная, «ветви R_s = const», R_s,0.
+
+        Все тонкие ветви — одной записью: у примера 14 их 17, по записи на
+        ветвь легенда закрыла бы панель (решение 2026-10-03). Табличный
+        случай (≤ 5 записей при 17 ветвях) — test_table_branches_are_pvto_rows.
+        """
+        axes = plot_pvt_properties(_standing_pvt(50.0), 50.0, (8e6, 20e6))
+        labels = [t.get_text() for t in axes[0, 0].get_legend().get_texts()]
+        import matplotlib.pyplot as plt
+        plt.close(axes[0, 0].figure)
+        assert len(labels) == 3, labels
+
+    def test_standing_has_no_extrapolation_segment(self):
+        """У корреляции насыщенная кривая сплошная по всей оси — пунктира нет.
+
+        Пунктир «экстраполяция за строки таблицы» означает выход за строки
+        PVTO; у аналитической корреляции строк нет.
+        """
+        axes = plot_pvt_properties(_standing_pvt(50.0), 50.0, (8e6, 20e6))
+        import matplotlib.pyplot as plt
+        plt.close(axes[0, 0].figure)
+        assert not any(_pvto_lines(ax, "pvto_saturated_extrap")
+                       for ax in axes.ravel())
+
+    def test_single_phase_draws_fan(self):
+        """При R_s,0 = 0 рисуются насыщенная кривая и веер, как у двухфазных.
+
+        Рисунок описывает модель PVT, а не расчёт (решение 2026-10-03;
+        прежний тест требовал обратного). p_b(0) = -0.176 МПа левее оси
+        12…22 МПа: ветвь R_s,0 = 0 — горизонталь от левого края, вертикали
+        p_b нет. Насыщенная кривая растягивает ось R_s выше 100 м³ст/м³ст.
+        """
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(2, 3)
+        plot_pvt_properties(_standing_pvt(0.0), 0.0, (15e6, 20e6), axes=axes)
+        ax_rs = axes[0, 1]
+        rs0 = _pvto_lines(ax_rs, "pvto_rs0")
+        assert len(rs0) == 1
+        assert rs0[0].get_xdata()[0] == pytest.approx(12.0)
+        assert np.all(rs0[0].get_ydata() == 0.0)
+        assert ax_rs.get_ylim()[1] > 100.0
+        assert len(_pvto_lines(ax_rs, "pvto_branch")) >= 3
+        # Ни одна линия (в том числе вертикаль p_b) не уходит левее оси.
+        assert all(np.min(ln.get_xdata()) >= 12.0 - 1e-12
+                   for ax in axes.ravel() for ln in ax.get_lines())
+        plt.close(fig)

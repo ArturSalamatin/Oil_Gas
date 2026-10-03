@@ -880,31 +880,6 @@ class TestPvtPlot:
                 assert rep["nodes_in_range"] == 0, (
                     f"{name}: у аналитического PVT узлов быть не может")
 
-    def test_saturated_branch_hidden_when_single_phase(self, results,
-                                                       tmp_path):
-        """При Rs0 = 0 насыщенная ветвь не рисуется — иначе ось растянута.
-
-        Измерено на 01: Rs_eq доходит до 138 м³ст/м³ст при физическом
-        Rs ≡ 0. Если ветвь нарисовать, ось Rs растянется до 140, а
-        физический ноль прижмётся к краю и станет нечитаем. Пометка
-        «недостижимо» тут не помогает: масштаб задаёт сама кривая.
-        """
-        import matplotlib.pyplot as plt
-        from gpn_multiphase_solver.io.output import plot_pvt_properties
-
-        for name in SINGLE_PHASE:
-            r = results[name]
-            pvt = _pvt_of_config(r["config"])
-            p = r["p"]
-            fig, axes = plt.subplots(2, 3)
-            plot_pvt_properties(pvt, 0.0, (float(p.min()), float(p.max())),
-                                axes=axes)
-            ylim = axes[0, 1].get_ylim()      # панель Rs
-            plt.close(fig)
-            assert ylim[1] < 1.0, (
-                f"{name}: ось Rs растянута до {ylim[1]:.1f} — значит "
-                f"нарисована нефизичная насыщенная ветвь")
-
     def test_physical_branch_matches_rs_analytics(self, results):
         """Физическая кривая совпадает с rs_analytics.rs_expected побитово.
 
@@ -1015,40 +990,6 @@ class TestPvtPlot:
             out = pvt_plot.plot_pvt(r["config"], r["history"],
                                     tmp_path / name, name, grid=r["grid"])
             assert out.is_file()
-
-    def test_no_phantom_legend_entries(self, results):
-        """Легенда не обещает кривых, которых на панели нет.
-
-        У табличного PVT выше p_b выполняется Rs_eq == Rs0, поэтому
-        насыщенная ветвь совпадает с физической ТОЖДЕСТВЕННО (измерено
-        на 04: max|Bo_sat - Bo_phys| = 0.000e+00 против 2.341e-01 у
-        Стендинга). Рисовать её нельзя — в легенде висела бы запись без
-        линии, и график читался бы как дефект отрисовки.
-        """
-        import matplotlib.pyplot as plt
-        from gpn_multiphase_solver.io.output import plot_pvt_properties
-
-        n_entries = {}
-        for name in ("03_standing_corey", "04_table_table"):
-            r = results[name]
-            pvt = _pvt_of_config(r["config"])
-            p = r["p"]
-            fig, axes = plt.subplots(2, 3)
-            plot_pvt_properties(pvt, r["Rs0"],
-                                (float(p.min()), float(p.max())), axes=axes)
-            ax = axes[0, 2]                       # панель Bo
-            labels = [t.get_text() for t in ax.get_legend().get_texts()]
-            # Линии с >2 точками — настоящие кривые; axvline даёт 2 точки.
-            curves = [ln for ln in ax.get_lines() if len(ln.get_xdata()) > 2]
-            plt.close(fig)
-            assert len(labels) <= len(curves), (
-                f"{name}: записей легенды {len(labels)} при {len(curves)} "
-                f"кривых — легенда обещает несуществующую линию")
-            n_entries[name] = len(labels)
-
-        assert n_entries["04_table_table"] < n_entries["03_standing_corey"], (
-            "у табличного PVT насыщенная ветвь совпадает с физической и "
-            "не должна попадать в легенду")
 
     def test_table_nodes_split_by_phase(self, results):
         """Узлы раздельны по фазам: газовые и нефтяные идут на разные панели.

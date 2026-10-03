@@ -24,7 +24,7 @@ from gpn_multiphase_solver.state import (
     WellData, SimulationHistory,
 )
 from gpn_multiphase_solver.bc import WellControl, PressureControl, RateControl
-from gpn_multiphase_solver.fluxes import compute_fluxes
+from gpn_multiphase_solver.fluxes import compute_fluxes, phase_fluxes_from_components
 
 
 # ═════════════════════════════════════════════════════════════
@@ -109,7 +109,7 @@ def _compute_reference_face(pvt, rp, grid, state, bc, f):
             lam_g_up = 0.0
             Rs_up = bc.Rs_ext
             rho_o_up = pvt.rho_o(p_ext_a, Rs_ext_a)[0]
-            rho_g_up = 0.0
+            rho_g_up = pvt.rho_g(p_ext_a)[0]   # при p_ext, как ρ_o (DEBT-021)
     else:
         dp = p[f - 1] - p[f]
         T_f = grid.trans_internal[f - 1]
@@ -476,6 +476,88 @@ class TestWellShutIn:
     def test_producing_pwf_is_setpoint(self, result_2ph):
         """При добыче (p_wf = 6 МПа < p[0]) фактическое p_wf = уставке."""
         assert result_2ph.p_wf == P_WF_2PH
+
+
+class TestPhaseFluxesFromComponents:
+    """Общий шаг «Q, u, m, Gm из G» (phase_fluxes_from_components, DEBT-028).
+
+    Функцию вызывают оба гидро-пути: compute_fluxes (тесты, двойники) и
+    PrototypeHydroAdapter (рабочий расчёт). G задаются вручную — так
+    получаются ситуации, которых compute_fluxes на штатных профилях не даёт.
+    Профиль state_2ph: p растёт от скважины (8 → 19 МПа), Δp < 0 на всех
+    внутренних гранях, на контуре p[N-1] = 19 < p_ext = 20 МПа — приток.
+    """
+
+    @staticmethod
+    def _zeros(n):
+        return np.zeros(n + 1), np.zeros(n + 1), np.zeros(n + 1)
+
+    def test_upstream_by_pressure_when_G_o_zero(self, state_2ph, grid_2ph,
+                                                pvt, bc_2ph):
+        """G_o = 0, свободный газ течёт к скважине: выше по потоку — ячейка f.
+
+        Так бывает при k_ro = 0 (S_g >= 1 - S_or) в ячейке выше по потоку.
+        Ячейка выбирается по перепаду давления (как в прототипе), а не по
+        знаку G_o: на грани 1 Δp = 8 - 10 МПа < 0 → ячейка 1.
+        Ожидание: Q_g[1] = G_free_gas[1] · B_g[1]. Ловит: правило «по знаку
+        G_o», которое при G_o = 0 брало ячейку 0 (ниже по потоку).
+        """
+        N = grid_2ph.N
+        G_o, G_g, G_free_gas = self._zeros(N)
+        G_free_gas[1] = -1.0          # к скважине: знак «−» по конвенции
+        G_g[1] = -1.0
+        Bg = pvt.Bg(state_2ph.p)
+        rho_g = pvt.rho_g(state_2ph.p)
+        # Контроль невырожденности: при равных B_g тест не различит ячейки
+        assert not np.isclose(Bg[0], Bg[1], rtol=1e-6)
+        r = phase_fluxes_from_components(G_o, G_g, G_free_gas, state_2ph,
+                                         grid_2ph, pvt, bc_2ph, P_WF_2PH)
+        area = 2.0 * np.pi * grid_2ph.h * grid_2ph.r_faces[1]
+        assert r.Q_g[1] == pytest.approx(-Bg[1], rel=1e-14)
+        assert r.u_g[1] == pytest.approx(-Bg[1] / area, rel=1e-14)
+        assert r.m_g[1] == pytest.approx(rho_g[1] * r.Q_g[1], rel=1e-14)
+
+    def test_outer_inflow_gas_density_from_ext(self, state_2ph, grid_2ph,
+                                               pvt, bc_2ph):
+        """Приток через контур: B_g и ρ_g — при p_ext (DEBT-021).
+
+        Свободного газа на контуре нет (S_g,ext = 0), и в расчёте
+        G_free_gas[N] = 0 — здесь он задан вручную, как при S_g,ext > 0.
+        Ожидание: Q_g[N] = G_free_gas[N]·B_g(p_ext), m_g[N] = ρ_g(p_ext)·Q_g[N] ≠ 0.
+        Ловит: ρ_g = 0 на контуре (прежний compute_fluxes) — расхождение
+        двух гидро-путей, скрытое умножением на ноль.
+        """
+        N = grid_2ph.N
+        G_o, G_g, G_free_gas = self._zeros(N)
+        G_free_gas[N] = -1.0          # приток: к скважине, знак «−»
+        G_g[N] = -1.0
+        p_ext_a = np.array([bc_2ph.p_ext])
+        Bg_ext = pvt.Bg(p_ext_a)[0]
+        rho_g_ext = pvt.rho_g(p_ext_a)[0]
+        assert state_2ph.p[N - 1] < bc_2ph.p_ext          # действительно приток
+        # Контроль невырожденности: ρ_g контура ≠ ρ_g ячейки N-1
+        assert not np.isclose(rho_g_ext, pvt.rho_g(state_2ph.p)[N - 1], rtol=1e-6)
+        r = phase_fluxes_from_components(G_o, G_g, G_free_gas, state_2ph,
+                                         grid_2ph, pvt, bc_2ph, P_WF_2PH)
+        assert r.Q_g[N] == pytest.approx(-Bg_ext, rel=1e-14)
+        assert r.m_g[N] == pytest.approx(rho_g_ext * r.Q_g[N], rel=1e-14)
+        assert r.m_g[N] != 0.0
+
+    def test_pwf_and_substeps_passed_through(self, state_2ph, grid_2ph,
+                                             pvt, bc_2ph):
+        """p_wf, n_substeps и state уходят в HydroResult без изменений.
+
+        Адаптер передаёт фактическое p_wf прототипа и число подшагов
+        A-retry (BUG-010). Ловит: потерю или подмену этих полей.
+        """
+        N = grid_2ph.N
+        G_o, G_g, G_free_gas = self._zeros(N)
+        r = phase_fluxes_from_components(G_o, G_g, G_free_gas, state_2ph,
+                                         grid_2ph, pvt, bc_2ph, 7.5e6,
+                                         n_substeps=4)
+        assert r.p_wf == 7.5e6
+        assert r.n_substeps == 4
+        assert r.state is state_2ph
 
 
 def _get_Rs_up(state, bc, f, N):

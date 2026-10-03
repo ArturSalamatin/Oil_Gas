@@ -57,6 +57,8 @@ metadata:
 | `model` | str | `"standing"`, `"table"`, `"custom"` |
 | `rho_o_std` | float | Плотность нефтяного компонента при ст. условиях, кг/м³ |
 | `rho_g_std` | float | Плотность газового компонента при ст. условиях, кг/м³ |
+| `co_undersaturated` | float | Сжимаемость недонасыщенной нефти при p > pb, 1/Па; по умолчанию 0 (B_o выше pb не меняется). Только `"standing"` |
+| `mu_o_undersaturated` | str | Вязкость нефти при p > pb(Rs): `"none"` (по умолчанию) — только через Rs (Беггс–Робинсон); `"beal"` — линейный рост с p по Билу–Стендингу (FEAT-027, [[pvt-корреляции-стендинг]]). Только `"standing"`: при `"table"` значение `"beal"` → `ValueError` |
 
 Для `"standing"`: параметры корреляции (gamma_o, gamma_g, ...).
 Для `"table"`: пути к CSV-файлам с колонками p, Bo, Bg, mu_o, mu_g, Rs_eq.

@@ -146,7 +146,8 @@ class RadialBlackOilModel:
     def gas_properties(self,state): return self.pvt.bg(state.pressure_bar),self.pvt.mu_g(state.pressure_bar)
     def component_inventories(self,state):
         p,sg=state.pressure_bar,state.sg; so=1.0-sg
-        bo,_=self.oil_properties(state); bg,_=self.gas_properties(state)
+        # DEBT-036: Bo and Bg only; oil_properties/gas_properties would evaluate mu_o, mu_g as well
+        bo=self.pvt.bo(p,state.rs_sm3_sm3); bg=self.pvt.bg(p)
         pv=self.rock.pore_volume_m3(self.grid.bulk_volumes_m3,p)
         return pv*so/bo, pv*(state.rs_sm3_sm3*so/bo+sg/bg)
     def _phase_mobilities_surface(self,p,rs,sg):

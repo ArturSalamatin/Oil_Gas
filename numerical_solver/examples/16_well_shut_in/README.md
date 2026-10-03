@@ -263,7 +263,7 @@ cd numerical_solver
 .venv\Scripts\python examples\16_well_shut_in\main.py
 ```
 
-Около 35 с (расчёт — 24 с). Результаты — в `output/`.
+Около 35 с (расчёт — около 25 с). Результаты — в `output/`.
 
 ## Дальше
 

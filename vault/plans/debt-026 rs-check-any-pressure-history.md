@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-026
 github: 56
 branch: refactor/debt-026/rs-check-any-pressure-history
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   round: 2

@@ -13,9 +13,11 @@ BUG-004 прожил незамеченным: скрипт energy_balance.py с
 """
 
 import copy
+import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 # Прототип radial_blackoil подключает tests/conftest.py. Здесь нужен только
@@ -151,6 +153,83 @@ def test_balance_independent_of_history_structure(example):
     # история давала на два-три порядка хуже.
     assert abs(sparse["rel_residual"][-1]) < TOL_RESIDUAL
     assert abs(dense["rel_residual"][-1]) < TOL_RESIDUAL
+
+
+# ──────────────────────────────────────────────────────────────
+# FEAT-018: ступенчатое расписание совпадает с равномерным
+# ──────────────────────────────────────────────────────────────
+
+# Шаг интегрирования теста делит все интервалы обоих расписаний (300 с
+# и 3600 с), поэтому оба делают одни и те же 72 подшага по 300 с.
+# С шагом конфигов 03/04 (3600 с) так не вышло бы: интервал записи 300 с
+# сам измельчил бы интегрирование на старте
+# (dt_actual = dt_hist / ceil(dt_hist / dt_integration) <= dt_hist),
+# и тест сравнивал бы две разные схемы. Замер при планировании: при 3600 с
+# та же пара расписаний на примере 03 расходится по T до 0.040 К.
+_DT_INT_SCHEDULE = 300.0
+
+
+def _run_schedule(example: str, tmp_path: Path, name: str, blocks: list[dict]):
+    """Прогон конфига примера с подменённой историей (6 ч, N = 25).
+
+    История записывается в JSON и проходит через load_config — проверяется
+    вся цепочка: краткая форма → разворачивание → расчёт.
+    """
+    src = _EXAMPLES / example / "config.json"
+    raw = json.loads(src.read_text(encoding="utf-8"))
+    # Управление скважиной — из первого интервала примера (у 03 и 04
+    # забойное давление постоянно на всей истории), время — из блоков теста.
+    control = {k: v for k, v in raw["time"]["history"][0].items() if k != "dt"}
+    raw["time"]["history"] = [{**block, **control} for block in blocks]
+    raw["time"]["dt_integration"] = _DT_INT_SCHEDULE
+    path = tmp_path / f"{name}.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    config = load_config(path)
+    # Таблицы PVT и ОФП (пример 04) фабрика ищет относительно конфига,
+    # а JSON лежит во временном каталоге — возвращаем каталог примера.
+    config.config_dir = src.parent
+    config.grid.N = 25
+    config.output.log_level = "WARNING"
+    simulator, initial_state = SimulatorFactory.from_config(config)
+    return simulator.run(initial_state)
+
+
+@pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
+def test_stepped_schedule_matches_uniform(example, tmp_path):
+    """Ступенчатое расписание даёт то же решение, что равномерное (FEAT-018).
+
+    Одни и те же 6 ч записываются двумя способами:
+      равномерно — 72 записи по 300 с (форма dt + repeat);
+      ступенчато — 12 записей по 300 с в первый час, затем 5 по 3600 с
+                   (две формы duration + dt_out).
+    Последовательность подшагов одна и та же (см. _DT_INT_SCHEDULE), на
+    границе интервала решатель ничего не сбрасывает, поэтому на общих
+    моментах записи состояние, данные скважины и накопленный баланс
+    совпадают ПОБИТОВО. Допуска нет намеренно: расхождение хоть в одном
+    бите значит, что структура истории влияет на расчёт, — это дефект,
+    его надо искать, а не прятать допуском.
+    """
+    uniform = _run_schedule(example, tmp_path, "uniform",
+                            [{"dt": 300.0, "repeat": 72}])
+    stepped = _run_schedule(example, tmp_path, "stepped",
+                            [{"duration": 3600.0, "dt_out": 300.0},
+                             {"duration": 18000.0, "dt_out": 3600.0}])
+
+    # Состав истории: начальное состояние + по записи на интервал
+    assert uniform.n_saved == 1 + 72
+    assert stepped.n_saved == 1 + 12 + 5
+    # 72 сложения по 300.0 точны в двоичной арифметике
+    assert stepped.times[-1] == uniform.times[-1] == 21600.0
+
+    index = {t: k for k, t in enumerate(uniform.times)}
+    for j, t in enumerate(stepped.times):
+        k = index[t]        # KeyError — момент записи ступенчатой истории сдвинулся
+        for name in ("p", "Sg", "Rs", "T", "regime"):
+            assert np.array_equal(getattr(stepped.states[j], name),
+                                  getattr(uniform.states[k], name)), (t, name)
+        assert stepped.well_data[j] == uniform.well_data[k], t
+        assert stepped.balance[j] == uniform.balance[k], t
 
 
 # ──────────────────────────────────────────────────────────────

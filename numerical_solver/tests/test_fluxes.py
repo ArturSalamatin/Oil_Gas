@@ -74,7 +74,8 @@ def _compute_reference_face(pvt, rp, grid, state, bc, f):
 
     if f == 0:
         p_wf = bc.well.p_wf    # эталон: только PressureControl
-        dp = p_wf - p[0]
+        # Закрытая скважина (eq:bc_pwf_shutin): при p[0] <= p_wf потоков нет
+        dp = min(p_wf - p[0], 0.0)
         T_f = grid.trans_well
         up = 0
         mob_o_up = kro[up] / (mu_o[up] * Bo[up])
@@ -427,6 +428,54 @@ class TestTwoPhaseExtBoundary:
         """На контуре: G_g = Rs_ext*G_o (газовая фаза отсутствует)."""
         assert result_2ph.G_g[N_2PH] == pytest.approx(
             RS0 * result_2ph.G_o[N_2PH], rel=1e-12)
+
+
+class TestWellShutIn:
+    """Закрытие скважины при p_wf >= p[0] (eq:bc_pwf_shutin, DEBT-028).
+
+    Скважина только добывающая: если заданное p_wf не ниже давления в
+    ячейке 0, закачки нет — потоки через забой нулевые, а фактическое
+    давление на забое равно p[0] (problem_statement.tex, «Закрытие
+    скважины»). Так же поступает прототип (blackoil.py, _well_fluxes,
+    ветвь 'shut'). Профиль — state_2ph, p[0] = 8 МПа; уставка 10 МПа > p[0].
+    """
+
+    @pytest.fixture
+    def shut(self, state_2ph, grid_2ph, pvt, relperm):
+        bc_shut = BoundaryConditions(
+            well=PressureControl(10e6), p_ext=P_EXT,
+            T_ext=T0, Rs_ext=RS0, Sg_ext=0.0)
+        return compute_fluxes(state_2ph, grid_2ph, pvt, relperm, bc_shut)
+
+    @pytest.mark.parametrize("field", TestTwoPhaseAllFields.FIELDS)
+    def test_well_face_zero(self, shut, field):
+        """Все 11 полей на грани 0 — нули.
+
+        Ловит: закачку через забой (до DEBT-028 G_o[0] > 0 при p_wf > p[0]).
+        """
+        assert getattr(shut, field)[0] == 0.0
+
+    def test_pwf_equals_p0(self, shut, state_2ph):
+        """Фактическое p_wf = p[0] = 8 МПа, а не уставка 10 МПа.
+
+        Ловит: возврат уставки — энергия берёт давление на забойной грани
+        из HydroResult.p_wf (energy/tridiag.py), а не из управления.
+        """
+        assert shut.p_wf == state_2ph.p[0]
+
+    def test_other_faces_unchanged(self, shut, result_2ph):
+        """Грани 1..N побитово те же, что при добыче (p_wf = 6 МПа).
+
+        Условие на забое входит только в поток грани 0. Ловит: закрытие,
+        задевающее другие грани.
+        """
+        for field in TestTwoPhaseAllFields.FIELDS:
+            np.testing.assert_array_equal(getattr(shut, field)[1:],
+                                          getattr(result_2ph, field)[1:])
+
+    def test_producing_pwf_is_setpoint(self, result_2ph):
+        """При добыче (p_wf = 6 МПа < p[0]) фактическое p_wf = уставке."""
+        assert result_2ph.p_wf == P_WF_2PH
 
 
 def _get_Rs_up(state, bc, f, N):

@@ -104,8 +104,15 @@ def _create_pvt(config: SimulationConfig):
             mu_JT_oil_val=tc.mu_JT_oil,
             mu_JT_gas_val=tc.mu_JT_gas,
             L_degas_val=tc.L_degas,
+            mu_o_undersaturated=pc.mu_o_undersaturated,
         )
     elif pc.model == "table":
+        # У таблицы недонасыщенные ветви μ_o заданы самой таблицей (FEAT-027):
+        # корреляция Била к ней неприменима, молча игнорировать опцию нельзя.
+        if pc.mu_o_undersaturated != "none":
+            raise ValueError(
+                f"mu_o_undersaturated = {pc.mu_o_undersaturated!r} — только для "
+                f"model = 'standing'; у табличного PVT вязкость выше p_b задаёт таблица.")
         # CSV → BlackOilPVT (прототип) → PrototypePVTAdapter → TableFullPVT
         oil_rows = _read_oil_pvt_csv(config.config_dir / pc.oil_pvt_file)
         gas_rows = _read_gas_pvt_csv(config.config_dir / pc.gas_pvt_file)

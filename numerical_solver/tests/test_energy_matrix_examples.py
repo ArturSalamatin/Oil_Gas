@@ -74,7 +74,7 @@ ALL_EXAMPLES = [
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
     "19_rs150_cooling",
-    "20_rs500_cooling",
+    "20_rs300_cooling",
     "21_rs100_cooling",
 ]
 

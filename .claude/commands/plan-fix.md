@@ -25,6 +25,17 @@ cd numerical_solver
 
 ⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
 
+**Правка прототипа** (`numerical_solver/HydroSolverPrototype/Prototype_1.0.3/` — `radial_blackoil/`, `run_prototype.py`): тесты `numerical_solver` её не ловят — у прототипа свои тесты и своя регрессия против эталона `regression/golden/`, сверенного с CMG IMEX (DEBT-029: правки BUG-014/016/018 месяц проверялись только на примерах GPN, расхождение с эталоном нашлось позже). Команды — из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`:
+```powershell
+..\..\.venv\Scripts\python -m pytest tests -q                  # тесты прототипа, 80 шт., ~45 с
+..\..\.venv\Scripts\python regression\run_regression.py --quick # регрессия T00–T11 без T05, ~8 мин
+..\..\.venv\Scripts\python regression\run_regression.py         # полная, с T05, ~45 мин
+```
+- Сравнение с эталоном — почти побитовое (abs 2e-7 / rel 2e-10): любая смена последовательности шагов по времени даёт FAIL. Если фикс задуман как «побитно там, где исходный алгоритм сходится», регрессия это и проверяет.
+- FAIL — не повод переснимать эталон: разобрать расхождение (с какого шага, как затухает), сверить с IMEX метриками `regression/evidence/FINAL_REGRESSION_METRICS_20260825a.json` на приёмочных отметках 1–30 сут (как в DEBT-029), решение о пересъёме — за пользователем; пересъём и правка — запись в `CHANGELOG_1.0.3.md` (раздел «Local changes — GPN project»).
+- Перед полной регрессией зафиксировать HEAD: каждый кейс — отдельный процесс, импортирует код заново; влитая посреди прогона ветка с правкой прототипа даёт смешанный прогон.
+- Выходы — `OUTPUT/REGRESSION_<время>/` (игнорируется git), удалить после разбора.
+
 По умолчанию новые задачи относятся к `numerical_solver/`. Если задача явно про метод моментов — использовать вторую строку таблицы.
 
 ---
@@ -126,6 +137,7 @@ ls vault/plans/<id-lowercase>*
 - [ ] **Связь с другими задачами:** конфликт с BUG/DEBT/FEAT/VAL?
 - [ ] **Import-цепочки:** не ломает ли фикс import-ы в других модулях?
 - [ ] **Соответствие формулам:** код после фикса соответствует `moments_method.tex`?
+- [ ] **Прототип:** меняет ли фикс `HydroSolverPrototype/`? → тесты прототипа и его регрессия против эталона в плане (шапка, «Правка прототипа»); ожидаемый исход регрессии (побитно / какие кейсы и почему разойдутся) — записать заранее
 
 ### 2.7. Обнаружение новых проблем
 
@@ -170,6 +182,7 @@ ls vault/plans/<id-lowercase>*
 **Проверка после шага:**
 - Тест: `.venv/Scripts/python -m pytest tests/<file> -k "<name>" -v`
 - Регресс: быстрый | полный — <почему полный, если полный>
+- Регресс прототипа (если шаг меняет `HydroSolverPrototype/`): тесты прототипа + `run_regression.py --quick`; ожидание — <побитно | список кейсов>
 
 **Подводные камни:** <ссылки на 2.6>
 **Зависимости:** Требует: шаг M. Блокирует: шаг K.
@@ -194,6 +207,7 @@ ls vault/plans/<id-lowercase>*
 - [ ] Тест-воспроизводитель зелёный
 - [ ] Все новые тесты зелёные
 - [ ] Все существующие тесты зелёные
+- [ ] Если менялся прототип: тесты прототипа зелёные; полная регрессия `run_regression.py` — PASS, либо расхождения разобраны (сверка с IMEX), эталон переснят по решению пользователя и записан в `CHANGELOG_1.0.3.md`
 - [ ] Визуальная верификация (если применимо)
 - [ ] Workaround-ы удалены
 - [ ] Vault обновлён
@@ -208,7 +222,7 @@ ls vault/plans/<id-lowercase>*
 2. Прочитай связанные vault-заметки (ссылки ниже)
 3. Создай ветку: `git checkout -b <branch>`
 4. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
-5. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень)
+5. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень). Если план меняет прототип — ещё до правки, из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`: `..\..\.venv\Scripts\python -m pytest tests -q` и `..\..\.venv\Scripts\python regression\run_regression.py --quick` (ожидается 80 passed и 11/11 PASS)
 6. Воспроизведи баг: `.venv/Scripts/python -m pytest tests/<file> -k "<test>" -v`
 7. Начни с шага 1. После каждого шага: тест шага и регресс по полю «Регресс»; полный прогон — в конце (`/implement` §3.1)
 ```

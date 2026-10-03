@@ -45,7 +45,7 @@ ALL_EXAMPLES = [
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
     "19_rs150_cooling",
-    "20_rs500_cooling",
+    "20_rs300_cooling",
     "21_rs100_cooling",
 ]
 
@@ -2038,7 +2038,7 @@ STANDING_COREY_COOLING = {
     "19_rs150_cooling": dict(dT_lo=-4.2, dT_hi=-3.0, T_well=396.369,
                              Sg_w=0.4432, L=202000.0, k=1e-14),
     # замер ΔT: -7.268 ... -8.600 К
-    "20_rs500_cooling": dict(dT_lo=-9.5, dT_hi=-6.5, T_well=371.400,
+    "20_rs300_cooling": dict(dT_lo=-9.5, dT_hi=-6.5, T_well=371.400,
                              Sg_w=0.4951, L=26000.0, k=3e-14),
     # замер ΔT: -2.368 ... -2.479 К
     "21_rs100_cooling": dict(dT_lo=-3.0, dT_hi=-2.0, T_well=397.521,

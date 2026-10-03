@@ -222,7 +222,7 @@ BUG-018); поэтому $S_{or} = 0.05$. При $S_{or} = 0.2$ первый ш�
 
 ```powershell
 cd numerical_solver
-.venv\Scripts\python examples\20_rs500_cooling\main.py
+.venv\Scripts\python examples\20_rs300_cooling\main.py
 ```
 
 Расчёт — около 6 с, `main.py` целиком — около 13 с.

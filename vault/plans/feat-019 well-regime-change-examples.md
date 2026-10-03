@@ -7,7 +7,7 @@ issue: FEAT-019
 github: 58
 branch: feat/feat-019/well-regime-change-examples
 model_level: null
-status: готов к реализации
+status: в процессе
 audit:
   date: 2026-10-03
   round: 1

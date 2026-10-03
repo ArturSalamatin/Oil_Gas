@@ -7,7 +7,7 @@ issue: FEAT-027
 github: 54
 branch: feat/feat-027/undersaturated-oil-viscosity
 model_level: — (PVT-модель, ядро решателя)
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-03
   found: 8

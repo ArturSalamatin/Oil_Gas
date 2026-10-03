@@ -828,7 +828,7 @@ class TestPvtPlot:
     """
 
     def test_plot_pvt_all_examples(self, results, tmp_path):
-        """Модуль отрабатывает на всех десяти примерах и пишет непустой PNG.
+        """Модуль отрабатывает на всех примерах и пишет непустой PNG.
 
         Покрывает обе PVT-модели (standing: 01, 02, 03, 05; table: 04,
         06-10) и оба режима (однофазный Rs0 = 0: 01, 02; двухфазный —
@@ -839,7 +839,7 @@ class TestPvtPlot:
         for name in ALL_EXAMPLES:
             r = results[name]
             out = pvt_plot.plot_pvt(r["config"], r["history"],
-                                    tmp_path / name, name, grid=r["grid"])
+                                    tmp_path / name, name)
             assert out.is_file(), f"{name}: pvt.png не создан"
             assert out.stat().st_size > 0, f"{name}: pvt.png пустой"
 
@@ -881,7 +881,7 @@ class TestPvtPlot:
                     f"{name}: у аналитического PVT узлов быть не может")
 
     def test_physical_branch_matches_rs_analytics(self, results):
-        """Физическая кривая совпадает с rs_analytics.rs_expected побитово.
+        """Физическое R_s сводки report_pvt совпадает с rs_analytics.rs_expected побитово.
 
         Обе стороны считают min(Rs_eq(p), Rs0). Расхождение двух
         реализаций одной формулы — тот самый класс дефектов, ради
@@ -988,7 +988,7 @@ class TestPvtPlot:
             assert rep["pb"] < 0, f"{name}: ожидалось p_b < 0"
             assert rep["two_phase"] is False
             out = pvt_plot.plot_pvt(r["config"], r["history"],
-                                    tmp_path / name, name, grid=r["grid"])
+                                    tmp_path / name, name)
             assert out.is_file()
 
     def test_table_nodes_split_by_phase(self, results):
@@ -1008,80 +1008,27 @@ class TestPvtPlot:
         assert "p_all" not in nodes, (
             "объединение делает _nodes_in_range, а не сам сборщик узлов")
 
-    def test_mu_o_spatial_localization(self, results):
-        """Пространственная панель даёт верный радиус локализации вязкости.
+    def test_p_branch_follows_rs0_row(self):
+        """Узлы ветви R_s,0 — только если R_s,0 совпадает со строкой таблицы.
 
-        Величина, ради которой панель и вводится: у примера 03 ВСЯ
-        вариация вязкости укладывается в r < 0.20 м при радиусе
-        дренирования 50 м, то есть в 15 ячеек из 150. Панель mu_o(p) этого
-        не показывает — она отвечает на другой вопрос.
-
-        Заодно проверяется источник вязкости: mu_o берётся из состояния
-        (p_j, Rs_j). Пересчёт по Rs_eq(p) вместо st.Rs дал бы другую
-        кривую в зоне разгазирования.
+        Таблица 04: строка 30 задана при 15 и 30 МПа. При R_s,0 = 20 (между
+        строками 0 и 30) ветвь интерполирована прототипом по dp и собственных
+        узлов не имеет — p_branch пуст. Сводку это не меняет: p_oil прежний.
         """
-        # Ожидания измерены прогоном; допуск — соседняя ячейка
-        # логарифмической сетки. Индекс ячейки зависит от N конфига
-        # примера (у 03 N = 150), радиус r90 от сетки не зависит.
-        expected = {
-            "03_standing_corey": (0.20, 15, 1.09),
-            "04_table_table": (2.11, 24, 1.68),
-            "10_deep_degassing": (2.70, 26, 1.88),
-        }
-        for name, (r90_ref, k_ref, ratio_ref) in expected.items():
-            r = results[name]
-            pvt = _pvt_of_config(r["config"])
-            st = r["history"].states[-1]
-            rr = r["grid"].r_centers
-            mu = pvt.mu_o(st.p, st.Rs)
-
-            var = np.abs(np.diff(mu))
-            tot = float(var.sum())
-            assert tot > 0, f"{name}: вязкость обязана меняться"
-            k90 = min(int(np.searchsorted(np.cumsum(var) / tot, 0.9)) + 1,
-                      len(rr) - 1)
-            assert abs(k90 - k_ref) <= 1, (
-                f"{name}: 90 % вариации накоплено к ячейке {k90}, "
-                f"ожидалось ~{k_ref}")
-            assert rr[k90] == pytest.approx(r90_ref, rel=0.15), (
-                f"{name}: радиус 90 % вариации {rr[k90]:.2f} м, "
-                f"ожидалось ~{r90_ref} м")
-            assert mu.max() / mu.min() == pytest.approx(ratio_ref, rel=0.05)
-
-    def test_mu_o_spatial_single_phase(self, results, tmp_path):
-        """На однофазных примерах панель не падает и не делит на ноль.
-
-        Измерено: mu_o ≡ 2.4770e-03 Па·с во всех 50 ячейках, полная
-        вариация ровно 0.000e+00, ячеек с p < p_b нет (p_b < 0). Обе
-        защиты в _plot_mu_o_spatial (if tot > 0, if below.any()) написаны
-        условиями именно поэтому: на двухфазных примерах эта ветка
-        никогда не исполняется и осталась бы непроверенной.
-        """
-        pvt_plot = _pvt_module()
-        for name in SINGLE_PHASE:
-            r = results[name]
-            pvt = _pvt_of_config(r["config"])
-            st = r["history"].states[-1]
-            mu = pvt.mu_o(st.p, st.Rs)
-            assert float(mu.max() - mu.min()) == 0.0, (
-                f"{name}: у однофазного примера вязкость обязана быть "
-                f"постоянной")
-            out = pvt_plot.plot_pvt(r["config"], r["history"],
-                                    tmp_path / name, name, grid=r["grid"])
-            assert out.is_file()
+        cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
+        pvt = _pvt_of_config(cfg)
+        nodes = _pvt_module()._pvt_table_nodes(pvt, 30.0)
+        assert np.allclose(nodes["p_branch"], [15e6, 30e6])
+        assert np.allclose(nodes["p_oil"], [5e6, 15e6, 30e6])
+        assert _pvt_module()._pvt_table_nodes(pvt, 20.0)["p_branch"].size == 0
 
     def test_formatter_delegates_drawing_to_core(self):
-        """Оформитель не дублирует построение, а вызывает ядро.
+        """Оформитель не рисует сам — всё построение в ядре.
 
         Стоит построению расползтись обратно в examples/ — и ядерная
         функция перестанет отражать то, что видит пользователь пакета,
-        а расслоение слоёв (FEAT-017, §4.0) потеряет смысл. Единственное,
-        что оформитель рисует сам, — панель mu_o(r): ей нужны history
-        и grid, которых ядро по контракту не знает.
-
-        Порог различим надёжно: у relperm_plot.py, который рисует сам,
-        таких вызовов 10; у rs_analytics.py, который лишь дорисовывает
-        оверлей, — 1.
+        а расслоение слоёв (FEAT-017, §4.0) потеряет смысл. Панель mu_o(r),
+        единственное, что оформитель рисовал сам, снята FEAT-028.
         """
         import ast
 
@@ -1089,11 +1036,6 @@ class TestPvtPlot:
         tree = ast.parse(src.read_text(encoding="utf-8"))
 
         drawing = {"plot", "semilogx", "loglog", "scatter"}
-        spatial = next(n for n in ast.walk(tree)
-                       if isinstance(n, ast.FunctionDef)
-                       and n.name == "_plot_mu_o_spatial")
-        inside = {id(n) for n in ast.walk(spatial)}
-
         stray = []
         calls_core = False
         for node in ast.walk(tree):
@@ -1102,13 +1044,35 @@ class TestPvtPlot:
             func = node.func
             if isinstance(func, ast.Name) and func.id == "plot_pvt_properties":
                 calls_core = True
-            if (isinstance(func, ast.Attribute) and func.attr in drawing
-                    and id(node) not in inside):
+            if isinstance(func, ast.Attribute) and func.attr in drawing:
                 stray.append(func.attr)
 
         assert calls_core, "оформитель не вызывает ядерную plot_pvt_properties"
-        assert not stray, (
-            f"построение продублировано вне _plot_mu_o_spatial: {stray}")
+        assert not stray, f"оформитель рисует сам: {stray}"
+
+    def test_plot_pvt_layout_2x3(self, monkeypatch, tmp_path):
+        """pvt.png — сетка 2x3 без панели mu_o(r); у plot_pvt нет параметра grid.
+
+        Панель вязкости в ячейках снята во всех примерах (FEAT-028): она про
+        решение, а не про модель PVT. Фигура — 6 панелей и правая ось
+        плотности газа (twinx), всего 7 осей. Рисунок перехватывается до
+        записи, history — заглушка с одним состоянием: тест без расчёта.
+        """
+        import inspect
+        from types import SimpleNamespace
+
+        pvt_plot = _pvt_module()
+        assert "grid" not in inspect.signature(pvt_plot.plot_pvt).parameters
+        assert not hasattr(pvt_plot, "_plot_mu_o_spatial")
+
+        saved = {}
+        monkeypatch.setattr(pvt_plot, "save_figure",
+                            lambda fig, out, dpi: saved.setdefault("fig", fig))
+        cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
+        history = SimpleNamespace(
+            states=[SimpleNamespace(p=np.linspace(8e6, 20e6, 5))])
+        pvt_plot.plot_pvt(cfg, history, tmp_path, "03")
+        assert len(saved["fig"].axes) == 7
 
     def test_module_signatures_follow_convention(self, results):
         """Сигнатуры следуют конвенции общих модулей, а не выбросу.

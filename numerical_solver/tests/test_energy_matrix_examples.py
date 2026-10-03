@@ -52,7 +52,7 @@ from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 17 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 20 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -73,6 +73,9 @@ ALL_EXAMPLES = [
     "13b_pwf_alternating",
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
+    "19_rs150_cooling",
+    "20_rs500_cooling",
+    "21_rs100_cooling",
 ]
 
 # Порог сверки. Шум разного порядка суммирования — 2.4e-15 на типичных
@@ -81,6 +84,9 @@ ALL_EXAMPLES = [
 # порядка 1e3 — расхождение 3.4e-13 (абсолютное 1.1e-13). Отсюда 1e-12 с
 # запасом. Реальные дефекты порог по-прежнему ловит: самая слабая инъекция
 # ошибки в обратном ходе даёт 7.9e-09.
+# Правая часть d сверяется не поэлементным rtol, а с допуском
+# RTOL·(|d_ref| + Σ|слагаемых|) по ячейке (_ref_d_scale): у забоя d меняет
+# знак (FEAT-025: пример 19 — d_9 = 7.1e-3, поэлементно 7.96e-12).
 RTOL = 1e-12
 
 
@@ -584,12 +590,36 @@ def _ref_assemble(grid, N, dt, T_old, T_ext, rho_cp_eff,
     return a, b, c, d
 
 
-def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
+def _ref_d_scale(grid, N, dt, T_old, T_ext, rho_cp_eff, Q_T_ext, Phi_minus,
+                 J_jt, Q_ad, Q_deg):
+    """Масштаб правой части d: сумма модулей её слагаемых по ячейке. eq:tridiag_d.
+
+    d_j = cap_j·T_j^n + J_j + V_j·(Q_ad,j + Q_deg,j) — слагаемые разного знака:
+    накопление > 0, у забоя J_j и V_j·Q_deg,j крупные и отрицательные
+    (охлаждение). При суточном шаге накопление мало, и d меняет знак по r:
+    пример 20, 10-е сутки, j = 67: +2105.6 - 1549.2 - 558.3 = -1.83 Вт.
+    Ошибка округления d_j ~ eps·Σ|слагаемых|, а не eps·|d_j|, поэтому
+    допуск сверки d берётся от этой суммы (FEAT-025, аудит 2026-10-02).
+    """
+    V = grid.volumes
+    cap = V * rho_cp_eff / dt
+    scale = np.abs(cap * T_old) + np.abs(J_jt) + V * (np.abs(Q_ad) + np.abs(Q_deg))
+    # Контур (Дирихле): T_ext входит в d_{N-1} кондуктивным и конвективным
+    # слагаемыми (при N = 1 это та же ячейка 0, как в _ref_assemble)
+    scale[N - 1] += abs(Q_T_ext * T_ext) + abs(Phi_minus[N] * T_ext)
+    return scale
+
+
+def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
+                    with_scale=False):
     """Собрать эталонные a, b, c, d для одного вызова solve.
 
     dt — фактический шаг вызова, НЕ шаг расписания: при A-retry Simulator
     дробит интервал и вызывает solve с dt_sub = dt/n_sub (BUG-010), а
     cap = V·(ρcp)/dt зависит именно от dt_sub.
+
+    with_scale=True — пятым элементом масштаб слагаемых d (_ref_d_scale),
+    для допуска сверки d.
     """
     N = grid.N
     st = hydro_result.state
@@ -625,9 +655,16 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc):
                            st.Rs, state_prev.Rs, props['Bo'],
                            hydro_result.G_o, props['L'], dt, N, bc.Rs_ext)
 
-    return _ref_assemble(grid, N, dt, state_prev.T, bc.T_ext,
+    abcd = _ref_assemble(grid, N, dt, state_prev.T, bc.T_ext,
                          props['rho_cp_eff'], Q_T_internal, Q_T_ext,
                          Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
+    if not with_scale:
+        # Прежний контракт: пробы FEAT-023 и FEAT-024 распаковывают 4 массива
+        return abcd
+    d_scale = _ref_d_scale(grid, N, dt, state_prev.T, bc.T_ext,
+                           props['rho_cp_eff'], Q_T_ext, Phi_minus,
+                           J_jt, Q_ad, Q_deg)
+    return (*abcd, d_scale)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -639,7 +676,8 @@ def test_matrix_matches_reference(example):
     """Коэффициенты СЛАУ совпадают с эталоном на каждом вызове solve.
 
     Условия: штатный конфиг примера без урезания сетки и расписания.
-    Ожидание: a, b, c, d совпадают с эталоном при rtol=1e-12; границы
+    Ожидание: a, b, c совпадают с эталоном при rtol=1e-12, d — с допуском
+    от слагаемых ячейки (см. RTOL); границы
     a[0] и c[N-1] равны нулю точно.
 
     Сверка идёт НА ЛЕТУ, внутри пробы: накапливать нельзя — у 04a 1375
@@ -653,9 +691,9 @@ def test_matrix_matches_reference(example):
     n_calls = [0]
 
     def probe(a, b, c, d, dt, T_old, hydro_result, state_prev, bc):
-        ref_a, ref_b, ref_c, ref_d = build_reference(
+        ref_a, ref_b, ref_c, ref_d, d_scale = build_reference(
             simulator._grid, simulator._pvt, cfg.rock,
-            hydro_result, state_prev, dt, bc)
+            hydro_result, state_prev, dt, bc, with_scale=True)
 
         where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"
         np.testing.assert_allclose(a, ref_a, rtol=RTOL, atol=0.0,
@@ -664,8 +702,14 @@ def test_matrix_matches_reference(example):
                                    err_msg=f"{where}, главная диагональ b")
         np.testing.assert_allclose(c, ref_c, rtol=RTOL, atol=0.0,
                                    err_msg=f"{where}, наддиагональ c")
-        np.testing.assert_allclose(d, ref_d, rtol=RTOL, atol=0.0,
-                                   err_msg=f"{where}, правая часть d")
+        # d_j — сумма слагаемых разного знака и у забоя меняет знак: шум
+        # округления ~ eps·Σ|слагаемых|, поэтому допуск — от этой суммы
+        # (_ref_d_scale). Поэлементный rtol у нуля мерил бы шум сокращения.
+        d_err = np.abs(d - ref_d)
+        d_lim = RTOL * (np.abs(ref_d) + d_scale)
+        assert np.all(d_err <= d_lim), (
+            f"{where}, правая часть d: max |d - d_ref| / допуск = "
+            f"{np.max(d_err / d_lim):.2e} в ячейке {int(np.argmax(d_err / d_lim))}")
 
         # Границы — структура схемы, а не арифметика: строгое равенство.
         # a[0] = 0: на забое Нейман, кондуктивный поток через левую грань

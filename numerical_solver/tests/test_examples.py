@@ -43,6 +43,9 @@ ALL_EXAMPLES = [
     "13b_pwf_alternating",
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
+    "19_rs150_cooling",
+    "20_rs500_cooling",
+    "21_rs100_cooling",
 ]
 
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
@@ -1988,4 +1991,164 @@ class TestPwfAlternating:
     def test_main_disables_steady_state(self):
         """main.py 13b отключает стационарную аналитику (решение 2026-09-29)."""
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "steady_state=False" in text
+
+
+# ═══════════════════════════════════════════════════════════
+# R. Сценарии 19–21: охлаждение забоя на корреляциях (FEAT-025)
+# ═══════════════════════════════════════════════════════════
+
+# Замер 2026-10-01 (vault/issues/feat-025/probes/plan_numbers.py; N = 350,
+# 30 интервалов по 1 сут). dT_lo/dT_hi — границы ΔT(r_w) на записях 1..30
+# с запасом ~0.4-0.9 К к замеру; T_well, Sg_w — на 30 сут; L, k — решения
+# пользователя (L по Клапейрону, k = 10 / 30 / 10 мД).
+STANDING_COREY_COOLING = {
+    # замер ΔT: -3.466 ... -3.631 К
+    "19_rs150_cooling": dict(dT_lo=-4.2, dT_hi=-3.0, T_well=396.369,
+                             Sg_w=0.4432, L=202000.0, k=1e-14),
+    # замер ΔT: -7.268 ... -8.600 К
+    "20_rs500_cooling": dict(dT_lo=-9.5, dT_hi=-6.5, T_well=371.400,
+                             Sg_w=0.4951, L=26000.0, k=3e-14),
+    # замер ΔT: -2.368 ... -2.479 К
+    "21_rs100_cooling": dict(dT_lo=-3.0, dT_hi=-2.0, T_well=397.521,
+                             Sg_w=0.4083, L=227000.0, k=1e-14),
+}
+
+
+class TestStandingCoreyCooling:
+    """Сценарии 19–21: PVT Стендинга, ОФП Кори, R_s0 = 150 / 500 / 100, 30 сут.
+
+    Нефть добывается при p_wf глубоко ниже p_b (3 / 5 / 3 МПа при
+    p_b = 24.18 / 46.38 / 17.22 МПа). Забой охлаждается: теплота выделения
+    газа (19, 21) и расширение газа (20) сильнее нагрева нефти при
+    дросселировании (mu_JT,o < 0). Тепловые константы согласованы с флюидом
+    (mu_JT,g и c_p,g — уравнение состояния, L — Клапейрон). Газ неподвижен
+    до S_g = S_gc = 0.1 и копится в пласте: GOR ниже R_s0 и растёт.
+    """
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_wellbore_cools(self, results, name):
+        """На каждой записи 1..30 забой холоднее T0 в пределах полосы замера.
+
+        Смысл примеров — охлаждение забоя. Оценка по изоэнтальпийному
+        балансу (модель М.3, GOR = R_s0): -4.11 / -10.31 / -2.73 К; расчёт
+        на 30 сут — 88 / 83 / 91 % оценки (газ ещё копится в пласте).
+        Ловит: смену знака mu_JT, потерю скрытой теплоты, регрессию схемы
+        энергии на суточном шаге, смену тепловых констант конфига.
+        """
+        e = STANDING_COREY_COOLING[name]
+        r = results[name]
+        T0 = r["config"].initial_conditions.T0
+        dT = np.array([st.T[0] - T0 for st in r["history"].states[1:]])
+        assert np.all(dT < e["dT_hi"]) and np.all(dT > e["dT_lo"]), \
+            f"{name}: ΔT(r_w) = {dT}"
+        assert r["T_well"] == pytest.approx(e["T_well"], abs=2e-3)
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_gor_below_Rs0_and_rising(self, results, name):
+        """GOR ниже R_s0 и строго растёт: свободный газ копится в пласте.
+
+        Замер: 121.41 -> 128.70 (19), 375.47 -> 449.50 (20), 81.96 -> 85.78
+        (21); наименьший суточный прирост 0.132 / 0.556 / 0.060. q_o и q_g
+        в тест не заложены: в 20 q_o растёт с 1-х на 2-е сутки, q_g
+        немонотонен в 19 и 20.
+        Ловит: потерю порога подвижности (газ уходит в скважину сразу),
+        скачки GOR от излома k_rg.
+        """
+        r = results[name]
+        # Запись 0 — начальное состояние с нулевыми дебитами, пропускаем
+        gor = r["q_g"][1:] / r["q_o"][1:]
+        assert np.all(np.diff(gor) > 0.0), f"{name}: GOR не растёт монотонно: {gor}"
+        assert np.all(gor < r["Rs0"]), f"{name}: GOR >= R_s0: {gor}"
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_well_saturation_matches_relperm(self, results, name):
+        """S_g у забоя на 30 сут — её задаёт форма Кори над порогом S_gc.
+
+        Тождество Дарси на забойной грани: k_rg/k_ro(S_g) = (GOR - R_s)·
+        mu_g·B_g/(mu_o·B_o); корень определяется k_rg = 0.8·S*^3,
+        S* = (S_g - 0.1)/(1 - 0.05 - 0.1). Замер 2026-10-01:
+        0.4432 / 0.4951 / 0.4083.
+        Ловит: смену S_gc, S_or или показателей Кори в конфиге.
+        """
+        Sg_w = float(results[name]["Sg"][0])
+        assert Sg_w == pytest.approx(STANDING_COREY_COOLING[name]["Sg_w"], abs=1e-3), \
+            f"{name}: S_g(r_w) = {Sg_w:.4f}"
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_boundary_cell_stays_single_phase(self, results, name):
+        """Контурная ячейка однофазна на всей истории.
+
+        Замер 2026-10-01: min_t (p_{N-1} - p_b) = +499.3 / +470.0 / +465.5 кПа.
+        Ловит: p0 вплотную к p_b (тогда разгазирование доходит до контура).
+        """
+        r = results[name]
+        for n, st in enumerate(r["history"].states):
+            assert st.Sg[-1] == 0.0, \
+                f"{name}, запись {n}: S_g[N-1] = {st.Sg[-1]:.3e}, контурная ячейка двухфазна"
+            assert abs(st.Rs[-1] - r["Rs0"]) < 1e-10
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_gas_active_cells_match_pressure(self, results, name):
+        """Ниже p_b газ есть всегда; выше p_b — только заметный, не шум.
+
+        Три проверки на каждой записи (та же логика, что у примера 14):
+        1) газ есть ровно в двухфазных ячейках (S_g > 0 <=> regime = 1);
+        2) p < p_b(R_s0) => ячейка двухфазна;
+        3) двухфазная ячейка при p >= p_b допустима только с S_g > 1e-8.
+        В 20 такие ячейки есть: давление у края двухфазной зоны растёт
+        вслед за падением дебита, выделившийся раньше газ поднимает
+        собственное давление насыщения ячейки. Замер 2026-10-01: наименьшая
+        S_g таких ячеек 8.44e-5; в 19 и 21 их нет.
+        Ловит: отсутствие газа ниже p_b, рассогласование regime и S_g.
+        """
+        SG_NOISE = 1e-8
+        r = results[name]
+        pvt = _pvt_of_config(r["config"])
+        pb = float(pvt.pb(np.array([r["Rs0"]]))[0])
+        for n, st in enumerate(r["history"].states):
+            below = st.p < pb
+            two_phase = st.regime == 1
+            assert np.array_equal(st.Sg > 0.0, two_phase), \
+                f"{name}, запись {n}: S_g > 0 не совпадает с regime = 1"
+            assert np.all(two_phase[below]), \
+                f"{name}, запись {n}: однофазная ячейка при p < p_b"
+            above = two_phase & ~below
+            assert np.all(st.Sg[above] > SG_NOISE), \
+                (f"{name}, запись {n}: двухфазная ячейка выше p_b с "
+                 f"S_g = {st.Sg[above].min():.3e} — шум округления")
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_config_follows_decisions(self, name):
+        """Конфиг — корреляции и решения пользователя 2026-10-01.
+
+        PVT standing и ОФП corey (без CSV); S_gc = 0.1 (газ подвижен после
+        0.1), S_or = 0.05 (обход BUG-018: при 0.2 первый шаг не сходится),
+        N = 350, 30 интервалов по 1 сут при постоянном p_wf, L по
+        Клапейрону, k = 10 / 30 / 10 мД, p0 выше p_b на 0.4-0.6 МПа.
+        Ловит: случайный возврат к табличным данным или к параметрам,
+        на которых первый шаг не сходится.
+        """
+        e = STANDING_COREY_COOLING[name]
+        cfg = load_config(EXAMPLES_DIR / name / "config.json")
+        assert cfg.pvt.model == "standing" and cfg.relperm.model == "corey"
+        assert cfg.relperm.S_gc == 0.1 and cfg.relperm.S_or == 0.05
+        assert cfg.grid.N == 350
+        hist = cfg.time.history
+        assert len(hist) == 30 and all(h.dt == 86400.0 for h in hist)
+        assert len({h.p_wf for h in hist}) == 1
+        assert cfg.thermal.L_degas == e["L"]
+        assert cfg.rock.permeability == e["k"]
+        pb = float(_pvt_of_config(cfg).pb(np.array([cfg.initial_conditions.Rs0]))[0])
+        assert 0.4e6 < cfg.initial_conditions.p0 - pb < 0.6e6
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_main_disables_steady_state(self, name):
+        """main.py отключает стационарную аналитику целиком.
+
+        steady_state=False (как у 14): за 30 сут GOR < R_s0, газ ещё копится
+        — сравнение с пределом t -> inf точность расчёта не характеризует.
+        Ловит: возврат стационарных наложений.
+        """
+        text = (EXAMPLES_DIR / name / "main.py").read_text(encoding="utf-8")
         assert "steady_state=False" in text

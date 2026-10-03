@@ -15,8 +15,13 @@
 
 Команды pytest — из соответствующего каталога:
 ```powershell
-cd numerical_solver ; .venv\Scripts\python -m pytest tests/ -v
+cd numerical_solver
+.venv\Scripts\python -m pytest tests/ -m "not slow" -q   # быстрый уровень, ~70 с
+.venv\Scripts\python -m pytest tests/ -q                 # полный прогон, ~10 мин
+.venv\Scripts\python -m pytest tests/ --collect-only -q  # только число тестов, ~3 с
 ```
+
+Уровни прогона (DEBT-032): метку `slow` несут тесты на фикстуре `results` из `tests/test_examples.py` (ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference` и тесты на сгущённой сетке. Полный прогон — один раз в конце реализации и на шагах, которые план помечает «Регресс: полный».
 
 ⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
 
@@ -225,12 +230,14 @@ ls vault/plans/<id-lowercase>*
 
 **Проверка после шага:**
 - Тест: `.venv/Scripts/python -m pytest tests/<file> -k "<name>" -v`
-- Регрессия: `.venv/Scripts/python -m pytest tests/ -v`
+- Регресс: быстрый | полный — <почему полный, если полный>
 
 **Подводные камни:** <ссылки на 2.5>
 **Зависимости:** Требует: шаг M. Блокирует: шаг K.
 **Оценка:** ~N строк, ~M минут
 ```
+
+Поле «Регресс» (DEBT-032): `быстрый` — `pytest tests/ -m "not slow" -q` (~70 с), по умолчанию. `полный` — `pytest tests/ -q` (~10 мин): только если ошибку шага ловят лишь тяжёлые тесты (метка `slow`) и искать её в конце дорого — шаг меняет сборку матрицы энергии (`test_matrix_matches_reference`), фикстуру `results` или `tests/conftest.py`. Ориентир — не больше одного-двух полных на план. Шаг, меняющий только документы, проверяется `--collect-only -q`. Итоговый полный прогон `/implement` делает сам (§3.1).
 
 ### 3.3. Тестовая стратегия
 
@@ -274,8 +281,8 @@ ls vault/plans/<id-lowercase>*
 3. Прочитай связанные vault-заметки (ссылки ниже)
 4. Создай ветку: `git checkout -b <branch>`
 5. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
-6. Прогони тесты (baseline): `.venv/Scripts/python -m pytest tests/ -v`
-7. Начни с шага 1. После каждого шага: pytest
+6. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень)
+7. Начни с шага 1. После каждого шага: тест шага и регресс по полю «Регресс»; полный прогон — в конце (`/implement` §3.1)
 ```
 
 ---

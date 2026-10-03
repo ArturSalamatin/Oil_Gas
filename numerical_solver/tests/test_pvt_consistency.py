@@ -133,3 +133,89 @@ class TestCompressibilityFunctions:
             assert p1 == pytest.approx(e1, abs=1e-9)
             assert p2 == pytest.approx(e2, abs=1e-9)
             assert c_min < 0.0
+
+
+# ═══════════════════════════════════════════════════════════
+# B. Предупреждение фабрики
+# ═══════════════════════════════════════════════════════════
+
+def _pvt_warnings(config, caplog):
+    """Собрать модель и вернуть предупреждения о несогласованной PVT."""
+    # Уровень журнала — из конфига (setup_logging в from_config); у
+    # замороженного конфига BUG-019 — ERROR, он скрыл бы предупреждения.
+    config.output.log_level = "INFO"
+    with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+        SimulatorFactory.from_config(config)
+    return [r.getMessage() for r in caplog.records
+            if r.levelno == logging.WARNING and r.getMessage().startswith(WARN_PREFIX)]
+
+
+def _table_config(tmp_path, oil=None, gas=None):
+    """configs/table_pvt с подменёнными таблицами; p_wf = 5 МПа — есть насыщенные состояния."""
+    for name in ("oil_pvt.csv", "gas_pvt.csv", "relperm.csv"):
+        shutil.copy(TABLE_DIR / name, tmp_path / name)
+    if oil is not None:
+        (tmp_path / "oil_pvt.csv").write_text(oil, encoding="utf-8")
+    if gas is not None:
+        (tmp_path / "gas_pvt.csv").write_text(gas, encoding="utf-8")
+    config = load_config(TABLE_DIR / "config.json")
+    config.config_dir = tmp_path
+    # Штатное p_wf = 15 МПа = p_b(30): насыщенных состояний нет, проверять нечего
+    for h in config.time.history:
+        h.p_wf = 5e6
+    return config
+
+
+CONSISTENT_CONFIGS = (sorted((SOLVER / "examples").glob("*/config.json"))
+                      + [SOLVER / "configs" / "baseline.json"])
+
+
+class TestFactoryWarning:
+
+    def test_bug019_config_warns(self, caplog):
+        # Воспроизводитель BUG-019: прежний пример 20 (R_s0 = 500) при
+        # k = 10 мД, 2 сут — на нём не сходятся вторые сутки. До исправления
+        # фабрика собирала модель молча; теперь — одно предупреждение о c_ot:
+        # от корня c_ot (тест A) до p_b(500) = 46.38 МПа.
+        msgs = _pvt_warnings(load_config(BUG019_CONFIG), caplog)
+        assert len(msgs) == 1
+        assert "c_ot" in msgs[0] and "от 34.55 до 46.38 МПа" in msgs[0]
+
+    def test_inconsistent_oil_table_warns(self, tmp_path, caplog):
+        # OIL_BAD: dB_o/dp = 0.35/1e7 = 3.5e-8 1/Па, dR_s/dp = 30/1e7 = 3e-6 1/Па,
+        # B_g линейна 0.020 → 0.008 на 5–15 МПа. c_ot < 0 там, где
+        # B_g < 3.5e-8/3e-6 = 0.011667, — выше 5 + 8.333e-3/1.2e-9 Па = 11.944 МПа
+        msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_BAD), caplog)
+        assert len(msgs) == 1
+        assert "c_ot" in msgs[0] and "от 11.94 до 15 МПа" in msgs[0]
+
+    def test_inconsistent_gas_table_warns(self, tmp_path, caplog):
+        # GAS_BAD: B_g растёт на 10–15 МПа — c_g < 0 там; c_ot остаётся > 0
+        # (B_g·dR_s/dp ≥ 3.6e-8 > dB_o/dp = 1.5e-8 1/Па)
+        msgs = _pvt_warnings(_table_config(tmp_path, gas=GAS_BAD), caplog)
+        assert len(msgs) == 1
+        assert "газа" in msgs[0] and "от 10 до 15 МПа" in msgs[0]
+
+    def test_inconsistent_undersaturated_table_warns(self, tmp_path, caplog):
+        # OIL_UNDER_BAD: выше p_b(30) = 15 МПа B_o растёт на 0.03 за 15 МПа —
+        # c_o = −(1/B_o)·dB_o/dp ≈ −1.7e-9 1/Па на всём диапазоне недонасыщенной
+        # нефти задачи: от p_b(R_s0 = 30) = 15 МПа до p0 = 20 МПа. Насыщенная
+        # кривая (первые точки веток) прежняя — c_ot и c_g не нарушены.
+        msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_UNDER_BAD), caplog)
+        assert len(msgs) == 1
+        assert "недонасыщенной" in msgs[0] and "от 15 до 20 МПа" in msgs[0]
+
+    def test_consistent_table_with_degassing_no_warning(self, tmp_path, caplog):
+        # Штатные таблицы при p_wf = 5 МПа: насыщенная зона 5–15 МПа проверяется,
+        # нарушений нет (c_ot ≥ 4.3e-4 1/бар по замеру плана)
+        assert _pvt_warnings(_table_config(tmp_path), caplog) == []
+
+    @pytest.mark.parametrize("config_path", CONSISTENT_CONFIGS,
+                             ids=[p.parent.name if p.name == "config.json" else p.stem
+                                  for p in CONSISTENT_CONFIGS])
+    def test_consistent_configs_no_warning(self, config_path, caplog):
+        # Ложных срабатываний нет: все штатные примеры и базовый конфиг.
+        # Пример 20 с 2026-10-03 — R_s0 = 300, p_b = 30.29 МПа ниже границы
+        # 34.55 МПа, PVT согласована. Новый пример с несогласованной PVT уронит
+        # этот тест — намеренно: его README должен объяснить предупреждение.
+        assert _pvt_warnings(load_config(config_path), caplog) == []

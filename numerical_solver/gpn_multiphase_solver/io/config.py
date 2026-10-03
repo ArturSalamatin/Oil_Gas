@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Optional
 
@@ -183,6 +183,83 @@ class SimulationConfig:
     config_dir: Path = field(default_factory=lambda: Path("."))
 
 
+# ── Краткие формы time.history (FEAT-018) ────────────────────
+
+# Ключи объекта истории, задающие время. Остальные ключи — управление
+# скважиной (control, p_wf, q_oil, min_bhp); они передаются
+# в HistoryInterval без изменений.
+_HISTORY_TIME_KEYS = frozenset({"dt", "repeat", "duration", "dt_out"})
+
+# Допустимые наборы ключей времени:
+#   {dt}               — один интервал (исходная форма, DEBT-013);
+#   {dt, repeat}       — repeat одинаковых интервалов по dt;
+#   {duration, dt_out} — этап duration с записью раз в dt_out.
+_HISTORY_FORMS = (
+    frozenset({"dt"}),
+    frozenset({"dt", "repeat"}),
+    frozenset({"duration", "dt_out"}),
+)
+
+# Допуск кратности duration / dt_out. Поглощает только двоичное
+# округление десятичной записи (0.3 / 0.1 = 2.9999999999999996);
+# настоящая некратность отличается на долю шага — на много порядков больше.
+_MULTIPLE_RTOL = 1e-9
+
+
+def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
+    """Развернуть краткие формы time.history в список интервалов (FEAT-018)."""
+    intervals: list[HistoryInterval] = []
+    for i, raw_entry in enumerate(raw_history):
+        where = f"history[{i}]"
+        entry = dict(raw_entry)          # копия: не портим исходный словарь
+        form = frozenset(entry) & _HISTORY_TIME_KEYS
+        if form not in _HISTORY_FORMS:
+            given = ", ".join(sorted(form)) or "нет ни dt, ни duration"
+            raise ValueError(
+                f"{where}: неверный набор полей времени ({given}); "
+                f"допустимы dt, dt + repeat или duration + dt_out")
+
+        if "duration" in form:
+            # Этап duration с записью раз в dt_out → n интервалов по dt_out.
+            # Длина интервала — ровно dt_out: моменты записи t0 + k·dt_out.
+            duration = entry.pop("duration")
+            dt = entry.pop("dt_out")
+            if duration <= 0:
+                raise ValueError(
+                    f"{where}.duration должна быть > 0, получено {duration}")
+            if dt <= 0:
+                raise ValueError(
+                    f"{where}.dt_out должен быть > 0, получено {dt}")
+            n = round(duration / dt)
+            # Некратность — ошибка, а не укороченный последний интервал:
+            # иначе последний шаг записи молча отличался бы от заданного
+            # (решение пользователя, FEAT-018). n < 1 — dt_out длиннее этапа.
+            if n < 1 or abs(n * dt - duration) > _MULTIPLE_RTOL * duration:
+                raise ValueError(
+                    f"{where}: duration = {duration} с не кратна "
+                    f"dt_out = {dt} с (отношение {duration / dt:.6g}); "
+                    f"задайте кратные значения или разбейте этап на блоки")
+        else:
+            dt = entry.pop("dt")
+            n = entry.pop("repeat", 1)
+            # repeat идёт в range(): bool исключается явно (подкласс int),
+            # дробное отвергается — как у numerics.max_retries.
+            if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+                raise ValueError(
+                    f"{where}.repeat должен быть целым >= 1, получено {n!r}")
+
+        proto = HistoryInterval(dt=dt, **entry)
+        # Проверка один раз на объект JSON: развёрнутые интервалы равны
+        # прототипу по всем полям. Номер в сообщении — номер объекта
+        # в JSON, то есть место, которое пользователь правит.
+        _validate_interval(proto, where)
+        # replace() — отдельный объект на каждый интервал: общий объект
+        # в n позициях списка менял бы весь блок при правке одного
+        # интервала (тесты правят history[k] после загрузки).
+        intervals.extend(replace(proto) for _ in range(n))
+    return intervals
+
+
 # ── Загрузка ─────────────────────────────────────────────────
 
 def load_config(path: str | Path) -> SimulationConfig:
@@ -210,8 +287,10 @@ def load_config(path: str | Path) -> SimulationConfig:
     initial = InitialConfig(**raw["initial_conditions"])
 
     # ── time: history — список словарей → список HistoryInterval ──
+    # Краткие формы {dt, repeat} и {duration, dt_out} разворачиваются
+    # здесь же (FEAT-018); решатель видит только явные интервалы.
     time_raw = raw["time"]
-    history = [HistoryInterval(**h) for h in time_raw.pop("history")]
+    history = _expand_history(time_raw.pop("history"))
     time_cfg = TimeConfig(history=history, **time_raw)
 
     # ── Опциональные секции ──
@@ -227,7 +306,9 @@ def load_config(path: str | Path) -> SimulationConfig:
             raise ValueError(
                 "output.save_every удалён (DEBT-013): частота записи "
                 "результатов задаётся структурой time.history. Чтобы "
-                "получить N моментов вывода, задайте N интервалов истории; "
+                "получить N моментов вывода, задайте N интервалов истории "
+                "(кратко: {\"dt\": ..., \"repeat\": N} или "
+                "{\"duration\": ..., \"dt_out\": ...}); "
                 "dt_integration отвечает только за точность схемы.")
         output = OutputConfig(**out_raw)
     else:
@@ -276,38 +357,9 @@ def _validate(cfg: SimulationConfig) -> None:
     if len(cfg.time.history) == 0:
         raise ValueError("history должна содержать хотя бы один интервал")
 
-    for i, h in enumerate(cfg.time.history):
-        if h.dt <= 0:
-            raise ValueError(f"history[{i}].dt должен быть > 0, получено {h.dt}")
-        if h.control == "pressure":
-            if h.p_wf is None:
-                raise ValueError(f"history[{i}]: control='pressure', но p_wf не задано")
-            if h.p_wf <= 0:
-                raise ValueError(f"history[{i}].p_wf должно быть > 0, получено {h.p_wf}")
-            # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
-            for name in ("q_oil", "min_bhp"):
-                if getattr(h, name) is not None:
-                    raise ValueError(
-                        f"history[{i}]: control='pressure' не использует {name} — "
-                        f"уберите поле или задайте control='rate'")
-        elif h.control == "rate":
-            # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
-            if h.q_oil is None:
-                raise ValueError(f"history[{i}]: control='rate', но q_oil не задан")
-            if h.q_oil < 0:
-                raise ValueError(f"history[{i}].q_oil должен быть >= 0, получено {h.q_oil}")
-            # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
-            if h.min_bhp is None:
-                raise ValueError(f"history[{i}]: control='rate', но min_bhp не задано")
-            if h.min_bhp <= 0:
-                raise ValueError(f"history[{i}].min_bhp должно быть > 0, получено {h.min_bhp}")
-            if h.p_wf is not None:
-                raise ValueError(
-                    f"history[{i}]: control='rate' не использует p_wf — забойное "
-                    f"давление при заданном дебите вычисляется")
-        else:
-            raise ValueError(
-                f"history[{i}].control = '{h.control}': допустимы 'pressure', 'rate'")
+    # Интервалы проверены при разворачивании (_expand_history, FEAT-018):
+    # только там известен номер объекта в JSON — после разворачивания
+    # блока он теряется, и сообщение указало бы не на место правки.
 
     # max_retries управляет числом попыток A-retry (2**max_retries подшагов).
     # bool исключается явно: в Python bool — подкласс int, а True как лимит бессмыслен.
@@ -318,3 +370,38 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(
             f"numerics.max_retries должен быть в [0, 20], получено {mr}. "
             f"Верхняя граница защищает от опечатки: 2**20 подшагов недостижимо.")
+
+
+def _validate_interval(h: HistoryInterval, where: str) -> None:
+    """Проверка одного интервала истории; where — его место в JSON."""
+    if h.dt <= 0:
+        raise ValueError(f"{where}.dt должен быть > 0, получено {h.dt}")
+    if h.control == "pressure":
+        if h.p_wf is None:
+            raise ValueError(f"{where}: control='pressure', но p_wf не задано")
+        if h.p_wf <= 0:
+            raise ValueError(f"{where}.p_wf должно быть > 0, получено {h.p_wf}")
+        # Мёртвые поля (DEBT-008): при управлении по давлению не читаются
+        for name in ("q_oil", "min_bhp"):
+            if getattr(h, name) is not None:
+                raise ValueError(
+                    f"{where}: control='pressure' не использует {name} — "
+                    f"уберите поле или задайте control='rate'")
+    elif h.control == "rate":
+        # Дебит нефти при ст. условиях, м³ст/с; нагнетание не поддержано
+        if h.q_oil is None:
+            raise ValueError(f"{where}: control='rate', но q_oil не задан")
+        if h.q_oil < 0:
+            raise ValueError(f"{where}.q_oil должен быть >= 0, получено {h.q_oil}")
+        # min_bhp обязателен: без него p_wf при λ_o -> 0 уходит в -inf
+        if h.min_bhp is None:
+            raise ValueError(f"{where}: control='rate', но min_bhp не задано")
+        if h.min_bhp <= 0:
+            raise ValueError(f"{where}.min_bhp должно быть > 0, получено {h.min_bhp}")
+        if h.p_wf is not None:
+            raise ValueError(
+                f"{where}: control='rate' не использует p_wf — забойное "
+                f"давление при заданном дебите вычисляется")
+    else:
+        raise ValueError(
+            f"{where}.control = '{h.control}': допустимы 'pressure', 'rate'")

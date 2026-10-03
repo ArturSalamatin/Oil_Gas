@@ -557,3 +557,144 @@ class TestHistoryIntervalDefaults:
         assert h.q_oil == 2.0e-3
         assert h.min_bhp == 101325.0
         assert h.p_wf is None
+
+
+# ═════════════════════════════════════════════════════════════
+# F. Краткие формы истории (FEAT-018)
+# ═════════════════════════════════════════════════════════════
+#
+# Объект time.history задаёт время одной из трёх форм:
+#   {dt}               — один интервал (исходная форма);
+#   {dt, repeat}       — repeat одинаковых интервалов по dt;
+#   {duration, dt_out} — этап duration с записью раз в dt_out.
+# Парсер разворачивает краткие формы в тот же list[HistoryInterval],
+# поэтому решатель о них не знает. Запись — на конце каждого интервала
+# (DEBT-013), значит число интервалов = число записей этапа.
+
+
+def _history_of(tmp_path, history):
+    """Загрузить минимальный конфиг с заданной time.history."""
+    raw = _minimal_raw()
+    raw["time"]["history"] = history
+    return load_config(_write_json(tmp_path, raw)).time.history
+
+
+class TestHistoryBlocks:
+    """Разворачивание кратких форм и их валидация."""
+
+    def test_repeat_equals_explicit(self, tmp_path):
+        """repeat = 3 даёт ровно тот же список, что три явных объекта."""
+        block = _history_of(tmp_path, [{"dt": 3600, "repeat": 3, "p_wf": 10e6}])
+        explicit = _history_of(tmp_path, [{"dt": 3600, "p_wf": 10e6}] * 3)
+        assert len(block) == 3
+        assert block == explicit
+
+    def test_duration_equals_explicit(self, tmp_path):
+        """Трое суток с записью раз в сутки — три интервала по 86 400 с."""
+        block = _history_of(tmp_path, [
+            {"duration": 259200, "dt_out": 86400, "p_wf": 10e6}])
+        explicit = _history_of(tmp_path, [{"dt": 86400, "p_wf": 10e6}] * 3)
+        assert block == explicit
+
+    def test_stepped_schedule(self, tmp_path):
+        """Ступенчатое расписание + явный интервал: порядок и длины сохраняются.
+
+        Первый час по 300 с (12 записей), затем 5 ч по 3600 с (5 записей),
+        затем 600 с при другом p_wf. Всего 18 интервалов, 22 200 с.
+        """
+        h = _history_of(tmp_path, [
+            {"duration": 3600, "dt_out": 300, "p_wf": 12e6},
+            {"duration": 18000, "dt_out": 3600, "p_wf": 12e6},
+            {"dt": 600, "p_wf": 8e6},
+        ])
+        assert [x.dt for x in h] == [300.0] * 12 + [3600.0] * 5 + [600.0]
+        assert [x.p_wf for x in h] == [12e6] * 17 + [8e6]
+        assert sum(x.dt for x in h) == 22200.0
+
+    def test_baseline_as_blocks(self, tmp_path):
+        """Сценарий baseline.json краткой формой даёт тот же список интервалов.
+
+        baseline — сутки при 15 МПа и трое суток при 10 МПа с записью раз
+        в час, 96 явных объектов (DEBT-014). Сам конфиг не меняется
+        (решение пользователя): проверяется, что две строки краткой формы
+        заменяют 96 объектов без изменения расчёта.
+        """
+        raw = json.loads(BASELINE.read_text(encoding="utf-8"))
+        raw["time"]["history"] = [
+            {"dt": 3600, "repeat": 24, "control": "pressure", "p_wf": 15e6},
+            {"duration": 259200, "dt_out": 3600,
+             "control": "pressure", "p_wf": 10e6},
+        ]
+        blocks = load_config(_write_json(tmp_path, raw)).time.history
+        assert blocks == load_config(BASELINE).time.history
+
+    def test_rate_control_block(self, tmp_path):
+        """Поля управления по дебиту переходят во все интервалы блока."""
+        h = _history_of(tmp_path, [
+            {"duration": 7200, "dt_out": 3600,
+             "control": "rate", "q_oil": 2e-3, "min_bhp": 1e5}])
+        assert len(h) == 2
+        for x in h:
+            assert (x.control, x.q_oil, x.min_bhp, x.p_wf) == ("rate", 2e-3, 1e5, None)
+
+    def test_intervals_are_distinct_objects(self, tmp_path):
+        """Правка одного интервала не меняет соседей по блоку.
+
+        Тесты и скрипты правят history[k] после загрузки. Общий объект
+        в нескольких позициях списка изменил бы весь блок разом.
+        """
+        h = _history_of(tmp_path, [{"dt": 3600, "repeat": 3, "p_wf": 10e6}])
+        h[0].p_wf = 5e6
+        assert [x.p_wf for x in h] == [5e6, 10e6, 10e6]
+
+    def test_decimal_rounding_accepted(self, tmp_path):
+        """0.3 / 0.1 = 2.9999999999999996 в двоичной арифметике — это кратность.
+
+        Допуск поглощает округление десятичной записи; без него корректный
+        конфиг отвергался бы как некратный.
+        """
+        h = _history_of(tmp_path, [{"duration": 0.3, "dt_out": 0.1, "p_wf": 10e6}])
+        assert len(h) == 3
+
+    @pytest.mark.parametrize("entry, pattern", [
+        # некратность: последний момент записи сдвинулся бы (решение пользователя)
+        ({"duration": 10000, "dt_out": 3600, "p_wf": 10e6},
+         r"history\[0\]: duration .* не кратна"),
+        # шаг записи длиннее этапа — та же некратность, отношение < 1
+        ({"duration": 100, "dt_out": 300, "p_wf": 10e6}, r"не кратна"),
+        ({"duration": 0, "dt_out": 300, "p_wf": 10e6}, r"history\[0\]\.duration"),
+        ({"duration": 3600, "dt_out": -300, "p_wf": 10e6}, r"history\[0\]\.dt_out"),
+        # неполные и смешанные наборы полей времени
+        ({"duration": 3600, "p_wf": 10e6}, r"неверный набор полей времени"),
+        ({"dt_out": 300, "p_wf": 10e6}, r"неверный набор полей времени"),
+        ({"repeat": 3, "p_wf": 10e6}, r"неверный набор полей времени"),
+        ({"dt": 300, "duration": 3600, "dt_out": 300, "p_wf": 10e6},
+         r"неверный набор полей времени"),
+        ({"dt": 300, "dt_out": 300, "p_wf": 10e6}, r"неверный набор полей времени"),
+        ({"p_wf": 10e6}, r"неверный набор полей времени"),
+        # repeat идёт в range(): только целое >= 1, bool исключён
+        ({"dt": 300, "repeat": 0, "p_wf": 10e6}, r"history\[0\]\.repeat"),
+        ({"dt": 300, "repeat": 2.5, "p_wf": 10e6}, r"history\[0\]\.repeat"),
+        ({"dt": 300, "repeat": 72.0, "p_wf": 10e6}, r"history\[0\]\.repeat"),
+        ({"dt": 300, "repeat": True, "p_wf": 10e6}, r"history\[0\]\.repeat"),
+    ], ids=["not_multiple", "dt_out_exceeds_duration", "duration_zero",
+            "dt_out_negative", "duration_without_dt_out", "dt_out_without_duration",
+            "repeat_without_dt", "dt_with_duration", "dt_with_dt_out", "no_time_keys",
+            "repeat_zero", "repeat_fractional", "repeat_float_integral", "repeat_bool"])
+    def test_block_validation(self, tmp_path, entry, pattern):
+        """Ошибки формы блока называют объект JSON и поле."""
+        with pytest.raises(ValueError, match=pattern):
+            _history_of(tmp_path, [entry])
+
+    def test_error_names_block_not_expanded_index(self, tmp_path):
+        """Ошибка управления называет номер объекта в JSON, а не развёрнутый.
+
+        Первый объект разворачивается в 5 интервалов, поэтому второй после
+        разворачивания стоит под номером 5. Пользователь правит history[1] —
+        его и должно назвать сообщение.
+        """
+        with pytest.raises(ValueError,
+                           match=r"history\[1\]: control='pressure', но p_wf") as exc:
+            _history_of(tmp_path, [{"dt": 300, "repeat": 5, "p_wf": 10e6},
+                                   {"dt": 3600, "control": "pressure"}])
+        assert "history[5]" not in str(exc.value)

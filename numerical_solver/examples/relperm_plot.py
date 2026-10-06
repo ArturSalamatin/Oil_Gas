@@ -54,6 +54,16 @@ def _table_nodes(relperm):
             np.asarray(proto.krg_tab, float))
 
 
+def _sg_range(history) -> tuple[float, float]:
+    """Рабочий диапазон S_g: min и max по всем ячейкам всех записей истории."""
+    # По ВСЕЙ истории: газ мог выделиться и раствориться обратно (останов
+    # скважины, пример 16 — S_g ≡ 0 на последней записи при S_g до 0.048 за
+    # добычу) или пройти пиком в первые сутки (11, 12, 13b). Последняя
+    # запись объявила бы такой расчёт однофазным (FEAT-019).
+    sg = np.concatenate([s.Sg for s in history.states])
+    return float(sg.min()), float(sg.max())
+
+
 def _describe(config) -> str:
     """Подпись модели ОФП по конфигу — что именно нарисовано."""
     rp = config.relperm
@@ -71,7 +81,7 @@ def plot_relperm(config, history, output_dir: Path, title: str,
     """Построить relperm.png: кривые ОФП + рабочий диапазон расчёта.
 
     config   — SimulatorConfig (нужен для сборки ОФП и подписи модели)
-    history  — SimulationHistory; из последнего состояния берётся диапазон S_g
+    history  — SimulationHistory; по всем записям берётся диапазон S_g
     relperm  — готовая модель ОФП; если None, собирается фабрикой
 
     Возвращает путь к сохранённому PNG.
@@ -80,8 +90,7 @@ def plot_relperm(config, history, output_dir: Path, title: str,
         from gpn_multiphase_solver.factory import _create_relperm
         relperm = _create_relperm(config)
 
-    Sg_state = history.states[-1].Sg
-    Sg_lo, Sg_hi = float(Sg_state.min()), float(Sg_state.max())
+    Sg_lo, Sg_hi = _sg_range(history)
     # Однофазный сценарий: газ не выделялся вовсе, увеличивать нечего.
     two_phase = Sg_hi > 1e-12
 
@@ -201,8 +210,7 @@ def report_relperm(config, history, relperm=None) -> None:
         from gpn_multiphase_solver.factory import _create_relperm
         relperm = _create_relperm(config)
 
-    Sg = history.states[-1].Sg
-    Sg_hi = float(Sg.max())
+    Sg_lo, Sg_hi = _sg_range(history)
 
     print(f"── ОФП: {config.relperm.model} ──")
     if Sg_hi <= 1e-12:
@@ -210,7 +218,7 @@ def report_relperm(config, history, relperm=None) -> None:
               " k_ro = k_ro(0), k_rg = 0")
         return
 
-    print(f"  рабочий диапазон: S_g = {float(Sg.min()):.6f} … {Sg_hi:.6f}")
+    print(f"  рабочий диапазон: S_g = {Sg_lo:.6f} … {Sg_hi:.6f}")
     print(f"  {'S_g':>10} {'k_ro':>12} {'k_rg':>12} {'k_rg/k_ro':>12}")
     for s in (0.0, Sg_hi / 2.0, Sg_hi):
         a = np.array([s])

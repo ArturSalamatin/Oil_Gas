@@ -10,7 +10,7 @@
   G. README: обязательные разделы на месте
 
 Расчёты кэшируются на уровне сессии (фикстура results): каждый сценарий
-считается один раз, при первом обращении; все 20 — около 230 с.
+считается один раз, при первом обращении; все 21 — около 255 с.
 Тесты на фикстуре помечены slow (хук в tests/conftest.py, DEBT-032).
 """
 
@@ -44,6 +44,7 @@ ALL_EXAMPLES = [
     "13b_pwf_alternating",
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
+    "16_well_shut_in",
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
@@ -55,6 +56,14 @@ SINGLE_PHASE = ["01_single_phase_no_jt", "02_single_phase_jt"]
 # Семейства 2 и 3: pwf < pb → разгазирование обязано произойти.
 TWO_PHASE = [n for n in ALL_EXAMPLES if n not in SINGLE_PHASE]
 
+# Сценарии, заканчивающиеся остановом скважины (FEAT-019): на последней
+# записи дебит нулевой, свободный газ растворился. Утверждения «скважина
+# добывает» и «газ выделяется» на последней записи для них неверны по смыслу;
+# у них то же проверяется на конце добычи — в классе сценария (TestWellShutIn).
+ENDS_SHUT_IN = ["16_well_shut_in"]
+PRODUCING_AT_END = [n for n in ALL_EXAMPLES if n not in ENDS_SHUT_IN]
+TWO_PHASE_AT_END = [n for n in TWO_PHASE if n not in ENDS_SHUT_IN]
+
 # Сценарии с табличной ОФП (Sg мала) — им нужен раздел про увеличение Sg.
 NEEDS_SG_SECTION = [
     "04_table_table", "06_table_corey_rp",
@@ -62,6 +71,7 @@ NEEDS_SG_SECTION = [
     "09_degassing_latent_heat", "10_deep_degassing",
     "11_degassing_at_boundary", "12_large_drainage_radius",
     "13a_pwf_ramp_down", "13b_pwf_alternating", "14_high_gor_cooling", "15_oil_rate_ramp_up",
+    "16_well_shut_in",
 ]
 
 
@@ -121,7 +131,7 @@ class _LazyResults(dict):
 def results():
     """Сценарии ALL_EXAMPLES: расчёт при первом обращении, один раз на сессию."""
     # Ленивый расчёт (DEBT-032): выборочный запуск теста на одном примере
-    # стоит одного расчёта, а не двадцати (~230 с). Имя фикстуры читает
+    # стоит одного расчёта, а не двадцати одного (~255 с). Имя фикстуры читает
     # хук tests/conftest.py: тесты на ней получают метку slow.
     return _LazyResults()
 
@@ -222,7 +232,7 @@ class TestRunAll:
         assert np.all(r["Sg"] >= 0.0) and np.all(r["Sg"] <= 1.0), \
             f"{name}: Sg вне [0, 1]"
 
-    @pytest.mark.parametrize("name", ALL_EXAMPLES)
+    @pytest.mark.parametrize("name", PRODUCING_AT_END)
     def test_oil_production(self, results, name):
         """Скважина добывает нефть: q_o > 0 на последнем шаге.
 
@@ -254,7 +264,7 @@ class TestSinglePhase:
 class TestTwoPhase:
     """Семейства 2 и 3: pwf < pb → разгазирование обязано произойти."""
 
-    @pytest.mark.parametrize("name", TWO_PHASE)
+    @pytest.mark.parametrize("name", TWO_PHASE_AT_END)
     def test_gas_appears(self, results, name):
         """Ключевой тест: ловит регрессию «pwf выше pb».
 
@@ -271,7 +281,7 @@ class TestTwoPhase:
         assert r["Rs"].min() < r["Rs0"], \
             f"{name}: Rs не уменьшилось относительно Rs0={r['Rs0']}"
 
-    @pytest.mark.parametrize("name", TWO_PHASE)
+    @pytest.mark.parametrize("name", TWO_PHASE_AT_END)
     def test_gas_produced(self, results, name):
         """Дебит газа положителен — газ выносится в скважину."""
         assert results[name]["q_g"][-1] > 0.0
@@ -1017,8 +1027,9 @@ class TestPvtPlot:
     def test_table_nodes_in_working_range(self, results):
         """В рабочий диапазон примера 04 попадает ровно один узел.
 
-        Демонстрационные таблицы грубы: рабочий диапазон 8.17…19.89 МПа,
-        а узлы стоят на 5, 15 и 30 МПа — внутрь попадает только p_b = 15.
+        Демонстрационные таблицы грубы: рабочий диапазон 8.17…20.00 МПа
+        (по всей истории: верх — начальное p_0, FEAT-019), а узлы стоят на
+        5, 15 и 30 МПа — внутрь попадает только p_b = 15.
         Вся кривая между краями получена интерполяцией через две точки,
         и график обязан делать это видимым. Тест ловит и 0 (фильтр
         «внутри диапазона» слишком строг), и 3 (фильтра нет вовсе).
@@ -1271,6 +1282,96 @@ class TestPvtPlot:
         assert has_twinx, (
             "панель плотностей обязана использовать twinx: нефть ~800, "
             "газ ~100 кг/м³, на одной оси газовая кривая нечитаема")
+
+
+# ═══════════════════════════════════════════════════════════
+# J2. Рабочий диапазон рисунков — по всей истории (FEAT-019)
+# ═══════════════════════════════════════════════════════════
+
+def _relperm_module():
+    """Общий модуль examples/relperm_plot.py."""
+    import sys
+    sys.path.insert(0, str(EXAMPLES_DIR))
+    import relperm_plot
+    return relperm_plot
+
+
+def _shut_in_like_history():
+    """Синтетическая история «добыча → останов»: газ и воронка есть только в середине.
+
+    Записи: начальное состояние (p = 15.5 МПа, газа нет), конец добычи
+    (воронка 6.1…15.4 МПа, S_g до 0.05 у забоя), конец останова (p = 15.5 МПа
+    всюду, газ растворился). Расчёта нет — проверяется только охват.
+    """
+    from types import SimpleNamespace
+    n = 50
+    states = [
+        SimpleNamespace(p=np.full(n, 15.5e6), Sg=np.zeros(n)),
+        SimpleNamespace(p=np.linspace(6.1e6, 15.4e6, n),
+                        Sg=np.linspace(0.05, 0.0, n)),
+        SimpleNamespace(p=np.full(n, 15.5e6), Sg=np.zeros(n)),
+    ]
+    return SimpleNamespace(states=states)
+
+
+class TestWorkingRange:
+    """Рисунки PVT и ОФП берут рабочий диапазон по всем записям (FEAT-019).
+
+    Прежде диапазон брался по последней записи. У примера 16 (останов
+    после добычи) давление к концу выравнивается, газ растворяется, и
+    relperm.png объявлял расчёт однофазным, а pvt.png сжимал диапазон в
+    точку 15.5 МПа.
+    """
+
+    CFG = EXAMPLES_DIR / "12_large_drainage_radius" / "config.json"
+
+    def test_pvt_range_spans_all_records(self):
+        """_p_range — min/max по всем записям, а не по последней (там 15.5…15.5)."""
+        lo, hi = _pvt_module()._p_range(_shut_in_like_history())
+        assert lo == 6.1e6
+        assert hi == 15.5e6
+
+    def test_relperm_range_spans_all_records(self):
+        """_sg_range — максимум S_g за всю историю (0.05), хотя на последней записи газа нет."""
+        lo, hi = _relperm_module()._sg_range(_shut_in_like_history())
+        assert lo == 0.0
+        assert hi == pytest.approx(0.05, abs=1e-15)
+
+    def test_report_relperm_not_single_phase_after_shut_in(self, capsys):
+        """Сводка ОФП не объявляет расчёт однофазным, если газ был, а к концу растворился.
+
+        Таблица ОФП примера 12; ожидается строка «рабочий диапазон: S_g =
+        0.000000 … 0.050000» вместо «расчёт однофазный».
+        """
+        from gpn_multiphase_solver.factory import _create_relperm
+        cfg = load_config(self.CFG)
+        _relperm_module().report_relperm(cfg, _shut_in_like_history(),
+                                         _create_relperm(cfg))
+        out = capsys.readouterr().out
+        assert "расчёт однофазный" not in out
+        assert "рабочий диапазон: S_g = 0.000000 … 0.050000" in out
+
+    def test_plot_relperm_two_panels_when_gas_only_in_past(self, monkeypatch, tmp_path):
+        """relperm.png получает вторую панель (рабочий диапазон), а не пометку S_g ≡ 0.
+
+        Число панелей задаёт вызов plt.subplots(1, n_panels): 2 у двухфазного
+        расчёта, 1 у однофазного. Перехват вызова — тот же приём, что в
+        test_plot_pvt_layout_2x3.
+        """
+        from gpn_multiphase_solver.factory import _create_relperm
+        rp_mod = _relperm_module()
+        calls = []
+        orig = rp_mod.plt.subplots
+
+        def spy(*args, **kwargs):
+            calls.append(args)
+            return orig(*args, **kwargs)
+
+        monkeypatch.setattr(rp_mod.plt, "subplots", spy)
+        cfg = load_config(self.CFG)
+        rp_mod.plot_relperm(cfg, _shut_in_like_history(), tmp_path, "16-синт",
+                            _create_relperm(cfg))
+        assert calls[0][:2] == (1, 2), f"панелей: {calls[0][:2]}"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2072,6 +2173,162 @@ class TestPwfAlternating:
         """main.py 13b отключает стационарную аналитику (решение 2026-09-29)."""
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
         assert "steady_state=False" in text
+
+
+# ═══════════════════════════════════════════════════════════
+# Q2. Сценарий 16: останов скважины после добычи (FEAT-019)
+# ═══════════════════════════════════════════════════════════
+
+class TestWellShutIn:
+    """Сценарий 16: конфиг 12, 15 сут добычи при 6 МПа, затем 15 сут останова.
+
+    Останов — управление по дебиту q_oil = 0 (eq:bc_rate_well): потоки
+    компонентов через забой нулевые, p_wf = p[0] (eq:bc_rate_pwf при q = 0).
+    Записи: 0 — начальное состояние; 1..15 — концы суток добычи; 16..39 —
+    часы первых суток останова (запись 15 + k — момент 15 сут + k ч);
+    40..53 — концы суток 17..30. Числа — замер плана FEAT-019
+    (vault/issues/feat-019/probes/plan_numbers.out.txt).
+    """
+
+    NAME = "16_well_shut_in"
+    END_PROD = 15        # запись конца добычи (15 сут)
+
+    def test_config_follows_decisions(self):
+        """Расписание: 15 суточных интервалов при 6 МПа, 24 часовых и 14 суточных с q_oil = 0.
+
+        Решения пользователя 2026-10-03: останов — по дебиту, min_bhp = 1 атм
+        (обязателен по конфигу, при q = 0 не действует). Ловит: возврат к
+        управлению по давлению, потерю часовой записи первых суток останова
+        (на графиках пропадёт восстановление давления).
+        """
+        cfg = load_config(EXAMPLES_DIR / self.NAME / "config.json")
+        hist = cfg.time.history
+        assert len(hist) == 15 + 24 + 14
+        assert cfg.time.dt_integration == 3600.0
+        for h in hist[:15]:
+            assert (h.control, h.dt, h.p_wf) == ("pressure", 86400.0, 6.0e6)
+        for k, h in enumerate(hist[15:]):
+            assert h.control == "rate" and h.q_oil == 0.0
+            assert h.min_bhp == 101325.0 and h.p_wf is None
+            assert h.dt == (3600.0 if k < 24 else 86400.0)
+
+    def test_production_phase_degasses(self, results):
+        """На конце добычи скважина добывает нефть и газ, газ выделился в пласте.
+
+        Утверждения общих тестов test_oil_production, test_gas_appears,
+        test_gas_produced — на записи 15 вместо последней (16 исключён из
+        них списком ENDS_SHUT_IN). Замер: q_o = 3.2365e-3, q_g = 0.11871
+        м³ст/с, S_g(r_w) = 0.02394, R_s мин 3.373 < R_s0 = 30.
+        """
+        r = results[self.NAME]
+        st = r["history"].states[self.END_PROD]
+        assert r["q_o"][self.END_PROD] == pytest.approx(3.2365e-3, rel=1e-4)
+        assert r["q_g"][self.END_PROD] > 0.0
+        assert st.Sg.max() > 0.0
+        assert st.Rs.min() < r["Rs0"]
+
+    def test_shut_in_stops_flow_through_well(self, results):
+        """На всех записях останова q_o = q_g = 0 точно, фактическое p_wf = p[0].
+
+        Знак: q_o_std = -G_o[0]; при q_oil = 0 прототип ставит потоки забоя
+        ровно 0 (blackoil.py, _well_fluxes, ветка OIL_RATE: bhp = p0).
+        Замер: max|p_wf - p[0]| = 0 Па. Ловит: утечку через забой (закачку
+        или отбор) при останове, запись уставки вместо фактического p_wf.
+        """
+        r = results[self.NAME]
+        h = r["history"]
+        for n in range(self.END_PROD + 1, len(h.states)):
+            assert r["q_o"][n] == 0.0 and r["q_g"][n] == 0.0, f"запись {n}"
+            assert h.well_data[n].p_wf == h.states[n].p[0], f"запись {n}"
+
+    def test_pressure_builds_up_past_pb(self, results):
+        """p(r_w) не убывает после останова, выше p_b — с 12 ч, на финале p = p_ext.
+
+        Замер: 6.1242 МПа (15 сут) → 12.635 (1 ч) → 15.0326 (запись 27,
+        15.5 сут — первая выше p_b = 15 МПа) → 15.4207 (16 сут); финал
+        max|p - p_ext| = 0.013 Па. Ловит: потерю притока через контур,
+        «залипание» давления у забоя.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        pw = np.array([s.p[0] for s in states])
+        assert np.all(np.diff(pw[self.END_PROD:]) >= 0.0)
+        pb = float(_pvt_of_config(r["config"]).pb(np.array([r["Rs0"]]))[0])
+        above = [n for n in range(self.END_PROD, len(pw)) if pw[n] > pb]
+        assert above[0] == 27, f"выше p_b с записи {above[0]}"
+        p_ext = r["config"].initial_conditions.p0
+        assert np.max(np.abs(states[-1].p - p_ext)) < 1.0
+
+    def test_gas_redissolves_and_rs_freezes(self, results):
+        """Свободный газ растворяется за 7 ч, R_s застывает неоднородным и ниже равновесного.
+
+        Физика: давление поднимается, газ растворяется в пределах своего
+        запаса; когда газ кончается, нефть остаётся недонасыщенной. Течения
+        после выравнивания давления нет, диффузии в модели нет — профиль R_s
+        больше не меняется и к R_s0 не возвращается.
+        Замер: двухфазных ячеек нет с записи 22 (15 сут + 7 ч, p(r_w) =
+        14.48 МПа < p_b); финал R_s(r_w) = 4.792, max(R_s - R_s^eq(p)) =
+        2.8e-14; max|R_s(20 сут) - R_s(30 сут)| = 7.6e-5.
+        Ловит: пересыщение нефти «из ниоткуда», возврат R_s к R_s0 (утечку
+        газа через контур или забой), залипание ячеек в двухфазном режиме.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        for n in range(22, len(states)):
+            assert np.all(states[n].regime == 2), f"запись {n}: есть двухфазные"
+            assert np.all(states[n].Sg == 0.0), f"запись {n}: есть газ"
+        assert np.count_nonzero(states[21].regime == 1) > 0   # на 6 ч газ ещё есть
+        final = states[-1]
+        rs_eq = _pvt_of_config(r["config"]).Rs_eq(final.p)
+        assert np.max(final.Rs - rs_eq) <= 1e-10
+        assert final.Rs[0] == pytest.approx(4.792, abs=1e-3)
+        assert np.max(np.abs(states[43].Rs - final.Rs)) < 1e-3   # 20 сут против 30
+
+    def test_wellbore_heats_then_relaxes(self, results):
+        """T(r_w) скачком растёт при останове (сжатие), пик на 2 ч, дальше монотонно убывает.
+
+        Физика: давление у забоя за 2 ч растёт на 7.3 МПа — адиабатическое
+        сжатие (за первые сутки останова +4.86e10 Дж из ΔE = +5.17e10 Дж),
+        растворение газа добавляет +2.9e9 Дж. Конвекции через забой нет,
+        дальше тепло уходит теплопроводностью. Замер: 350.3507 (15 сут) →
+        350.6596 (запись 17, максимум) → 350.3133 К (30 сут).
+        Ловит: потерю адиабатического члена (нагрева не будет), остаток
+        конвекции через забой при останове (релаксация пойдёт иначе).
+        """
+        T = np.array([s.T[0] for s in results[self.NAME]["history"].states])
+        k = self.END_PROD + int(np.argmax(T[self.END_PROD:]))
+        assert k == 17
+        assert T[k] == pytest.approx(350.6596, abs=2e-4)
+        assert T[k] - T[self.END_PROD] > 0.25
+        assert np.all(np.diff(T[k:]) < 0.0)
+        assert T[-1] == pytest.approx(350.3133, abs=2e-4)
+
+    def test_plots_cover_production_phase(self, results):
+        """pvt.png и relperm.png 16 показывают диапазон добычи, а не только останов.
+
+        На последней записи p = 15.5 МПа всюду и S_g ≡ 0. По всей истории:
+        p 6.1224…15.5 МПа (p_b = 15 МПа внутри, один узел таблицы), S_g до
+        0.048261 (запись 1). Ловит возврат к диапазону по последней записи.
+        """
+        r = results[self.NAME]
+        rep = _pvt_module().report_pvt(r["config"], r["history"])
+        assert rep["p_lo"] == pytest.approx(6.1224e6, rel=1e-4)
+        assert rep["p_lo"] < rep["pb"] < rep["p_hi"]
+        assert rep["nodes_in_range"] == 1
+        _lo, hi = _relperm_module()._sg_range(r["history"])
+        assert hi == pytest.approx(0.048261, rel=1e-4)
+        assert r["Sg"].max() == 0.0        # на последней записи газа нет
+
+    def test_main_settings(self):
+        """main.py 16: 7 моментов профилей, без стационарной аналитики, наложения штатные.
+
+        Решения пользователя 2026-10-03 (5, 6): профили равномерно; наложение
+        R_s не отключается — после DEBT-026 на финале без газа кружков нет.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=7" in text
+        assert "steady_state=False" in text
+        assert "overlays=" not in text
 
 
 # ═══════════════════════════════════════════════════════════

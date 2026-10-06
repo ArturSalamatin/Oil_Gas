@@ -1,5 +1,5 @@
 time_s_or_start,dt_s,accepted,newton_iterations,active_set_iterations,phase_switches,residual_inf
-0.0,60.0,False,0,1,0,0.0
+0.0,60.0,False,15,2,21,2.3502425933534001e-07
 30.0,30.0,True,17,2,18,2.4668631761387384e-16
 52.5,22.5,True,5,1,0,1.879064169887923e-12
 60.0,7.5,True,5,1,0,1.1682842521790172e-15

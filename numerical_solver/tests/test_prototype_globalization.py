@@ -13,6 +13,7 @@
 План: vault/plans/bug-016 newton-line-search-norm.md.
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -174,6 +175,26 @@ def _install_fake_phases3(model, plan):
 
 ORIG3 = (None, -0.05, False)
 
+# DEBT-030: отчёт исходного алгоритма в тестах ниже; у остальных ступеней — другие
+# числа, чтобы было видно, чей отчёт вернул advance.
+ORIG_REPORT = BlackOilNewtonReport(False, 15, 2.5e-7, 2, 21)
+
+
+def _install_fake_reports(model, reports):
+    """DEBT-030: как _install_fake_phases3, но у каждой ступени свой отчёт."""
+    calls = []
+
+    def fake(state_old, dt_s, max_active_iter, max_newton):
+        key = (model._well_branch, model._sg_lower_bound, model._line_search_l2)
+        calls.append(key)
+        p0_bar, rep = reports[key]
+        new = state_old.copy()
+        new.pressure_bar[0] = p0_bar
+        return new, replace(rep)   # копия: advance и _fallback меняют поля отчёта на месте
+
+    model._advance_phases = fake
+    return calls
+
 
 class TestThirdStageLogic:
     """Модель p_wf = 150 бар, state_old = drawn_down (p[0] = 111.7 < 150):
@@ -222,6 +243,72 @@ class TestThirdStageLogic:
         _, rep = model.advance(drawn_down, 3600.0)
         assert len(calls) == 5
         assert not rep.converged and rep.globalized
+        _assert_restored(model)
+
+    def test_all_fail_reports_original_newton(self, drawn_down):
+        # DEBT-030 (A): отказ всех ступеней. Последняя попытка — ветка «открыта»
+        # третьей ступени: «сошлась» за 0 итераций с невязкой 0, но несогласована
+        # (p[0] = 140 < p_wf = 150). Так в T04 ведёт себя ветка «закрыта» на
+        # неизменном начальном состоянии; до DEBT-030 её отчёт уходил в журнал шагов.
+        # Ожидание: поля Ньютона (итерации, ||F||_inf, итерации набора фаз, смены
+        # фаз) — исходного алгоритма; поля ветки — последней попытки, как раньше.
+        model = _model(150.0)
+        calls = _install_fake_reports(model, {
+            ORIG3: (0.0, ORIG_REPORT),
+            ("shut", None, False): (0.0, BlackOilNewtonReport(False, 14, 3.0e-6, 3, 7)),
+            ("open", None, False): (140.0, BlackOilNewtonReport(True, 0, 0.0, 1, 0)),
+            ("shut", None, True): (0.0, BlackOilNewtonReport(False, 13, 4.0e-5, 4, 9)),
+            ("open", None, True): (140.0, BlackOilNewtonReport(True, 0, 0.0, 1, 0))})
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG3, ("shut", None, False), ("open", None, False),
+                         ("shut", None, True), ("open", None, True)]
+        assert not rep.converged
+        assert (rep.iterations, rep.residual_inf, rep.active_set_iterations,
+                rep.phase_switches) == (15, 2.5e-7, 2, 21)
+        assert rep.fallback and rep.globalized
+        assert (rep.well_branch, rep.well_switches) == ("open", 1)
+        _assert_restored(model)
+
+    def test_all_fail_rate_control_reports_original_newton(self):
+        # DEBT-030 (B): управление по дебиту. Запасной путь — повтор без ветки
+        # (ключ (None, None, ·)), третья ступень — то же с ||F||_2. Последняя
+        # попытка — настоящий отказ Ньютона, но правило то же: поля Ньютона —
+        # исходного алгоритма; ветки нет ('', 0 смен).
+        model, state = _build(150.0)
+        model.set_oil_rate_control(2.0, 100.0)
+        calls = _install_fake_reports(model, {
+            ORIG3: (0.0, ORIG_REPORT),
+            (None, None, False): (0.0, BlackOilNewtonReport(False, 14, 3.0e-6, 3, 7)),
+            (None, None, True): (0.0, BlackOilNewtonReport(False, 13, 4.0e-5, 4, 9))})
+        _, rep = model.advance(state, 60.0)
+        assert calls == [ORIG3, (None, None, False), (None, None, True)]
+        assert not rep.converged
+        assert (rep.iterations, rep.residual_inf, rep.active_set_iterations,
+                rep.phase_switches) == (15, 2.5e-7, 2, 21)
+        assert rep.fallback and rep.globalized
+        assert (rep.well_branch, rep.well_switches) == ("", 0)
+        _assert_restored(model)
+
+    def test_converged_third_stage_keeps_own_report(self, drawn_down):
+        # DEBT-030 (C): замена полей — только при общем отказе. Третья ступень
+        # сошлась на «закрыта» (p[0] = 149 <= 150 — согласована): отчёт её
+        # собственный (17 итераций), не исходного алгоритма. Регрессия прототипа
+        # ошибку здесь не видит: _grow_dt различает только iterations >= 10 и >= 6,
+        # а 17 и 15 дают один и тот же следующий шаг.
+        model = _model(150.0)
+        calls = _install_fake_reports(model, {
+            ORIG3: (0.0, ORIG_REPORT),
+            ("shut", None, False): (0.0, BlackOilNewtonReport(False, 14, 3.0e-6, 3, 7)),
+            ("open", None, False): (140.0, BlackOilNewtonReport(True, 0, 0.0, 1, 0)),
+            ("shut", None, True): (149.0, BlackOilNewtonReport(True, 17, 2.0e-16, 2, 15))})
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG3, ("shut", None, False), ("open", None, False),
+                         ("shut", None, True)]
+        assert rep.converged
+        assert (rep.iterations, rep.residual_inf, rep.active_set_iterations,
+                rep.phase_switches) == (17, 2.0e-16, 2, 15)
+        assert rep.fallback and rep.globalized
+        assert (rep.well_branch, rep.well_switches) == ("shut", 0)
         _assert_restored(model)
 
     def test_exception_in_third_stage(self, drawn_down):

@@ -10,8 +10,10 @@ BUG-018: the closed-flash Sg guess of a cell switching to two-phase is capped
 at the largest relperm-table Sg where kro > 0 (sg_activation_cap).
 DEBT-033: the grouped Jacobian is assembled vectorized, directly as a CSC matrix
 (bitwise the former dense one); _linear_solve takes sparse or dense J.
+DEBT-030: when all three stages of advance() fail, the report carries the Newton
+fields of the original algorithm, not those of the last fallback attempt.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import numpy as np
 from scipy.linalg import solve as dense_solve
 from scipy.sparse import coo_matrix, csc_matrix, issparse
@@ -294,7 +296,8 @@ class RadialBlackOilModel:
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
-        if that fails too, the fallback again with a globalized Newton (BUG-016)."""
+        if that fails too, the fallback again with a globalized Newton (BUG-016).
+        If all three fail, the report carries the original algorithm's Newton (DEBT-030)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -302,6 +305,7 @@ class RadialBlackOilModel:
                 p0=float(new.pressure_bar[0])
                 rep.well_branch='shut' if p0<=float(self.p_bhp_bar) else 'open'
             return new,rep
+        orig=rep  # DEBT-030: reported if the fallback and the third stage fail too
         # Fallback only: where the original algorithm converges, results stay
         # bitwise; with the bound removed always, deep drawdowns needed more
         # step splitting than before (BUG-014 audit).
@@ -316,7 +320,19 @@ class RadialBlackOilModel:
         self._line_search_l2=True; self._sg_step_max=0.2
         try:
             new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
-            rep.globalized=True; return new,rep
+            rep.globalized=True
+            if not rep.converged:
+                # DEBT-030: the last attempt is often the BHP 'shut' branch, which
+                # "converges" in 0 iterations with ||F|| = 0 on an unchanged state and
+                # is dropped as inconsistent; its report made every rejected step in
+                # step_log.csv read "0 iterations, residual 0".  Report the original
+                # algorithm's Newton instead (as before BUG-014); the branch fields
+                # (well_branch, well_switches, fallback, globalized) stay the last
+                # attempt's.  Accepted steps are untouched (_grow_dt reads them).
+                rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
+                            active_set_iterations=orig.active_set_iterations,
+                            phase_switches=orig.phase_switches)
+            return new,rep
         finally:
             self._line_search_l2=False; self._sg_step_max=None
     def _fallback(self,state_old,dt_s,max_active_iter,max_newton):

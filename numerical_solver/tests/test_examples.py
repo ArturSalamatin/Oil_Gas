@@ -613,12 +613,9 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
 # I. Общие проверки: балансы энергии и массы у всех примеров (FEAT-016, DEBT-039)
 # ═══════════════════════════════════════════════════════════
 
-# Модули проверок, вынесенные в examples/ (FEAT-016). Ни один из них не
-# должен снова появиться в папке примера: копия в папке ПЕРЕКРЫВАЕТ общий
-# модуль молча, без ошибки импорта (main.py делает sys.path.insert(0, ...)
-# сначала для examples/, затем для папки примера, поэтому папка примера
-# оказывается впереди). Именно так четыре копии energy_balance.py
-# разошлись и породили BUG-004.
+# Модули проверок, вынесенные в examples/ (FEAT-016; mass_balance.py —
+# DEBT-039). test_shared_modules_exist проверяет, что они на месте: без них
+# примеры не считают проверки.
 SHARED_CHECK_MODULES = [
     "energy_balance.py",
     "energy_balance_convergence.py",
@@ -627,6 +624,22 @@ SHARED_CHECK_MODULES = [
     "pvt_plot.py",
     "mass_balance.py",
 ]
+
+# Все файлы верхнего уровня examples/ — общие модули и скрипты. Ни один из
+# них не должен снова появиться в папке примера: исход у копии молчаливый
+# при любом порядке sys.path.
+#   - main.py 01, 02, 03, 05 и скрипты сходимости 04, 04a, 05 делают
+#     sys.path.insert(0, ...) сначала для examples/, затем для папки
+#     примера, и папка оказывается ВПЕРЕДИ. Копия ПЕРЕКРЫВАЕТ общий модуль
+#     без ошибки импорта — и для всех, кто его импортирует: копия
+#     figure_io.py подменит его и внутри example_runner.py.
+#   - Остальные main.py вставляют только examples/, и он встаёт впереди
+#     папки скрипта. Копия молча игнорируется: её правка ни на что не влияет.
+# Именно так четыре копии energy_balance.py разошлись и породили BUG-004.
+# Список строится по диску, а не вручную (DEBT-037): ручной список отстал —
+# example_runner.py, figure_io.py и ещё четыре общих модуля в нём не
+# значились. Новый файл в examples/ попадает под проверку сам.
+SHARED_EXAMPLE_FILES = sorted(p.name for p in EXAMPLES_DIR.glob("*.py"))
 
 # Прежде здесь стоял отдельный список BALANCE_EXAMPLES: баланс суммировал
 # приращения по сохранённым шагам, поэтому пример 04a (save_every = 12,
@@ -753,20 +766,22 @@ class TestSharedChecks:
             missing = required - set(bal)
             assert not missing, f"{name}: отсутствуют ключи {sorted(missing)}"
 
-    @pytest.mark.parametrize("module", SHARED_CHECK_MODULES)
+    @pytest.mark.parametrize("module", SHARED_EXAMPLE_FILES)
     def test_no_duplicate_helper_scripts(self, module):
-        """Вынесенный модуль не вернулся копией в папку примера.
+        """Файл examples/ не вернулся копией в папку примера.
 
         Защита от того самого механизма, которым возникла FEAT-016: скрипт
         пишется под один пример, копируется в другой, копии правятся
         независимо и расходятся. Копия в папке примера при этом молча
-        перекрывает общий модуль.
+        перекрывает общий модуль или молча игнорируется — в зависимости
+        от порядка sys.path (комментарий у SHARED_EXAMPLE_FILES).
         """
         copies = sorted(
             p.parent.name for p in EXAMPLES_DIR.glob(f"*/{module}"))
         assert not copies, (
             f"{module} снова скопирован в папки примеров: {copies}. "
-            f"Общий модуль examples/{module} будет молча перекрыт.")
+            f"Общий модуль examples/{module} будет молча перекрыт, "
+            f"либо копия будет молча проигнорирована.")
 
     def test_shared_modules_exist(self):
         """Общие модули на месте — иначе примеры не считают проверки."""

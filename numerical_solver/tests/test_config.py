@@ -198,8 +198,8 @@ class TestBaselineNumerics:
     def test_max_retries_default(self, cfg):
         """max_retries не задан в baseline → default = 9.
 
-        Значение — измеренный порог примера 03 при двух отягчающих
-        факторах (N = 75, p_wf = 6 МПа); см. DEBT-007.
+        Значение — запас над замеренными порогами, а не порог; обоснование —
+        комментарий NumericsConfig.max_retries (gpn_multiphase_solver/io/config.py).
         """
         assert cfg.numerics.max_retries == 9
 

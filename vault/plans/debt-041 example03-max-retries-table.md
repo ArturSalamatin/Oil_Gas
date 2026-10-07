@@ -6,7 +6,7 @@ date: 2026-10-07
 issue: DEBT-041
 github: 71
 branch: refactor/debt-041/example03-max-retries-table
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-041
 audit:
   date: 2026-10-07

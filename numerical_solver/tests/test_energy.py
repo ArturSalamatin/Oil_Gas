@@ -369,6 +369,68 @@ class TestPositivity:
 
 
 # ═══════════════════════════════════════════════════════════
+# F1. СЛАУ в отклонениях от T_ext (DEBT-043)
+# ═══════════════════════════════════════════════════════════
+
+class TestDeviationForm:
+    """СЛАУ в отклонениях θ = T − T_ext — та же система, что в абсолютной T (DEBT-043)."""
+
+    def test_solution_matches_absolute_form(self):
+        """θ + T_ext совпадает с решением той же СЛАУ, собранной в абсолютной T.
+
+        Решатель подаёт assemble_tridiag отклонения T^n − T_ext и 0.
+        Тест перехватывает эти аргументы и коэффициенты, собирает ту же
+        систему заново по АБСОЛЮТНЫМ T^n и T_ext (исходным
+        assemble_tridiag) и решает её. Независимая сборка ловит неверный
+        сдвиг — например, несдвинутую T_ext в граничной строке (замер
+        аудита: расхождение 0.45 K). Расхождение при верном сдвиге —
+        округление абсолютной формы: допуск 1e-9 K (замер 1.7e-13 K).
+        Условия: приток через контур (логарифмический p), JT и
+        теплопроводность включены, T^n = 345 K ≠ T_ext = 350 K — чтобы
+        отклонения и граничная строка были нагружены.
+        """
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N, K_PERM)
+        pvt = _make_pvt(mu_JT_oil=-4e-7)
+        rp = CoreyRP(0.2, 0.05, 2.0, 2.0)
+        solver = TridiagEnergySolver(grid, pvt, _rock())
+
+        p = _log_pressure_profile(grid, P_WF, P0)
+        state = SimulationState(p=p, Sg=np.zeros(N), Rs=np.full(N, RS0),
+            T=np.full(N, 345.0), regime=np.full(N, 2, dtype=int), t=0.0)
+        hydro = compute_fluxes(state, grid, pvt, rp, _bc(350.0))
+        # p_old = p_new -> dp/dt = 0: адиабатика нулевая, остаются
+        # конвекция, теплопроводность и JT
+        state_prev = SimulationState(p=p.copy(), Sg=np.zeros(N),
+            Rs=np.full(N, RS0), T=np.full(N, 345.0),
+            regime=np.full(N, 2, dtype=int), t=0.0)
+
+        # Перехват сборки на экземпляре (класс не трогается): аргументы,
+        # с которыми решатель собрал систему, и коэффициенты.
+        calls = []
+        orig = solver.assemble_tridiag
+
+        def spy(N_, dt_, T_old_, T_ext_, *coef):
+            calls.append((T_old_.copy(), T_ext_, coef))
+            return orig(N_, dt_, T_old_, T_ext_, *coef)
+
+        solver.assemble_tridiag = spy
+        T_new = solver.solve(hydro, state_prev, DT, _bc(350.0))
+
+        # Сдвиг: решатель подал отклонения от T_ext, граничное значение — 0
+        theta_old, theta_ext, coef = calls[0]
+        assert theta_ext == 0.0
+        np.testing.assert_array_equal(theta_old, state_prev.T - 350.0)
+
+        # Та же система в абсолютной T — независимая сборка
+        a, b, c, d_abs = orig(N, DT, state_prev.T, 350.0, *coef)
+        T_abs = solver.solve_banded_system(a, b, c, d_abs, N)
+        np.testing.assert_allclose(T_new, T_abs, rtol=0.0, atol=1e-9)
+
+        # Отклонения действительно ненулевые: тест не вырожден
+        assert np.max(np.abs(T_new - 350.0)) > 1.0
+
+
+# ═══════════════════════════════════════════════════════════
 # G. JT-охлаждение при снижении давления
 # ═══════════════════════════════════════════════════════════
 

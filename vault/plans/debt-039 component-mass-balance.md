@@ -7,7 +7,8 @@ issue: DEBT-039
 github: 65
 branch: refactor/debt-039/component-mass-balance
 status: реализован
-worktree: .worktrees/debt-039 (ветка от 85c7327; vault задачи — в основном каталоге, не в ветке)
+worktree: .worktrees/debt-039 (ветка от 85c7327; vault задачи — в основном каталоге, не в ветке); удалён после влития
+merged: 8df07ff (2026-10-07)
 audit:
   date: 2026-10-06
   round: 1

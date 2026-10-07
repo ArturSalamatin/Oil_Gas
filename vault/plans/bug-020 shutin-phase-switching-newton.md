@@ -9,7 +9,8 @@ issue: BUG-020
 github: 63
 branch: fix/bug-020/shutin-gas-zone-convergence
 status: реализован
-worktree: .worktrees/bug-020
+merged: 3a1dcc3 (2026-10-07)
+worktree: .worktrees/bug-020; удалён после влития
 progress: шаги 0–9 выполнены (be23344…fe858c6 + vault); база слита в ветку (f4235f6); 1328 passed, прототип 97, регрессия 17/17 PASS
 audit:
   date: 2026-10-07

@@ -84,7 +84,8 @@ def run(self, initial_state: SimulationState) -> SimulationHistory:
             if step == n_sub - 1:
                 history.append(t=state.t, state=state,
                                hydro=hydro_result, well=WellData(...),
-                               balance=balance.snapshot())
+                               balance=balance.snapshot(),
+                               mass_balance=self._mass_snapshot(mass, state))
 
     return history
 ```
@@ -98,6 +99,13 @@ def run(self, initial_state: SimulationState) -> SimulationHistory:
 - накопитель баланса энергии передаётся в `energy.solve(..., collect=)`
   на **каждом** подшаге и вызывается безусловно: баланс должен считаться
   всегда, при любой структуре истории. См. [[модули-energy-tridiag]]
+- накопитель баланса массы `MassBalanceAccumulator` (DEBT-039,
+  `gpn_multiphase_solver/mass_balance.py`) создаётся, если решатель отдаёт
+  запас начального состояния (`HydroSolver.component_inventories` не `None`);
+  `_advance` добавляет в него `HydroResult.int_G_*` только принятого
+  результата (пробный шаг при дроблении отброшен раньше, как и для энергии);
+  на каждой записи `_mass_snapshot` берёт у решателя запас текущего состояния.
+  У двойников без запаса снимки — `None`
 
 Подробности: [[контейнер-simulation-history]].
 

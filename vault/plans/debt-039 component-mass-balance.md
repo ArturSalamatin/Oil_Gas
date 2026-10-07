@@ -6,7 +6,7 @@ date: 2026-10-06
 issue: DEBT-039
 github: 65
 branch: refactor/debt-039/component-mass-balance
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-039 (ветка от 85c7327; vault задачи — в основном каталоге, не в ветке)
 audit:
   date: 2026-10-06

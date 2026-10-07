@@ -22,6 +22,7 @@ class SimulationHistory:
     hydro_results: list[HydroResult]
     well_data: list[WellData]
     balance: list[dict]          # DEBT-013
+    mass_balance: list[dict | None]  # DEBT-039
 ```
 
 ### Поля
@@ -33,6 +34,7 @@ class SimulationHistory:
 | `hydro_results` | `list[HydroResult]` | Потоки через грани (G, Q, u, m, Gm) |
 | `well_data` | `list[WellData]` | Скважинные данные (дебиты, p_wf, T_wf) |
 | `balance` | `list[dict]` | Накопленные члены баланса энергии (DEBT-013) |
+| `mass_balance` | `list[dict \| None]` | Запас компонентов и интегралы потоков через забой и контур (DEBT-039) |
 
 Все списки имеют одинаковую длину K.
 
@@ -66,6 +68,21 @@ class SimulationHistory:
 содержит (замер на 04a: 2e-1 против 1e-3).
 
 На начальном состоянии — нулевой снимок по всем шести членам.
+
+### mass_balance — баланс массы компонентов (DEBT-039)
+
+Словарь скаляров на момент записи, ключи `MASS_KEYS`
+(`gpn_multiphase_solver/mass_balance.py`): `M_o`, `M_g` — запас нефтяного и
+газового компонентов, м³ст; `cum_o_well`, `cum_o_ext`, `cum_g_well`,
+`cum_g_ext` — интегралы потоков через забой и контур от $t = 0$, м³ст (знак
+как у $G$). Невязка $\Delta M + \int G_N\,dt - \int G_0\,dt$ и графики —
+`examples/mass_balance.py`.
+
+Интегралы, как и члены баланса энергии, копятся по всем принятым шагам
+(у адаптера — по подшагам A-retry); запас — функция состояния, его на каждой
+записи отдаёт решатель (`HydroSolver.component_inventories`). На начальном
+состоянии — запас $M(0)$ и нулевые интегралы, не нулевой снимок. У тестовых
+двойников, не сохраняющих массу, все снимки — `None`.
 
 ### Методы (будущее, не реализуем в фазе 3)
 

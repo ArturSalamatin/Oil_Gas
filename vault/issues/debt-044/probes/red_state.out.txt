@@ -1,0 +1,68 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+
+== from_config и run: configs/table_pvt, одна таблица подменена, p_wf = 15 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_bg_zero            ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_bg_negative        ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_mu_zero            ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_mu_negative        ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_p_negative         ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+gas_header_only        from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+gas_one_row            from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+gas_p_not_increasing   from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+rp_sg_negative         run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.3333 сут: двухфазных ячеек 8 из 20, max S_g = 0.018. Если отказ вызван в  [prototype_adapter.py:193]
+rp_sg_above_one        ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+rp_kro_negative        from_config: ValueError: RELPERM values must be non-negative  [relperm.py:6]
+rp_kro_above_one       ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.94…350.98 К, конечны: True
+rp_krg_negative        from_config: ValueError: RELPERM values must be non-negative  [relperm.py:6]
+rp_krg_above_one       ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+rp_header_only         from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+rp_one_row             from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+rp_sg_not_increasing   from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+oil_bo_zero            run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+                         предупреждение RuntimeWarning: divide by zero encountered in divide
+                         предупреждение RuntimeWarning: invalid value encountered in add
+                         предупреждение RuntimeWarning: invalid value encountered in subtract
+oil_bo_negative        ПРОШЛИ: t = 24 ч, p 15.25…20 МПа, S_g max 0, T -245.84…350 К, конечны: True
+oil_mu_zero            run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+                         предупреждение RuntimeWarning: divide by zero encountered in divide
+                         предупреждение RuntimeWarning: divide by zero encountered in scalar divide
+                         предупреждение RuntimeWarning: invalid value encountered in add
+oil_mu_negative        ПРОШЛИ: t = 24 ч, p 15.21…19.93 МПа, S_g max 0, T 169.75…349.99 К, конечны: True
+oil_rs_negative        ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+oil_p_negative         ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+oil_one_branch         from_config: ValueError: OIL_PVT needs >=2 Rs branches, got 1  [pvt.py:46]
+
+== from_config и run: configs/table_pvt, одна таблица подменена, p_wf = 10 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.009834, T 349.91…351.02 К, конечны: True
+gas_bg_zero            ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.006802, T 349.91…351.01 К, конечны: True
+                         предупреждение RuntimeWarning: divide by zero encountered in divide
+gas_bg_negative        run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+gas_mu_zero            ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.004277, T 349.91…351.01 К, конечны: True
+gas_mu_negative        run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+gas_p_negative         ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.008116, T 349.91…351.01 К, конечны: True
+gas_header_only        from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+gas_one_row            from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+gas_p_not_increasing   from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+rp_sg_negative         ПРОШЛИ: t = 24 ч, p 10.33…19.77 МПа, S_g max 0.03521, T 349.87…350.08 К, конечны: True
+rp_sg_above_one        ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.009834, T 349.91…351.02 К, конечны: True
+rp_kro_negative        from_config: ValueError: RELPERM values must be non-negative  [relperm.py:6]
+rp_kro_above_one       ПРОШЛИ: t = 24 ч, p 10.33…19.77 МПа, S_g max 0.01156, T 349.91…351.08 К, конечны: True
+rp_krg_negative        from_config: ValueError: RELPERM values must be non-negative  [relperm.py:6]
+rp_krg_above_one       ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.009834, T 349.91…351.02 К, конечны: True
+rp_header_only         from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+rp_one_row             from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+rp_sg_not_increasing   from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]
+oil_bo_zero            run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+                         предупреждение RuntimeWarning: divide by zero encountered in divide
+                         предупреждение RuntimeWarning: invalid value encountered in add
+                         предупреждение RuntimeWarning: invalid value encountered in subtract
+oil_bo_negative        run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+oil_mu_zero            run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+                         предупреждение RuntimeWarning: divide by zero encountered in divide
+                         предупреждение RuntimeWarning: divide by zero encountered in scalar divide
+                         предупреждение RuntimeWarning: invalid value encountered in add
+oil_mu_negative        run: RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=7.03e+00 s) на шаге с t = 0.0000 сут: двухфазных ячеек 0 из 20, max S_g = 0.000. Если отказ вызван в  [prototype_adapter.py:193]
+oil_rs_negative        ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.009834, T 349.91…351.02 К, конечны: True
+oil_p_negative         ПРОШЛИ: t = 24 ч, p 10.29…19.76 МПа, S_g max 0.00577, T 349.9…351.58 К, конечны: True
+oil_one_branch         from_config: ValueError: OIL_PVT needs >=2 Rs branches, got 1  [pvt.py:46]

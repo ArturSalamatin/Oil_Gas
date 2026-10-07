@@ -1,0 +1,95 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+План: debt-044 csv-table-value-checks.md
+== 1. Правки плана
+   numerical_solver/tests/test_factory_prototype.py #1: «до» найдено 1 раз
+   numerical_solver/tests/test_factory_prototype.py #2: в конец
+   numerical_solver/gpn_multiphase_solver/factory.py #1: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #2: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #3: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #4: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #5: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #6: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #7: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #8: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #9: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #10: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #11: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #12: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/factory.py #13: «до» найдено 1 раз
+   vault/knowledge/decisions/P8-формат-ввода-json.md #1: «до» найдено 1 раз
+   vault/knowledge/decisions/P8-формат-ввода-json.md #2: «до» найдено 1 раз
+   vault/knowledge/decisions/P8-формат-ввода-json.md #3: «до» найдено 1 раз
+   vault/knowledge/decisions/P8-формат-ввода-json.md #4: «до» найдено 1 раз
+   numerical_solver/examples/04_table_table/README.md #1: «до» найдено 1 раз
+   итог: все применимы
+   README 04: строки, которые ищет TestReadme, сохранены
+== 2. Тесты плана на текущем коде (ожидание: 25 failed, 54 passed)
+   FAILED ..\vault\issues\debt-044\probes\plan_check_tmp\test_debt044_plan.py::TestCSVValueChecks::test_oil_one_branch_raises
+   25 failed, 54 passed in 3.06s
+== 3. Тесты плана на коде с правками (ожидание: 79 passed)
+   .......                                                                  [100%]
+   79 passed in 1.17s
+== 3a. То же с настройками pytest проекта и conftest, -m "not slow" (ожидание: 79 passed)
+   .......                                                                  [100%]
+   79 passed in 1.22s
+== 4. Таблицы и конфиги проекта на коде с правками
+   Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+   Таблиц: 47 {'oil_pvt.csv': 16, 'gas_pvt.csv': 16, 'relperm.csv': 15}, отвергнуто: 0
+   Конфигов с табличным PVT или ОФП: 17, from_config отказал: 0 (не конфиги решателя: 0)
+== 5. Проба red_state на коде с правками
+   Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+   == from_config и run: configs/table_pvt, одна таблица подменена, p_wf = 15 МПа
+   эталон (без подмены)   ПРОШЛИ: t = 24 ч, p 15.12…19.87 МПа, S_g max 0, T 349.93…350.94 К, конечны: True
+   gas_bg_zero            from_config: ValueError: gas_pvt.csv: строка 3, столбец Bg: '0.0' — должно быть > 0.  [factory.py:565]
+   gas_bg_negative        from_config: ValueError: gas_pvt.csv: строка 3, столбец Bg: '-0.008' — должно быть > 0.  [factory.py:565]
+   gas_mu_zero            from_config: ValueError: gas_pvt.csv: строка 3, столбец mu_g_Pa_s: '0' — должно быть > 0.  [factory.py:565]
+   gas_mu_negative        from_config: ValueError: gas_pvt.csv: строка 3, столбец mu_g_Pa_s: '-0.000014' — должно быть > 0.  [factory.py:565]
+   gas_p_negative         from_config: ValueError: gas_pvt.csv: строка 2, столбец pressure_Pa: '-5000000' — должно быть > 0.  [factory.py:565]
+   gas_header_only        from_config: ValueError: gas_pvt.csv: строк данных 0, нужно не меньше двух: B_g и μ_g интерполируются по давлению.  [factory.py:242]
+   gas_one_row            from_config: ValueError: gas_pvt.csv: строк данных 1, нужно не меньше двух: B_g и μ_g интерполируются по давлению.  [factory.py:242]
+   gas_p_not_increasing   from_config: ValueError: gas_pvt.csv: давление не растёт строго: 5 МПа после 15 МПа. Строки — по возрастанию давления.  [factory.py:249]
+   rp_sg_negative         from_config: ValueError: relperm.csv: строка 2, столбец Sg: '-0.1' — должно быть в [0, 1].  [factory.py:565]
+   rp_sg_above_one        from_config: ValueError: relperm.csv: строка 7, столбец Sg: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_kro_negative        from_config: ValueError: relperm.csv: строка 7, столбец kro: '-0.1' — должно быть в [0, 1].  [factory.py:565]
+   rp_kro_above_one       from_config: ValueError: relperm.csv: строка 2, столбец kro: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_krg_negative        from_config: ValueError: relperm.csv: строка 3, столбец krg: '-0.01' — должно быть в [0, 1].  [factory.py:565]
+   rp_krg_above_one       from_config: ValueError: relperm.csv: строка 7, столбец krg: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_header_only         from_config: ValueError: relperm.csv: строк данных 0, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.  [factory.py:263]
+   rp_one_row             from_config: ValueError: relperm.csv: строк данных 1, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.  [factory.py:263]
+   rp_sg_not_increasing   from_config: ValueError: relperm.csv: S_g не растёт строго: 0.2 после 0.4. Строки — по возрастанию S_g.  [factory.py:268]
+   oil_bo_zero            from_config: ValueError: oil_pvt.csv: строка 4, столбец Bo: '0.0' — должно быть > 0.  [factory.py:565]
+   oil_bo_negative        from_config: ValueError: oil_pvt.csv: строка 4, столбец Bo: '-1.20' — должно быть > 0.  [factory.py:565]
+   oil_mu_zero            from_config: ValueError: oil_pvt.csv: строка 4, столбец mu_o_Pa_s: '0' — должно быть > 0.  [factory.py:565]
+   oil_mu_negative        from_config: ValueError: oil_pvt.csv: строка 4, столбец mu_o_Pa_s: '-0.0015' — должно быть > 0.  [factory.py:565]
+   oil_rs_negative        from_config: ValueError: oil_pvt.csv: строка 2, столбец Rs_sm3_sm3: '-5.0' — должно быть ≥ 0.  [factory.py:565]
+   oil_p_negative         from_config: ValueError: oil_pvt.csv: строка 2, столбец pressure_Pa: '-5000000' — должно быть > 0.  [factory.py:565]
+   oil_one_branch         from_config: ValueError: oil_pvt.csv: одна ветвь R_s = 30 м³ст/м³ст, нужно не меньше двух: B_o и μ_o интерполируются между ветвями R_s. У дегазированной нефти (Rs0 = 0) добавь  [factory.py:201]
+   == from_config и run: configs/table_pvt, одна таблица подменена, p_wf = 10 МПа
+   эталон (без подмены)   ПРОШЛИ: t = 24 ч, p 10.32…19.77 МПа, S_g max 0.009834, T 349.91…351.02 К, конечны: True
+   gas_bg_zero            from_config: ValueError: gas_pvt.csv: строка 3, столбец Bg: '0.0' — должно быть > 0.  [factory.py:565]
+   gas_bg_negative        from_config: ValueError: gas_pvt.csv: строка 3, столбец Bg: '-0.008' — должно быть > 0.  [factory.py:565]
+   gas_mu_zero            from_config: ValueError: gas_pvt.csv: строка 3, столбец mu_g_Pa_s: '0' — должно быть > 0.  [factory.py:565]
+   gas_mu_negative        from_config: ValueError: gas_pvt.csv: строка 3, столбец mu_g_Pa_s: '-0.000014' — должно быть > 0.  [factory.py:565]
+   gas_p_negative         from_config: ValueError: gas_pvt.csv: строка 2, столбец pressure_Pa: '-5000000' — должно быть > 0.  [factory.py:565]
+   gas_header_only        from_config: ValueError: gas_pvt.csv: строк данных 0, нужно не меньше двух: B_g и μ_g интерполируются по давлению.  [factory.py:242]
+   gas_one_row            from_config: ValueError: gas_pvt.csv: строк данных 1, нужно не меньше двух: B_g и μ_g интерполируются по давлению.  [factory.py:242]
+   gas_p_not_increasing   from_config: ValueError: gas_pvt.csv: давление не растёт строго: 5 МПа после 15 МПа. Строки — по возрастанию давления.  [factory.py:249]
+   rp_sg_negative         from_config: ValueError: relperm.csv: строка 2, столбец Sg: '-0.1' — должно быть в [0, 1].  [factory.py:565]
+   rp_sg_above_one        from_config: ValueError: relperm.csv: строка 7, столбец Sg: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_kro_negative        from_config: ValueError: relperm.csv: строка 7, столбец kro: '-0.1' — должно быть в [0, 1].  [factory.py:565]
+   rp_kro_above_one       from_config: ValueError: relperm.csv: строка 2, столбец kro: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_krg_negative        from_config: ValueError: relperm.csv: строка 3, столбец krg: '-0.01' — должно быть в [0, 1].  [factory.py:565]
+   rp_krg_above_one       from_config: ValueError: relperm.csv: строка 7, столбец krg: '1.2' — должно быть в [0, 1].  [factory.py:565]
+   rp_header_only         from_config: ValueError: relperm.csv: строк данных 0, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.  [factory.py:263]
+   rp_one_row             from_config: ValueError: relperm.csv: строк данных 1, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.  [factory.py:263]
+   rp_sg_not_increasing   from_config: ValueError: relperm.csv: S_g не растёт строго: 0.2 после 0.4. Строки — по возрастанию S_g.  [factory.py:268]
+   oil_bo_zero            from_config: ValueError: oil_pvt.csv: строка 4, столбец Bo: '0.0' — должно быть > 0.  [factory.py:565]
+   oil_bo_negative        from_config: ValueError: oil_pvt.csv: строка 4, столбец Bo: '-1.20' — должно быть > 0.  [factory.py:565]
+   oil_mu_zero            from_config: ValueError: oil_pvt.csv: строка 4, столбец mu_o_Pa_s: '0' — должно быть > 0.  [factory.py:565]
+   oil_mu_negative        from_config: ValueError: oil_pvt.csv: строка 4, столбец mu_o_Pa_s: '-0.0015' — должно быть > 0.  [factory.py:565]
+   oil_rs_negative        from_config: ValueError: oil_pvt.csv: строка 2, столбец Rs_sm3_sm3: '-5.0' — должно быть ≥ 0.  [factory.py:565]
+   oil_p_negative         from_config: ValueError: oil_pvt.csv: строка 2, столбец pressure_Pa: '-5000000' — должно быть > 0.  [factory.py:565]
+   oil_one_branch         from_config: ValueError: oil_pvt.csv: одна ветвь R_s = 30 м³ст/м³ст, нужно не меньше двух: B_o и μ_o интерполируются между ветвями R_s. У дегазированной нефти (Rs0 = 0) добавь  [factory.py:201]
+== 6. Быстрый уровень на коде с правками (ожидание: 1108 passed)
+   -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+   1108 passed, 236 deselected, 1 warning in 77.30s (0:01:17)

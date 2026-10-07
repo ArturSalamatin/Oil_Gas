@@ -6,7 +6,7 @@ date: 2026-10-07
 issue: DEBT-044
 github: 74
 branch: refactor/debt-044/csv-table-value-checks
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-044
 audit:
   date: 2026-10-07
@@ -931,13 +931,15 @@ $R_s \in \{0, 30\}$.
 
 ## Критерии завершения
 
-- [ ] Шаги 1–7 выполнены
-- [ ] Быстрый уровень 1134 passed; полный 1370 passed (или база + 26)
-- [ ] 47 таблиц и все табличные конфиги проходят (`tables_check.out.txt`), чтение побитово прежнее
-- [ ] Каждый случай `red_state.py` отвергнут в `from_config` с именем файла (`green_state.out.txt`)
-- [ ] Прототип не изменён (`git diff --stat <база> -- numerical_solver/HydroSolverPrototype` пуст)
-- [ ] P8 и README 04 описывают новые правила
-- [ ] Реестр, план, комментарий issue обновлены
+- [x] Шаги 1–7 выполнены
+- [x] Быстрый уровень 1134 passed (88.8 с); полный 1370 passed (379 с, 1 warning — `PytestRemovedIn10Warning` в `test_val002.py`, был и в базе)
+- [x] 47 таблиц и все 17 табличных конфигов проходят (`tables_check.out.txt`), чтение побитово прежнее (`debt-042/probes/tables_check.py --compare`)
+- [x] Каждый случай `red_state.py` отвергнут в `from_config` с именем файла: 48 из 48 (24 случая × 2 режима), «эталон» совпадает с красным замером (`green_state.out.txt`)
+- [x] Прототип не изменён (`git diff --stat cf86aa2 HEAD -- numerical_solver/HydroSolverPrototype` пуст)
+- [x] P8 и README 04 описывают новые правила; `TestReadme` 55 passed
+- [x] Реестр, план, комментарий issue обновлены
+
+**Реализация (2026-10-07).** Worktree `.worktrees/debt-044`, ветка от `cf86aa2`. Код, тесты и документы перенесены из блоков плана без отклонений: после каждого шага текст файла сверен программой с результатом применения правок плана к версии `cf86aa2` — совпадает побайтно (`factory.py`, `test_factory_prototype.py`, P8, README 04). Красное состояние на коде ветки до правки совпало с замером плана (отличается только строка с путём к коду).
 
 ## Обнаруженные проблемы
 

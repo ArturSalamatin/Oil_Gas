@@ -6,7 +6,7 @@ date: 2026-10-07
 issue: DEBT-037
 github: 66
 branch: refactor/debt-037/shared-modules-copy-guard
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-07
   round: 2

@@ -7,7 +7,8 @@ issue: DEBT-041
 github: 71
 branch: refactor/debt-041/example03-max-retries-table
 status: реализован
-worktree: .worktrees/debt-041
+worktree: .worktrees/debt-041; удалён после влития
+merged: d73624c (2026-10-07)
 audit:
   date: 2026-10-07
   round: 5

@@ -8,7 +8,8 @@ date: 2026-10-06
 issue: BUG-020
 github: 63
 branch: fix/bug-020/shutin-gas-zone-convergence
-status: готов к реализации
+status: в процессе
+worktree: .worktrees/bug-020
 audit:
   date: 2026-10-07
   round: 4

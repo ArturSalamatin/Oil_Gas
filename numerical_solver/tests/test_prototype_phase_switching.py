@@ -282,3 +282,131 @@ class TestShutinFirstHour:
         """
         with pytest.raises(RuntimeError, match="HydroSolver не сошёлся после 512 подшагов"):
             _run_rs150(False)
+
+
+# ═══════════════════════════════════════════════════════════
+# C. Управляющая логика advance без Ньютона (подмена _advance_phases)
+# ═══════════════════════════════════════════════════════════
+
+from radial_blackoil.blackoil import BlackOilNewtonReport  # noqa: E402
+
+# Модель Nabor_1b и состояние после часа отбора — из тестов BUG-014
+# (как в test_prototype_globalization.py)
+from .test_prototype_well_branch import _build, _model, drawn_down  # noqa: F401,E402
+
+ORIG = (None, -0.05, False, False)   # (ветка, граница S_g, ||F||_2, ступень 4)
+SHUT, OPEN = ("shut", None, False, False), ("open", None, False, False)
+SHUT3, OPEN3 = ("shut", None, True, False), ("open", None, True, False)
+SHUT4, OPEN4 = ("shut", None, False, True), ("open", None, False, True)
+
+
+def _install_fake_phases(model, plan):
+    """Подменить _advance_phases; ключ — (ветка, граница S_g, ||F||_2, ступень 4).
+
+    plan[key] — (converged, p0_bar, iterations) или "raise". Ступень 4 в
+    настоящем коде уходит из _advance_phases в _newton_switching — подмена
+    видит её по model._phase_switching.
+    """
+    calls = []
+
+    def fake(state_old, dt_s, max_active_iter, max_newton):
+        key = (model._well_branch, model._sg_lower_bound, model._line_search_l2,
+               model._phase_switching)
+        calls.append(key)
+        answer = plan[key]
+        if answer == "raise":
+            raise RuntimeError("искусственный отказ")
+        converged, p0_bar, its = answer
+        new = state_old.copy()
+        new.pressure_bar[0] = p0_bar
+        return new, BlackOilNewtonReport(converged, its, float(its))
+
+    model._advance_phases = fake
+    return calls
+
+
+class TestFourthStageLogic:
+    """Модель p_wf = 150 бар, state_old = drawn_down (p[0] = 111.7 < 150): ветки стартуют с «закрыта»."""
+
+    def test_flag_off_three_stages_only(self, drawn_down):
+        # Прототип по умолчанию: после трёх отказов ступени 4 нет
+        model = _model(150.0)
+        assert model.phase_switching_stage is False
+        plan = {k: (False, 0.0, 3) for k in (ORIG, SHUT, OPEN, SHUT3, OPEN3)}
+        calls = _install_fake_phases(model, plan)
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG, SHUT, OPEN, SHUT3, OPEN3]
+        assert not rep.converged and not rep.phase_switching
+        _assert_restored(model)
+
+    def test_fourth_stage_after_three_fail(self, drawn_down):
+        # Три ступени отказали; ступень 4 на «закрыта» сходится с p[0] = 149 <= 150
+        model = _model(150.0)
+        model.phase_switching_stage = True
+        plan = {k: (False, 0.0, 3) for k in (ORIG, SHUT, OPEN, SHUT3, OPEN3)}
+        plan[SHUT4] = (True, 149.0, 20)
+        calls = _install_fake_phases(model, plan)
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG, SHUT, OPEN, SHUT3, OPEN3, SHUT4]
+        assert rep.converged and rep.phase_switching and rep.globalized and rep.fallback
+        assert rep.well_branch == "shut" and rep.iterations == 20
+        _assert_restored(model)
+
+    def test_no_fourth_stage_when_third_converges(self, drawn_down):
+        model = _model(150.0)
+        model.phase_switching_stage = True
+        plan = {k: (False, 0.0, 3) for k in (ORIG, SHUT, OPEN)}
+        plan[SHUT3] = (True, 149.0, 7)
+        calls = _install_fake_phases(model, plan)
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG, SHUT, OPEN, SHUT3]
+        assert rep.converged and rep.globalized and not rep.phase_switching
+        _assert_restored(model)
+
+    def test_all_four_fail_report_original(self, drawn_down):
+        # Отказ везде: ступень 4 пробует обе ветки; в отчёте — Ньютон исходного
+        # алгоритма (DEBT-030), признак ступени 4 — от последней попытки
+        model = _model(150.0)
+        model.phase_switching_stage = True
+        plan = {k: (False, 0.0, 9) for k in (SHUT, OPEN, SHUT3, OPEN3, SHUT4, OPEN4)}
+        plan[ORIG] = (False, 0.0, 15)
+        calls = _install_fake_phases(model, plan)
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert calls == [ORIG, SHUT, OPEN, SHUT3, OPEN3, SHUT4, OPEN4]
+        assert not rep.converged and rep.phase_switching
+        assert rep.iterations == 15 and rep.residual_inf == 15.0
+        _assert_restored(model)
+
+    def test_exception_in_fourth_stage(self, drawn_down):
+        model = _model(150.0)
+        model.phase_switching_stage = True
+        plan = {k: (False, 0.0, 3) for k in (ORIG, SHUT, OPEN, SHUT3, OPEN3)}
+        plan[SHUT4] = "raise"
+        _install_fake_phases(model, plan)
+        with pytest.raises(RuntimeError):
+            model.advance(drawn_down, 3600.0)
+        _assert_restored(model)
+
+    def test_rate_control_fourth_stage(self):
+        # Управление по дебиту: запасной путь без ветки; ступень 4 — тот же повтор
+        model, state = _build(150.0)
+        model.set_oil_rate_control(2.0, 100.0)
+        model.phase_switching_stage = True
+        R0, R2, R3, R4 = ORIG, (None, None, False, False), (None, None, True, False), (None, None, False, True)
+        calls = _install_fake_phases(model, {R0: (False, 0.0, 3), R2: (False, 0.0, 3),
+                                             R3: (False, 0.0, 3), R4: (True, 190.0, 11)})
+        _, rep = model.advance(state, 60.0)
+        assert calls == [R0, R2, R3, R4]
+        assert rep.converged and rep.phase_switching
+        _assert_restored(model)
+
+
+# ═══════════════════════════════════════════════════════════
+# D. Подключение в GPN
+# ═══════════════════════════════════════════════════════════
+
+def test_factory_enables_fourth_stage():
+    """Фабрика GPN включает ступень 4 (решение пользователя 2026-10-06); прототип — нет."""
+    sim, _ = SimulatorFactory.from_config(load_config(RS300))
+    assert sim._hydro._model.phase_switching_stage is True
+    assert _model(150.0).phase_switching_stage is False

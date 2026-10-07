@@ -183,3 +183,5 @@ def test_failure_message_reports_state_not_guess():
     assert "t = 0.0000 сут" in msg
     assert "двухфазных ячеек 0 из 50" in msg
     assert "малоподвижны" not in msg
+    # BUG-020: подшаги A-retry равны — подсказка про dt_integration при смене режима скважины
+    assert "time.dt_integration" in msg

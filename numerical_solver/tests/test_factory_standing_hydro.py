@@ -117,10 +117,10 @@ class TestStandingDeepDrawdownDenseGrid:
     Newton отказывал. Тест «при max_retries = 8 падает» поэтому удалён.
 
     Класс остаётся регрессионной привязкой результата. Умолчание
-    numerics.max_retries = 9 по-прежнему нужно: пример 04a (первый шаг —
-    512 = 2⁹ подшагов, tests/test_examples.py::TestHighGasSaturation::
-    test_dense_grid_converges_at_default_retries) и пример 03 при
-    p_wf = 2 и 0.5 МПа, N = 150 (порог 9, замер аудита BUG-014).
+    numerics.max_retries = 9 — запас, а не порог: ни этот сценарий, ни
+    пример 03 при глубокой депрессии (не больше 4 удвоений, замер DEBT-041)
+    его не требуют. Обоснование значения — комментарий
+    NumericsConfig.max_retries (gpn_multiphase_solver/io/config.py).
     """
 
     def _config(self):

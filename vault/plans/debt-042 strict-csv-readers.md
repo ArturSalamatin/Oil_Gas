@@ -7,7 +7,7 @@ issue: DEBT-042
 github: 72
 branch: refactor/debt-042/strict-csv-readers
 worktree: .worktrees/debt-042 (код и тесты — в ветке; vault задачи — в основном каталоге)
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-07
   round: 2

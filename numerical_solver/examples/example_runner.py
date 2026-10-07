@@ -71,6 +71,7 @@ from rs_analytics import make_overlay_rs, report_rs  # noqa: E402
 from closed_form import (  # noqa: E402
     make_overlay_pressure, make_overlay_saturation, report_closed)
 from energy_balance import plot_energy_balance  # noqa: E402
+from mass_balance import plot_mass_balance  # noqa: E402
 from temperature_asymptotics import report_asymptotics  # noqa: E402
 from pvt_plot import plot_pvt, report_pvt  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
@@ -216,6 +217,14 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # на подшагах внутри решателя, а не восстанавливаются по записям.
     print()
     plot_energy_balance(history, grid, config, output_dir)
+
+    # ── Баланс массы компонентов (DEBT-039) ──
+    # Интегралы потоков через забой и контур копит решатель по всем
+    # принятым шагам, запас на записях отдаёт решатель — как у баланса
+    # энергии, структура истории проверке не мешает. До export_emf:
+    # рисунок попадает в тот же пакет EMF.
+    print()
+    plot_mass_balance(config, history, output_dir)
 
     # ── EMF-копии рисунков (FEAT-026) ──
     # Все рисунки run_example уже сохранены (PNG + SVG в emf/):

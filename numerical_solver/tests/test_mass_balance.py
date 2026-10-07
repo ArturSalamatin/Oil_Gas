@@ -10,16 +10,29 @@
 Конфиги примеров укорочены (6 ч или 2 + 2 ч, N = 25) — тесты идут доли секунды.
 """
 
+import copy
+import json
+import sys
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from gpn_multiphase_solver.factory import SimulatorFactory
+from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.mass_balance import MASS_KEYS, MassBalanceAccumulator
 from gpn_multiphase_solver.simulator import Simulator
 
 from ._doubles import LogProfileHydroStub, SubdividingHydroStub
 from .test_simulator import _initial_state, _make_simulator, _single_interval_schedule
+
+# Модуль сборки невязки — общий для примеров (examples/mass_balance.py)
+_EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
+if str(_EXAMPLES) not in sys.path:
+    sys.path.insert(0, str(_EXAMPLES))
+
+from mass_balance import compute_mass_balance  # noqa: E402
 
 # Порог относительной невязки (нормировка — сумма модулей членов). Уровень —
 # допуск Ньютона прототипа (rtol = 1e-8 к начальной невязке шага, atol =
@@ -183,3 +196,81 @@ class TestSimulatorWiring:
                         pvt, _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
         with pytest.raises(RuntimeError, match="int_G"):
             sim.run(_initial_state())
+
+
+# ── Укороченные конфиги примеров, настоящий решатель ──────────
+
+def _short_config(example: str, n_intervals: int = 1):
+    """Конфиг примера: 6 ч одним или n интервалами, N = 25 (как test_energy_balance_examples)."""
+    config = load_config(_EXAMPLES / example / "config.json")
+    config.grid.N = 25
+    iv = copy.deepcopy(config.time.history[0])
+    config.time.history = [copy.deepcopy(iv) for _ in range(n_intervals)]
+    for h in config.time.history:
+        h.dt = 21600.0 / n_intervals
+    config.output.log_level = "WARNING"
+    return config
+
+
+def _run(config):
+    simulator, initial_state = SimulatorFactory.from_config(config)
+    return simulator.run(initial_state)
+
+
+@pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
+def test_mass_balance_closes_short(example):
+    """Невязка баланса массы — на уровне допуска Ньютона: Стендинг и таблица.
+
+    Источник PVT был разделительной линией в BUG-004 — проверяются обе ветви.
+    Замер при планировании: 3.4e-11 (03), 1.0e-12 (04).
+    """
+    bal = compute_mass_balance(_run(_short_config(example)))
+    assert _max_rel(bal) < TOL
+
+
+@pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
+def test_mass_balance_independent_of_history_structure(example):
+    """Снимок баланса массы не зависит от частоты записи — побитово.
+
+    Одни и те же 6 подшагов по 3600 с, одна запись или шесть: интегралы
+    складываются в том же порядке, запас — функция побитово равного
+    состояния. Восстановление по записям так не умело бы (DEBT-013).
+    """
+    sparse = _run(_short_config(example, 1))
+    dense = _run(_short_config(example, 6))
+    assert dense.n_saved == 7
+    assert sparse.mass_balance[-1] == dense.mass_balance[-1]
+
+
+def test_mass_balance_through_shut_in(tmp_path):
+    """Баланс массы через останов: 2 ч добычи при 6 МПа, 2 ч останова (q_oil = 0).
+
+    Конфиг примера 16, N = 25, шаг 300 с — как в
+    test_energy_balance_examples.py::test_stepped_schedule_matches_uniform_across_shut_in.
+    Запись 24 — конец добычи. На останове забой закрыт: интегралы через
+    забой не меняются ни в одном бите, а пласт добирает нефть с контура —
+    приток за останов равен росту запаса. Замер при планировании: невязка
+    1.1e-11 (нефть), 4.5e-10 (газ); приток и рост запаса нефти — по 1.649 м³ст.
+    """
+    src = _EXAMPLES / "16_well_shut_in" / "config.json"
+    raw = json.loads(src.read_text(encoding="utf-8"))
+    raw["time"]["history"] = [
+        {"dt": 300.0, "repeat": 24, "control": "pressure", "p_wf": 6.0e6},
+        {"dt": 300.0, "repeat": 24, "control": "rate", "q_oil": 0.0,
+         "min_bhp": 101325.0}]
+    raw["time"]["dt_integration"] = 300.0
+    path = tmp_path / "shut_in.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    config = load_config(path)
+    # Таблицы PVT и ОФП фабрика ищет относительно конфига — каталог примера
+    config.config_dir = src.parent
+    config.grid.N = 25
+    config.output.log_level = "WARNING"
+
+    bal = compute_mass_balance(_run(config))
+    assert _max_rel(bal) < TOL
+    assert np.all(bal["cum_o_well"][24:] == bal["cum_o_well"][24])
+    assert np.all(bal["cum_g_well"][24:] == bal["cum_g_well"][24])
+    inflow = bal["inflow_o"][-1] - bal["inflow_o"][24]
+    assert inflow > 0.0
+    assert bal["dM_o"][-1] - bal["dM_o"][24] == pytest.approx(inflow, rel=1e-6)

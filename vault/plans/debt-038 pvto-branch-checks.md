@@ -6,7 +6,7 @@ date: 2026-10-07
 issue: DEBT-038
 github: 67
 branch: refactor/debt-038/pvto-branch-checks
-status: в процессе
+status: реализован
 audit:
   date: 2026-10-07
   found: 7

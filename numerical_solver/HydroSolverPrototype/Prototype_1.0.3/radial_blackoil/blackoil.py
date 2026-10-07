@@ -15,6 +15,9 @@ computed once per step (_old_inventories); faces take Bo, mu_o from pvt.bo_mu_o
 where the PVT has it.
 DEBT-030: when all three stages of advance() fail, the report carries the Newton
 fields of the original algorithm, not those of the last fallback attempt.
+BUG-021: _newton_fixed_active_set tests convergence on every new iterate, the
+last one included, on the residual its line search has evaluated; no Jacobian
+is built only to detect convergence.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -292,13 +295,20 @@ class RadialBlackOilModel:
         if (lo is not None and np.any(x[gas_active]<lo)) or np.any(x[gas_active]>0.98): return False
         return True
     def _newton_fixed_active_set(self,z0,state_old,dt_s,gas_active,max_iter=15,rtol=1e-8,atol_sm3s=1e-11):
-        z=np.asarray(z0,float).copy(); f_initial=self.residual(z,state_old,dt_s,gas_active); scale=max(np.linalg.norm(f_initial,np.inf),1e-9)
+        z=np.asarray(z0,float).copy(); f=self.residual(z,state_old,dt_s,gas_active); nrm=np.linalg.norm(f,np.inf)
+        scale=max(nrm,1e-9); tol=atol_sm3s+rtol*scale
         # BUG-016: norm of the line search; the convergence test stays on ||F||_inf.
         # With defaults the comparison is norm(ft,inf)<nrm, bitwise as before.
         merit=(lambda v: np.linalg.norm(v)) if self._line_search_l2 else (lambda v: np.linalg.norm(v,np.inf))
+        # BUG-021: convergence is tested on every new iterate, the last one included.
+        # It used to be tested at the top of the next iteration only, so a solve that
+        # converged on update max_iter was reported as failed.  f is residual(z),
+        # bitwise the f0 that the Jacobian call returns at the same z: wherever the
+        # solve converged before, iterates and reports are unchanged, and the
+        # Jacobian that was built only to detect convergence is no longer built.
+        if nrm<=tol: return z,BlackOilNewtonReport(True,0,float(nrm))
         for it in range(1,max_iter+1):
-            J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active); nrm=np.linalg.norm(f,np.inf)
-            if nrm<=atol_sm3s+rtol*scale: return z,BlackOilNewtonReport(True,it-1,float(nrm))
+            J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active)
             try: dz=self._linear_solve(J,-f)
             except Exception: return z,BlackOilNewtonReport(False,it,float(nrm))
             if self._sg_step_max is not None:
@@ -311,10 +321,12 @@ class RadialBlackOilModel:
                 trial=z+alpha*dz
                 if self._trial_is_reasonable(trial,gas_active):
                     ft=self.residual(trial,state_old,dt_s,gas_active)
-                    if merit(ft)<mf: z=trial; accepted=True; break
+                    if merit(ft)<mf: z=trial; f=ft; accepted=True; break
                 alpha*=0.5
             if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
-        f=self.residual(z,state_old,dt_s,gas_active); return z,BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)))
+            nrm=np.linalg.norm(f,np.inf)
+            if nrm<=tol: return z,BlackOilNewtonReport(True,it,float(nrm))
+        return z,BlackOilNewtonReport(False,max_iter,float(nrm))
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);

@@ -4,7 +4,7 @@ date: 2026-10-06
 issue: BUG-021
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/64
 branch: fix/bug-021/newton-final-iterate-check
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-021
 audit:
   date: 2026-10-06

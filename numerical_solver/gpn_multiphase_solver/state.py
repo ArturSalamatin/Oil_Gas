@@ -73,6 +73,19 @@ class HydroResult:
     # энергию нельзя решать одним большим шагом — BUG-010.
     n_substeps: int = 1
 
+    # Интегралы потоков компонентов через забой и контур за шаг, м³ст
+    # (DEBT-039): ∫G[0] dt и ∫G[N] dt по ВСЕМ внутренним подшагам решателя.
+    # Знак — как у G (> 0 от скважины): при добыче int_G_*_well < 0, при
+    # притоке с контура int_G_*_ext < 0. Нужны балансу массы: G_o, G_g выше —
+    # потоки ПОСЛЕДНЕГО внутреннего подшага, и при дроблении шага (A-retry)
+    # dt·G от интеграла отличается (замер при планировании: невязка баланса
+    # шага 9·10⁻² вместо ≤ 10⁻¹⁰). None — решатель массу не сохраняет
+    # (тестовые двойники); тогда и его component_inventories возвращает None.
+    int_G_o_well: float | None = None
+    int_G_o_ext: float | None = None
+    int_G_g_well: float | None = None
+    int_G_g_ext: float | None = None
+
 
 # ── Результат теплового шага ─────────────────────────────────
 
@@ -142,16 +155,24 @@ class SimulationHistory:
     (снимок EnergyBalanceAccumulator, словарь скаляров). Считается
     по ВСЕМ подшагам, а не по сохранённым состояниям, поэтому корректен
     при любой структуре истории, включая неравномерную (DEBT-013).
+
+    mass_balance — баланс массы компонентов на момент каждой записи
+    (снимок MassBalanceAccumulator, DEBT-039): запас нефтяного и газового
+    компонентов M_o, M_g и интегралы потоков через забой и контур от t = 0,
+    м³ст. Интегралы, как и члены баланса энергии, копятся по ВСЕМ принятым
+    шагам. None — решатель массу не сохраняет (тестовые двойники).
     """
     times: list[float] = field(default_factory=list)
     states: list[SimulationState] = field(default_factory=list)
     hydro_results: list[HydroResult] = field(default_factory=list)
     well_data: list[WellData] = field(default_factory=list)
     balance: list[dict] = field(default_factory=list)
+    mass_balance: list[dict | None] = field(default_factory=list)
 
     def append(self, t: float, state: SimulationState,
                hydro: HydroResult, well: WellData,
-               balance: dict | None = None) -> None:
+               balance: dict | None = None,
+               mass_balance: dict | None = None) -> None:
         """Добавить один сохранённый шаг."""
         self.times.append(t)
         self.states.append(state)
@@ -160,6 +181,10 @@ class SimulationHistory:
         # None → нулевой снимок: на начальном состоянии накоплений ещё нет.
         self.balance.append(balance if balance is not None
                             else _zero_balance())
+        # None — баланс массы не считается: решатель-двойник массу не
+        # сохраняет (DEBT-039). Нулевого снимка, как у баланса энергии, нет:
+        # запас компонентов в начальном состоянии не нулевой, его даёт решатель.
+        self.mass_balance.append(mass_balance)
 
     @property
     def n_saved(self) -> int:

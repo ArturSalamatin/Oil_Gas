@@ -38,6 +38,7 @@ class BlackOilNewtonReport:
     well_switches: int = 0    # branch changes in advance's fallback, BUG-014
     fallback: bool = False    # step solved by advance's fallback, BUG-014
     globalized: bool = False  # advance's third stage ran (||F||_2 line search, Sg step limit), BUG-016
+    phase_switching: bool = False  # advance's fourth stage ran (phase switches inside Newton), BUG-020
 
 def _sg_activation_cap(relperm):
     """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
@@ -50,7 +51,8 @@ class RadialBlackOilModel:
     def __init__(self, grid, rock, pvt, relperm, p_bhp_bar, p_outer_bar,
                  outer_rs_sm3_sm3, skin=0.0, rs_switch_tol=1e-5,
                  sg_switch_tol=1e-9, gas_residual_scale=None,
-                 jacobian_mode='grouped', linear_solver='sparse'):
+                 jacobian_mode='grouped', linear_solver='sparse',
+                 phase_switching_stage=False):
         self.grid=grid; self.rock=rock; self.pvt=pvt; self.relperm=relperm
         self.p_bhp_bar=float(p_bhp_bar); self.p_outer_bar=float(p_outer_bar)
         self.outer_rs=float(outer_rs_sm3_sm3); self.skin=float(skin)
@@ -84,6 +86,13 @@ class RadialBlackOilModel:
         self.jacobian_mode=jacobian_mode; self.linear_solver=linear_solver
         # DEBT-036: (key, oil, gas) inventories of the last state_old of physical_residual (_old_inventories)
         self._old_inventories_cache=None
+        # BUG-020: fourth stage of advance (_newton_switching), off by default so that the
+        # prototype's own runs and its regression golden stay bitwise; the GPN factory turns
+        # it on.  _phase_switching routes _advance_phases to the fourth-stage Newton;
+        # _upwind_frozen/_upwind_left hold the upstream cell of internal faces during it
+        # (None outside it, face_component_fluxes_sm3s then picks it by the pressure drop).
+        self.phase_switching_stage=bool(phase_switching_stage); self._phase_switching=False
+        self._upwind_frozen=None; self._upwind_left=None
 
     def set_bhp_control(self,bhp_bar):
         self.control_mode='BHP'; self.p_bhp_bar=float(bhp_bar)

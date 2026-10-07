@@ -18,6 +18,10 @@ fields of the original algorithm, not those of the last fallback attempt.
 BUG-021: _newton_fixed_active_set tests convergence on every new iterate, the
 last one included, on the residual its line search has evaluated; no Jacobian
 is built only to detect convergence.
+BUG-020: a fourth stage of advance() (phase_switching_stage, off by default): the
+BUG-014 fallback with _newton_switching -- phase switches after every Newton
+iteration, per-cell update limits, no line search, upstream cells held on faces
+whose flow direction flips.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -194,6 +198,9 @@ class RadialBlackOilModel:
         qow,qgfw,qgcw=self._well_fluxes(state)
         if n>1:
             dp=p[:-1]-p[1:]; left=dp>=0
+            # BUG-020: the fourth stage holds the upstream cell of faces whose flow
+            # direction flipped twice between its Newton iterates (None elsewhere)
+            if self._upwind_frozen is not None: left=np.where(self._upwind_frozen,self._upwind_left,left)
             p_up=np.where(left,p[:-1],p[1:]); rs_up=np.where(left,rs[:-1],rs[1:]); sg_up=np.where(left,sg[:-1],sg[1:])
             lo,lg=self._phase_mobilities_surface(p_up,rs_up,sg_up); T=self.grid.internal_transmissibility_m3
             qoi=T*lo*dp*BAR_TO_PA; qgfi=T*lg*dp*BAR_TO_PA; qgci=rs_up*qoi+qgfi
@@ -339,8 +346,10 @@ class RadialBlackOilModel:
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
-        if that fails too, the fallback again with a globalized Newton (BUG-016).
-        If all three fail, the report carries the original algorithm's Newton (DEBT-030)."""
+        if that fails too, the fallback again with a globalized Newton (BUG-016);
+        if that fails too and phase_switching_stage is on, the fallback with phase
+        switches inside Newton (BUG-020).
+        If all stages fail, the report carries the original algorithm's Newton (DEBT-030)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -364,20 +373,34 @@ class RadialBlackOilModel:
         try:
             new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
             rep.globalized=True
-            if not rep.converged:
-                # DEBT-030: the last attempt is often the BHP 'shut' branch, which
-                # "converges" in 0 iterations with ||F|| = 0 on an unchanged state and
-                # is dropped as inconsistent; its report made every rejected step in
-                # step_log.csv read "0 iterations, residual 0".  Report the original
-                # algorithm's Newton instead (as before BUG-014); the branch fields
-                # (well_branch, well_switches, fallback, globalized) stay the last
-                # attempt's.  Accepted steps are untouched (_grow_dt reads them).
-                rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
-                            active_set_iterations=orig.active_set_iterations,
-                            phase_switches=orig.phase_switches)
-            return new,rep
         finally:
             self._line_search_l2=False; self._sg_step_max=None
+        if rep.converged: return new,rep
+        if self.phase_switching_stage:
+            # Fourth stage (BUG-020), only where the first three fail, so every step they
+            # solve stays bitwise: the BUG-014 fallback (well branches, consistency check)
+            # with _advance_phases routed to _newton_switching.  Shut-in after production
+            # with a developed gas zone (examples 19-21: Sg near the well 0.4) failed all
+            # three; see _newton_switching for the mechanism.
+            self._phase_switching=True
+            try:
+                new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+                rep.globalized=True; rep.phase_switching=True
+            finally:
+                self._phase_switching=False
+            if rep.converged: return new,rep
+        if not rep.converged:
+            # DEBT-030: the last attempt is often the BHP 'shut' branch, which
+            # "converges" in 0 iterations with ||F|| = 0 on an unchanged state and
+            # is dropped as inconsistent; its report made every rejected step in
+            # step_log.csv read "0 iterations, residual 0".  Report the original
+            # algorithm's Newton instead (as before BUG-014); the branch fields
+            # (well_branch, well_switches, fallback, globalized) stay the last
+            # attempt's.  Accepted steps are untouched (_grow_dt reads them).
+            rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
+                        active_set_iterations=orig.active_set_iterations,
+                        phase_switches=orig.phase_switches)
+        return new,rep
     def _fallback(self,state_old,dt_s,max_active_iter,max_newton):
         """BUG-014 fallback: no lower bound on Sg; BHP control fixes the well branch
         (start from the old state's branch, accept a consistent result only, try the
@@ -408,6 +431,9 @@ class RadialBlackOilModel:
             self._sg_lower_bound=-0.05; self._well_branch=None
     def _advance_phases(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """Phase active-set loop (unchanged Prototype 1 logic)."""
+        # BUG-020: inside the fourth stage of advance the BUG-014 fallback (well branches)
+        # runs the Newton with phase switches inside it instead of this loop
+        if self._phase_switching: return self._newton_switching(state_old,dt_s)
         state_old=state_old.copy(); mask=state_old.gas_active.copy(); guess=state_old.copy(); total_switches=total_newton=0
         for aset in range(1,max_active_iter+1):
             z,report=self._newton_fixed_active_set(self.pack(guess,mask),state_old,dt_s,mask,max_iter=max_newton); total_newton+=report.iterations
@@ -429,6 +455,80 @@ class RadialBlackOilModel:
             if np.any(deactivate): guess.sg[deactivate]=0.0; guess.rs_sm3_sm3[deactivate]=self.pvt.rs_sat(guess.pressure_bar[deactivate])
             mask=newmask
         r=self.residual(self.pack(guess,mask),state_old,dt_s,mask); return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),max_active_iter,total_switches)
+    def _switch_phases(self,p,x,mask):
+        """BUG-020: phase switch at a Newton iterate (p, x) of the fourth stage; returns (x, mask, switches)."""
+        rs_sat=self.pvt.rs_sat(p); x=x.copy()
+        deact=mask&(x<-self.sg_switch_tol); act=(~mask)&(x>rs_sat+self.rs_switch_tol)
+        if np.any(deact):
+            # Sg < 0 (method of negative saturations): the cell keeps its gas/oil ratio,
+            # (So*Rs_sat/Bo + Sg/Bg)/(So/Bo) = Rs_sat + Sg*Bo/((1-Sg)*Bg) -- the inverse
+            # of the closed flash below; clipped at 0 where Sg is far below zero
+            sg=x[deact]; pd=p[deact]; bo=self.pvt.bo(pd,rs_sat[deact]); bg=self.pvt.bg(pd)
+            x[deact]=np.maximum(rs_sat[deact]+sg*bo/((1.0-sg)*bg),0.0)
+        if np.any(act):
+            # closed-flash Sg with the BUG-018 cap, as in _advance_phases
+            pa=p[act]; rsat=rs_sat[act]; bo=self.pvt.bo(pa,rsat); bg=self.pvt.bg(pa); d=np.maximum(x[act]-rsat,0.0)
+            sg0=np.maximum(d*bg/(bo+d*bg),1e-8)
+            if self.sg_activation_cap is not None: sg0=np.minimum(sg0,self.sg_activation_cap)
+            x[act]=sg0
+        m=mask.copy(); m[deact]=False; m[act]=True
+        return x,m,int(np.count_nonzero(deact)+np.count_nonzero(act))
+    def _newton_switching(self,state_old,dt_s,max_iter=40,rtol=1e-8,atol_sm3s=1e-11,dp_rel=0.3,ds_max=0.2,flips_to_freeze=2):
+        """BUG-020 fourth stage: Newton with phase switches after every iteration, per-cell update limits, no line search."""
+        # Shut-in after production with a developed gas zone.  The well cell is upstream of no
+        # face once the well is shut, and its gas storage per unit Sg, 1/Bg - Rs/Bo, is small at
+        # low pressure (7.4 at 51 bar against 38.9 at 200 bar, example 20): the first Newton
+        # direction asks |dSg| ~ 0.7*dt[s].  The bound -0.05 rejects every trial, no bound sends
+        # Sg to -23...-1137 (c_t < 0 there), the third stage scales the whole update by
+        # 0.2/|dSg| and the pressure crawls.  Here a cell leaves the two-phase set as soon as
+        # an iterate takes its Sg below 0, and the limits act per cell (dpMaxRel, dsMax of OPM
+        # Flow).  No line search: after the per-cell limit the update is not a descent
+        # direction of ||F||, and the search stopped at the first iteration (plan BUG-020, 1.4).
+        # Later steps: in the stagnant undersaturated zone near the shut well the pressure is
+        # level to 1e-3 bar, the upstream cell of 1-11 faces flips every iteration and the
+        # Newton converges linearly (26 iterations against 15); faces that flipped twice keep
+        # their upstream cell until convergence, then a polish without holding returns the
+        # original upwind scheme.
+        state_old=state_old.copy(); n=self.grid.n; nf=max(n-1,0)
+        mask=state_old.gas_active.copy(); z=self.pack(state_old,mask)
+        scale=max(np.linalg.norm(self.residual(z,state_old,dt_s,mask),np.inf),1e-9); tol=atol_sm3s+rtol*scale
+        switched=total=0; flips=np.zeros(nf,int); prev=None; polish=False
+        self._upwind_frozen=np.zeros(nf,bool); self._upwind_left=np.zeros(nf,bool)
+        try:
+            # one pass more than max_iter: the residual after the last update is checked too
+            for it in range(1,max_iter+2):
+                p=z[:n]; left=(p[:-1]-p[1:])>=0
+                if not polish:
+                    # faces whose direction flipped flips_to_freeze times keep their upstream cell
+                    if prev is not None: flips+=(left!=prev)&~self._upwind_frozen
+                    fr=(~self._upwind_frozen)&(flips>=flips_to_freeze)
+                    self._upwind_left=np.where(fr,left,self._upwind_left); self._upwind_frozen=self._upwind_frozen|fr
+                prev=left
+                J,f=self.finite_difference_jacobian(z,state_old,dt_s,mask); nrm=np.linalg.norm(f,np.inf)
+                if nrm<=tol and switched==0:
+                    fz=self._upwind_frozen
+                    if fz is None or np.array_equal(self._upwind_left[fz],left[fz]):
+                        new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
+                        # same bound as _trial_is_reasonable: no root with Sg > 0.98
+                        ok=not np.any(new.sg[mask]>0.98)
+                        return new,BlackOilNewtonReport(ok,it-1,float(nrm),1,total)
+                    # converged with a held upstream cell the solution contradicts: polish
+                    # without holding, so the result solves the original upwind scheme
+                    self._upwind_frozen=None; polish=True; continue
+                if it>max_iter: break
+                try: dz=self._linear_solve(J,-f)
+                except Exception: break
+                # per-cell limits; Rs of undersaturated cells >= 0, pressure >= 1 bar
+                x=z[n:]; lim=dp_rel*np.maximum(p,1.0)
+                pn=np.maximum(p+np.clip(dz[:n],-lim,lim),1.0+1e-6)
+                xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+dz[n:],0.0))
+                if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): break
+                xn,mask,switched=self._switch_phases(pn,xn,mask); total+=switched
+                z=np.concatenate([pn,xn])
+            f=self.residual(z,state_old,dt_s,mask)
+            return self.unpack(z,mask),BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)),1,total)
+        finally:
+            self._upwind_frozen=None; self._upwind_left=None
     def well_rates(self,state):
         f=self.face_component_fluxes_sm3s(state); qo=f['oil_well']; qgf=f['free_gas_well']; qgt=f['gas_component_well']
         return {'oil_sm3_s':qo,'free_gas_sm3_s':qgf,'dissolved_gas_sm3_s':qgt-qgf,'total_gas_sm3_s':qgt,

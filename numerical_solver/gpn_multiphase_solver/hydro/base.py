@@ -21,6 +21,8 @@ class HydroSolver(ABC):
     Тестовый двойник LogProfileHydroStub (tests/_doubles.py) намеренно
     держится вне пакета: он подставляет готовый лог-профиль вместо решения
     уравнения фильтрации и не должен попадать в production-расчёт (DEBT-005).
+
+    Запас компонентов для баланса массы — component_inventories (DEBT-039).
     """
 
     @abstractmethod
@@ -40,3 +42,13 @@ class HydroSolver(ABC):
         температуру обновляет EnergySolver отдельно).
         """
         ...
+
+    def component_inventories(self, state: SimulationState) -> tuple[float, float] | None:
+        """Запас нефтяного и газового компонентов, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
+        # None — решатель массу не сохраняет. Не абстрактный (DEBT-039):
+        # тестовые двойники (tests/_doubles.py) уравнения фильтрации не
+        # решают и массу не сохраняют — баланс массы для них не считается.
+        # Решатель, сохраняющий массу, обязан переопределить метод И заполнять
+        # HydroResult.int_G_*: иначе Simulator бросит RuntimeError на первом
+        # шаге (mass_balance.py).
+        return None

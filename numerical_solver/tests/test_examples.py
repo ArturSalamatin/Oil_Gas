@@ -504,6 +504,8 @@ def test_pipeline_writes_output(tmp_path):
         "saturation_profiles.png", "well_rates.png", "wellbore_dynamics.png",
         # FEAT-016: баланс энергии подключён к run_example для всех примеров
         "energy_balance.png",
+        # DEBT-039: баланс массы компонентов — общий модуль для всех примеров
+        "mass_balance.png",
         # FEAT-017: свойства PVT — общий модуль для всех примеров
         "pvt.png",
     ]
@@ -608,7 +610,7 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
 
 
 # ═══════════════════════════════════════════════════════════
-# I. Общие проверки: баланс энергии у всех примеров (FEAT-016)
+# I. Общие проверки: балансы энергии и массы у всех примеров (FEAT-016, DEBT-039)
 # ═══════════════════════════════════════════════════════════
 
 # Модули проверок, вынесенные в examples/ (FEAT-016). Ни один из них не
@@ -623,6 +625,7 @@ SHARED_CHECK_MODULES = [
     "temperature_asymptotics.py",
     "two_phase_analytics.py",
     "pvt_plot.py",
+    "mass_balance.py",
 ]
 
 # Прежде здесь стоял отдельный список BALANCE_EXAMPLES: баланс суммировал
@@ -664,6 +667,31 @@ class TestSharedChecks:
             if rel >= 1e-10:
                 bad[name] = rel
         assert not bad, f"невязка баланса >= 1e-10: {bad}"
+
+    def test_mass_balance_all_examples(self, results):
+        """Баланс массы компонентов замыкается у всех примеров (DEBT-039).
+
+        Порог 1e-6 на максимум относительной невязки по всем записям, нефть и
+        газ. Уровень — допуск Ньютона прототипа, а не округления, как у
+        баланса энергии: проверяется не физика (масса сохраняется невязкой
+        Ньютона), а всё между невязкой и историей — допуск, накопленный по
+        шагам; знаки потоков адаптера; учёт дробления шага. Замер при
+        планировании (2026-10-06): 4.0e-13 ... 2.9e-8 (пример 15), запас к
+        порогу — 35 раз; дефекты учёта дают 1e-3...1.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from mass_balance import compute_mass_balance
+
+        bad = {}
+        for name in ALL_EXAMPLES:
+            bal = compute_mass_balance(results[name]["history"])
+            assert bal is not None, f"{name}: баланс массы не считается"
+            worst = max(float(np.max(bal["rel_residual_o"])),
+                        float(np.max(bal["rel_residual_g"])))
+            if worst >= 1e-6:
+                bad[name] = worst
+        assert not bad, f"невязка баланса массы >= 1e-6: {bad}"
 
     def test_conduction_term_always_computed(self, results):
         """Кондуктивный член считается безусловно, а не при lambda != 0.
@@ -755,7 +783,8 @@ class TestSharedChecks:
         примеры 06-10 снова остались бы без проверки.
 
         Берётся пример 10: у него lambda != 0, поэтому в выводе должна быть
-        и ненулевая строка теплопроводности.
+        и ненулевая строка теплопроводности. Тот же прогон проверяет
+        подключение баланса массы компонентов (DEBT-039).
         """
         import contextlib
         import io
@@ -778,6 +807,11 @@ class TestSharedChecks:
             "в выводе баланса нет кондуктивного члена")
         assert (tmp_path / "energy_balance.png").is_file(), (
             "run_example не сохранил график баланса")
+        # DEBT-039: баланс массы подключён к тому же run_example
+        assert "Баланс массы компонентов" in out, (
+            "run_example не печатает баланс массы")
+        assert (tmp_path / "mass_balance.png").is_file(), (
+            "run_example не сохранил график баланса массы")
         # Асимптотика подключена и печатает заголовок. Прежде здесь
         # проверялось сообщение «не проверяется» при lambda != 0: условие
         # относилось к ТЕЛЕСКОПИЧЕСКОЙ формуле, которая удалена вместе со

@@ -23,7 +23,13 @@ Internal и outer — без инверсии.
 A-retry: при расходимости Newton автоматически дробит dt.
 Глубина дробления — numerics.max_retries (2**max_retries подшагов).
 См. P1-адаптер-единицы.md, P4-адаптивный-шаг.md.
+
+Баланс массы (DEBT-039): component_inventories — запас компонентов
+функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
+и контур по всем подшагам A-retry (G в HydroResult — последнего).
 """
+
+from dataclasses import replace
 
 import numpy as np
 
@@ -53,6 +59,23 @@ class PrototypeHydroAdapter(HydroSolver):
         self._grid = grid
         self._pvt = pvt
         self._max_retries = int(max_retries)
+
+    def component_inventories(self, state: SimulationState) -> tuple[float, float]:
+        """Запас компонентов функцией прототипа, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
+        from radial_blackoil.state import BlackOilState
+
+        # Запас берётся у прототипа, а не пересчитывается здесь: те же
+        # пористость (rock.py), B_o, B_g и объёмы его сетки, что в невязке
+        # Ньютона. Пересчёт своими формулами — механизм BUG-004: баланс
+        # сверялся бы не со схемой, а с её копией.
+        proto_state = BlackOilState(
+            pressure_bar=state.p / BAR_TO_PA,
+            rs_sm3_sm3=state.Rs.copy(),
+            sg=state.Sg.copy(),
+            gas_active=(state.regime == 1),
+        )
+        oil, gas = self._model.component_inventories(proto_state)
+        return float(np.sum(oil)), float(np.sum(gas))
 
     def solve(self, state: SimulationState, dt: float,
               bc: BoundaryConditions) -> HydroResult:
@@ -90,6 +113,10 @@ class PrototypeHydroAdapter(HydroSolver):
 
             success = True
             current_state = state
+            # Интегралы потоков компонентов через забой и контур по подшагам
+            # этой попытки, м³ст (DEBT-039). Обнуляются на каждой попытке:
+            # подшаги отвергнутой попытки в баланс не идут.
+            int_o_well = int_o_ext = int_g_well = int_g_ext = 0.0
 
             for step in range(n_sub):
                 # Шаг 2: SimulationState (Па) → BlackOilState (бар)
@@ -109,6 +136,16 @@ class PrototypeHydroAdapter(HydroSolver):
                         f"iters={report.iterations}, res={report.residual_inf:.2e}")
                     success = False
                     break
+
+                # Потоки подшага — на новом состоянии, как в невязке Ньютона
+                # (неявная схема). Знаки: у прототипа отток к скважине
+                # положителен — инверсия только на забое, как в _build_result:
+                # при добыче int_*_well < 0, при притоке с контура int_*_ext < 0.
+                f = self._model.face_component_fluxes_sm3s(new_proto)
+                int_o_well += dt_sub * (-f['oil_well'])
+                int_o_ext += dt_sub * f['oil_outer']
+                int_g_well += dt_sub * (-f['gas_component_well'])
+                int_g_ext += dt_sub * f['gas_component_outer']
 
                 # Шаг 4: BlackOilState (бар) → SimulationState (Па)
                 current_state = SimulationState(
@@ -134,8 +171,13 @@ class PrototypeHydroAdapter(HydroSolver):
                 # n_sub уходит наружу: энергия обязана пройти столько же
                 # подшагов, иначе расщепление применяется на шаге, который
                 # гидродинамика признала неустойчивым (BUG-010).
-                return self._build_result(current_state, new_proto, bc,
-                                          n_substeps=n_sub)
+                # G в HydroResult — потоки последнего подшага; балансу массы
+                # нужны интегралы по всем (DEBT-039).
+                result = self._build_result(current_state, new_proto, bc,
+                                            n_substeps=n_sub)
+                return replace(result,
+                               int_G_o_well=int_o_well, int_G_o_ext=int_o_ext,
+                               int_G_g_well=int_g_well, int_G_g_ext=int_g_ext)
 
         # Сообщение — факты, а не догадка о причине. Отказ бывает из-за
         # величины шага (DEBT-007, BUG-003: тогда помогает дробление глубже) и

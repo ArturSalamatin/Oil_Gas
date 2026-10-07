@@ -1,0 +1,26 @@
+﻿
+пример                                невязка        порог  статус
+----------------------------------------------------------------------
+01_single_phase_no_jt              7.5422e-17        1e-12  OK
+02_single_phase_jt                 1.9633e-16        1e-12  OK
+03_standing_corey                  3.9822e-16        1e-12  OK
+04_table_table                     5.8467e-16        1e-12  OK
+04a_high_gas_saturation            7.9793e-16        1e-12  OK
+05_standing_table_rp               4.0882e-16        1e-12  OK
+06_table_corey_rp                  1.8986e-16        1e-12  OK
+07_degassing_adiabatic_only        3.5380e-16        1e-12  OK
+08_degassing_jt                    4.5435e-16        1e-12  OK
+09_degassing_latent_heat           1.0622e-16        1e-12  OK
+10_deep_degassing                  6.2905e-16        1e-12  OK
+11_degassing_at_boundary           2.7435e-16        1e-12  OK
+12_large_drainage_radius           7.5874e-16        1e-12  OK
+13a_pwf_ramp_down                  5.1146e-17        1e-12  OK
+13b_pwf_alternating                8.2129e-16        1e-12  OK
+14_high_gor_cooling                9.5848e-17        1e-12  OK
+15_oil_rate_ramp_up                8.6624e-16        1e-12  OK
+16_well_shut_in                    5.1482e-15        1e-12  OK
+19_rs150_cooling                   1.0025e-16        1e-12  OK
+20_rs300_cooling                   1.6723e-16        1e-12  OK
+21_rs100_cooling                   0.0000e+00        1e-12  OK
+
+ВСЕ 21 примеров прошли: баланс замыкается, невязка <= 1e-12

@@ -1,0 +1,6 @@
+﻿код плана:
+  прежнее тело: max|T_new − T_abs| = 5.68e-14 K → проходит
+  исправленное: θ_ext == 0 True, θ_old == T_old − 350 True, max|T_new − T_abs| = 1.71e-13 K → проходит
+ошибка: T_ext не сдвинут:
+  прежнее тело: max|T_new − T_abs| = 5.68e-14 K → проходит
+  исправленное: θ_ext == 0 False, θ_old == T_old − 350 True, max|T_new − T_abs| = 4.47e-01 K → ПАДАЕТ

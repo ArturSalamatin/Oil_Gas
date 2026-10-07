@@ -1,0 +1,8 @@
+﻿[2.1] T_ref = 350.0; max|T_new − T_abs| = 5.68e-14 K (< 1e-9: True); max|T_new − T_ref| = 5.000 K (> 1: True)
+      Q_o на контуре = -1.067e-02 м³/с (< 0 — приток)
+[2.2] 03_standing_corey: rel 0.00e+00 (< 1e-14: True)
+[2.2] 04_table_table: rel 7.75e-17 (< 1e-14: True)
+[1.5] 03_standing_corey: вызовов 72, max |d − d_ref|/допуск = 1.81e-04 (≤ 1: True), a[0] = c[N-1] = 0: True
+[1.5] 10_deep_degassing: вызовов 73, max |d − d_ref|/допуск = 1.94e-04 (≤ 1: True), a[0] = c[N-1] = 0: True
+[1.5] 16_well_shut_in: вызовов 721, max |d − d_ref|/допуск = 1.77e-04 (≤ 1: True), a[0] = c[N-1] = 0: True
+[1.5] 20_rs300_cooling: вызовов 76, max |d − d_ref|/допуск = 2.12e-04 (≤ 1: True), a[0] = c[N-1] = 0: True

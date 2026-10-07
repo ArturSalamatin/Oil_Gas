@@ -1,0 +1,6 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-020\numerical_solver\gpn_multiphase_solver; dt=конфиг; short=False
+ пример                       | отн. сейчас | отн. в θ  | max по записям в θ | |невязка| в θ, Дж | max|ΔT|, К | max|Δp|, Па | max|ΔSg|
+ 16_well_shut_in              | 1.34e-10    | 1.87e-15  | 2.79e-15           | 1.13e-04          | 3.3e-11    | 0.0e+00     | 0.0e+00
+ 13b_pwf_alternating          | 3.51e-11    | 8.21e-16  | 1.24e-15           | 1.03e-04          | 2.9e-11    | 0.0e+00     | 0.0e+00
+
+худшая относительная невязка в θ (max по записям): 2.79e-15

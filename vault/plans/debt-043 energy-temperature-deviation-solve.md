@@ -6,8 +6,9 @@ date: 2026-10-07
 issue: DEBT-043
 github: 70
 branch: refactor/debt-043/energy-temperature-deviation-solve
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-043 (ветка от 79603bc — код как в 3bd659e; vault задачи — в основном каталоге, не в ветке)
+implemented: 2026-10-07 — коммиты e76e79c, b75a340, dec33ca, 2a956c5; 1310 passed (313 с); невязка 0…5.1e-15; p, Sg побитово, |ΔT| ≤ 3.1e-11 K; ожидает влития
 audit:
   date: 2026-10-07
   round: 1

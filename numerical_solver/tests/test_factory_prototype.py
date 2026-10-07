@@ -9,6 +9,7 @@
 - Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
 - Ветви PVTO-таблицы: не меньше двух строк, давление и p_b(R_s) растут (DEBT-038)
 - Строгий разбор CSV: заголовок, число полей, конечные числа (DEBT-042)
+- Допустимость значений CSV: пределы столбцов, число строк, рост p и S_g, ветви R_s (DEBT-044)
 """
 
 import logging
@@ -723,4 +724,209 @@ class TestCSVStrictParsing:
         config = load_config(TABLE_CONFIG)
         config.config_dir = tmp_path
         with pytest.raises(ValueError, match="relperm.csv: строка 6, столбец kro"):
+            SimulatorFactory.from_config(config)
+
+
+# ═══════════════════════════════════════════════════════════
+# I. Допустимость значений CSV-таблиц (DEBT-044)
+# ═══════════════════════════════════════════════════════════
+
+# До DEBT-044 CSV-путь не проверял B > 0, μ > 0, p > 0, R_s ≥ 0, S_g и k_r
+# в [0, 1]; число строк и рост p, S_g проверяли только конструкторы прототипа —
+# на английском и без имени файла. Поведение до правки — проба
+# vault/issues/debt-044/probes/red_state.out.txt (2026-10-07): таблица
+# configs/table_pvt с одной испорченной строкой, run 24 ч при p_wf = 15 МПа
+# (штатный, = p_b, газа нет) и 10 МПа (газовая зона у забоя). Эталон при
+# 10 МПа: S_g max 0.0098, T 349.91…351.02 К.
+
+# Строки данных gas_pvt.csv и relperm.csv конфига configs/table_pvt
+TABLE_GAS_ROWS = ["5000000,0.020,0.000012\n", "15000000,0.008,0.000014\n",
+                  "30000000,0.004,0.000018\n"]
+TABLE_RP_ROWS = ["0.0,1.0,0.0\n", "0.1,0.8,0.01\n", "0.2,0.6,0.05\n",
+                 "0.4,0.3,0.2\n", "0.6,0.1,0.5\n", "0.8,0.0,0.8\n"]
+
+
+def _with_row(header, rows, index, line):
+    """Текст таблицы header + rows, где строка данных rows[index] заменена на line."""
+    rows = list(rows)
+    rows[index] = line
+    return header + "".join(rows)
+
+
+def _table_config_with_csv(tmp_path, name, text):
+    """TABLE_CONFIG, где таблица name заменена на text; остальные — копии configs/table_pvt."""
+    for fname in ("oil_pvt.csv", "gas_pvt.csv", "relperm.csv"):
+        shutil.copy(TABLE_CONFIG.parent / fname, tmp_path / fname)
+    (tmp_path / name).write_text(text, encoding="utf-8")
+    config = load_config(TABLE_CONFIG)
+    config.config_dir = tmp_path
+    return config
+
+
+# Значение вне пределов столбца: (файл, текст таблицы, строка файла, столбец, правило).
+# Комментарий к случаю — что было до правки (проба red_state).
+VALUE_CASES = [
+    # ── Газ: p, B_g, μ_g > 0 (строка 3 — узел 15 МПа) ──
+    # при 10 МПа счёт проходит с «divide by zero»: S_g max 0.0068 вместо 0.0098
+    pytest.param("gas_pvt.csv",
+                 _with_row(GAS_HEADER, TABLE_GAS_ROWS, 1, "15000000,0.0,0.000014\n"),
+                 3, "Bg", "> 0", id="gas_Bg_zero"),
+    # при 10 МПа Ньютон не сходится на первом шаге
+    pytest.param("gas_pvt.csv",
+                 _with_row(GAS_HEADER, TABLE_GAS_ROWS, 1, "15000000,-0.008,0.000014\n"),
+                 3, "Bg", "> 0", id="gas_Bg_negative"),
+    # при 10 МПа молча: S_g max 0.0043
+    pytest.param("gas_pvt.csv",
+                 _with_row(GAS_HEADER, TABLE_GAS_ROWS, 1, "15000000,0.008,0\n"),
+                 3, "mu_g_Pa_s", "> 0", id="gas_mu_zero"),
+    # при 10 МПа Ньютон не сходится на первом шаге
+    pytest.param("gas_pvt.csv",
+                 _with_row(GAS_HEADER, TABLE_GAS_ROWS, 1, "15000000,0.008,-0.000014\n"),
+                 3, "mu_g_Pa_s", "> 0", id="gas_mu_negative"),
+    # узел 5 МПа записан как −5 МПа: при 10 МПа молча S_g max 0.0081
+    pytest.param("gas_pvt.csv",
+                 _with_row(GAS_HEADER, TABLE_GAS_ROWS, 0, "-5000000,0.020,0.000012\n"),
+                 2, "pressure_Pa", "> 0", id="gas_p_negative"),
+    # ── Нефть: p, B_o, μ_o > 0, R_s ≥ 0 (строка 4 — насыщенная точка ветви 30) ──
+    # Ньютон не сходится на первом шаге, «divide by zero»
+    pytest.param("oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                 + "30.0,15000000,0.0,0.0015\n30.0,30000000,1.18,0.0016\n",
+                 4, "Bo", "> 0", id="oil_Bo_zero"),
+    # при 15 МПа счёт проходит до конца: T min = −245.8 К, сообщений нет
+    pytest.param("oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                 + "30.0,15000000,-1.20,0.0015\n30.0,30000000,1.18,0.0016\n",
+                 4, "Bo", "> 0", id="oil_Bo_negative"),
+    # Ньютон не сходится на первом шаге, «divide by zero»
+    pytest.param("oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                 + "30.0,15000000,1.20,0\n30.0,30000000,1.18,0.0016\n",
+                 4, "mu_o_Pa_s", "> 0", id="oil_mu_zero"),
+    # при 15 МПа молча: T min = 169.8 К
+    pytest.param("oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                 + "30.0,15000000,1.20,-0.0015\n30.0,30000000,1.18,0.0016\n",
+                 4, "mu_o_Pa_s", "> 0", id="oil_mu_negative"),
+    # лишняя ветвь R_s = −5 (p_b = 4 МПа) перед ветвями 0 и 30: в сценарии
+    # пробы не задействована, но таблица нефизична
+    pytest.param("oil_pvt.csv", OIL_HEADER + "-5.0,4000000,1.02,0.0031\n-5.0,30000000,1.01,0.0033\n"
+                 + OIL_BRANCH_0 + OIL_BRANCH_30,
+                 2, "Rs_sm3_sm3", "≥ 0", id="oil_Rs_negative"),
+    # p_b ветви 0 записано как −5 МПа: при 10 МПа молча T max 351.58 К вместо 351.02
+    pytest.param("oil_pvt.csv", OIL_HEADER + "0.0,-5000000,1.05,0.003\n0.0,30000000,1.04,0.0032\n"
+                 + OIL_BRANCH_30,
+                 2, "pressure_Pa", "> 0", id="oil_p_negative"),
+    # ── ОФП: S_g, k_ro, k_rg в [0, 1] ──
+    # при 15 МПа Ньютон не сходится (t = 0.33 сут), при 10 МПа молча S_g max 0.035
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 0, "-0.1,1.0,0.0\n"),
+                 2, "Sg", "в [0, 1]", id="rp_Sg_negative"),
+    # узел за S_g = 1 искажает k_r у S_g → 1; в коротком сценарии не задействован
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 5, "1.2,0.0,0.8\n"),
+                 7, "Sg", "в [0, 1]", id="rp_Sg_above_one"),
+    # отвергал и TabulatedRelPerm — на английском, без имени файла
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 5, "0.8,-0.1,0.8\n"),
+                 7, "kro", "в [0, 1]", id="rp_kro_negative"),
+    # при 10 МПа молча: S_g max 0.0116
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 0, "0.0,1.2,0.0\n"),
+                 2, "kro", "в [0, 1]", id="rp_kro_above_one"),
+    # отвергал и TabulatedRelPerm — на английском, без имени файла
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 1, "0.1,0.8,-0.01\n"),
+                 3, "krg", "в [0, 1]", id="rp_krg_negative"),
+    # в коротком сценарии не задействован (S_g у забоя < 0.01)
+    pytest.param("relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 5, "0.8,0.0,1.2\n"),
+                 7, "krg", "в [0, 1]", id="rp_krg_above_one"),
+]
+
+VALUE_READERS = {"oil_pvt.csv": _read_oil_pvt_csv, "gas_pvt.csv": _read_gas_pvt_csv,
+                 "relperm.csv": _read_relperm_csv}
+
+
+class TestCSVValueChecks:
+    """CSV-путь отвергает недопустимые значения и неполные таблицы с именем файла (DEBT-044)."""
+
+    # ── Пределы столбцов: проверка при разборе, с номером строки ──
+
+    @pytest.mark.parametrize("name, text, line, column, rule", VALUE_CASES)
+    def test_value_out_of_range_raises(self, tmp_path, name, text, line, column, rule):
+        """Значение вне пределов столбца → ValueError ридера: файл, строка, столбец, правило.
+
+        Пределы — _OIL_PVT_LIMITS, _GAS_PVT_LIMITS, _RELPERM_LIMITS в factory.py.
+        """
+        msg = _parse_error(VALUE_READERS[name], _csv(tmp_path, name, text))
+        assert f"{name}: строка {line}, столбец {column}:" in msg
+        assert f"должно быть {rule}" in msg
+
+    def test_boundary_values_accepted(self, tmp_path):
+        """Границы включаются: S_g, k_ro, k_rg = 0 и 1; R_s = 0.
+
+        Ловит строгое неравенство там, где граница допустима: S_g = 0 и
+        k_ro = 1 стоят в первой строке всех 15 таблиц ОФП проекта, R_s = 0 —
+        ветвь дегазированной нефти.
+        """
+        Sg, kro, krg = _read_relperm_csv(
+            _csv(tmp_path, "relperm.csv", RP_HEADER + "0.0,1.0,0.0\n1.0,0.0,1.0\n"))
+        assert (Sg, kro, krg) == ([0.0, 1.0], [1.0, 0.0], [0.0, 1.0])
+        rows = _read_oil_pvt_csv(_csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0))
+        assert rows[0][0] == 0.0
+
+    def test_value_error_fails_in_from_config(self, tmp_path):
+        """B_o < 0 ловится в from_config с именем файла, а не при счёте.
+
+        До правки from_config и run проходили: T min = −245.8 К при
+        p_wf = 15 МПа. Ловит вызов ридера в обход проверки пределов.
+        """
+        config = _table_config_with_csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                                        + "30.0,15000000,-1.20,0.0015\n30.0,30000000,1.18,0.0016\n")
+        with pytest.raises(ValueError, match="oil_pvt.csv: строка 4, столбец Bo"):
+            SimulatorFactory.from_config(config)
+
+    # ── Таблица целиком: число строк, рост p и S_g, число ветвей ──
+
+    def test_gas_header_only_raises(self, tmp_path):
+        """Только заголовок.
+
+        До правки — «GAS_PVT pressure must be strictly increasing with >=2 rows» (pvt.py:32).
+        """
+        config = _table_config_with_csv(tmp_path, "gas_pvt.csv", GAS_HEADER)
+        with pytest.raises(ValueError, match="gas_pvt.csv: строк данных 0, нужно не меньше двух"):
+            SimulatorFactory.from_config(config)
+
+    def test_gas_one_row_raises(self, tmp_path):
+        """Одна строка: B_g(p) не интерполировать. До правки — то же английское сообщение."""
+        config = _table_config_with_csv(tmp_path, "gas_pvt.csv", GAS_HEADER + TABLE_GAS_ROWS[1])
+        with pytest.raises(ValueError, match="gas_pvt.csv: строк данных 1, нужно не меньше двух"):
+            SimulatorFactory.from_config(config)
+
+    def test_gas_pressure_not_increasing_raises(self, tmp_path):
+        """Строки 5 и 15 МПа переставлены.
+
+        До правки — английское сообщение pvt.py:32 без имени файла.
+        """
+        config = _table_config_with_csv(
+            tmp_path, "gas_pvt.csv",
+            GAS_HEADER + TABLE_GAS_ROWS[1] + TABLE_GAS_ROWS[0] + TABLE_GAS_ROWS[2])
+        with pytest.raises(ValueError,
+                           match="gas_pvt.csv: давление не растёт строго: 5 МПа после 15 МПа"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_header_only_raises(self, tmp_path):
+        """Только заголовок: до правки — «RELPERM Sg must be strictly increasing with >=2 rows»."""
+        config = _table_config_with_csv(tmp_path, "relperm.csv", RP_HEADER)
+        with pytest.raises(ValueError, match="relperm.csv: строк данных 0, нужно не меньше двух"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_one_row_raises(self, tmp_path):
+        """Одна строка ОФП; до правки — то же английское сообщение relperm.py:5."""
+        config = _table_config_with_csv(tmp_path, "relperm.csv", RP_HEADER + TABLE_RP_ROWS[0])
+        with pytest.raises(ValueError, match="relperm.csv: строк данных 1, нужно не меньше двух"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_sg_not_increasing_raises(self, tmp_path):
+        """Строки S_g = 0.2 и 0.4 переставлены; до правки — английское сообщение relperm.py:5."""
+        swapped = TABLE_RP_ROWS[:2] + [TABLE_RP_ROWS[3], TABLE_RP_ROWS[2]] + TABLE_RP_ROWS[4:]
+        config = _table_config_with_csv(tmp_path, "relperm.csv", RP_HEADER + "".join(swapped))
+        with pytest.raises(ValueError, match="relperm.csv: S_g не растёт строго: 0.2 после 0.4"):
+            SimulatorFactory.from_config(config)
+
+    def test_oil_one_branch_raises(self, tmp_path):
+        """Одна ветвь R_s = 30: до правки — «OIL_PVT needs >=2 Rs branches, got 1» (pvt.py:46)."""
+        config = _table_config_with_csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_30)
+        with pytest.raises(ValueError, match="oil_pvt.csv: одна ветвь R_s = 30 м³ст/м³ст"):
             SimulatorFactory.from_config(config)

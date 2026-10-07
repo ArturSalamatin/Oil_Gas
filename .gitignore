@@ -45,7 +45,12 @@ numerical_solver/results/*.npz
 numerical_solver/results/*.png
 numerical_solver/results/*.xlsx
 numerical_solver/examples/**/output/
-vault/issues
+# vault/issues: тексты issue и скрипты проб — в git (нужны в worktree задачи);
+# выходы проб — истории и графики — воспроизводимы, не хранить
+vault/issues/**/*.npz
+vault/issues/**/*.png
+vault/issues/**/*.emf
+vault/issues/**/*.svg
 
 # Локальный эталон для сверки «до/после» при рефакторинге (DEBT-018).
 # Снимается вручную через BASELINE_WRITE=1, привязан к конкретному дереву.

@@ -1,0 +1,7 @@
+﻿one_row_middle     from_config прошёл
+one_row_last       from_config прошёл
+repeated_pressure  from_config прошёл  | RuntimeWarning: ['divide by zero encountered in divide', 'divide by zero encountered in divide']
+out_of_order       from_config прошёл
+rs_typo            from_config прошёл
+empty              IndexError: index -1 is out of bounds for axis 0 with size 0
+interleaved        from_config прошёл

@@ -1,0 +1,21 @@
+   01_single_phase_no_jt       : вызовов    72, max err/lim = 0.00e+00, проходит
+   02_single_phase_jt          : вызовов    72, max err/lim = 0.00e+00, проходит
+   03_standing_corey           : вызовов    72, max err/lim = 9.22e-04, проходит
+   04_table_table              : вызовов    72, max err/lim = 9.73e-04, проходит
+   04a_high_gas_saturation     : вызовов   864, max err/lim = 1.07e-03, проходит
+   05_standing_table_rp        : вызовов    72, max err/lim = 0.00e+00, проходит
+   06_table_corey_rp           : вызовов    72, max err/lim = 9.35e-04, проходит
+   07_degassing_adiabatic_only : вызовов    72, max err/lim = 0.00e+00, проходит
+   08_degassing_jt             : вызовов    72, max err/lim = 9.72e-04, проходит
+   09_degassing_latent_heat    : вызовов    72, max err/lim = 0.00e+00, проходит
+   10_deep_degassing           : вызовов    73, max err/lim = 8.95e-04, проходит
+   11_degassing_at_boundary    : вызовов    72, max err/lim = 7.49e-04, проходит
+   12_large_drainage_radius    : вызовов   360, max err/lim = 9.29e-04, проходит
+   13a_pwf_ramp_down           : вызовов   360, max err/lim = 9.37e-04, проходит
+   13b_pwf_alternating         : вызовов   721, max err/lim = 1.06e-03, проходит
+   14_high_gor_cooling         : вызовов   360, max err/lim = 1.70e-03, проходит
+   15_oil_rate_ramp_up         : вызовов   360, max err/lim = 8.34e-04, проходит
+   19_rs150_cooling            : вызовов    30, max err/lim = 1.63e-03, проходит
+   20_rs500_cooling            : вызовов    30, max err/lim = 1.94e-03, проходит
+   21_rs100_cooling            : вызовов    30, max err/lim = 1.90e-03, проходит
+exit 0

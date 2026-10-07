@@ -1,0 +1,48 @@
+﻿═══ 1. Предупреждения на конфигах ═══
+  numerical_solver\examples\01_single_phase_no_jt\config.json            p_lo 15.000, p_b  -0.176, p0  20.00 МПа;    0.2 мс; предупреждений 0
+  numerical_solver\examples\02_single_phase_jt\config.json               p_lo 15.000, p_b  -0.176, p0  20.00 МПа;    0.1 мс; предупреждений 0
+  numerical_solver\examples\03_standing_corey\config.json                p_lo  8.000, p_b   9.426, p0  20.00 МПа;    0.4 мс; предупреждений 0
+  numerical_solver\examples\04_table_table\config.json                   p_lo  8.000, p_b  15.000, p0  20.00 МПа;    1.0 мс; предупреждений 0
+  numerical_solver\examples\04a_high_gas_saturation\config.json          p_lo  4.000, p_b  15.000, p0  20.00 МПа;    1.0 мс; предупреждений 0
+  numerical_solver\examples\05_standing_table_rp\config.json             p_lo  8.000, p_b   9.426, p0  20.00 МПа;    0.4 мс; предупреждений 0
+  numerical_solver\examples\06_table_corey_rp\config.json                p_lo  8.000, p_b  15.000, p0  20.00 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\07_degassing_adiabatic_only\config.json      p_lo  8.000, p_b  15.000, p0  20.00 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\08_degassing_jt\config.json                  p_lo  8.000, p_b  15.000, p0  20.00 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\09_degassing_latent_heat\config.json         p_lo  8.000, p_b  15.000, p0  20.00 МПа;    0.7 мс; предупреждений 0
+  numerical_solver\examples\10_deep_degassing\config.json                p_lo  6.000, p_b  15.000, p0  20.00 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\11_degassing_at_boundary\config.json         p_lo  6.000, p_b  15.000, p0  15.05 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\12_large_drainage_radius\config.json         p_lo  6.000, p_b  15.000, p0  15.50 МПа;    0.7 мс; предупреждений 0
+  numerical_solver\examples\13a_pwf_ramp_down\config.json                p_lo  6.000, p_b  15.000, p0  15.50 МПа;    0.7 мс; предупреждений 0
+  numerical_solver\examples\13b_pwf_alternating\config.json              p_lo  6.000, p_b  15.000, p0  15.50 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\14_high_gor_cooling\config.json              p_lo  6.000, p_b  23.723, p0  24.50 МПа;    1.9 мс; предупреждений 0
+  numerical_solver\examples\15_oil_rate_ramp_up\config.json              p_lo  0.101, p_b  15.000, p0  15.50 МПа;    0.8 мс; предупреждений 0
+  numerical_solver\examples\19_rs150_cooling\config.json                 p_lo  3.000, p_b  24.185, p0  24.70 МПа;    0.3 мс; предупреждений 0
+  numerical_solver\examples\20_rs500_cooling\config.json                 p_lo  5.000, p_b  46.380, p0  46.90 МПа;    5.7 мс; предупреждений 1
+      PVT несогласована: отрицательная сжимаемость насыщенной нефти с выделяющимся газом c_ot = (B_g·dR_s/dp − dB_o/dp)/B_o при p от 34.55 до 46.38 МПа (min -5.6e-09 1/Па)
+  numerical_solver\examples\21_rs100_cooling\config.json                 p_lo  3.000, p_b  17.223, p0  17.70 МПа;    0.3 мс; предупреждений 0
+  numerical_solver\configs\baseline.json                                 p_lo 10.000, p_b   9.426, p0  20.00 МПа;    0.1 мс; предупреждений 0
+  numerical_solver\configs\table_pvt\config.json                         p_lo 15.000, p_b  15.000, p0  20.00 МПа;    0.4 мс; предупреждений 0
+  numerical_solver\tests\data\bug018_rs500\config.json                   p_lo  5.000, p_b  46.380, p0  46.90 МПа;    5.7 мс; предупреждений 1
+      PVT несогласована: отрицательная сжимаемость насыщенной нефти с выделяющимся газом c_ot = (B_g·dR_s/dp − dB_o/dp)/B_o при p от 34.55 до 46.38 МПа (min -5.6e-09 1/Па)
+  numerical_solver\tests\data\bug016_example14\config.json               p_lo  6.000, p_b  24.000, p0  24.50 МПа;    0.9 мс; предупреждений 0
+  vault\issues\bug-019\probes\frozen\config.json                         p_lo  5.000, p_b  46.380, p0  46.90 МПа;    5.6 мс; предупреждений 1
+      PVT несогласована: отрицательная сжимаемость насыщенной нефти с выделяющимся газом c_ot = (B_g·dR_s/dp − dB_o/dp)/B_o при p от 34.55 до 46.38 МПа (min -5.6e-09 1/Па)
+
+═══ 2. Синтетические таблицы (configs/table_pvt, p_wf = 5 МПа) ═══
+  oil_bad: предупреждений 1
+      PVT несогласована: отрицательная сжимаемость насыщенной нефти с выделяющимся газом c_ot = (B_g·dR_s/dp − dB_o/dp)/B_o при p от 11.94 до 15 МПа (min -7.61e-09 1/Па)
+  gas_bad: предупреждений 1
+      PVT несогласована: отрицательная сжимаемость газа c_g = −(1/B_g)·dB_g/dp при p от 10 до 15 МПа (min -1.66e-08 1/Па)
+  ok: предупреждений 0
+  аналитическая граница oil_bad: 11.944444 МПа
+
+═══ 3. Стендинг, PVT примера 20 ═══
+  p =   5.0 МПа: разности +1.674017e-07, аналитика +1.674017e-07, отн. разница 2.3e-11
+  p =  10.0 МПа: разности +7.435635e-08, аналитика +7.435635e-08, отн. разница 1.2e-10
+  p =  20.0 МПа: разности +2.127089e-08, аналитика +2.127089e-08, отн. разница 1.4e-11
+  p =  30.0 МПа: разности +4.011837e-09, аналитика +4.011837e-09, отн. разница 5.5e-10
+  p =  34.0 МПа: разности +4.062033e-10, аналитика +4.062033e-10, отн. разница 1.9e-09
+  p =  40.0 МПа: разности -3.220637e-09, аналитика -3.220637e-09, отн. разница 3.5e-10
+  p =  46.0 МПа: разности -5.489656e-09, аналитика -5.489656e-09, отн. разница 1.1e-10
+  корень c_ot: по разностям 34.545689 МПа, аналитически 34.545689 МПа
+  c_g при 40 МПа: 2.500000e-08, 1/p = 2.500000e-08

@@ -1,0 +1,198 @@
+﻿........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 16%]
+........................................................................ [ 22%]
+........................................................................ [ 27%]
+........................................................................ [ 33%]
+........................................................................ [ 39%]
+...F.................................................................... [ 44%]
+........................................................................ [ 50%]
+........................................................................ [ 55%]
+........................................................................ [ 61%]
+........................................................................ [ 67%]
+........................................................................ [ 72%]
+........................................................................ [ 78%]
+........................................................................ [ 83%]
+........................................................................ [ 89%]
+........................................................................ [ 94%]
+.................................................................        [100%]
+================================== FAILURES ===================================
+___________________ TestPvtPlot.test_plot_pvt_all_examples ____________________
+
+self = <tests.test_examples.TestPvtPlot object at 0x00000197F6D03110>
+results = {'01_single_phase_no_jt': {'history': SimulationHistory(times=[0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0...17186, 0.16696875, 0.16678715,
+       0.16662468, 0.16647957, 0.16634989, 0.16623408, 0.16613081,
+       0.16603853])}}
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-505/test_plot_pvt_all_examples0')
+
+    def test_plot_pvt_all_examples(self, results, tmp_path):
+        """Модуль отрабатывает на всех примерах и пишет непустой PNG.
+    
+        Покрывает обе PVT-модели (standing: 01, 02, 03, 05; table: 04,
+        06-10) и оба режима (однофазный Rs0 = 0: 01, 02; двухфазный —
+        остальные). Граничный случай Rs0 = 0 опасен: p_b = -0.176 МПа,
+        и наивный код рисует вертикаль за пределами оси или падает.
+        """
+        pvt_plot = _pvt_module()
+        for name in ALL_EXAMPLES:
+            r = results[name]
+>           out = pvt_plot.plot_pvt(r["config"], r["history"],
+                                    tmp_path / name, name)
+
+tests\test_examples.py:942: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\pvt_plot.py:232: in plot_pvt
+    save_figure(fig, out, dpi=120)
+examples\figure_io.py:76: in save_figure
+    fig.savefig(path, dpi=dpi)
+.venv\Lib\site-packages\matplotlib\figure.py:3515: in savefig
+    self.canvas.print_figure(fname, **kwargs)
+.venv\Lib\site-packages\matplotlib\backend_bases.py:2289: in print_figure
+    result = print_method(
+.venv\Lib\site-packages\matplotlib\backend_bases.py:2146: in <lambda>
+    print_method = functools.wraps(meth)(lambda *args, **kwargs: meth(
+.venv\Lib\site-packages\matplotlib\backends\backend_agg.py:537: in print_png
+    self._print_pil(filename_or_obj, "png", pil_kwargs, metadata)
+.venv\Lib\site-packages\matplotlib\backends\backend_agg.py:486: in _print_pil
+    mpl.image.imsave(
+.venv\Lib\site-packages\matplotlib\image.py:1722: in imsave
+    image.save(fname, **pil_kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <PIL.Image.Image image mode=RGBA size=1656x1080 at 0x19781DFC690>
+fp = 'C:\\Users\\Artur\\AppData\\Local\\Temp\\pytest-of-Artur\\pytest-505\\test_plot_pvt_all_examples0\\09_degassing_latent_heat\\pvt.png'
+format = 'png'
+params = {'pnginfo': <PIL.PngImagePlugin.PngInfo object at 0x00000197FD2FA210>, 'dpi': (120, 120)}
+
+    def save(
+        self, fp: StrOrBytesPath | IO[bytes], format: str | None = None, **params: Any
+    ) -> None:
+        """
+        Saves this image under the given filename.  If no format is
+        specified, the format to use is determined from the filename
+        extension, if possible.
+    
+        Keyword options can be used to provide additional instructions
+        to the writer. If a writer doesn't recognise an option, it is
+        silently ignored. The available options are described in the
+        :doc:`image format documentation
+        <../handbook/image-file-formats>` for each writer.
+    
+        You can use a file object instead of a filename. In this case,
+        you must always specify the format. The file object must
+        implement the ``seek``, ``tell``, and ``write``
+        methods, and be opened in binary mode.
+    
+        :param fp: A filename (string), os.PathLike object or file object.
+        :param format: Optional format override.  If omitted, the
+           format to use is determined from the filename extension.
+           If a file object was used instead of a filename, this
+           parameter should always be used.
+        :param params: Extra parameters to the image writer. These can also be
+           set on the image itself through ``encoderinfo``. This is useful when
+           saving multiple images::
+    
+             # Saving XMP data to a single image
+             from PIL import Image
+             red = Image.new("RGB", (1, 1), "#f00")
+             red.save("out.mpo", xmp=b"test")
+    
+             # Saving XMP data to the second frame of an image
+             from PIL import Image
+             black = Image.new("RGB", (1, 1))
+             red = Image.new("RGB", (1, 1), "#f00")
+             red.encoderinfo = {"xmp": b"test"}
+             black.save("out.mpo", save_all=True, append_images=[red])
+        :returns: None
+        :exception ValueError: If the output format could not be determined
+           from the file name.  Use the format option to solve this.
+        :exception OSError: If the file could not be written.  The file
+           may have been created, and may contain partial data.
+        """
+    
+        filename: str | bytes = ""
+        open_fp = False
+        if is_path(fp):
+            filename = os.fspath(fp)
+            open_fp = True
+        elif fp == sys.stdout and isinstance(sys.stdout, io.TextIOWrapper):
+            fp = sys.stdout.buffer
+        if not filename and hasattr(fp, "name") and is_path(fp.name):
+            # only set the name for metadata purposes
+            filename = os.fspath(fp.name)
+    
+        if format:
+            preinit()
+        else:
+            filename_ext = os.path.splitext(filename)[1].lower()
+            ext = (
+                filename_ext.decode()
+                if isinstance(filename_ext, bytes)
+                else filename_ext
+            )
+    
+            # Try importing only the plugin for this extension first
+            if not _import_plugin_for_extension(ext):
+                preinit()
+    
+            if ext not in EXTENSION:
+                init()
+            try:
+                format = EXTENSION[ext]
+            except KeyError as e:
+                msg = f"unknown file extension: {ext}"
+                raise ValueError(msg) from e
+    
+        from . import ImageFile
+    
+        # may mutate self!
+        if isinstance(self, ImageFile.ImageFile) and os.path.abspath(
+            filename
+        ) == os.path.abspath(self.filename):
+            self._ensure_mutable()
+        else:
+            self.load()
+    
+        save_all = params.pop("save_all", None)
+        self._default_encoderinfo = params
+        encoderinfo = getattr(self, "encoderinfo", {})
+        self._attach_default_encoderinfo(self)
+        self.encoderconfig: tuple[Any, ...] = ()
+    
+        if format.upper() not in SAVE:
+            init()
+        if save_all or (
+            save_all is None
+            and params.get("append_images")
+            and format.upper() in SAVE_ALL
+        ):
+            save_handler = SAVE_ALL[format.upper()]
+        else:
+            save_handler = SAVE[format.upper()]
+    
+        created = False
+        if open_fp:
+            created = not os.path.exists(filename)
+            if params.get("append", False):
+                # Open also for reading ("+"), because TIFF save_all
+                # writer needs to go back and edit the written data.
+                fp = builtins.open(filename, "r+b")
+            else:
+>               fp = builtins.open(filename, "w+b")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\Artur\\AppData\\Local\\Temp\\pytest-of-Artur\\pytest-505\\test_plot_pvt_all_examples0\\09_degassing_latent_heat\\pvt.png'
+
+.venv\Lib\site-packages\PIL\Image.py:2706: FileNotFoundError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_examples.py::TestPvtPlot::test_plot_pvt_all_examples - File...
+1 failed, 1288 passed, 1 warning in 365.21s (0:06:05)

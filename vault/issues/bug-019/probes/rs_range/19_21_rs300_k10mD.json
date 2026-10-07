@@ -1,0 +1,210 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 200.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 350,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-14,
+    "rho_cp_solid": 2100000.0,
+    "lambda_solid": 2.5,
+    "lambda_oil": 0.13,
+    "lambda_gas": 0.05
+  },
+  "pvt": {
+    "model": "standing",
+    "rho_o_std": 800.0,
+    "rho_g_std": 0.727
+  },
+  "relperm": {
+    "model": "corey",
+    "S_or": 0.05,
+    "S_gc": 0.1,
+    "n_o": 2.0,
+    "n_g": 3.0,
+    "kro_max": 1.0,
+    "krg_max": 0.8
+  },
+  "thermal": {
+    "c_p_oil": 2365.0,
+    "c_p_gas": 2800.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 2.05e-06,
+    "L_degas": 202000.0
+  },
+  "initial_conditions": {
+    "p0": 43600000.0,
+    "T0": 400.0,
+    "Rs0": 300.0
+  },
+  "time": {
+    "start_day": 0.0,
+    "dt_integration": 86400.0,
+    "history": [
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 3000000.0
+      }
+    ]
+  },
+  "numerics": {
+    "dt_min": 1.0,
+    "dt_max": 86400,
+    "skin": 0.0,
+    "max_retries": 9
+  },
+  "output": {
+    "log_level": "ERROR"
+  }
+}

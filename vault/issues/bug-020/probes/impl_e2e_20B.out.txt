@@ -1,0 +1,7 @@
+﻿    код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-020\numerical_solver\gpn_multiphase_solver, D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-020\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+=== 20_rs300_cooling: 10 сут добычи + 3 сут останова (B); ступень 4: нет; dt_integration = 3600 с, max_retries = 9 ===
+итог: ✓; счёт 259 с; принятых шагов прототипа 1072; достигнуто t = 16.227 сут
+останов: шагов 832; dt подшагов: {112.5: 192, 225.0: 117, 450.0: 195, 900.0: 219, 1800.0: 104, 3600.0: 5}
+шагов по суткам останова: {1: 308, 2: 165, 3: 112, 4: 72, 5: 56, 6: 109, 7: 10}
+в конце: p0 = 328.16 бар, 2ф = 83
+баланс масс на шаге (отн. к запасу): нефть max 1.1e-13, газ max 1.5e-13

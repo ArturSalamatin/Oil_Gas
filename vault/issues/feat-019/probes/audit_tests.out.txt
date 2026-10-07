@@ -1,0 +1,17 @@
+﻿........................................................................ [ 16%]
+........................................................................ [ 32%]
+........................................................................ [ 49%]
+........................................................................ [ 65%]
+........................................................................ [ 82%]
+........................................................................ [ 98%]
+......                                                                   [100%]
+============================= slowest 8 durations =============================
+52.92s call     tests/test_examples.py::TestRunAll::test_completes[13b_pwf_alternating]
+45.73s call     tests/test_examples.py::TestRunAll::test_completes[14_high_gor_cooling]
+30.95s call     tests/test_examples.py::TestPvtPlot::test_plot_pvt_all_examples
+30.91s call     tests/test_energy_matrix_examples.py::test_matrix_matches_reference[16_well_shut_in]
+27.20s call     tests/test_examples.py::TestHighGasSaturation::test_dense_grid_converges_at_default_retries
+26.83s call     tests/test_examples.py::TestRunAll::test_completes[04a_high_gas_saturation]
+25.57s call     tests/test_examples.py::TestRunAll::test_completes[16_well_shut_in]
+12.69s call     tests/test_examples.py::TestRunAll::test_completes[15_oil_rate_ramp_up]
+438 passed, 20 deselected in 339.71s (0:05:39)

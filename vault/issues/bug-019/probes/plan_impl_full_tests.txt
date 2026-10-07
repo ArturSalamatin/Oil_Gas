@@ -1,0 +1,126 @@
+﻿........................................................................ [  6%]
+........................................................................ [ 12%]
+........................................................................ [ 18%]
+........................................................................ [ 25%]
+........................................................................ [ 31%]
+........................................................................ [ 37%]
+........................................................................ [ 44%]
+..........................................F.....F........F.............. [ 50%]
+........................................................................ [ 56%]
+........................................................................ [ 62%]
+........................................................................ [ 69%]
+........................................................................ [ 75%]
+........................................................................ [ 81%]
+........................................................................ [ 88%]
+........................................................................ [ 94%]
+.................................................................        [100%]
+================================== FAILURES ===================================
+_______ TestStandingCoreyCooling.test_wellbore_cools[20_rs500_cooling] ________
+
+self = <tests.test_examples.TestStandingCoreyCooling object at 0x000002B3FE852710>
+results = {'01_single_phase_no_jt': {'history': SimulationHistory(times=[0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0...17186, 0.16696875, 0.16678715,
+       0.16662468, 0.16647957, 0.16634989, 0.16623408, 0.16613081,
+       0.16603853])}}
+name = '20_rs500_cooling'
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_wellbore_cools(self, results, name):
+        """На каждой записи 1..30 забой холоднее T0 в пределах полосы замера.
+    
+        Смысл примеров — охлаждение забоя. Оценка по изоэнтальпийному
+        балансу (модель М.3, GOR = R_s0): -4.11 / -10.31 / -2.73 К; расчёт
+        на 30 сут — 88 / 83 / 91 % оценки (газ ещё копится в пласте).
+        Ловит: смену знака mu_JT, потерю скрытой теплоты, регрессию схемы
+        энергии на суточном шаге, смену тепловых констант конфига.
+        """
+        e = STANDING_COREY_COOLING[name]
+        r = results[name]
+        T0 = r["config"].initial_conditions.T0
+        dT = np.array([st.T[0] - T0 for st in r["history"].states[1:]])
+>       assert np.all(dT < e["dT_hi"]) and np.all(dT > e["dT_lo"]), \
+            f"{name}: ΔT(r_w) = {dT}"
+E       AssertionError: 20_rs500_cooling: ΔT(r_w) = [-1.99944275 -1.96968189 -1.95989383 -1.96120139 -1.96769705 -1.97624892
+E          -1.98563036 -1.99534556 -2.00516089 -2.01493879 -2.02457367 -2.03398792
+E          -2.04317963 -2.05214264 -2.06085586 -2.06928348 -2.07742886 -2.08530432
+E          -2.09294979 -2.10038364 -2.10758693 -2.11456288 -2.12130089 -2.12787697
+E          -2.13428549 -2.14051529 -2.14659303 -2.1524868  -2.15823129 -2.16380676]
+E       assert (np.False_)
+E        +  where np.False_ = <function all at 0x000002B3DC35ECB0>(array([-1.99944275, -1.96968189, -1.95989383, -1.96120139, -1.96769705,\n       -1.97624892, -1.98563036, -1.99534556, ...456288, -2.12130089, -2.12787697, -2.13428549,\n       -2.14051529, -2.14659303, -2.1524868 , -2.15823129, -2.16380676]) < -6.5)
+E        +    where <function all at 0x000002B3DC35ECB0> = np.all
+
+tests\test_examples.py:2074: AssertionError
+_ TestStandingCoreyCooling.test_well_saturation_matches_relperm[20_rs500_cooling] _
+
+self = <tests.test_examples.TestStandingCoreyCooling object at 0x000002B3FE7DF850>
+results = {'01_single_phase_no_jt': {'history': SimulationHistory(times=[0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0...17186, 0.16696875, 0.16678715,
+       0.16662468, 0.16647957, 0.16634989, 0.16623408, 0.16613081,
+       0.16603853])}}
+name = '20_rs500_cooling'
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_well_saturation_matches_relperm(self, results, name):
+        """S_g у забоя на 30 сут — её задаёт форма Кори над порогом S_gc.
+    
+        Тождество Дарси на забойной грани: k_rg/k_ro(S_g) = (GOR - R_s)·
+        mu_g·B_g/(mu_o·B_o); корень определяется k_rg = 0.8·S*^3,
+        S* = (S_g - 0.1)/(1 - 0.05 - 0.1). Замер 2026-10-01:
+        0.4432 / 0.4951 / 0.4083.
+        Ловит: смену S_gc, S_or или показателей Кори в конфиге.
+        """
+        Sg_w = float(results[name]["Sg"][0])
+>       assert Sg_w == pytest.approx(STANDING_COREY_COOLING[name]["Sg_w"], abs=1e-3), \
+            f"{name}: S_g(r_w) = {Sg_w:.4f}"
+E       AssertionError: 20_rs500_cooling: S_g(r_w) = 0.4557
+E       assert 0.45574350063402996 == 0.4951 ± 0.001
+E         
+E         comparison failed
+E         Obtained: 0.45574350063402996
+E         Expected: 0.4951 ± 0.001
+
+tests\test_examples.py:2106: AssertionError
+__ TestStandingCoreyCooling.test_config_follows_decisions[20_rs500_cooling] ___
+
+self = <tests.test_examples.TestStandingCoreyCooling object at 0x000002B3FE8E17B0>
+name = '20_rs500_cooling'
+
+    @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
+    def test_config_follows_decisions(self, name):
+        """Конфиг — корреляции и решения пользователя 2026-10-01.
+    
+        PVT standing и ОФП corey (без CSV); S_gc = 0.1 (газ подвижен после
+        0.1), S_or = 0.05 (обход BUG-018: при 0.2 первый шаг не сходится),
+        N = 350, 30 интервалов по 1 сут при постоянном p_wf, L по
+        Клапейрону, k = 10 / 30 / 10 мД, p0 выше p_b на 0.4-0.6 МПа.
+        Ловит: случайный возврат к табличным данным или к параметрам,
+        на которых первый шаг не сходится.
+        """
+        e = STANDING_COREY_COOLING[name]
+        cfg = load_config(EXAMPLES_DIR / name / "config.json")
+        assert cfg.pvt.model == "standing" and cfg.relperm.model == "corey"
+        assert cfg.relperm.S_gc == 0.1 and cfg.relperm.S_or == 0.05
+        assert cfg.grid.N == 350
+        hist = cfg.time.history
+        assert len(hist) == 30 and all(h.dt == 86400.0 for h in hist)
+        assert len({h.p_wf for h in hist}) == 1
+        assert cfg.thermal.L_degas == e["L"]
+>       assert cfg.rock.permeability == e["k"]
+E       AssertionError: assert 1e-14 == 3e-14
+E        +  where 1e-14 = RockConfig(porosity=0.2, permeability=1e-14, rho_cp_solid=2100000.0, lambda_solid=2.5, lambda_oil=0.13, lambda_gas=0.05, p_ref=10000000.0, compressibility=0.0).permeability
+E        +    where RockConfig(porosity=0.2, permeability=1e-14, rho_cp_solid=2100000.0, lambda_solid=2.5, lambda_oil=0.13, lambda_gas=0.05, p_ref=10000000.0, compressibility=0.0) = SimulationConfig(geometry=GeometryConfig(r_well=0.1, R_ext=200.0, h=10.0), grid=GridConfig(N=350, type='log_radial'), ...format='npz'), config_dir=WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/numerical_solver/examples/20_rs500_cooling')).rock
+
+tests\test_examples.py:2172: AssertionError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_examples.py::TestStandingCoreyCooling::test_wellbore_cools[20_rs500_cooling]
+FAILED tests/test_examples.py::TestStandingCoreyCooling::test_well_saturation_matches_relperm[20_rs500_cooling]
+FAILED tests/test_examples.py::TestStandingCoreyCooling::test_config_follows_decisions[20_rs500_cooling]
+3 failed, 1142 passed, 1 warning in 665.45s (0:11:05)

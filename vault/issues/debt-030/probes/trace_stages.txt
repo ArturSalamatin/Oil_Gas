@@ -1,0 +1,89 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+
+=== T03: N = 100, p0 = 200.0 бар, BHP = 100.0 бар, dt0 = 60 с ===
+-- dt = 60 с
+   исходный  —             conv=False it=15 aset= 2 sw= 21 |F|=5.613487e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 21 |F|=5.613487e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 21 |F|=5.570886e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 21 |F|=5.613487e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 30 с
+   исходный  —             conv=False it=15 aset= 2 sw= 18 |F|=6.891224e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 18 |F|=6.891224e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 18 |F|=7.099180e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 18 |F|=6.891224e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 15 с
+   исходный  —             conv=False it=15 aset= 2 sw= 15 |F|=6.362501e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 15 |F|=6.362503e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open  согл.   conv=True  it=17 aset= 2 sw= 15 |F|=2.044654e-16
+   advance сейчас : conv=True  it=17 aset= 2 sw= 15 |F|=2.044654e-16 fb=True gl=True branch='open' sw_well=0
+   advance по плану: conv=True  it=17 aset= 2 sw= 15 |F|=2.044654e-16 fb=True gl=True branch='open' sw_well=0
+
+=== T04: N = 100, p0 = 200.0 бар, BHP = 100.0 бар, dt0 = 60 с ===
+-- dt = 60 с
+   исходный  —             conv=False it=15 aset= 2 sw= 21 |F|=2.350242e-07
+   запасной  open          conv=False it=15 aset= 2 sw= 21 |F|=2.350241e-07
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 21 |F|=3.669505e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 21 |F|=2.350242e-07 fb=True gl=True branch='shut' sw_well=1
+-- dt = 30 с
+   исходный  —             conv=False it=15 aset= 2 sw= 18 |F|=2.278280e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 18 |F|=2.278280e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open  согл.   conv=True  it=17 aset= 2 sw= 18 |F|=2.466863e-16
+   advance сейчас : conv=True  it=17 aset= 2 sw= 18 |F|=2.466863e-16 fb=True gl=True branch='open' sw_well=0
+   advance по плану: conv=True  it=17 aset= 2 sw= 18 |F|=2.466863e-16 fb=True gl=True branch='open' sw_well=0
+
+=== T05S_N200_DT5m: N = 200, p0 = 200.0 бар, BHP = 100.0 бар, dt0 = 60 с ===
+-- dt = 60 с
+   исходный  —             conv=False it=15 aset= 2 sw= 42 |F|=2.351705e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 42 |F|=2.351705e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 42 |F|=2.261731e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 42 |F|=2.351705e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 30 с
+   исходный  —             conv=False it=15 aset= 2 sw= 37 |F|=3.563296e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 37 |F|=3.563296e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 37 |F|=2.934841e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 37 |F|=3.563296e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 15 с
+   исходный  —             conv=False it=15 aset= 2 sw= 31 |F|=3.164823e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 31 |F|=3.164825e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 31 |F|=3.031447e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 31 |F|=3.164823e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 7.5 с
+   исходный  —             conv=False it=15 aset= 2 sw= 26 |F|=6.338680e-05
+   запасной  open          conv=False it=15 aset= 2 sw= 26 |F|=6.338679e-05
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 26 |F|=3.440675e-05
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 26 |F|=6.338680e-05 fb=True gl=True branch='shut' sw_well=1
+-- dt = 3.75 с
+   исходный  —             conv=False it=15 aset= 2 sw= 21 |F|=4.170449e-16
+   запасной  open          conv=False it=15 aset= 2 sw= 21 |F|=4.207745e-16
+   запасной  shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   третья    open          conv=False it=15 aset= 2 sw= 21 |F|=5.161330e-10
+   третья    shut  НЕсогл. conv=True  it= 0 aset= 1 sw=  0 |F|=0.000000e+00
+   advance сейчас : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True branch='shut' sw_well=1
+   advance по плану: conv=False it=15 aset= 2 sw= 21 |F|=4.170449e-16 fb=True gl=True branch='shut' sw_well=1
+-- dt = 1.875 с
+   исходный  —             conv=True  it=15 aset= 2 sw= 17 |F|=8.699139e-17
+   advance сейчас : conv=True  it=15 aset= 2 sw= 17 |F|=8.699139e-17 fb=False gl=False branch='open' sw_well=0
+   advance по плану: conv=True  it=15 aset= 2 sw= 17 |F|=8.699139e-17 fb=False gl=False branch='open' sw_well=0

@@ -4,6 +4,11 @@
 Коэффициенты: eq:tridiag_a … eq:tridiag_d в problem_statement.tex.
 Решение: scipy.linalg.solve_banded (LAPACK dgbsv), O(N).
 
+СЛАУ решается в отклонениях θ = T − T_ext (DEBT-043): матрица та же,
+правая часть собирается от T^n − T_ext, T^{n+1} = θ^{n+1} + T_ext.
+В абсолютной T округления сборки и прогонки ~ε·cap·T давали невязку
+баланса энергии до 1e-10; в отклонениях — ~1e-15 (см. solve).
+
 ФОРМА ДИСКРЕТИЗАЦИИ — АДВЕКТИВНАЯ (BUG-012). Три пространственных члена
 уравнения энергии имеют в постановке одну структуру: скорость, скалярно
 умноженная на градиент скаляра, — и все три собираются одинаково, как
@@ -128,20 +133,39 @@ class TridiagEnergySolver(EnergySolver):
         Q_deg = self.compute_degassing(
             So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext)
 
+        # ── Отсчёт температуры от T_ref = T_ext (DEBT-043) ──
+        # СЛАУ решается в отклонениях θ = T − T_ref. Схема та же
+        # (eq:tridiag_a…eq:tridiag_d): матрица от T не зависит, а правая
+        # часть аффинна по (T^n, T_ext), поэтому assemble_tridiag, получив
+        # T^n − T_ref и T_ext − T_ref = 0, сразу даёт d − A·T_ref без
+        # вычитания больших чисел. Зачем: в абсолютной T ~ 350 K округления
+        # сборки (cap·T_old в d, сумма коэффициентов в b) и обратная ошибка
+        # прогонки — порядка ε·cap·T на ячейку, в θ — ε·cap·|θ|. Невязка
+        # баланса энергии падает с 1e-14…1e-10 до 0…5e-15, решение
+        # сдвигается не больше чем на 4e-11 K (замер 2026-10-07).
+        # Свойства (props выше) по-прежнему считаются по абсолютной T_old.
+        T_ref = T_ext
+        # Точно (лемма Штербенца): T_old и T_ref одного порядка.
+        theta_old = T_old - T_ref
+        theta_ext = T_ext - T_ref    # = 0.0
+
         # Баланс энергии накапливается здесь, а не постобработкой (DEBT-013):
         # передаём ровно те коэффициенты, которые следующей строкой уходят
         # в СЛАУ. Восстановить их по разреженной истории нельзя (см. шапку
         # balance.py), а пересчитать заново — значит повторить BUG-004.
+        # Температуры — в тех же отклонениях, что и СЛАУ (θ_ext здесь, θ^{n+1}
+        # и θ^n после решения): накопитель инвариантен к общему сдвигу —
+        # все его члены либо разности T, либо от T не зависят.
         if collect is not None:
             collect.add_substep(
                 hydro_result=hydro_result, state_prev=state_prev, dt=dt,
                 props=props, Phi_o=Phi_o, Phi_g=Phi_g,
                 Q_T_ext=Q_T_ext, J_jt=J_jt, Q_ad=Q_ad, Q_deg=Q_deg,
-                T_ext=T_ext)
+                T_ext=theta_ext)
 
-        # Подшаг 6: сборка СЛАУ
+        # Подшаг 6: сборка СЛАУ — в отклонениях от T_ref
         a, b, c, d = self.assemble_tridiag(
-            N, dt, T_old, T_ext,
+            N, dt, theta_old, theta_ext,
             props['rho_cp_eff'], Q_T_internal, Q_T_ext,
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
@@ -149,22 +173,29 @@ class TridiagEnergySolver(EnergySolver):
         # собрана матрица. При A-retry Simulator дробит шаг и вызывает
         # solve с dt_sub = dt/n_sub (BUG-010); шаг расписания здесь уже
         # не при чём, а cap = V·(ρcp)/dt зависит именно от dt_sub.
+        # d — в отклонениях от T_ref (DEBT-043): эталон проба сдвигает
+        # тем же T_ref; T_old — абсолютная, как в состоянии.
         if self.matrix_probe is not None:
             self.matrix_probe(a=a, b=b, c=c, d=d, dt=dt,
-                              T_old=T_old, hydro_result=hydro_result,
+                              T_old=T_old, T_ref=T_ref,
+                              hydro_result=hydro_result,
                               state_prev=state_prev, bc=bc)
 
-        # Подшаг 7: решение прогонкой
-        T_new = self.solve_banded_system(a, b, c, d, N)
+        # Подшаг 7: решение прогонкой — отклонения θ^{n+1}
+        theta_new = self.solve_banded_system(a, b, c, d, N)
 
         # Накопление ΔE и кондуктивный член требуют T^{n+1}, поэтому
         # считаются после решения СЛАУ. (ρcp)_eff — та же, что стоит
         # в матрице как cap_j: баланс использует коэффициенты схемы,
         # а не свою версию (DEBT-013).
+        # Передаются θ, а НЕ записанная T^{n+1} = θ^{n+1} + T_ref (DEBT-043):
+        # запись в абсолютной T округляет на ε·T/2 в ячейке, и ΔE по
+        # записанным полям вернул бы шум ε·cap·T, от которого сдвиг избавил.
         if collect is not None:
-            collect.add_accumulation(T_new, T_old, props['rho_cp_eff'], dt)
+            collect.add_accumulation(theta_new, theta_old,
+                                     props['rho_cp_eff'], dt)
 
-        return T_new
+        return theta_new + T_ref
 
     # ──────────────────────────────────────────────────────
     # Подшаг 1–2: PVT + эффективные свойства в ячейках

@@ -1,0 +1,65 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{cmap}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\newcommand{\csat}{c_o^{\mathrm{sat}}}
+\newcommand{\bsat}{\beta_o^{\mathrm{sat}}}
+\begin{document}
+
+% Проверка сборки вставок плана BUG-019 в numerical_solver/doc/problem_statement.tex
+
+\begin{tabular}{lll}
+$\csat$       & полная сжимаемость нефти вдоль кривой насыщения & Па$^{-1}$ \\
+$\bsat$       & полный коэфф.\ расширения $B_o$ вдоль кривой насыщения & К$^{-1}$ \\
+$c_{ot}$      & сжимаемость насыщенной нефти вместе с~выделяющимся газом~\eqref{eq:c_ot} & Па$^{-1}$ \\
+\end{tabular}
+
+\begin{equation}\label{eq:co_cg}
+  c_o = 1, \qquad c_g = 1
+\end{equation}
+\begin{equation}\label{eq:Cp}
+  C_p = 1
+\end{equation}
+
+\textbf{Условие согласованности PVT.} При снижении давления насыщенная
+нефть сжимается (уменьшается~$B_o$) и~выделяет газ объёмом
+$B_g\,\Delta R_s$. Сжимаемость нефти вместе с~выделяющимся газом
+\begin{equation}\label{eq:c_ot}
+  \boxed{
+    c_{ot} = \csat + \frac{B_g}{B_o}\,\frac{\partial R_s^{\text{eq}}}{\partial p}
+    = \frac{1}{B_o}\left(B_g\,\frac{\partial R_s^{\text{eq}}}{\partial p}
+      - \frac{d B_o^{\text{sat}}}{d p}\right) \ge 0,
+  }
+\end{equation}
+где $B_o^{\text{sat}}(p) = B_o\bigl(p, R_s^{\text{eq}}(p)\bigr)$, должна быть
+неотрицательной. Через неё коэффициент при~$\partial p/\partial t$
+в~уравнении давления~\eqref{eq:Cp} равен
+\[
+  C_p = \frac{\phi}{B_g}\,\bigl(c_r + S_o\,c_{ot} + S_g\,c_g\bigr),
+\]
+и~$C_p \ge 0$ при любой~$S_g$ тогда и~только тогда, когда
+$c_{ot} \ge 0$ и~$c_g \ge 0$~\eqref{eq:co_cg} (при $c_r = 0$); для
+недонасыщенной нефти то~же требуется от~$c_o$. При $c_{ot} < 0$ в~ячейках
+с~малой~$S_g$ коэффициент $C_p < 0$: уравнение давления становится обратным
+уравнением теплопроводности и~теряет корректность, неявный шаг вырождается
+на~последовательности значений~$\Delta t$ (условия (A2)--(A3):
+M.~Peszy\'nska, Transport in Porous Media, 2006, т.~63; K.\,H.~Coats,
+SPE~49774, 1999). Эмпирические корреляции нарушают условие при экстраполяции
+за~область своих данных: корреляция Стендинга с~$B_g$ идеального газа для
+нефти с~$\gamma_g = 0.83$, $45^\circ$\,API при $T = 380$~К даёт
+$c_{ot} < 0$ при $p > 34.5$~МПа, то~есть при $R_s > 351$~м$^3$ст/м$^3$ст
+(данные Стендинга~--- до~$R_s = 254$~м$^3$ст/м$^3$ст); на~такой нефти
+с~$R_{s,0} = 500$~м$^3$ст/м$^3$ст расчёт не~сходится или зависит от~шага
+по~времени. Решатель проверяет $c_{ot}$, $c_g$ и~$c_o$ при сборке модели
+в~30 точках диапазона давлений задачи и~выдаёт предупреждение; расчёт
+продолжается (так поступает ECLIPSE).
+
+С~учётом $S_o + S_g = 1$ коэффициент~\eqref{eq:Cp} равен
+$C_p = \phi\,(c_r + S_o\,c_{ot} + S_g\,c_g)/B_g$, где $c_{ot}$~---
+сжимаемость насыщенной нефти вместе с~выделяющимся газом~\eqref{eq:c_ot};
+при $c_{ot} < 0$ уравнение~\eqref{eq:Cp} в~ячейках с~малой~$S_g$ некорректно.
+
+\end{document}

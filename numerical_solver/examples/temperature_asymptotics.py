@@ -16,7 +16,8 @@
   - tests/test_energy_matrix_examples.py — поэлементная сверка матрицы
     с постановкой, независимая реализация по тексту .tex;
   - tests/test_energy_balance_examples.py — интегральный баланс энергии,
-    невязка 1e-13...1e-12.
+    невязка на машинном уровне (с DEBT-043 — 0…8e-17 на укороченных
+    сценариях, порог 1e-12).
 
 Запуск:
     .venv\\Scripts\\python examples\\temperature_asymptotics.py 02

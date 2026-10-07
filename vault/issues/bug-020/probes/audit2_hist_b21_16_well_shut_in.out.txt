@@ -1,0 +1,1 @@
+16_well_shut_in: код D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-020\probes\impl_b21\numerical_solver\gpn_multiphase_solver; 54 записей, 16.2 с → D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-020\probes\hist_b21_16_well_shut_in.npz

@@ -1,0 +1,17 @@
+tier3_chop02: режим tier3, cap None, chop 0.2
+  01_single_phase_no_jt            1.3 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  02_single_phase_jt               0.9 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  03_standing_corey                1.3 с  advance     72  отказов     0  запасной путь    1  третья ступень    0
+  04_table_table                   1.5 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  04a_high_gas_saturation         39.8 с  advance    864  отказов     0  запасной путь    1  третья ступень    1
+  05_standing_table_rp             0.6 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  06_table_corey_rp                1.7 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  07_degassing_adiabatic_only      1.4 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  08_degassing_jt                  1.5 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  09_degassing_latent_heat         1.4 с  advance     72  отказов     0  запасной путь    0  третья ступень    0
+  10_deep_degassing                3.0 с  advance     76  отказов     1  запасной путь    0  третья ступень    0
+  11_degassing_at_boundary         3.6 с  advance     72  отказов     0  запасной путь    1  третья ступень    1
+  12_large_drainage_radius        15.0 с  advance    360  отказов     0  запасной путь    1  третья ступень    1
+  13a_pwf_ramp_down               14.0 с  advance    360  отказов     0  запасной путь    0  третья ступень    0
+  14_high_gor_cooling             15.1 с  advance    360  отказов     0  запасной путь    0  третья ступень    0
+  15_oil_rate_ramp_up             13.6 с  advance    360  отказов     0  запасной путь    0  третья ступень    0

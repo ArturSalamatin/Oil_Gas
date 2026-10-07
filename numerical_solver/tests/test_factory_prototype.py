@@ -7,6 +7,7 @@
 - PVT-согласованность: один BlackOilPVT в обёртке и в модели
 - Ошибки: отсутствие CSV файла
 - Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
+- Ветви PVTO-таблицы: не меньше двух строк, давление и p_b(R_s) растут (DEBT-038)
 """
 
 import logging
@@ -411,3 +412,130 @@ class TestInitialRangeWarnings:
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             SimulatorFactory.from_config(config)
         assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+# ═══════════════════════════════════════════════════════════
+# G. Ветви PVTO-таблицы (DEBT-038)
+# ═══════════════════════════════════════════════════════════
+
+# Ветви таблицы configs/table_pvt: R_s = 0 (p_b = 5 МПа) и 30 (p_b = 15 МПа)
+OIL_HEADER = "Rs_sm3_sm3,pressure_Pa,Bo,mu_o_Pa_s\n"
+OIL_BRANCH_0 = "0.0,5000000,1.05,0.003\n0.0,30000000,1.04,0.0032\n"
+OIL_BRANCH_30 = "30.0,15000000,1.20,0.0015\n30.0,30000000,1.18,0.0016\n"
+
+
+class TestPVTOBranches:
+    """Фабрика отвергает CSV-таблицу PVTO с ошибкой в ветвях (DEBT-038).
+
+    Правила формата PVTO (OPM Flow Manual §8.3.245): в ветви R_s не меньше
+    двух строк, давление строго растёт по порядку файла (их же проверяет
+    XLSX-ридер прототипа, input_reader.py:59-64), p_b растёт с R_s.
+    BlackOilPVT их не проверяет: до правки все таблицы ниже, кроме пустой,
+    проходили from_config молча (пробы vault/issues/debt-038/probes/).
+    Конфиг — TABLE_CONFIG (Rs0 = 30, p0 = 20 МПа).
+    """
+
+    def test_one_row_branch_raises(self, tmp_path):
+        """Ветвь R_s = 15 из одной строки между полными ветвями 0 и 30.
+
+        До правки B_o = 1.12 и μ_o этой ветви постоянны выше p_b = 10 МПа
+        (c_o = 0): нефть у этой ветви несжимаема, сообщения нет.
+        """
+        config = _table_config_with_oil_csv(
+            tmp_path,
+            OIL_HEADER + OIL_BRANCH_0 + "15.0,10000000,1.12,0.0022\n" + OIL_BRANCH_30)
+        with pytest.raises(ValueError,
+                           match=r"R_s = 15 м³ст/м³ст из одной строки \(p = 10 МПа\)") as exc:
+            SimulatorFactory.from_config(config)
+        assert str(exc.value).startswith("oil_pvt.csv:")
+
+    def test_one_row_last_branch_raises(self, tmp_path):
+        """Последняя ветвь R_s = 30 из одной строки — её не допускает и OPM.
+
+        OPM Flow Manual §8.3.245: для последнего R_s нужны не меньше двух
+        строк, иначе недонасыщенная область не интерполируется.
+        """
+        config = _table_config_with_oil_csv(
+            tmp_path, OIL_HEADER + OIL_BRANCH_0 + "30.0,15000000,1.20,0.0015\n")
+        with pytest.raises(ValueError, match=r"R_s = 30 м³ст/м³ст из одной строки"):
+            SimulatorFactory.from_config(config)
+
+    def test_repeated_pressure_raises(self, tmp_path):
+        """Давление 20 МПа дважды в ветви 30 (B_o 1.19 и 1.185).
+
+        До правки BlackOilPVT сортировал строки по (p, B_o, μ_o): первой шла
+        строка с меньшим B_o, и B_o скачком менялся при 20 МПа. Единственный
+        сигнал — RuntimeWarning «divide by zero» из pvt.py без имени файла.
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER + OIL_BRANCH_0 + (
+            "30.0,15000000,1.20,0.0015\n"
+            "30.0,20000000,1.19,0.00152\n"
+            "30.0,20000000,1.185,0.00153\n"
+            "30.0,30000000,1.18,0.0016\n"))
+        with pytest.raises(ValueError, match="не растёт строго") as exc:
+            SimulatorFactory.from_config(config)
+        assert "20 МПа после 20 МПа (строки 2 и 3 ветви)" in str(exc.value)
+
+    def test_pressure_out_of_order_raises(self, tmp_path):
+        """Строки ветви 30 переставлены: 15, 30, 20 МПа (решение пользователя 2026-10-07).
+
+        BlackOilPVT исправил бы порядок сортировкой, но XLSX-путь такую
+        таблицу отвергает — правила двух путей одинаковы.
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER + OIL_BRANCH_0 + (
+            "30.0,15000000,1.20,0.0015\n"
+            "30.0,30000000,1.18,0.0016\n"
+            "30.0,20000000,1.19,0.00152\n"))
+        with pytest.raises(ValueError, match=r"20 МПа после 30 МПа \(строки 2 и 3 ветви\)"):
+            SimulatorFactory.from_config(config)
+
+    def test_rs_typo_extra_branch_raises(self, tmp_path):
+        """Опечатка R_s = 30.01 вместо 30 у средней строки ветви 30 — лишняя ветвь из одной строки.
+
+        До правки Rs0 = 30 лежал внутри [0, 30.01], R_s^eq(20 МПа) = 30.007 —
+        from_config проходил, B_o около R_s = 30 шёл по искажённым ветвям.
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER + OIL_BRANCH_0 + (
+            "30.0,15000000,1.20,0.0015\n"
+            "30.01,22000000,1.19,0.00155\n"
+            "30.0,30000000,1.18,0.0016\n"))
+        with pytest.raises(ValueError, match=r"R_s = 30\.01 м³ст/м³ст из одной строки"):
+            SimulatorFactory.from_config(config)
+
+    def test_bubble_point_not_increasing_raises(self, tmp_path):
+        """Опечатка в p_b: ветвь R_s = 15 начинается с 20 МПа вместо 10, у ветви 30 p_b = 15 МПа.
+
+        Внутри каждой ветви давление растёт. До правки from_config проходил
+        без предупреждений, а R_s^sat(p) интерполировался np.interp по
+        немонотонным узлам p_b: R_s^sat(14 МПа) = 9 вместо 27 (проба
+        pb_order.py). Правило OPM — p_b растёт с R_s (решение пользователя
+        при аудите 2026-10-07).
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER + OIL_BRANCH_0 + (
+            "15.0,20000000,1.12,0.0022\n"
+            "15.0,30000000,1.11,0.0023\n") + OIL_BRANCH_30)
+        with pytest.raises(ValueError, match="давление насыщения не растёт с R_s") as exc:
+            SimulatorFactory.from_config(config)
+        assert "p_b = 15 МПа у ветви R_s = 30" in str(exc.value)
+        assert "p_b = 20 МПа у ветви R_s = 15" in str(exc.value)
+
+    def test_empty_table_raises(self, tmp_path):
+        """Только заголовок: до правки — IndexError из BlackOilPVT без имени файла.
+
+        Ловит и место вызова: проверка после BlackOilPVT дала бы IndexError.
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER)
+        with pytest.raises(ValueError, match="oil_pvt.csv: нет ни одной числовой строки"):
+            SimulatorFactory.from_config(config)
+
+    def test_interleaved_branches_pass(self, tmp_path):
+        """Строки ветвей 0 и 30 чередуются в файле — таблица корректна.
+
+        Ветвь — все строки с одним R_s, порядок давлений проверяется внутри
+        ветви, как в XLSX-ридере и BlackOilPVT. Ловит слишком строгую проверку
+        (требование смежности строк ветви).
+        """
+        config = _table_config_with_oil_csv(tmp_path, OIL_HEADER + (
+            "0.0,5000000,1.05,0.003\n30.0,15000000,1.20,0.0015\n"
+            "0.0,30000000,1.04,0.0032\n30.0,30000000,1.18,0.0016\n"))
+        SimulatorFactory.from_config(config)   # не бросает

@@ -1,0 +1,7 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+drawn_down: p[0] = 111.672 бар
+сейчас  : BlackOilNewtonReport(converged=False, iterations=0, residual_inf=0.0, active_set_iterations=1, phase_switches=0, well_branch='open', well_switches=1, fallback=True, globalized=True)
+           {'calls': True, 'not converged': True, 'newton fields': False, 'flags': True, 'branch fields': True, 'restored': True}
+по плану: BlackOilNewtonReport(converged=False, iterations=15, residual_inf=2.5e-07, active_set_iterations=2, phase_switches=21, well_branch='open', well_switches=1, fallback=True, globalized=True)
+           {'calls': True, 'not converged': True, 'newton fields': True, 'flags': True, 'branch fields': True, 'restored': True}

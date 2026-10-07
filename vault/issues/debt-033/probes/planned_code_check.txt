@@ -1,0 +1,9 @@
+test_fd_steps_equal_scalar_rule: OK (n=70, отрицательных шагов 20)
+test_grouped_is_csc_bitwise_reference: OK
+test_step_bitwise_grouped_vs_reference: OK
+test_sparse_dense_same_step (плотный путь с CSC): OK
+04_table_table: истории побитово; время 1.41 → 1.44 с (×0.98)
+15_oil_rate_ramp_up: истории побитово; время 13.55 → 12.05 с (×1.12)
+13b_pwf_alternating: истории побитово; время 53.70 → 49.46 с (×1.09)
+20_rs300_cooling: истории побитово; время 15.90 → 6.60 с (×2.41)
+14_high_gor_cooling: истории побитово; время 63.88 → 43.91 с (×1.45)

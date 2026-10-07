@@ -1,0 +1,16 @@
+﻿── Прогон: dt = 3600 с ──
+   max rel = 1.51e-16, final rel = 7.54e-17
+── Прогон: dt = 900 с ──
+   max rel = 9.05e-16, final rel = 3.77e-16
+── Прогон: dt = 360 с ──
+   max rel = 4.15e-15, final rel = 4.00e-15
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-043\numerical_solver\examples\01_single_phase_no_jt\output\energy_balance_convergence.png
+
+  dt, с   финальная    максимальная
+    3600   7.542e-17    1.508e-16
+     900   3.771e-16    9.051e-16
+     360   3.997e-15    4.148e-15
+
+Худшая финальная невязка по серии: 3.997e-15 (порог 1e-12) — OK
+EMF: 1 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-043\numerical_solver\examples\01_single_phase_no_jt\output\emf (4.7 с)

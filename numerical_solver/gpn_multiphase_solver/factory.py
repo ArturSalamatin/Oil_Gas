@@ -122,6 +122,9 @@ def _create_pvt(config: SimulationConfig):
         # CSV → BlackOilPVT (прототип) → PrototypePVTAdapter → TableFullPVT
         oil_rows = _read_oil_pvt_csv(config.config_dir / pc.oil_pvt_file)
         gas_rows = _read_gas_pvt_csv(config.config_dir / pc.gas_pvt_file)
+        # DEBT-038: ветви PVTO — до BlackOilPVT: он их не проверяет, ошибочную
+        # таблицу молча интерполирует, а пустую встречает IndexError
+        _check_pvto_branches(oil_rows, pc.oil_pvt_file)
 
         from radial_blackoil.pvt import BlackOilPVT
         proto_pvt = BlackOilPVT(oil_rows, gas_rows)
@@ -160,6 +163,59 @@ def _check_rs0_in_table(Rs0: float, rs_values, oil_pvt_file: str) -> None:
             f"ветки R_s от {rs_lo:g} до {rs_hi:g} м³ст/м³ст. Таблица не "
             f"экстраполируется — добавьте ветки, покрывающие Rs0, или задайте "
             f"Rs0 в этих пределах.")
+
+
+def _check_pvto_branches(oil_rows: list[tuple], oil_pvt_file: str) -> None:
+    """Ветви PVTO: ≥ 2 строк, p и p_b(R_s) растут, иначе ValueError (DEBT-038)."""
+    # Правила формата PVTO (OPM Flow Manual, §8.3.245): в ветви — насыщенная
+    # точка p_b(R_s) и строки недонасыщенной нефти по возрастанию давления;
+    # p_b растёт с R_s. Первые два правила проверяет и XLSX-ридер прототипа
+    # (input_reader.py:59-64). BlackOilPVT не проверяет ни одного, и ошибка
+    # таблицы молча меняет свойства нефти — а через PrototypePVTAdapter и
+    # уравнение энергии:
+    #   - ветвь из одной строки: B_o, μ_o выше p_b постоянны (c_o = 0).
+    #     OPM такую ветвь допускает (кроме последней) и достраивает по
+    #     следующей ветви с недонасыщенными строками (opm-common, LiveOilPvt);
+    #     прототип — нет;
+    #   - повтор давления: BlackOilPVT сортирует строки по (p, B_o, μ_o), а не
+    #     по порядку файла, — скачок B_o в этой точке;
+    #   - давление не по возрастанию: сортировка исправила бы его молча, но
+    #     XLSX-путь такую таблицу отвергает — правила двух путей одинаковы;
+    #   - p_b не растёт с R_s: R_s^sat(p) интерполируется np.interp по узлам
+    #     p_b, и при немонотонных узлах кривая разгазирования ломается.
+    if not oil_rows:
+        # Без строк BlackOilPVT падает IndexError без имени файла
+        raise ValueError(f"{oil_pvt_file}: нет ни одной числовой строки.")
+    # Ветвь — все строки с одним R_s (точное совпадение, как в BlackOilPVT);
+    # давления в барах — как их получает BlackOilPVT, в порядке файла
+    branches: dict[float, list[float]] = {}
+    for Rs, p_bar, _, _ in oil_rows:
+        branches.setdefault(Rs, []).append(p_bar)
+    for Rs, p_bar in sorted(branches.items()):
+        p_mpa = [p * BAR_TO_PA / 1e6 for p in p_bar]   # только для сообщений
+        if len(p_bar) < 2:
+            raise ValueError(
+                f"{oil_pvt_file}: ветвь R_s = {Rs:g} м³ст/м³ст из одной строки "
+                f"(p = {p_mpa[0]:g} МПа). Нужно не меньше двух: насыщенная точка "
+                f"p_b(R_s) и хотя бы одна строка выше p_b — иначе B_o, μ_o "
+                f"недонасыщенной нефти не заданы.")
+        for k in range(1, len(p_bar)):
+            if p_bar[k] <= p_bar[k - 1]:
+                raise ValueError(
+                    f"{oil_pvt_file}: в ветви R_s = {Rs:g} м³ст/м³ст давление "
+                    f"не растёт строго: {p_mpa[k]:g} МПа после {p_mpa[k - 1]:g} МПа "
+                    f"(строки {k} и {k + 1} ветви). Первая строка ветви — "
+                    f"насыщенная точка p_b(R_s), дальше давление растёт.")
+    # p_b — первая строка ветви, после проверок выше это минимум ветви
+    rs_sorted = sorted(branches)
+    for Rs_lo, Rs_hi in zip(rs_sorted, rs_sorted[1:]):
+        pb_lo, pb_hi = branches[Rs_lo][0], branches[Rs_hi][0]
+        if pb_hi <= pb_lo:
+            raise ValueError(
+                f"{oil_pvt_file}: давление насыщения не растёт с R_s: "
+                f"p_b = {pb_hi * BAR_TO_PA / 1e6:g} МПа у ветви R_s = {Rs_hi:g} "
+                f"при p_b = {pb_lo * BAR_TO_PA / 1e6:g} МПа у ветви R_s = {Rs_lo:g} "
+                f"м³ст/м³ст. p_b — давление первой строки ветви.")
 
 
 # Допуск пересыщения на старте, м³ст/м³ст, — rs_switch_tol решателя

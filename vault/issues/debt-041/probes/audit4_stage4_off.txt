@@ -1,0 +1,7 @@
+﻿HEAD fba5d08
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\__init__.py
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+03_standing_corey N=150 p_wf=0.5: первый шаг — 8 подшагов со ступенью 4, 16 без неё
+04a_high_gas_saturation N=300 p_wf=None: первый шаг — 1 подшагов со ступенью 4, 2 без неё
+04a_high_gas_saturation N=500 p_wf=None: первый шаг — 1 подшагов со ступенью 4, 8 без неё
+05_standing_table_rp N=None p_wf=5.0: первый шаг — 1 подшагов со ступенью 4, 2 без неё

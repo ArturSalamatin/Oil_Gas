@@ -1,0 +1,14 @@
+﻿HEAD fba5d08; план: debt-041 example03-max-retries-table.md
+пар «До → После»: 8
+#1 OK 03_standing_corey/README.md: «Минимально достаточный `max_retries` при рабочей сетке $N = »
+#2 OK 04_table_table/README.md: «| $p_{wf}$, МПа | 14 | 12 | 10 | 8 | 6 | 4 | 3 | 2 | 1 | 0.5»
+#3 OK 03_standing_corey/README.md: «физично. Если не сходится и запасной путь, прототип повторяе»
+#4 OK 04a_high_gas_saturation/README.md: «| `grid.N` | первый шаг при штатном `max_retries = 9`: $N \l»
+#5 OK 05_standing_table_rp/README.md: «**Снизу:** до 6 МПа расчёт идёт без дробления шага; ниже пер»
+#6 OK io/config.py: «# Лимит дробления шага в A-retry (PrototypeHydroAdapter): пр»
+#7 OK tests/test_factory_standing_hydro.py: «Класс остаётся регрессионной привязкой результата. Умолчание»
+#8 OK tests/test_config.py: «"""max_retries не задан в baseline → default = 9.»
+compile OK: numerical_solver/gpn_multiphase_solver/io/config.py
+compile OK: numerical_solver/tests/test_factory_standing_hydro.py
+compile OK: numerical_solver/tests/test_config.py
+ИТОГ: все пары применимы, .py компилируются

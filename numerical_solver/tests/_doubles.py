@@ -99,3 +99,10 @@ class SubdividingHydroStub(HydroSolver):
         # адаптера, а не бесконечную вложенность.
         n = self._n_substeps if len(self.dt_calls) == 1 else 1
         return replace(result, n_substeps=n)
+
+    def component_inventories(self, state: SimulationState):
+        """Запас — у внутреннего двойника (DEBT-039)."""
+        # Без делегирования метод ABC вернул бы None, и Simulator не вёл бы
+        # баланс массы на обёрнутом двойнике с интегралами
+        # (test_mass_balance.py, пробный шаг не в интегралах).
+        return self._inner.component_inventories(state)

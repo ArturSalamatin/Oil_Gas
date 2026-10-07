@@ -205,8 +205,8 @@ def test_stepped_schedule_matches_uniform(example, tmp_path):
                    (две формы duration + dt_out).
     Последовательность подшагов одна и та же (см. _DT_INT_SCHEDULE), на
     границе интервала решатель ничего не сбрасывает, поэтому на общих
-    моментах записи состояние, данные скважины и накопленный баланс
-    совпадают ПОБИТОВО. Допуска нет намеренно: расхождение хоть в одном
+    моментах записи состояние, данные скважины и накопленные балансы энергии
+    и массы совпадают ПОБИТОВО. Допуска нет намеренно: расхождение хоть в одном
     бите значит, что структура истории влияет на расчёт, — это дефект,
     его надо искать, а не прятать допуском.
     """
@@ -230,6 +230,9 @@ def test_stepped_schedule_matches_uniform(example, tmp_path):
                                   getattr(uniform.states[k], name)), (t, name)
         assert stepped.well_data[j] == uniform.well_data[k], t
         assert stepped.balance[j] == uniform.balance[k], t
+        # Баланс массы (DEBT-039): интегралы — те же подшаги, запас — та же
+        # функция побитово равных состояний
+        assert stepped.mass_balance[j] == uniform.mass_balance[k], t
 
 
 # ──────────────────────────────────────────────────────────────
@@ -251,7 +254,8 @@ def test_stepped_schedule_matches_uniform_across_shut_in(tmp_path):
     уровень, табличный PVT считается медленно (6 + 6 ч — 20 с).
     Смена управления в обоих расписаниях — на границе интервала, подшаги
     одни и те же, поэтому на общих моментах записи состояние, данные скважины
-    и накопленный баланс совпадают ПОБИТОВО (допуска нет — как в тесте FEAT-018).
+    и накопленные балансы энергии и массы совпадают ПОБИТОВО (допуска нет — как
+    в тесте FEAT-018).
     """
     src = _EXAMPLES / "16_well_shut_in" / "config.json"
     raw = json.loads(src.read_text(encoding="utf-8"))
@@ -295,6 +299,9 @@ def test_stepped_schedule_matches_uniform_across_shut_in(tmp_path):
                                   getattr(uniform.states[k], name)), (t, name)
         assert stepped.well_data[j] == uniform.well_data[k], t
         assert stepped.balance[j] == uniform.balance[k], t
+        # Баланс массы (DEBT-039): интегралы — те же подшаги, запас — та же
+        # функция побитово равных состояний
+        assert stepped.mass_balance[j] == uniform.mass_balance[k], t
 
 
 # ──────────────────────────────────────────────────────────────

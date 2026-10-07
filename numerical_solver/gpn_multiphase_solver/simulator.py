@@ -23,6 +23,7 @@ from .grid.base import Grid
 from .hydro.base import HydroSolver
 from .energy.base import EnergySolver
 from .energy.balance import EnergyBalanceAccumulator
+from .mass_balance import MassBalanceAccumulator
 from .pvt.base import HydroPVT
 from .io.config import OutputConfig
 from .log import user_log
@@ -128,6 +129,16 @@ class Simulator:
         # отключать по флагу нельзя по требованию к валидации схемы.
         balance = EnergyBalanceAccumulator(self._grid)
 
+        # Баланс массы компонентов (DEBT-039). Интегралы потоков через
+        # забой и контур копятся по ВСЕМ принятым шагам — по записям
+        # истории их не восстановить, как и члены баланса энергии. Запас —
+        # функция состояния, на каждой записи его отдаёт решатель. None —
+        # решатель массу не сохраняет (тестовые двойники): баланс не
+        # считается, снимки истории — None.
+        mass = (MassBalanceAccumulator()
+                if self._hydro.component_inventories(initial_state) is not None
+                else None)
+
         state = initial_state
 
         # Сохранить начальное состояние (нулевые потоки)
@@ -136,6 +147,7 @@ class Simulator:
             state=state,
             hydro=self._zero_hydro(state),
             well=self._zero_well_data(state),
+            mass_balance=self._mass_snapshot(mass, state),
         )
 
         user_log.info(
@@ -154,7 +166,7 @@ class Simulator:
             # ── Внутренний цикл: подшаги интегрирования ──
             for step in range(n_sub):
                 state, hydro_result = self._advance(
-                    state, dt, interval.bc, balance)
+                    state, dt, interval.bc, balance, mass)
 
                 # 4. Сохранить состояние на конце интервала истории.
                 # Единственный механизм отбора: моменты записи задаёт
@@ -174,7 +186,8 @@ class Simulator:
                     )
                     history.append(t=state.t, state=state,
                                    hydro=hydro_result, well=well,
-                                   balance=balance.snapshot())
+                                   balance=balance.snapshot(),
+                                   mass_balance=self._mass_snapshot(mass, state))
 
         user_log.info(
             f"Симуляция завершена: {history.n_saved} сохранённых шагов, "
@@ -185,6 +198,7 @@ class Simulator:
     def _advance(self, state: SimulationState, dt: float,
                  bc: BoundaryConditions,
                  balance: EnergyBalanceAccumulator,
+                 mass: MassBalanceAccumulator | None,
                  allow_subdivision: bool = True
                  ) -> tuple[SimulationState, HydroResult]:
         """Один шаг dt: гидродинамика → энергия → новое состояние.
@@ -201,7 +215,9 @@ class Simulator:
         сумматор без отката: вклад, единожды добавленный в него, убрать
         нельзя. Поэтому энергия решается только ПОСЛЕ того, как выяснено
         окончательное число подшагов; результат «пробного» крупного шага
-        отбрасывается до того, как он попадёт в баланс.
+        отбрасывается до того, как он попадёт в баланс. То же для
+        `MassBalanceAccumulator`: интегралы потоков добавляются только у
+        принятого результата (DEBT-039).
 
         allow_subdivision=False запрещает повторное дробление: так
         ограничивается один уровень вложенности. Подшаг, который сам
@@ -222,7 +238,7 @@ class Simulator:
             dt_sub = dt / n_sub
             for _ in range(n_sub):
                 state, hydro_result = self._advance(
-                    state, dt_sub, bc, balance, allow_subdivision=False)
+                    state, dt_sub, bc, balance, mass, allow_subdivision=False)
             return state, hydro_result
 
         if n_sub > 1:
@@ -232,6 +248,13 @@ class Simulator:
                 f"Гидро раздробило подшаг dt={dt:.3g} с на {n_sub} частей; "
                 f"шаг энергии не дробится (предел вложенности). "
                 f"Точность T на этом шаге снижена — уменьшите dt_integration.")
+
+        # Баланс массы (DEBT-039): только ПРИНЯТЫЙ результат — пробный шаг
+        # выше отброшен до этой точки, как и для баланса энергии. При
+        # вложенном дроблении (n_sub > 1 здесь) G_o, G_g результата — потоки
+        # последнего внутреннего подшага, а int_G_* — интегралы по всем.
+        if mass is not None:
+            mass.add_step(hydro_result)
 
         # 2. Температура на замороженных p, Sg, Rs.
         # Решатель попутно отдаёт накопителю коэффициенты, которые
@@ -250,6 +273,13 @@ class Simulator:
             t=hydro_result.state.t,
         )
         return new_state, hydro_result
+
+    def _mass_snapshot(self, mass: MassBalanceAccumulator | None,
+                       state: SimulationState) -> dict | None:
+        """Снимок баланса массы на записи истории; None — решатель массу не сохраняет."""
+        if mass is None:
+            return None
+        return mass.snapshot(self._hydro.component_inventories(state))
 
     def _zero_hydro(self, state: SimulationState) -> HydroResult:
         """HydroResult с нулевыми потоками (для начального состояния)."""

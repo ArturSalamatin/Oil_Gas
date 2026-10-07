@@ -13,9 +13,12 @@
 from dataclasses import replace
 
 import numpy as np
+import pytest
 
+from gpn_multiphase_solver.mass_balance import MASS_KEYS, MassBalanceAccumulator
 from gpn_multiphase_solver.simulator import Simulator
 
+from ._doubles import LogProfileHydroStub, SubdividingHydroStub
 from .test_simulator import _initial_state, _make_simulator, _single_interval_schedule
 
 # Порог относительной невязки (нормировка — сумма модулей членов). Уровень —
@@ -66,3 +69,117 @@ class TestContracts:
         history = sim.run(_initial_state())
         # Один интервал — две записи: начальная и конец интервала
         assert history.mass_balance == [None, None]
+
+
+# ── Накопитель ────────────────────────────────────────────────
+
+class TestAccumulator:
+    def test_sums_integrals_and_snapshot(self):
+        """Интегралы шагов складываются; снимок — запас + суммы, ключи MASS_KEYS."""
+        acc = MassBalanceAccumulator()
+        r = _stub_result(int_G_o_well=-1.0, int_G_o_ext=-2.0,
+                         int_G_g_well=-3.0, int_G_g_ext=-4.0)
+        acc.add_step(r)
+        acc.add_step(r)
+        snap = acc.snapshot((10.0, 20.0))
+        assert snap == {"M_o": 10.0, "M_g": 20.0,
+                        "cum_o_well": -2.0, "cum_o_ext": -4.0,
+                        "cum_g_well": -6.0, "cum_g_ext": -8.0}
+        assert tuple(snap) == MASS_KEYS
+
+    def test_missing_integrals_raise_before_accumulation(self):
+        """Без любого из int_G_* — RuntimeError, накопитель не тронут.
+
+        Запас без интегралов — несогласованный решатель: баланс по dt·G
+        последнего подшага был бы ложным при дроблении шага (DEBT-039).
+        """
+        acc = MassBalanceAccumulator()
+        with pytest.raises(RuntimeError, match="int_G"):
+            acc.add_step(_stub_result(int_G_o_well=-1.0))   # три поля — None
+        assert acc.snapshot((0.0, 0.0))["cum_o_well"] == 0.0
+
+
+# ── Simulator ─────────────────────────────────────────────────
+
+class _FluxIntegralStub(LogProfileHydroStub):
+    """Двойник с интегралами dt·G и нулевым запасом — проверка учёта шагов в Simulator."""
+
+    def solve(self, state, dt, bc):
+        r = super().solve(state, dt, bc)
+        # Профиль стационарный, потоки шага постоянны: интеграл = dt·G
+        return replace(r, int_G_o_well=dt * r.G_o[0], int_G_o_ext=dt * r.G_o[-1],
+                       int_G_g_well=dt * r.G_g[0], int_G_g_ext=dt * r.G_g[-1])
+
+    def component_inventories(self, state):
+        return (0.0, 0.0)
+
+
+class _NestedSubdividingStub(SubdividingHydroStub):
+    """Сообщает о дроблении на КАЖДОМ вызове — путь вложенного дробления Simulator._advance."""
+
+    def solve(self, state, dt, bc):
+        self.dt_calls.append(dt)
+        # replace сохраняет int_G_* внутреннего двойника, меняет только n_substeps
+        return replace(self._inner.solve(state, dt, bc), n_substeps=self._n_substeps)
+
+
+class TestSimulatorWiring:
+    def test_pilot_step_not_counted(self):
+        """Пробный шаг, отброшенный при дроблении, в интегралы не попадает.
+
+        SubdividingHydroStub на первом вызове сообщает n_substeps = 2:
+        Simulator отбрасывает пробный результат (3600 с) и проходит интервал
+        двумя шагами по 1800 с (BUG-010). Потоки двойника постоянны, поэтому
+        интеграл через забой — ровно 3600·G_o[0]; с пробным шагом было бы
+        5400·G_o[0]. Замер при планировании: равенство побитовое.
+        """
+        grid, pvt, inner, energy, _ = _make_simulator()
+        hydro = SubdividingHydroStub(_FluxIntegralStub(grid, pvt, inner._relperm),
+                                     n_substeps=2)
+        sim = Simulator(grid, hydro, energy, pvt,
+                        _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
+        history = sim.run(_initial_state())
+
+        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0]
+        # Не None: SubdividingHydroStub делегирует запас внутреннему двойнику
+        assert history.mass_balance[-1] is not None
+        assert history.mass_balance[0]["cum_o_well"] == 0.0
+        G0 = history.hydro_results[-1].G_o[0]
+        assert history.mass_balance[-1]["cum_o_well"] == pytest.approx(
+            3600.0 * G0, rel=1e-12)
+
+    def test_nested_subdivision_counted_once(self):
+        """Вложенное дробление: принятый как есть подшаг учтён ровно один раз.
+
+        Двойник сообщает n_substeps = 2 на КАЖДОМ вызове. Simulator отбрасывает
+        пробный шаг (3600 с), проходит интервал двумя подшагами по 1800 с с
+        запретом повторного дробления, и каждый из них, снова «раздробленный»,
+        принимается как есть (simulator.py, ветка с предупреждением). Именно
+        на этом пути G_o, G_g результата — потоки последнего внутреннего
+        подшага, и интегралы обязаны прийти из int_G_*. Интеграл через забой —
+        ровно 3600·G_o[0] (замер при аудите: побитово).
+        """
+        grid, pvt, inner, energy, _ = _make_simulator()
+        hydro = _NestedSubdividingStub(_FluxIntegralStub(grid, pvt, inner._relperm),
+                                       n_substeps=2)
+        sim = Simulator(grid, hydro, energy, pvt,
+                        _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
+        history = sim.run(_initial_state())
+
+        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0]
+        G0 = history.hydro_results[-1].G_o[0]
+        assert history.mass_balance[-1]["cum_o_well"] == pytest.approx(
+            3600.0 * G0, rel=1e-12)
+
+    def test_inventories_without_integrals_raise(self):
+        """Решатель отдаёт запас, но не интегралы — RuntimeError на первом шаге."""
+
+        class _InventoryOnly(LogProfileHydroStub):
+            def component_inventories(self, state):
+                return (1.0, 1.0)
+
+        grid, pvt, inner, energy, _ = _make_simulator()
+        sim = Simulator(grid, _InventoryOnly(grid, pvt, inner._relperm), energy,
+                        pvt, _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
+        with pytest.raises(RuntimeError, match="int_G"):
+            sim.run(_initial_state())

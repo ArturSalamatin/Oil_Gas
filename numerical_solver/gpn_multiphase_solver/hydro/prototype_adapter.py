@@ -184,8 +184,11 @@ class PrototypeHydroAdapter(HydroSolver):
         # не из-за неё (BUG-017 и BUG-018 до исправления, BUG-019: шаг не
         # сходится и при 512-4096 подшагах) — адаптер их не различает.
         # Начало «HydroSolver не сошёлся после N подшагов» цитируют README
-        # примеров 03, 06, 07, 10 — не менять. Про dt_integration не пишем:
-        # A-retry уже дробит шаг внутри с тем же лимитом.
+        # примеров 03, 06, 07, 10 — не менять. Про dt_integration пишем
+        # (BUG-020): подшаги A-retry равны и сходиться обязан каждый — при
+        # dt_integration = 1 сут один неудачный подшаг из 512 валит интервал
+        # (останов после добычи с развитой газовой зоной), при 3600 с каждый
+        # час дробится сам и расчёт проходит.
         n_two = int(np.count_nonzero(state.regime == 1))
         raise RuntimeError(
             f"HydroSolver не сошёлся после {2**self._max_retries} подшагов "
@@ -195,7 +198,10 @@ class PrototypeHydroAdapter(HydroSolver):
             f"Если отказ вызван величиной шага, поможет больший "
             f"numerics.max_retries (сейчас {self._max_retries}, допустимо "
             f"до 20); если шаг не сходится и при мелких подшагах, причина "
-            f"не в его величине.")
+            f"не в его величине. Подшаги A-retry равны, и сходиться обязан "
+            f"каждый: при смене режима скважины (останов, подъём p_wf) после "
+            f"добычи с развитой газовой зоной уменьшите time.dt_integration "
+            f"до 3600 с.")
 
     def _build_result(self, new_state: SimulationState,
                       new_proto, bc: BoundaryConditions,

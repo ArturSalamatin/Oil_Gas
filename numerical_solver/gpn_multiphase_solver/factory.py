@@ -379,6 +379,10 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
         skin=nc.skin,
         jacobian_mode=nc.jacobian_mode,
         linear_solver=nc.linear_solver,
+        # BUG-020: четвёртая ступень advance — Ньютон с переключением набора фаз
+        # на итерациях; включается только после отказа трёх штатных. У прототипа
+        # по умолчанию выключена (его эталон регрессии побитовый), в GPN — всегда.
+        phase_switching_stage=True,
     )
 
     # Выход начального состояния за PVT- и ОФП-таблицы (BUG-017): прототип

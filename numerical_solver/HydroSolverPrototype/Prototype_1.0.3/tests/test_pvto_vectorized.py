@@ -41,7 +41,8 @@ def _irregular_table():
 def _tables():
     """Fixture Nabor_1b (6 branches of 5 rows), the irregular table, a table with a one-row branch."""
     inp,_,_=model_and_state(n=3)
-    # A one-row branch (Rs = 30): the GPN CSV reader does not forbid it; np.interp returns its only value
+    # A one-row branch (Rs = 30): BlackOilPVT accepts it, np.interp returns its only value.  The XLSX
+    # reader and the GPN factory (CSV, DEBT-038) reject such tables before BlackOilPVT is built
     one_row=BlackOilPVT([(0,20,1.05,3.0),(0,80,1.04,3.1),(30,120,1.2,1.5),(60,170,1.3,1.2),(60,260,1.28,1.4)],GAS)
     return (('Nabor_1b',inp.pvt),('irregular',_irregular_table()),('one-row branch',one_row))
 

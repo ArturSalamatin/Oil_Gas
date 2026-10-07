@@ -6,7 +6,7 @@ date: 2026-10-03
 issue: DEBT-036
 github: 59
 branch: refactor/debt-036/table-pvt-residual-speedup
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-036 (ветка от 38df988; vault задачи — в основном каталоге, не в ветке)
 audit:
   date: 2026-10-03

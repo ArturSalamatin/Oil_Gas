@@ -1,0 +1,61 @@
+........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 54%]
+........................................................................ [ 72%]
+........................F............................................... [ 91%]
+...................................                                      [100%]
+================================== FAILURES ===================================
+__________________ TestPvtPlot.test_density_panel_uses_twinx __________________
+
+self = <test_examples.TestPvtPlot object at 0x000001C1CEF9B750>
+
+    def test_density_panel_uses_twinx(self):
+        """Панель плотностей — на двух осях.
+    
+        \u0418\u0437\u043c\u0435\u0440\u0435\u043d\u043e \u043d\u0430 \u043f\u0440\u0438\u043c\u0435\u0440\u0435 04: \u043d\u0435\u0444\u0442\u044c 730\u2026800, \u0433\u0430\u0437 40\u2026140 \u043a\u0433/\u043c\xb3. \u041d\u0430 \u043e\u0434\u043d\u043e\u0439
+        шкале газовая кривая прижата к низу и её форма нечитаема, а
+        именно форма rho_g(p) различает PVT-модели.
+        """
+        import ast
+    
+        core = (Path(__file__).parent.parent / "gpn_multiphase_solver"
+                / "io" / "output.py")
+>       tree = ast.parse(core.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\vault\issues\feat-025\probes\audit2\tests\test_examples.py:1218: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-025/probes/audit2/gpn_multiphase_solver/io/output.py')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-025\\probes\\audit2\\gpn_multiphase_solver\\io\\output.py'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:537: FileNotFoundError
+============================== warnings summary ===============================
+..\vault\issues\feat-025\probes\audit2\tests\test_examples.py:1332
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\audit2\tests\test_examples.py:1332: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED ..\vault\issues\feat-025\probes\audit2\tests\test_examples.py::TestPvtPlot::test_density_panel_uses_twinx
+1 failed, 394 passed, 1 warning in 591.86s (0:09:51)
+exit 1 time 593 s

@@ -1,0 +1,10 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+Nabor_1b.xlsx, n = 100 (исходный 0.2 с, advance 0.2 с)
+   исходный        : conv=True  it=12 aset= 2 sw= 21 |F|=1.744430e-16
+   advance сейчас  : conv=True  it=12 aset= 2 sw= 21 |F|=1.744430e-16 fb=False gl=False
+   advance по плану: conv=True  it=12 aset= 2 sw= 21 |F|=1.744430e-16 fb=False gl=False  поля Ньютона == исходный: True
+T04.xlsx, n = 100 (исходный 0.4 с, advance 1.2 с)
+   исходный        : conv=False it=15 aset= 2 sw= 21 |F|=2.350242e-07
+   advance сейчас  : conv=False it= 0 aset= 1 sw=  0 |F|=0.000000e+00 fb=True gl=True
+   advance по плану: conv=False it=15 aset= 2 sw= 21 |F|=2.350242e-07 fb=True gl=True  поля Ньютона == исходный: True

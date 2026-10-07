@@ -1,0 +1,249 @@
+[INFO] Расчет: 30 интервалов, T_total = 2592000 с
+[INFO]   Интервал 1/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 2/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 3/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 4/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 5/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 6/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 7/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 8/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 9/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 10/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 11/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 12/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 13/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 14/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 15/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 16/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 17/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 18/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 19/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 20/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 21/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 22/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 23/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 24/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 25/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 26/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 27/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 28/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 29/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 30/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO] Симуляция завершена: 31 сохранённых шагов, T_final = 2592000 с
+[INFO] Расчет: 30 интервалов, T_total = 2592000 с
+[INFO]   Интервал 1/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 2/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 3/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 4/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 5/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 6/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 7/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 8/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 9/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 10/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 11/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 12/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 13/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 14/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 15/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 16/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 17/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 18/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 19/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 20/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 21/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 22/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 23/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 24/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 25/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 26/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 27/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 28/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 29/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 30/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO] Симуляция завершена: 31 сохранённых шагов, T_final = 2592000 с
+[INFO] Расчет: 30 интервалов, T_total = 2592000 с
+[INFO]   Интервал 1/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 2/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 3/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 4/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 5/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 6/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 7/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 8/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 9/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 10/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 11/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 12/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 13/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 14/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 15/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 16/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 17/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 18/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 19/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 20/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 21/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 22/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 23/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 24/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 25/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 26/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 27/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 28/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 29/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO]   Интервал 30/30: dt_hist=86400 с, 1 подшагов, dt_actual=86400.0 с
+[INFO] Симуляция завершена: 31 сохранённых шагов, T_final = 2592000 с
+расчёт трёх примеров: 17.1 с
+   ПАДАЕТ TestSharedChecks.test_energy_balance_reported_for_all_examples:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 756, in test_energy_balance_reported_for_all_examples
+    run_example(
+    ~~~~~~~~~~~^
+        config_path=EXAMPLES_DIR / "10_deep_degassing" / "config.json",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        output_dir=tmp_path,
+        ^^^^^^^^^^^^^^^^^^^^
+        title="тест подключения баланса",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-025\\probes\\final\\10_deep_degassing\\config.json'
+
+   пропуск TestSharedChecks.test_no_duplicate_helper_scripts: параметры ['module']
+   ПАДАЕТ TestSharedChecks.test_shared_modules_exist:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 735, in test_shared_modules_exist
+    assert path.is_file(), f"нет общего модуля examples/{module}"
+           ~~~~~~~~~~~~^^
+AssertionError: нет общего модуля examples/energy_balance.py
+
+   ПАДАЕТ TestPvtPlot.test_formatter_delegates_drawing_to_core:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 1146, in test_formatter_delegates_drawing_to_core
+    tree = ast.parse(src.read_text(encoding="utf-8"))
+                     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-025\\probes\\final\\pvt_plot.py'
+
+── PVT: standing ──
+  рабочий диапазон: p = 3.0752 … 24.6840 МПа
+  Rs0 = 150 м³ст/м³ст,  p_b = 24.1847 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     3.0752    13.2513   1.12998   4.7945e-04    0.04565   1.5232e-05    716.50     15.93
+    13.8796    77.3263   1.28684   3.0495e-04    0.01011   1.7059e-05    665.36     71.88
+    24.6840   150.0000   1.48268   2.4011e-04    0.00569   1.9993e-05    613.11    127.83
+── PVT: standing ──
+  рабочий диапазон: p = 5.1343 … 46.8691 МПа
+  Rs0 = 500 м³ст/м³ст,  p_b = 46.3803 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     5.1343    36.5569   1.17841   4.5222e-04    0.02597   1.3946e-05    710.34     39.04
+    26.0017   249.8654   1.88325   2.1684e-04    0.00513   2.3127e-05    559.33    197.70
+    46.8691   500.0000   2.85779   1.5844e-04    0.00285   4.6600e-05    457.35    356.36
+── PVT: standing ──
+  рабочий диапазон: p = 3.0447 … 17.6890 МПа
+  Rs0 = 100 м³ст/м³ст,  p_b = 17.2235 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     3.0447    13.1016   1.12963   4.8038e-04    0.04611   1.5228e-05    716.63     15.77
+    10.3669    54.6829   1.22939   3.4106e-04    0.01354   1.6339e-05    683.07     53.69
+    17.6890   100.0000   1.34621   2.7894e-04    0.00794   1.7968e-05    648.27     91.61
+   ПАДАЕТ TestPvtPlot.test_module_signatures_follow_convention:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 1195, in test_module_signatures_follow_convention
+    r = results["03_standing_corey"]
+        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+KeyError: '03_standing_corey'
+
+   ПАДАЕТ TestPvtPlot.test_mu_o_spatial_localization:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 1089, in test_mu_o_spatial_localization
+    r = results[name]
+        ~~~~~~~^^^^^^
+KeyError: '03_standing_corey'
+
+   ПАДАЕТ TestPvtPlot.test_no_phantom_legend_entries:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 1031, in test_no_phantom_legend_entries
+    r = results[name]
+        ~~~~~~~^^^^^^
+KeyError: '03_standing_corey'
+
+   ПАДАЕТ TestPvtPlot.test_nodes_units:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 963, in test_nodes_units
+    r = results["04_table_table"]
+        ~~~~~~~^^^^^^^^^^^^^^^^^^
+KeyError: '04_table_table'
+
+── PVT: standing ──
+  рабочий диапазон: p = 3.0752 … 24.6840 МПа
+  Rs0 = 150 м³ст/м³ст,  p_b = 24.1847 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     3.0752    13.2513   1.12998   4.7945e-04    0.04565   1.5232e-05    716.50     15.93
+    13.8796    77.3263   1.28684   3.0495e-04    0.01011   1.7059e-05    665.36     71.88
+    24.6840   150.0000   1.48268   2.4011e-04    0.00569   1.9993e-05    613.11    127.83
+── PVT: standing ──
+  рабочий диапазон: p = 5.1343 … 46.8691 МПа
+  Rs0 = 500 м³ст/м³ст,  p_b = 46.3803 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     5.1343    36.5569   1.17841   4.5222e-04    0.02597   1.3946e-05    710.34     39.04
+    26.0017   249.8654   1.88325   2.1684e-04    0.00513   2.3127e-05    559.33    197.70
+    46.8691   500.0000   2.85779   1.5844e-04    0.00285   4.6600e-05    457.35    356.36
+── PVT: standing ──
+  рабочий диапазон: p = 3.0447 … 17.6890 МПа
+  Rs0 = 100 м³ст/м³ст,  p_b = 17.2235 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     3.0447    13.1016   1.12963   4.8038e-04    0.04611   1.5228e-05    716.63     15.77
+    10.3669    54.6829   1.22939   3.4106e-04    0.01354   1.6339e-05    683.07     53.69
+    17.6890   100.0000   1.34621   2.7894e-04    0.00794   1.7968e-05    648.27     91.61
+   ПАДАЕТ TestPvtPlot.test_table_nodes_in_working_range:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 993, in test_table_nodes_in_working_range
+    r = results["04_table_table"]
+        ~~~~~~~^^^^^^^^^^^^^^^^^^
+KeyError: '04_table_table'
+
+   ПАДАЕТ TestPvtPlot.test_table_nodes_split_by_phase:
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-025\probes\generic_tests.py", line 78, in run_generic
+    meth(**kw)
+    ~~~~^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_examples.py", line 1061, in test_table_nodes_split_by_phase
+    r = results["04_table_table"]
+        ~~~~~~~^^^^^^^^^^^^^^^^^^
+KeyError: '04_table_table'
+
+общие тесты: прошло 34, упало 9
+   матрица 19_rs150_cooling: 30 вызовов — OK, 5.7 с
+   матрица 20_rs500_cooling: 30 вызовов — OK, 6.0 с
+   матрица 21_rs100_cooling: 30 вызовов — OK, 5.7 с
+exit 0

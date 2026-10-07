@@ -1,0 +1,22 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+== Прямой вызов ридеров
+oil_typo           OK: 3 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 300.0, 1.18, 1.6)]
+oil_decimal_comma  OK: 4 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 150.0, 1.0, 20000.0), (30.0, 300.0, 1.18, 1.6)]
+oil_short          OK: 3 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 300.0, 1.18, 1.6)]
+oil_trailing       OK: 4 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 150.0, 1.2, 1.5), (30.0, 300.0, 1.18, 1.6)]
+oil_nan            OK: 4 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, nan, 1.2, 1.5), (30.0, 300.0, 1.18, 1.6)]
+oil_inf            OK: 4 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 150.0, inf, 1.5), (30.0, 300.0, 1.18, 1.6)]
+oil_spaces_line    OK: 4 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2), (30.0, 150.0, 1.2, 1.5), (30.0, 300.0, 1.18, 1.6)]
+oil_no_header      OK: 3 строк; [(0.0, 300.0, 1.04, 3.2), (30.0, 150.0, 1.2, 1.5), (30.0, 300.0, 1.18, 1.6)]
+oil_swapped_cols   OK: 2 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2)]
+oil_empty_file     StopIteration: 
+oil_bom            OK: 2 строк; [(0.0, 50.0, 1.05, 3.0), (0.0, 300.0, 1.04, 3.2)]
+oil_semicolon      OK: 0 строк; []
+gas_typo           OK: 2 строк; [(50.0, 0.02, 0.012), (300.0, 0.004, 0.018)]
+rp_col2_error      OK: len(Sg, kro, krg) = (3, 2, 2)
+rp_col3_error      OK: len(Sg, kro, krg) = (3, 3, 2)
+
+== from_config и run (configs/table_pvt)
+rp_col2_error      run: ValueError: fp and xp are not of the same length.  [_function_base_impl.py:1686]
+gas_semicolon      from_config: ValueError: GAS_PVT pressure must be strictly increasing with >=2 rows  [pvt.py:32]
+rp_semicolon       from_config: ValueError: RELPERM Sg must be strictly increasing with >=2 rows  [relperm.py:5]

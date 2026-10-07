@@ -1,0 +1,27 @@
+﻿.venv\Scripts\python : Traceback (most recent call last):
+At line:1 char:358
++ ... cal_solver; .venv\Scripts\python ..\vault\issues\feat-024\probes\cool ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-024\probes\cooling_probe.py", line 177, in <module>
+    run(make_variant(name, **VARIANTS[name]))
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-024\probes\cooling_probe.py", line 126, in run
+    h = sim.run(init)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 156, in run
+    state, hydro_result = self._advance(
+                          ~~~~~~~~~~~~~^
+        state, dt, interval.bc, balance)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 213, in _advance
+    hydro_result = self._hydro.solve(state, dt, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\hydro\prototype_adapter.py", line 
+128, in solve
+    raise RuntimeError(
+    ...<5 lines>...
+        f"(обе фазы малоподвижны одновременно).")
+RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=4.22e+01 s). Увеличьте numerics.max_retries (сейчас 
+9). Более мелкие подшаги требуются при корреляционном PVT (нелинейность B_g) и при высокой газонасыщенности (обе фазы 
+малоподвижны одновременно).

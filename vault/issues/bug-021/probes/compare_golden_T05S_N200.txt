@@ -1,0 +1,14 @@
+﻿=== T05S_N200_DT5m: шагов принято 8689 -> 8675, отклонено 5 -> 4
+  step_log.csv: последовательность шагов расходится со строки 6 (с заголовком)
+    эталон: time_s_or_start=0.0, dt_s=15.0, accepted=False, newton_iterations=15, residual_inf=3.164823590457238e-05
+    эталон: time_s_or_start=0.0, dt_s=7.5, accepted=False, newton_iterations=15, residual_inf=6.338679441120257e-05
+    эталон: time_s_or_start=0.0, dt_s=3.75, accepted=False, newton_iterations=15, residual_inf=4.1690609298150607e-16
+    эталон: time_s_or_start=1.875, dt_s=1.875, accepted=True, newton_iterations=15, residual_inf=1.3433370592123147e-16
+    эталон: time_s_or_start=3.28125, dt_s=1.40625, accepted=True, newton_iterations=7, residual_inf=3.0378293630617393e-13
+    сейчас: time_s_or_start=0.0, dt_s=15.0, accepted=False, newton_iterations=0, residual_inf=0.0
+    сейчас: time_s_or_start=0.0, dt_s=7.5, accepted=False, newton_iterations=0, residual_inf=0.0
+    сейчас: time_s_or_start=3.75, dt_s=3.75, accepted=True, newton_iterations=19, residual_inf=4.170448708595842e-16
+    сейчас: time_s_or_start=6.5625, dt_s=2.8125, accepted=True, newton_iterations=6, residual_inf=3.425520067254495e-13
+    сейчас: time_s_or_start=9.796875, dt_s=3.2343749999999996, accepted=True, newton_iterations=6, residual_inf=5.0758593292052347e-14
+         сут  max|Δp|, бар   max|ΔSg|   max|ΔRs|   Δq_o, %   Δq_g, %   ΔGOR, %
+           0     0.000e+00  0.000e+00  0.000e+00  0.00e+00  0.00e+00  0.00e+00

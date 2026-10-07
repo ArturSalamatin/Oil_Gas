@@ -1,0 +1,15 @@
+﻿шаг 2: тест совпадает с planned_tests/
+3.1 docstring модуля: применён (blackoil.py)
+3.2 метод: применён (blackoil.py)
+3.2: метод = NEW_V2
+4.1 docstring теста: применён (test_prototype_globalization.py)
+4.2 перехват Ньютона: применён (test_prototype_globalization.py)
+4.3 комментарий: применён (test_prototype_well_branch.py)
+5: CHANGELOG — раздел добавлен; последний раздел до него: ## Local changes — GPN project (DEBT-030): report of a rejected step
+6.1 строка 1.5 сут: применён (README.md)
+6.1 строка 2 сут: применён (README.md)
+6.2 абзац: применён (README.md)
+6.3 баланс: применён (README.md)
+6.4 README 05: применён (README.md)
+6.5 комментарий теста: применён (test_energy_matrix_examples.py)
+тесты прототипа в копии: 97 passed in 33.61s

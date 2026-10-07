@@ -1,0 +1,37 @@
+=== rule=node
+01_single_phase_no_jt        cap = 0.79, max S_g активации = 0.0000, срабатываний 0, вызовов advance 72, 2 с
+02_single_phase_jt           cap = 0.79, max S_g активации = 0.0000, срабатываний 0, вызовов advance 72, 1 с
+03_standing_corey            cap = 0.79, max S_g активации = 0.1025, срабатываний 0, вызовов advance 72, 1 с
+04_table_table               cap = 0.6, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 2 с
+04a_high_gas_saturation      cap = 0.99, max S_g активации = 0.3636, срабатываний 0, вызовов advance 864, 42 с
+05_standing_table_rp         cap = 0.6, max S_g активации = 0.0962, срабатываний 0, вызовов advance 72, 1 с
+06_table_corey_rp            cap = 0.79, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 2 с
+07_degassing_adiabatic_only  cap = 0.6, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+08_degassing_jt              cap = 0.6, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+09_degassing_latent_heat     cap = 0.6, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+10_deep_degassing            cap = 0.6, max S_g активации = 0.3166, срабатываний 0, вызовов advance 76, 3 с
+11_degassing_at_boundary     cap = 0.6, max S_g активации = 0.3190, срабатываний 0, вызовов advance 72, 5 с
+12_large_drainage_radius     cap = 0.6, max S_g активации = 0.3181, срабатываний 0, вызовов advance 360, 17 с
+13a_pwf_ramp_down            cap = 0.6, max S_g активации = 0.0127, срабатываний 0, вызовов advance 360, 14 с
+13b_pwf_alternating          cap = 0.6, max S_g активации = 0.3181, срабатываний 0, вызовов advance 724, 56 с
+14_high_gor_cooling          cap = 0.79, max S_g активации = 0.6526, срабатываний 0, вызовов advance 360, 66 с
+15_oil_rate_ramp_up          cap = 0.6, max S_g активации = 0.0062, срабатываний 0, вызовов advance 360, 13 с
+=== rule=eps0.05
+01_single_phase_no_jt        cap = 0.75, max S_g активации = 0.0000, срабатываний 0, вызовов advance 72, 1 с
+02_single_phase_jt           cap = 0.75, max S_g активации = 0.0000, срабатываний 0, вызовов advance 72, 1 с
+03_standing_corey            cap = 0.75, max S_g активации = 0.1025, срабатываний 0, вызовов advance 72, 1 с
+04_table_table               cap = 0.75, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+04a_high_gas_saturation      cap = 0.95, max S_g активации = 0.3636, срабатываний 0, вызовов advance 864, 38 с
+05_standing_table_rp         cap = 0.75, max S_g активации = 0.0962, срабатываний 0, вызовов advance 72, 1 с
+06_table_corey_rp            cap = 0.75, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 2 с
+07_degassing_adiabatic_only  cap = 0.75, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+08_degassing_jt              cap = 0.75, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+09_degassing_latent_heat     cap = 0.75, max S_g активации = 0.2339, срабатываний 0, вызовов advance 72, 1 с
+10_deep_degassing            cap = 0.75, max S_g активации = 0.3166, срабатываний 0, вызовов advance 76, 2 с
+11_degassing_at_boundary     cap = 0.75, max S_g активации = 0.3190, срабатываний 0, вызовов advance 72, 3 с
+12_large_drainage_radius     cap = 0.75, max S_g активации = 0.3181, срабатываний 0, вызовов advance 360, 14 с
+13a_pwf_ramp_down            cap = 0.75, max S_g активации = 0.0127, срабатываний 0, вызовов advance 360, 14 с
+13b_pwf_alternating          cap = 0.75, max S_g активации = 0.3181, срабатываний 0, вызовов advance 724, 56 с
+14_high_gor_cooling          cap = 0.75, max S_g активации = 0.6526, срабатываний 0, вызовов advance 360, 66 с
+15_oil_rate_ramp_up          cap = 0.75, max S_g активации = 0.0062, срабатываний 0, вызовов advance 360, 13 с
+done

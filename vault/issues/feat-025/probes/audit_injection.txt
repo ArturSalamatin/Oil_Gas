@@ -1,0 +1,6 @@
+   19_rs150_cooling, delta = 0: вызовов с отказом — atol=0: 0, вариант Б: 0 (из 3); max|d-ref|/max|ref| = 9.45e-19
+   19_rs150_cooling, delta = 1e-10: вызовов с отказом — atol=0: 3, вариант Б: 0 (из 3); max|d-ref|/max|ref| = 4.23e-16
+   19_rs150_cooling, delta = 1e-08: вызовов с отказом — atol=0: 3, вариант Б: 0 (из 3); max|d-ref|/max|ref| = 4.29e-14
+   20_rs500_cooling, delta = 0: вызовов с отказом — atol=0: 0, вариант Б: 0 (из 3); max|d-ref|/max|ref| = 3.17e-20
+   20_rs500_cooling, delta = 1e-10: вызовов с отказом — atol=0: 3, вариант Б: 0 (из 3); max|d-ref|/max|ref| = 2.22e-15
+   20_rs500_cooling, delta = 1e-08: вызовов с отказом — atol=0: 3, вариант Б: 1 (из 3); max|d-ref|/max|ref| = 2.18e-13

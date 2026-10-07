@@ -1,0 +1,6 @@
+scipy 1.18.1 numpy 2.5.2
+04_table_table: N=50, расчёт 1.4 с, якобианов 111 (ветви ['None'], третья ступень 0, режим BHP); проверено 10: grouped == reference побитово 10/10; csc из полосы == csc_matrix(dense) 10/10; grouped 9.0 мс/якобиан
+20_rs300_cooling: N=350, расчёт 16.9 с, якобианов 604 (ветви ['None', 'open', 'shut'], третья ступень 34, режим BHP); проверено 50: grouped == reference побитово 50/50; csc из полосы == csc_matrix(dense) 50/50; grouped 19.8 мс/якобиан
+15_oil_rate_ramp_up: N=50, расчёт 13.3 с, якобианов 1168 (ветви ['None'], третья ступень 0, режим OIL_RATE); проверено 10: grouped == reference побитово 10/10; csc из полосы == csc_matrix(dense) 10/10; grouped 9.0 мс/якобиан
+13b_pwf_alternating: N=50, расчёт 54.9 с, якобианов 4882 (ветви ['None', 'open', 'shut'], третья ступень 41, режим BHP); проверено 367: grouped == reference побитово 367/367; csc из полосы == csc_matrix(dense) 367/367; grouped 8.9 мс/якобиан
+14_high_gor_cooling: N=350, расчёт 64.4 с, якобианов 1335 (ветви ['None', 'open', 'shut'], третья ступень 39, режим BHP); проверено 51: grouped == reference побитово 51/51; csc из полосы == csc_matrix(dense) 51/51; grouped 35.6 мс/якобиан

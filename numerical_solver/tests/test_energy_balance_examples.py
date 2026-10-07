@@ -336,6 +336,29 @@ def test_convection_implicit_table_pvt():
     assert abs(bal["rel_residual"][-1]) < TOL_RESIDUAL
 
 
+# Страж θ-формы (DEBT-043): на укороченном сценарии решение в отклонениях
+# замыкает баланс до 0…7.8e-17 (03 — 0, 04 — 7.8e-17), решение в
+# абсолютной T — 1.6e-13 (03) и 4.9e-13 (04). Порог посередине по порядку.
+TOL_MACHINE = 1e-14
+
+
+@pytest.mark.parametrize("example", ["03_standing_corey", "04_table_table"])
+def test_energy_balance_machine_precision(example):
+    """Баланс энергии замыкается на машинном уровне — СЛАУ решается в отклонениях.
+
+    Страж DEBT-043. В абсолютной температуре округления сборки и
+    прогонки ~ε·cap·T (T ~ 350 K) давали на этом сценарии 1.6e-13 и
+    4.9e-13, на полных конфигах — до 1.3e-10, и порог проверок лежал
+    на уровне шума. В отклонениях θ = T − T_ext — 0 и 7.8e-17. Если
+    решатель вернётся к абсолютной T или станет передавать накопителю
+    записанную T вместо θ, тест упадёт: оба пути возвращают шум ε·cap·T
+    (замер при планировании: накопитель по записанной T — 3.2e-14 и
+    1.4e-13).
+    """
+    bal = _run_balance(example)
+    assert abs(bal["rel_residual"][-1]) < TOL_MACHINE
+
+
 def test_accumulation_without_substep_raises():
     """add_accumulation без парного add_substep обязана бросить RuntimeError.
 

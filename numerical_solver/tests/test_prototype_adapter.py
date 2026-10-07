@@ -17,6 +17,7 @@ PrototypeHydroAdapter выполняет 8 шагов:
 """
 
 from pathlib import Path
+from types import SimpleNamespace
 import numpy as np
 import pytest
 
@@ -736,3 +737,95 @@ class TestAdapterPwfUpStep:
         assert r.state.p[0] < 190e5             # замер 157.09 бар
         assert r.state.Sg.min() >= 0.0          # см. test_long_upstep_single_substep
         assert r.state.Sg.max() < 1.0
+
+
+# ═══════════════════════════════════════════════════════════
+# K. Баланс массы: запас и интегралы потоков (DEBT-039)
+# ═══════════════════════════════════════════════════════════
+
+def _step_rel_residuals(adapter, state_old, r, use_integrals=True):
+    """Отн. невязка баланса массы шага (нефть, газ): ΔM + ∫G[N] − ∫G[0], нормировка — сумма модулей."""
+    (Mo0, Mg0) = adapter.component_inventories(state_old)
+    (Mo1, Mg1) = adapter.component_inventories(r.state)
+    dt = r.state.t - state_old.t
+    out = []
+    for dM, iw, ie, Gw, Ge in (
+            (Mo1 - Mo0, r.int_G_o_well, r.int_G_o_ext, r.G_o[0], r.G_o[-1]),
+            (Mg1 - Mg0, r.int_G_g_well, r.int_G_g_ext, r.G_g[0], r.G_g[-1])):
+        # use_integrals=False — как считал бы накопитель без интегралов:
+        # поток последнего подшага на весь шаг
+        w, e = (iw, ie) if use_integrals else (dt * Gw, dt * Ge)
+        out.append(abs(dM + e - w) / (abs(dM) + abs(w) + abs(e)))
+    return out
+
+
+class TestMassBalanceIntegrals:
+    """Адаптер отдаёт запас прототипа и интегралы потоков по подшагам A-retry."""
+
+    def test_integrals_equal_dt_flux_without_retry(self, result):
+        """Без дробления интеграл = DT·G побитово.
+
+        Один подшаг: 0.0 + DT·(−f) и DT·G[0], где G[0] = −f того же вызова
+        face_component_fluxes_sm3s на том же состоянии. Знак забоя
+        инвертирован (G < 0 при добыче), контура — нет.
+        """
+        assert result.n_substeps == 1
+        assert result.int_G_o_well == DT * result.G_o[0]
+        assert result.int_G_o_ext == DT * result.G_o[-1]
+        assert result.int_G_g_well == DT * result.G_g[0]
+        assert result.int_G_g_ext == DT * result.G_g[-1]
+        assert result.int_G_o_well < 0.0           # добыча
+
+    def test_inventories_from_prototype(self, adapter, model, initial_state):
+        """Запас — суммы component_inventories прототипа, без пересчёта (BUG-004)."""
+        ps = BlackOilState(pressure_bar=initial_state.p / BAR_TO_PA,
+                           rs_sm3_sm3=initial_state.Rs.copy(),
+                           sg=initial_state.Sg.copy(),
+                           gas_active=(initial_state.regime == 1))
+        oil, gas = model.component_inventories(ps)
+        assert adapter.component_inventories(initial_state) == (
+            float(np.sum(oil)), float(np.sum(gas)))
+
+    def test_step_mass_balance_closes(self, adapter, initial_state, result):
+        """Баланс массы шага замыкается на уровне допуска Ньютона (замер 1.5e-12)."""
+        assert max(_step_rel_residuals(adapter, initial_state, result)) < 1e-6
+
+    def test_integrals_sum_retry_substeps(self, adapter, model, initial_state,
+                                          bc, monkeypatch):
+        """При A-retry интегралы — сумма по подшагам, а не DT·G последнего.
+
+        Первый вызов advance отказывает: адаптер дробит шаг на 2 подшага по
+        DT/2. Интегралы обязаны совпасть с суммой двух solve(DT/2) того же
+        адаптера — побитово (те же операции в том же порядке). Баланс шага с
+        интегралами замыкается (замер 6.5e-12), с потоком последнего подшага
+        на весь DT — нет (замер 8.7e-2): ловушка, ради которой интегралы
+        считает адаптер.
+        """
+        real = model.advance
+        calls = []
+
+        def failing_first(proto_state, dt, *args, **kwargs):
+            calls.append(dt)
+            if len(calls) == 1:
+                # Отчёт отказа: адаптер читает converged, iterations, residual_inf
+                return proto_state, SimpleNamespace(
+                    converged=False, iterations=0, residual_inf=1.0)
+            return real(proto_state, dt, *args, **kwargs)
+
+        monkeypatch.setattr(model, "advance", failing_first)
+        r = adapter.solve(initial_state, dt=DT, bc=bc)
+        monkeypatch.undo()
+
+        assert calls == [DT, DT / 2, DT / 2]
+        assert r.n_substeps == 2
+
+        h1 = adapter.solve(initial_state, dt=DT / 2, bc=bc)
+        h2 = adapter.solve(h1.state, dt=DT / 2, bc=bc)
+        assert r.int_G_o_well == h1.int_G_o_well + h2.int_G_o_well
+        assert r.int_G_o_ext == h1.int_G_o_ext + h2.int_G_o_ext
+        assert r.int_G_g_well == h1.int_G_g_well + h2.int_G_g_well
+        assert r.int_G_g_ext == h1.int_G_g_ext + h2.int_G_g_ext
+
+        assert max(_step_rel_residuals(adapter, initial_state, r)) < 1e-6
+        assert min(_step_rel_residuals(adapter, initial_state, r,
+                                       use_integrals=False)) > 1e-2

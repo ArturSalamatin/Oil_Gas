@@ -10,7 +10,7 @@ github: 69
 branch: refactor/debt-040/shutin-skip-failing-stages
 status: реализован
 worktree: .worktrees/debt-040
-progress: шаги 0–6 выполнены (7f7e38e код и тесты, 983c34c пробы шага 3, 09f32d1 CHANGELOG + vault); 1351 passed, прототип 97, регрессия 11/11 и 17/17 PASS; 21 пример и сквозной расчёт побитово
+progress: шаги 0–6 выполнены (7f7e38e код и тесты, 983c34c пробы шага 3, 09f32d1 CHANGELOG, 3df3e53 vault); 1351 passed, прототип 97, регрессия 11/11 и 17/17 PASS; 21 пример и сквозной расчёт побитово
 audit:
   date: 2026-10-07
   round: 1

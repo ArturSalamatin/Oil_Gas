@@ -8,8 +8,10 @@ date: 2026-10-06
 issue: BUG-020
 github: 63
 branch: fix/bug-020/shutin-gas-zone-convergence
-status: в процессе
+status: заблокирован
 worktree: .worktrees/bug-020
+progress: шаги 0–6 выполнены (коммиты be23344…23f5554); осталось 7, 8, 9
+blocker: "DEBT-043 — невязка баланса энергии примера 16 1.34e-10 при пороге 1e-10 (TestSharedChecks::test_energy_balance_all_examples); дрейф округления на хвосте останова, не недорешённость шага ступени 4"
 audit:
   date: 2026-10-07
   round: 4

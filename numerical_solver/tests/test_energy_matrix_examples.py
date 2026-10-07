@@ -613,12 +613,16 @@ def _ref_d_scale(grid, N, dt, T_old, T_ext, rho_cp_eff, Q_T_ext, Phi_minus,
 
 
 def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
-                    with_scale=False):
+                    T_ref=0.0, with_scale=False):
     """Собрать эталонные a, b, c, d для одного вызова solve.
 
     dt — фактический шаг вызова, НЕ шаг расписания: при A-retry Simulator
     дробит интервал и вызывает solve с dt_sub = dt/n_sub (BUG-010), а
     cap = V·(ρcp)/dt зависит именно от dt_sub.
+
+    T_ref — опора отсчёта температуры правой части d (DEBT-043): решатель
+    собирает d в отклонениях θ = T − T_ext, эталон сдвигается тем же
+    T_ref. Свойства считаются по абсолютной T.
 
     with_scale=True — пятым элементом масштаб слагаемых d (_ref_d_scale),
     для допуска сверки d.
@@ -657,13 +661,15 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
                            st.Rs, state_prev.Rs, props['Bo'],
                            hydro_result.G_o, props['L'], dt, N, bc.Rs_ext)
 
-    abcd = _ref_assemble(grid, N, dt, state_prev.T, bc.T_ext,
+    # Сборка — в отклонениях от T_ref, как у решателя (DEBT-043): матрица
+    # от T не зависит, правая часть аффинна по (T^n, T_ext)
+    abcd = _ref_assemble(grid, N, dt, state_prev.T - T_ref, bc.T_ext - T_ref,
                          props['rho_cp_eff'], Q_T_internal, Q_T_ext,
                          Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
     if not with_scale:
         # Прежний контракт: пробы FEAT-023 и FEAT-024 распаковывают 4 массива
         return abcd
-    d_scale = _ref_d_scale(grid, N, dt, state_prev.T, bc.T_ext,
+    d_scale = _ref_d_scale(grid, N, dt, state_prev.T - T_ref, bc.T_ext - T_ref,
                            props['rho_cp_eff'], Q_T_ext, Phi_minus,
                            J_jt, Q_ad, Q_deg)
     return (*abcd, d_scale)
@@ -690,6 +696,8 @@ def test_matrix_matches_reference(example):
     Сверка идёт НА ЛЕТУ, внутри пробы: накапливать нельзя — у 04a 1375
     вызовов при N=150, список из четырёх векторов на вызов дал бы сотни
     мегабайт.
+
+    d сверяется в отклонениях от T_ref, которые передаёт решатель (DEBT-043).
     """
     cfg = load_config(EXAMPLES_DIR / example / "config.json")
     cfg.output.log_level = "ERROR"
@@ -697,10 +705,10 @@ def test_matrix_matches_reference(example):
 
     n_calls = [0]
 
-    def probe(a, b, c, d, dt, T_old, hydro_result, state_prev, bc):
+    def probe(a, b, c, d, dt, T_old, T_ref, hydro_result, state_prev, bc):
         ref_a, ref_b, ref_c, ref_d, d_scale = build_reference(
             simulator._grid, simulator._pvt, cfg.rock,
-            hydro_result, state_prev, dt, bc, with_scale=True)
+            hydro_result, state_prev, dt, bc, T_ref=T_ref, with_scale=True)
 
         where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"
         np.testing.assert_allclose(a, ref_a, rtol=RTOL, atol=0.0,

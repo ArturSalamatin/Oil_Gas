@@ -103,9 +103,12 @@ class TestFirstStepConverges:
 
         Пример 14 версии BUG-016 (BUG016_CASE), N = 100, первый суточный шаг
         прямо на модели прототипа: исходный путь и запасной отказывают, решает
-        третья ступень. Точки, где считается якобиан, — итерации Ньютона; они
-        собираются по вызовам _newton_fixed_active_set (набор фаз внутри вызова
-        фиксирован) и только при включённом ограничителе, то есть в третьей ступени.
+        третья ступень. Приближения Ньютона — точки, где считается якобиан, и
+        приближение, которое возвращает вызов (BUG-021: в сошедшемся приближении
+        якобиан не строится). Они собираются по вызовам _newton_fixed_active_set
+        (набор фаз внутри вызова фиксирован) и только при включённом ограничителе,
+        то есть в третьей ступени. Замер плана BUG-021: 16 пар соседних
+        приближений, без возвращённого — 13.
         """
         cfg = load_config(BUG016_CASE)
         cfg.grid.N = 100
@@ -120,7 +123,12 @@ class TestFirstStepConverges:
 
         def newton(z0, state_old, dt_s, gas_active, **kw):
             calls.append([])
-            return orig_newton(z0, state_old, dt_s, gas_active, **kw)
+            z, rep = orig_newton(z0, state_old, dt_s, gas_active, **kw)
+            # Возвращённое приближение: якобиан в нём не строится (BUG-021), без
+            # него последнее обновление каждого вызова выпало бы из проверки
+            if model._sg_step_max is not None:
+                calls[-1].append((z.copy(), gas_active.copy()))
+            return z, rep
 
         def jac(z, state_old, dt_s, gas_active, **kw):
             if model._sg_step_max is not None:

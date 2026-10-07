@@ -1,0 +1,3 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-044\numerical_solver\gpn_multiphase_solver\factory.py
+Таблиц: 47 {'oil_pvt.csv': 16, 'gas_pvt.csv': 16, 'relperm.csv': 15}, отвергнуто: 0
+Конфигов с табличным PVT или ОФП: 17, from_config отказал: 0 (не конфиги решателя: 0)

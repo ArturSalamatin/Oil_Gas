@@ -7,7 +7,8 @@ issue: DEBT-045
 github: 73
 branch: refactor/debt-045/readme-energy-conduction-table
 status: реализован
-worktree: .worktrees/debt-045
+worktree: .worktrees/debt-045; удалён после влития
+merged: 279d710 (2026-10-07)
 audit:
   date: 2026-10-07
   found: 6

@@ -8,6 +8,7 @@
 - Ошибки: отсутствие CSV файла
 - Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
 - Ветви PVTO-таблицы: не меньше двух строк, давление и p_b(R_s) растут (DEBT-038)
+- Строгий разбор CSV: заголовок, число полей, конечные числа (DEBT-042)
 """
 
 import logging
@@ -539,3 +540,187 @@ class TestPVTOBranches:
             "0.0,5000000,1.05,0.003\n30.0,15000000,1.20,0.0015\n"
             "0.0,30000000,1.04,0.0032\n30.0,30000000,1.18,0.0016\n"))
         SimulatorFactory.from_config(config)   # не бросает
+
+
+# ═══════════════════════════════════════════════════════════
+# H. Строгий разбор CSV-таблиц (DEBT-042)
+# ═══════════════════════════════════════════════════════════
+
+# До DEBT-042 ридеры пропускали ошибочную строку молча (continue), лишние
+# поля отбрасывали, заголовок не читали. Поведение до правки — замер
+# vault/issues/debt-042/probes/red_state.out.txt (2026-10-07).
+# Номер строки в сообщении — номер строки файла, заголовок — строка 1.
+
+GAS_HEADER = "pressure_Pa,Bg,mu_g_Pa_s\n"
+RP_HEADER = "Sg,kro,krg\n"
+
+
+def _csv(tmp_path, name, text):
+    """Записать text в tmp_path/name (UTF-8) и вернуть путь."""
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _parse_error(reader, path):
+    """Текст ValueError, который ридер бросает на файле path."""
+    with pytest.raises(ValueError) as excinfo:
+        reader(path)
+    return str(excinfo.value)
+
+
+class TestCSVStrictParsing:
+    """Ридеры отвергают строку, которую нельзя разобрать без потерь (DEBT-042)."""
+
+    # ── Нефть: строки данных ──
+
+    def test_oil_number_typo_raises(self, tmp_path):
+        """Буква O вместо нуля в давлении.
+
+        До правки строка пропадала, ветвь R_s = 30 оставалась из одной
+        строки — DEBT-038 сообщил бы о ветви, а не об опечатке.
+        """
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,15OOOOOO,1.20,0.0015\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4, столбец pressure_Pa" in msg
+        assert "15OOOOOO" in msg
+
+    def test_oil_decimal_comma_raises(self, tmp_path):
+        """Десятичная запятая «1,20» даёт 5 полей вместо 4.
+
+        До правки значения сдвигались на столбец: B_o = 1, μ_o = 20 Па·с
+        (20000 сП вместо 1.5) — молча.
+        """
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,15000000,1,20,0.0015\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4: число полей 5, а столбцов в заголовке 4" in msg
+
+    def test_oil_short_row_raises(self, tmp_path):
+        """Пропущено значение μ_o: 3 поля. До правки строка пропадала."""
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,15000000,1.20\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4: число полей 3, а столбцов в заголовке 4" in msg
+
+    def test_oil_trailing_comma_raises(self, tmp_path):
+        """Запятая в конце строки — лишнее пустое поле (решение пользователя 3).
+
+        До правки лишнее поле отбрасывалось. Правило одно для всех строк:
+        полей столько же, сколько столбцов в заголовке.
+        """
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,15000000,1.20,0.0015,\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4: число полей 5" in msg
+
+    def test_oil_nan_raises(self, tmp_path):
+        """float() принимает 'nan'; сравнения с NaN ложны, и DEBT-038 строку не ловит."""
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,nan,1.20,0.0015\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4, столбец pressure_Pa" in msg
+        assert "не конечное число" in msg
+
+    def test_oil_inf_raises(self, tmp_path):
+        """'inf' в B_o: до правки принимался как бесконечный объёмный коэффициент."""
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_HEADER + OIL_BRANCH_0
+                    + "30.0,15000000,inf,0.0015\n30.0,30000000,1.18,0.0016\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: строка 4, столбец Bo" in msg
+        assert "не конечное число" in msg
+
+    # ── Нефть: заголовок и файл ──
+
+    def test_oil_no_header_raises(self, tmp_path):
+        """Файл без заголовка: до правки первая строка данных (p_b ветви 0) пропадала."""
+        path = _csv(tmp_path, "oil_pvt.csv", OIL_BRANCH_0 + OIL_BRANCH_30)
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: заголовок" in msg
+        assert "Rs_sm3_sm3,pressure_Pa,Bo,mu_o_Pa_s" in msg   # ожидаемый заголовок назван
+
+    def test_oil_swapped_header_raises(self, tmp_path):
+        """Столбцы Bo и mu_o_Pa_s переставлены: до правки читались по позиции, молча."""
+        path = _csv(tmp_path, "oil_pvt.csv",
+                    "Rs_sm3_sm3,pressure_Pa,mu_o_Pa_s,Bo\n" + OIL_BRANCH_0)
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: заголовок" in msg
+
+    def test_oil_semicolon_raises(self, tmp_path):
+        """CSV из Excel в русской локали (; и запятая в числах): до правки 0 строк молча."""
+        path = _csv(tmp_path, "oil_pvt.csv",
+                    "Rs_sm3_sm3;pressure_Pa;Bo;mu_o_Pa_s\n0,0;5000000;1,05;0,003\n")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: заголовок" in msg
+        assert "Разделитель столбцов — запятая" in msg
+
+    def test_oil_empty_file_raises(self, tmp_path):
+        """Файл нулевой длины: до правки — StopIteration из next(reader)."""
+        path = _csv(tmp_path, "oil_pvt.csv", "")
+        msg = _parse_error(_read_oil_pvt_csv, path)
+        assert "oil_pvt.csv: файл пуст" in msg
+
+    def test_oil_bom_spaces_and_blank_rows_accepted(self, tmp_path):
+        """Допустимо: BOM, пробелы вокруг имён столбцов, строка из пробелов, строка из пустых полей.
+
+        Результат — как у той же таблицы без этих особенностей. Тест зелёный
+        и до правки: он защищает от избыточной строгости.
+        """
+        text = ("﻿Rs_sm3_sm3, pressure_Pa, Bo, mu_o_Pa_s\n"
+                "0.0,5000000,1.05,0.003\n"
+                "   \n"                        # строка из пробелов
+                ",,,\n"                        # пустые ячейки — хвост экспорта из Excel
+                "0.0,30000000,1.04,0.0032\n")
+        rows = _read_oil_pvt_csv(_csv(tmp_path, "oil_pvt.csv", text))
+        clean = _read_oil_pvt_csv(_csv(tmp_path, "clean.csv", OIL_HEADER + OIL_BRANCH_0))
+        assert rows == clean
+        assert len(rows) == 2
+
+    # ── Газ ──
+
+    def test_gas_number_typo_raises(self, tmp_path):
+        """Буква O в B_g: до правки узел 15 МПа пропадал, B_g интерполировался через пропуск."""
+        path = _csv(tmp_path, "gas_pvt.csv", GAS_HEADER
+                    + "5000000,0.020,0.000012\n15000000,0.0O8,0.000014\n30000000,0.004,0.000018\n")
+        msg = _parse_error(_read_gas_pvt_csv, path)
+        assert "gas_pvt.csv: строка 3, столбец Bg" in msg
+
+    # ── ОФП ──
+
+    def test_relperm_swapped_header_raises(self, tmp_path):
+        """Заголовок Sg,krg,kro: до правки ОФП нефти и газа молча менялись местами."""
+        path = _csv(tmp_path, "relperm.csv", "Sg,krg,kro\n0.0,0.0,1.0\n0.8,0.8,0.0\n")
+        msg = _parse_error(_read_relperm_csv, path)
+        assert "relperm.csv: заголовок" in msg
+
+    def test_relperm_error_in_kro_raises(self, tmp_path):
+        """Ошибка во 2-м столбце: до правки Sg дописывался, kro — нет, длины (3, 2, 2)."""
+        path = _csv(tmp_path, "relperm.csv",
+                    RP_HEADER + "0.0,1.0,0.0\n0.4,0.3x,0.2\n0.8,0.0,0.8\n")
+        msg = _parse_error(_read_relperm_csv, path)
+        assert "relperm.csv: строка 3, столбец kro" in msg
+
+    def test_relperm_error_in_krg_raises(self, tmp_path):
+        """Ошибка в 3-м столбце: до правки длины (3, 3, 2)."""
+        path = _csv(tmp_path, "relperm.csv",
+                    RP_HEADER + "0.0,1.0,0.0\n0.4,0.3,0.2x\n0.8,0.0,0.8\n")
+        msg = _parse_error(_read_relperm_csv, path)
+        assert "relperm.csv: строка 3, столбец krg" in msg
+
+    def test_relperm_bad_row_fails_in_from_config(self, tmp_path):
+        """Ошибка ОФП ловится в from_config с именем файла, а не при счёте.
+
+        До правки from_config проходил, а run падал на первом вычислении
+        ОФП: «ValueError: fp and xp are not of the same length» из np.interp.
+        Таблица — configs/table_pvt/relperm.csv с опечаткой в kro строки 6.
+        """
+        for name in ("oil_pvt.csv", "gas_pvt.csv"):
+            shutil.copy(TABLE_CONFIG.parent / name, tmp_path / name)
+        _csv(tmp_path, "relperm.csv", RP_HEADER
+             + "0.0,1.0,0.0\n0.1,0.8,0.01\n0.2,0.6,0.05\n"
+               "0.4,0.3,0.2\n0.6,0.1x,0.5\n0.8,0.0,0.8\n")
+        config = load_config(TABLE_CONFIG)
+        config.config_dir = tmp_path
+        with pytest.raises(ValueError, match="relperm.csv: строка 6, столбец kro"):
+            SimulatorFactory.from_config(config)

@@ -424,31 +424,76 @@ def _get_or_create_proto_rp(relperm):
 
 # ── CSV-ридеры ──────────────────────────────────────────────
 
+# Столбцы CSV-таблиц в порядке чтения. Значения берутся по позиции, поэтому
+# заголовок файла обязан совпасть с этим списком (DEBT-042).
+_OIL_PVT_COLUMNS = ["Rs_sm3_sm3", "pressure_Pa", "Bo", "mu_o_Pa_s"]
+_GAS_PVT_COLUMNS = ["pressure_Pa", "Bg", "mu_g_Pa_s"]
+_RELPERM_COLUMNS = ["Sg", "kro", "krg"]
+
+
+def _read_numeric_csv(csv_path: Path, columns: list[str], kind: str) -> list[tuple]:
+    """Строки числовой CSV-таблицы в единицах файла; ошибка в строке → ValueError (DEBT-042)."""
+    # До DEBT-042 ошибочная строка пропускалась молча, лишние поля
+    # отбрасывались: опечатка удаляла строку таблицы, десятичная запятая
+    # сдвигала значения на столбец, у ОФП столбцы расходились по длине.
+    # Правила:
+    #   - заголовок совпадает с columns (пробелы вокруг имён допустимы):
+    #     без проверки файл без заголовка терял первую строку данных;
+    #   - пустая строка (нет полей или все поля пустые) пропускается;
+    #   - в остальных строках полей ровно len(columns), каждое — конечное
+    #     число (float() принимает nan и inf, их отсекает np.isfinite).
+    # Число строк и допустимость значений здесь не проверяются. Часть из них
+    # делают _check_pvto_branches (нефть) и конструкторы прототипа (газ, ОФП);
+    # B_g > 0, mu_g > 0, S_g в [0, 1] не проверяет никто — DEBT-044.
+    if not csv_path.exists():
+        raise ValueError(f"Файл {kind} не найден: {csv_path}")
+    name = csv_path.name
+    expected = ",".join(columns)
+    rows = []
+    # utf-8-sig: BOM (его пишут Excel и «Блокнот») не попадает в имя первого
+    # столбца; newline="" — режим open, который требует модуль csv
+    with open(csv_path, encoding="utf-8-sig", newline="") as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
+        if header is None:
+            raise ValueError(f"{name}: файл пуст, нужен заголовок {expected}.")
+        if [h.strip() for h in header] != columns:
+            raise ValueError(
+                f"{name}: заголовок {','.join(header)!r}, ожидается {expected!r}. "
+                f"Столбцы читаются по порядку, поэтому заголовок обязателен. "
+                f"Разделитель столбцов — запятая, десятичный разделитель — точка.")
+        for line in reader:
+            if not any(field.strip() for field in line):
+                continue
+            # reader.line_num — номер строки файла (заголовок — строка 1)
+            where = f"{name}: строка {reader.line_num}"
+            if len(line) != len(columns):
+                raise ValueError(
+                    f"{where}: число полей {len(line)}, а столбцов в заголовке "
+                    f"{len(columns)} ({','.join(line)!r}). Частые причины: десятичная "
+                    f"запятая (1,20 вместо 1.20), запятая в конце строки, "
+                    f"пропущенное значение.")
+            values = []
+            for col, field in zip(columns, line):
+                try:
+                    value = float(field)
+                except ValueError:
+                    raise ValueError(f"{where}, столбец {col}: {field!r} не число.") from None
+                if not np.isfinite(value):
+                    raise ValueError(f"{where}, столбец {col}: {field!r} — не конечное число.")
+                values.append(value)
+            rows.append(tuple(values))
+    return rows
+
+
 def _read_oil_pvt_csv(csv_path: Path) -> list[tuple]:
     """Прочитать oil_pvt.csv (SI) → [(Rs, p_bar, Bo, mu_cP), ...].
 
     CSV: Rs_sm3_sm3, pressure_Pa, Bo, mu_o_Pa_s.
     Конвертация: p Па→бар, μ Па·с→сП.
     """
-    if not csv_path.exists():
-        raise ValueError(f"Файл oil PVT не найден: {csv_path}")
-
-    rows = []
-    with open(csv_path, encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader)  # заголовок
-        for line in reader:
-            if len(line) < 4:
-                continue
-            try:
-                Rs = float(line[0])
-                p_bar = float(line[1]) / BAR_TO_PA
-                Bo = float(line[2])
-                mu_cP = float(line[3]) / CP_TO_PA_S
-            except ValueError:
-                continue
-            rows.append((Rs, p_bar, Bo, mu_cP))
-    return rows
+    rows = _read_numeric_csv(csv_path, _OIL_PVT_COLUMNS, "oil PVT")
+    return [(Rs, p / BAR_TO_PA, Bo, mu / CP_TO_PA_S) for Rs, p, Bo, mu in rows]
 
 
 def _read_gas_pvt_csv(csv_path: Path) -> list[tuple]:
@@ -457,24 +502,8 @@ def _read_gas_pvt_csv(csv_path: Path) -> list[tuple]:
     CSV: pressure_Pa, Bg, mu_g_Pa_s.
     Конвертация: p Па→бар, μ Па·с→сП.
     """
-    if not csv_path.exists():
-        raise ValueError(f"Файл gas PVT не найден: {csv_path}")
-
-    rows = []
-    with open(csv_path, encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader)  # заголовок
-        for line in reader:
-            if len(line) < 3:
-                continue
-            try:
-                p_bar = float(line[0]) / BAR_TO_PA
-                Bg = float(line[1])
-                mu_cP = float(line[2]) / CP_TO_PA_S
-            except ValueError:
-                continue
-            rows.append((p_bar, Bg, mu_cP))
-    return rows
+    rows = _read_numeric_csv(csv_path, _GAS_PVT_COLUMNS, "gas PVT")
+    return [(p / BAR_TO_PA, Bg, mu / CP_TO_PA_S) for p, Bg, mu in rows]
 
 
 def _read_relperm_csv(csv_path: Path) -> tuple[list, list, list]:
@@ -482,22 +511,15 @@ def _read_relperm_csv(csv_path: Path) -> tuple[list, list, list]:
 
     CSV: Sg, kro, krg. Безразмерные, конвертация не нужна.
     """
-    if not csv_path.exists():
-        raise ValueError(f"Файл relperm не найден: {csv_path}")
-
-    Sg, kro, krg = [], [], []
-    with open(csv_path, encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader)  # заголовок
-        for line in reader:
-            if len(line) < 3:
-                continue
-            try:
-                Sg.append(float(line[0]))
-                kro.append(float(line[1]))
-                krg.append(float(line[2]))
-            except ValueError:
-                continue
+    rows = _read_numeric_csv(csv_path, _RELPERM_COLUMNS, "relperm")
+    # Столбцы собираются из целых строк: строку с ошибкой разборщик
+    # отвергает до записи, поэтому длины Sg, kro, krg совпадают.
+    # Не zip(*rows): на таблице из одного заголовка (rows = []) распаковка
+    # падает ValueError без имени файла; так — три пустых списка, и отказ
+    # даёт TabulatedRelPerm, как до DEBT-042
+    Sg = [r[0] for r in rows]
+    kro = [r[1] for r in rows]
+    krg = [r[2] for r in rows]
     return Sg, kro, krg
 
 

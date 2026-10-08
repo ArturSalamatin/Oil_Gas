@@ -7,7 +7,8 @@ issue: DEBT-015
 github: 61
 branch: refactor/debt-015/hydro-retry-in-simulator
 status: реализован
-worktree: .worktrees/debt-015
+worktree: .worktrees/debt-015; удалён после влития
+merged: e684ee2 (2026-10-08)
 audit:
   date: 2026-10-08
   found: 7

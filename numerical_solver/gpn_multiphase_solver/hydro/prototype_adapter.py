@@ -137,13 +137,8 @@ class PrototypeHydroAdapter(HydroSolver):
                        int_G_g_ext=dt * f['gas_component_outer'])
 
     def _build_result(self, new_state: SimulationState,
-                      new_proto, bc: BoundaryConditions,
-                      n_substeps: int = 1) -> HydroResult:
-        """Шаги 5–9: потоки компонентов из прототипа, Q, u, m, Gm — общим шагом fluxes.py.
-
-        n_substeps — фактическое дробление A-retry, уходит в HydroResult
-        для синхронного дробления шага энергии (BUG-010).
-        """
+                      new_proto, bc: BoundaryConditions) -> HydroResult:
+        """Шаги 5–9: потоки компонентов из прототипа, Q, u, m, Gm — общим шагом fluxes.py."""
         N = self._grid.N
 
         # ── Шаг 5+6: потоки + согласование знаков ──
@@ -180,4 +175,4 @@ class PrototypeHydroAdapter(HydroSolver):
         # потоку и формулы записаны в одном месте (fluxes.py).
         return phase_fluxes_from_components(G_o, G_g, G_free_gas,
                                             new_state, self._grid, self._pvt, bc,
-                                            p_wf, n_substeps=n_substeps)
+                                            p_wf)

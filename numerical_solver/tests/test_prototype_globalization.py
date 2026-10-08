@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
-from gpn_multiphase_solver.io.config import NumericsConfig, load_config
+from gpn_multiphase_solver.io.config import load_config
 from radial_blackoil.blackoil import BlackOilNewtonReport
 from radial_blackoil.state import BlackOilState
 
@@ -40,13 +40,12 @@ SG_STEP_MAX = 0.2   # ограничитель третьей ступени, |d
 BUG016_CASE = Path(__file__).parent / "data" / "bug016_example14" / "config.json"
 
 
-def _first_step(config_path, N=None, retries=None):
-    """Первый шаг истории конфига через адаптер (с дроблением A-retry)."""
+def _first_step(config_path, N=None):
+    """Первый шаг истории — один вызов адаптера, без дробления (DEBT-015)."""
+    # Не сошёлся — HydroConvergenceError: возврат результата и есть «без дробления»
     cfg = load_config(config_path)
     if N is not None:
         cfg.grid.N = N
-    if retries is not None:
-        cfg.numerics.max_retries = retries
     sim, init = SimulatorFactory.from_config(cfg)
     _, dt = sim._schedule.substeps(0)
     return sim, sim._hydro.solve(init, dt, sim._schedule.intervals[0].bc)
@@ -79,24 +78,22 @@ class TestFirstStepConverges:
         третьей ступени). Допуски — порядка точности Ньютона.
         """
         _, res = _first_step(BUG016_CASE, N=N)
-        assert res.n_substeps == 1
         assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
         assert res.state.p[0] == pytest.approx(p0_MPa * 1e6, abs=100.0)
 
     def test_04a_dense_grid_first_step(self):
-        """04a, N = 200, шаг 300 с при ШТАТНОМ max_retries = 9 — без дробления.
+        """04a, N = 200, шаг 300 с — одним шагом.
 
         BUG-008: исходно нужно 4096 подшагов (12 удвоений) — при 9 отказ.
         Замер плана BUG-016 (§1.2): 1 подшаг; N = 300 — 2, N = 500 — 8.
         """
-        _, res = _first_step(EXAMPLES_DIR / "04a_high_gas_saturation" / "config.json", N=200,
-                             retries=NumericsConfig().max_retries)
-        assert res.n_substeps == 1
+        # Не бросил HydroConvergenceError — шаг сошёлся без дробления
+        _first_step(EXAMPLES_DIR / "04a_high_gas_saturation" / "config.json", N=200)
 
     def test_example12_first_hour_not_split(self):
         """Пример 12, первый час — без дробления (DEBT-025: было 128 × 28.125 с)."""
-        _, res = _first_step(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
-        assert res.n_substeps == 1
+        # Не бросил HydroConvergenceError — шаг сошёлся без дробления
+        _first_step(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
 
     def test_sg_step_limited_in_third_stage(self):
         """В третьей ступени |dS_g| между итерациями Ньютона <= 0.2.

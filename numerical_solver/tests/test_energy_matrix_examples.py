@@ -785,9 +785,8 @@ def test_energy_substeps_preserve_total_time(example):
     (BUG-010). Инвариант, который это фиксирует, — сохранение времени:
     сколько бы подшагов ни получилось, их сумма равна интервалу.
 
-    Почему не сверяем с hydro_result.n_substeps: внутри solve оно всегда
-    равно 1. Пробный шаг с n_substeps > 1 отбрасывается в Simulator._advance,
-    а в рекурсивные вызовы приходит уже несдроблённый результат.
+    Число подшагов знает только Simulator._advance (DEBT-015): инвариант —
+    сумма dt по вызовам energy.solve.
     """
     cfg = load_config(EXAMPLES_DIR / example / "config.json")
     cfg.output.log_level = "ERROR"

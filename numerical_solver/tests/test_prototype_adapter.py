@@ -718,7 +718,6 @@ class TestAdapterPwfUpStep:
         # восстанавливается выше 114 бар — согласованный ответ: скважина снова
         # добывает. Прототип решает шаг запасным путём без дробления.
         r = adapter.solve(drawn_down, dt=3600.0, bc=_bc(114e5))
-        assert r.n_substeps == 1
         # Добыча: поток к скважине, по конвенции знаков G < 0. Замер −4.47e-3.
         assert r.G_o[0] < 0.0
         assert r.state.p[0] >= 114e5            # замер 116.57 бар
@@ -732,7 +731,6 @@ class TestAdapterPwfUpStep:
         # скважина закрыта, потоки через забой нулевые (закачки нет).
         # −0.0 (инверсия знака well-потоков в адаптере) проходит сравнение с 0.0.
         r = adapter.solve(drawn_down, dt=60.0, bc=_bc(190e5))
-        assert r.n_substeps == 1
         assert r.G_o[0] == 0.0
         assert r.G_g[0] == 0.0
         assert r.G_free_gas[0] == 0.0
@@ -765,13 +763,12 @@ class TestMassBalanceIntegrals:
     """Адаптер отдаёт запас прототипа и интегралы потоков за шаг (подшаг один — DEBT-015)."""
 
     def test_integrals_equal_dt_flux_without_retry(self, result):
-        """Без дробления интеграл = DT·G побитово.
+        """Интеграл = DT·G побитово: адаптер делает один шаг (DEBT-015).
 
-        Один подшаг: 0.0 + DT·(−f) и DT·G[0], где G[0] = −f того же вызова
+        Один шаг: DT·(−f) и DT·G[0], где G[0] = −f того же вызова
         face_component_fluxes_sm3s на том же состоянии. Знак забоя
         инвертирован (G < 0 при добыче), контура — нет.
         """
-        assert result.n_substeps == 1
         assert result.int_G_o_well == DT * result.G_o[0]
         assert result.int_G_o_ext == DT * result.G_o[-1]
         assert result.int_G_g_well == DT * result.G_g[0]

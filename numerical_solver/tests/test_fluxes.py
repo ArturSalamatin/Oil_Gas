@@ -543,20 +543,18 @@ class TestPhaseFluxesFromComponents:
         assert r.m_g[N] == pytest.approx(rho_g_ext * r.Q_g[N], rel=1e-14)
         assert r.m_g[N] != 0.0
 
-    def test_pwf_and_substeps_passed_through(self, state_2ph, grid_2ph,
-                                             pvt, bc_2ph):
-        """p_wf, n_substeps и state уходят в HydroResult без изменений.
+    def test_pwf_and_state_passed_through(self, state_2ph, grid_2ph,
+                                          pvt, bc_2ph):
+        """p_wf и state уходят в HydroResult без изменений.
 
-        Адаптер передаёт фактическое p_wf прототипа и число подшагов
-        A-retry (BUG-010). Ловит: потерю или подмену этих полей.
+        Адаптер передаёт фактическое p_wf прототипа (FEAT-020). Ловит: потерю
+        или подмену этих полей.
         """
         N = grid_2ph.N
         G_o, G_g, G_free_gas = self._zeros(N)
         r = phase_fluxes_from_components(G_o, G_g, G_free_gas, state_2ph,
-                                         grid_2ph, pvt, bc_2ph, 7.5e6,
-                                         n_substeps=4)
+                                         grid_2ph, pvt, bc_2ph, 7.5e6)
         assert r.p_wf == 7.5e6
-        assert r.n_substeps == 4
         assert r.state is state_2ph
 
 

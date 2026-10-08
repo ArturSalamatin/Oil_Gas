@@ -20,45 +20,40 @@ fluxes.phase_fluxes_from_components, тот же, что у compute_fluxes
 Знаки: инверсия ТОЛЬКО well-потоков (прототип: outflow+, мы: outflow−).
 Internal и outer — без инверсии.
 
-A-retry: при расходимости Newton автоматически дробит dt.
-Глубина дробления — numerics.max_retries (2**max_retries подшагов).
-См. P1-адаптер-единицы.md, P4-адаптивный-шаг.md.
+Дробления нет: solve — один вызов advance. Не сошёлся —
+HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адаптивный-шаг.md).
+См. P1-адаптер-единицы.md.
 
 Баланс массы (DEBT-039): component_inventories — запас компонентов
 функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
-и контур по всем подшагам A-retry (G в HydroResult — последнего).
+и контур за шаг (подшаг один — dt·G того же состояния).
 """
 
 from dataclasses import replace
 
 import numpy as np
 
-from .base import HydroSolver
+from .base import HydroSolver, HydroConvergenceError
 from ..state import SimulationState, HydroResult, BoundaryConditions
 from ..grid.base import Grid
 from ..pvt.base import HydroPVT
 from ..bc import PressureControl, RateControl
 from ..units import BAR_TO_PA, DAY_TO_S
 from ..fluxes import phase_fluxes_from_components
-from ..log import user_log, dev_log
 
 
 class PrototypeHydroAdapter(HydroSolver):
     """Adapter: RadialBlackOilModel (бар) → HydroSolver (Па)."""
 
-    def __init__(self, model, grid: Grid, pvt: HydroPVT,
-                 max_retries: int = 9):
+    def __init__(self, model, grid: Grid, pvt: HydroPVT):
         """
         model       — RadialBlackOilModel, уже сконфигурированный
         grid        — наш Grid (LogRadialGrid)
         pvt         — наш HydroPVT (PrototypePVTAdapter, обёртка того же BlackOilPVT)
-        max_retries — максимум удвоений подшагов при расходимости
-                      (9 → до 512 подшагов); задаётся через numerics.max_retries
         """
         self._model = model
         self._grid = grid
         self._pvt = pvt
-        self._max_retries = int(max_retries)
 
     def component_inventories(self, state: SimulationState) -> tuple[float, float]:
         """Запас компонентов функцией прототипа, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
@@ -79,11 +74,7 @@ class PrototypeHydroAdapter(HydroSolver):
 
     def solve(self, state: SimulationState, dt: float,
               bc: BoundaryConditions) -> HydroResult:
-        """Один шаг гидродинамики с A-retry.
-
-        При расходимости автоматически дробит dt на подшаги (2, 4, 8, 16, 32).
-        Снаружи — чёрный ящик: state_n → state_{n+1} за dt.
-        """
+        """Один шаг advance без дробления; не сошёлся — HydroConvergenceError (DEBT-015)."""
         from radial_blackoil.state import BlackOilState
 
         # ── Шаг 1: управление скважиной ──
@@ -102,106 +93,48 @@ class PrototypeHydroAdapter(HydroSolver):
                 f"PrototypeHydroAdapter поддерживает PressureControl и RateControl, "
                 f"получено {type(well).__name__}")
 
-        # ── A-retry: подшаги при расходимости ──
-        for attempt in range(self._max_retries + 1):
-            n_sub = 2 ** attempt
-            dt_sub = dt / n_sub
+        # ── Шаг 2: SimulationState (Па) → BlackOilState (бар) ──
+        proto_state = BlackOilState(
+            pressure_bar=state.p / BAR_TO_PA,
+            rs_sm3_sm3=state.Rs.copy(),
+            sg=state.Sg.copy(),
+            gas_active=(state.regime == 1),
+        )
 
-            dev_log.debug(
-                f"Hydro attempt {attempt+1}/{self._max_retries+1}: "
-                f"{n_sub} substep(s), dt_sub={dt_sub:.2e} s")
+        # ── Шаг 3: advance ──
+        new_proto, report = self._model.advance(proto_state, dt)
+        if not report.converged:
+            # Дробит шаг Simulator (DEBT-015): делит пополам только этот
+            # подшаг и повторяет его из того же состояния. Здесь — факты
+            # отказа для журнала; текст для пользователя — в Simulator.
+            raise HydroConvergenceError(
+                f"advance не сошёлся: dt = {dt:.3e} с, "
+                f"t = {state.t / DAY_TO_S:.4f} сут, итераций {report.iterations}, "
+                f"невязка {report.residual_inf:.2e}")
 
-            success = True
-            current_state = state
-            # Интегралы потоков компонентов через забой и контур по подшагам
-            # этой попытки, м³ст (DEBT-039). Обнуляются на каждой попытке:
-            # подшаги отвергнутой попытки в баланс не идут.
-            int_o_well = int_o_ext = int_g_well = int_g_ext = 0.0
+        # ── Шаг 4: BlackOilState (бар) → SimulationState (Па) ──
+        new_state = SimulationState(
+            p=new_proto.pressure_bar * BAR_TO_PA,
+            Sg=new_proto.sg.copy(),
+            Rs=new_proto.rs_sm3_sm3.copy(),
+            T=state.T.copy(),                # гидро не трогает T
+            regime=np.where(new_proto.gas_active, 1, 2),
+            t=state.t + dt,
+        )
 
-            for step in range(n_sub):
-                # Шаг 2: SimulationState (Па) → BlackOilState (бар)
-                proto_state = BlackOilState(
-                    pressure_bar=current_state.p / BAR_TO_PA,
-                    rs_sm3_sm3=current_state.Rs.copy(),
-                    sg=current_state.Sg.copy(),
-                    gas_active=(current_state.regime == 1),
-                )
-
-                # Шаг 3: advance
-                new_proto, report = self._model.advance(proto_state, dt_sub)
-
-                if not report.converged:
-                    dev_log.debug(
-                        f"  Substep {step+1}/{n_sub} failed: "
-                        f"iters={report.iterations}, res={report.residual_inf:.2e}")
-                    success = False
-                    break
-
-                # Потоки подшага — на новом состоянии, как в невязке Ньютона
-                # (неявная схема). Знаки: у прототипа отток к скважине
-                # положителен — инверсия только на забое, как в _build_result:
-                # при добыче int_*_well < 0, при притоке с контура int_*_ext < 0.
-                f = self._model.face_component_fluxes_sm3s(new_proto)
-                int_o_well += dt_sub * (-f['oil_well'])
-                int_o_ext += dt_sub * f['oil_outer']
-                int_g_well += dt_sub * (-f['gas_component_well'])
-                int_g_ext += dt_sub * f['gas_component_outer']
-
-                # Шаг 4: BlackOilState (бар) → SimulationState (Па)
-                current_state = SimulationState(
-                    p=new_proto.pressure_bar * BAR_TO_PA,
-                    Sg=new_proto.sg.copy(),
-                    Rs=new_proto.rs_sm3_sm3.copy(),
-                    T=current_state.T.copy(),        # гидро не трогает T
-                    regime=np.where(new_proto.gas_active, 1, 2),
-                    t=current_state.t + dt_sub,
-                )
-
-            if success:
-                if attempt > 0:
-                    # Сообщаем и о дроблении шага энергии: Simulator повторит
-                    # интервал тем же числом подшагов (BUG-010), и это видимо
-                    # сказывается на времени расчёта.
-                    user_log.info(
-                        f"Hydro: converged after {n_sub} substeps "
-                        f"(dt_sub={dt_sub:.2e} s); "
-                        f"шаг энергии раздроблен на {n_sub} подшагов")
-
-                # Шаг 5–8: потоки и сборка HydroResult.
-                # n_sub уходит наружу: энергия обязана пройти столько же
-                # подшагов, иначе расщепление применяется на шаге, который
-                # гидродинамика признала неустойчивым (BUG-010).
-                # G в HydroResult — потоки последнего подшага; балансу массы
-                # нужны интегралы по всем (DEBT-039).
-                result = self._build_result(current_state, new_proto, bc,
-                                            n_substeps=n_sub)
-                return replace(result,
-                               int_G_o_well=int_o_well, int_G_o_ext=int_o_ext,
-                               int_G_g_well=int_g_well, int_G_g_ext=int_g_ext)
-
-        # Сообщение — факты, а не догадка о причине. Отказ бывает из-за
-        # величины шага (DEBT-007, BUG-003: тогда помогает дробление глубже) и
-        # не из-за неё (BUG-017 и BUG-018 до исправления, BUG-019: шаг не
-        # сходится и при 512-4096 подшагах) — адаптер их не различает.
-        # Начало «HydroSolver не сошёлся после N подшагов» цитируют README
-        # примеров 03, 06, 07, 10 — не менять. Про dt_integration пишем
-        # (BUG-020): подшаги A-retry равны и сходиться обязан каждый — при
-        # dt_integration = 1 сут один неудачный подшаг из 512 валит интервал
-        # (останов после добычи с развитой газовой зоной), при 3600 с каждый
-        # час дробится сам и расчёт проходит.
-        n_two = int(np.count_nonzero(state.regime == 1))
-        raise RuntimeError(
-            f"HydroSolver не сошёлся после {2**self._max_retries} подшагов "
-            f"(dt_sub={dt / 2**self._max_retries:.2e} s) на шаге с "
-            f"t = {state.t / DAY_TO_S:.4f} сут: двухфазных ячеек {n_two} из "
-            f"{state.p.size}, max S_g = {float(np.max(state.Sg)):.3f}. "
-            f"Если отказ вызван величиной шага, поможет больший "
-            f"numerics.max_retries (сейчас {self._max_retries}, допустимо "
-            f"до 20); если шаг не сходится и при мелких подшагах, причина "
-            f"не в его величине. Подшаги A-retry равны, и сходиться обязан "
-            f"каждый: при смене режима скважины (останов, подъём p_wf) после "
-            f"добычи с развитой газовой зоной уменьшите time.dt_integration "
-            f"до 3600 с.")
+        # Интегралы потоков компонентов через забой и контур за шаг, м³ст
+        # (DEBT-039). Потоки — на новом состоянии, как в невязке Ньютона
+        # (неявная схема). Знаки: у прототипа отток к скважине положителен —
+        # инверсия только на забое, как в _build_result: при добыче
+        # int_*_well < 0, при притоке с контура int_*_ext < 0. Подшаг один,
+        # поэтому интеграл равен dt·G того же состояния.
+        f = self._model.face_component_fluxes_sm3s(new_proto)
+        result = self._build_result(new_state, new_proto, bc)
+        return replace(result,
+                       int_G_o_well=dt * (-f['oil_well']),
+                       int_G_o_ext=dt * f['oil_outer'],
+                       int_G_g_well=dt * (-f['gas_component_well']),
+                       int_G_g_ext=dt * f['gas_component_outer'])
 
     def _build_result(self, new_state: SimulationState,
                       new_proto, bc: BoundaryConditions,

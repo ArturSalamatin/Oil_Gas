@@ -20,7 +20,7 @@ from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl
-from ._doubles import LogProfileHydroStub, SubdividingHydroStub
+from ._doubles import LogProfileHydroStub, FailingHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.io.config import load_config, RockConfig
 from gpn_multiphase_solver.simulator import (
@@ -451,11 +451,23 @@ class _CountingEnergySolver:
         return self._inner.solve(hydro_result, state_prev, dt, bc, collect)
 
 
+def _retry_run(fails, max_retries=None):
+    """Simulator на двойнике с отказами: один интервал 3600 с = один шаг интегрирования."""
+    grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+    hydro = FailingHydroStub(inner_hydro, fails)
+    energy = _CountingEnergySolver(inner_energy)
+    schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+    # max_retries = None — умолчание Simulator (9): единица дробления 3600/512 с
+    kw = {} if max_retries is None else {"max_retries": max_retries}
+    sim = Simulator(grid, hydro, energy, pvt, schedule, **kw)
+    return sim, hydro, energy
+
+
 class TestEnergySubstepsUnderRetry:
-    """BUG-010: когда гидро дробит шаг, энергия обязана дробиться с ним."""
+    """BUG-010, DEBT-015: Simulator дробит шаг локально, энергия идёт по принятым подшагам гидро."""
 
     def test_energy_steps_match_hydro_substeps(self):
-        """Когда гидро дробит шаг, энергия проходит столько же подшагов.
+        """Когда гидро не сходится на шаге, энергия проходит те же подшаги.
 
         Физика: расщепление «гидро -> энергия» имеет порядок O(dt) и
         применимо лишь на шаге, где обе половины устойчивы. Если гидро
@@ -464,54 +476,109 @@ class TestEnergySubstepsUnderRetry:
         шаге при dt = 450 с против -0.06 К при дроблении энергии на 2
         (улучшение в 11.8 раза при ИДЕНТИЧНОМ гидро-состоянии) — BUG-010.
         """
-        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
-        hydro = SubdividingHydroStub(inner_hydro, n_substeps=2)
-        energy = _CountingEnergySolver(inner_energy)
-
-        # Один интервал = один шаг интегрирования: dt_hist = dt_int.
-        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
-        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        # Двойник отказывает на шагах длиннее 1800 с: 3600 ✗ → 1800 ✓ → 1800 ✓
+        sim, hydro, energy = _retry_run(lambda s, dt: dt > 1800.0)
         sim.run(_initial_state())
 
+        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0]
         # Энергия должна пройти 2 шага по 1800 с, а не 1 шаг на 3600 с.
         assert energy.dt_calls == [1800.0, 1800.0]
 
         # Интервал пройден ровно один раз: сумма dt энергии = длине интервала.
-        # Ловит ошибку «большой шаг не отброшен, интервал посчитан дважды».
+        # Ловит ошибку «отказавший шаг не отброшен, интервал посчитан дважды».
         assert sum(energy.dt_calls) == pytest.approx(3600.0)
 
     def test_no_retry_path_unchanged(self):
-        """Без A-retry путь исполнения не меняется вовсе.
+        """Без отказов гидродинамики путь исполнения не меняется вовсе.
 
-        n_substeps = 1 (гидро дробления не запрашивало) — энергия обязана
-        получить ровно один вызов с полным dt. Регрессия на штатный путь:
-        все рабочие конфиги идут именно так, и их результаты меняться
-        не должны.
+        Энергия обязана получить ровно один вызов с полным dt. Регрессия на
+        штатный путь: все рабочие конфиги идут именно так, и их результаты
+        меняться не должны.
         """
-        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
-        hydro = SubdividingHydroStub(inner_hydro, n_substeps=1)
-        energy = _CountingEnergySolver(inner_energy)
-
-        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
-        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        sim, hydro, energy = _retry_run(lambda s, dt: False)
         sim.run(_initial_state())
 
+        assert hydro.dt_calls == [3600.0]
         assert energy.dt_calls == [3600.0]
 
     def test_subdivision_does_not_duplicate_history(self):
         """Дробление не добавляет записей в историю.
 
         Состав истории задаёт расписание, а не число подшагов (DEBT-013).
-        Повторный проход интервала — деталь реализации фикса BUG-010,
-        снаружи он не должен быть виден.
+        Подшаги — деталь Simulator._advance, снаружи они не должны быть видны.
         """
-        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
-        hydro = SubdividingHydroStub(inner_hydro, n_substeps=2)
-        energy = _CountingEnergySolver(inner_energy)
-
-        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
-        sim = Simulator(grid, hydro, energy, pvt, schedule)
+        sim, hydro, energy = _retry_run(lambda s, dt: dt > 1800.0)
         history = sim.run(_initial_state())
 
         assert history.n_saved == 2                        # начальное + конец
         assert history.times[-1] == pytest.approx(3600.0)  # время не удвоилось
+
+    def test_only_failed_substep_refined(self):
+        """Делится только не сошедшийся подшаг; принятые не пересчитываются (DEBT-015).
+
+        Двойник: отказ на шагах > 1800 с и, начиная с t = 1800 с, на шагах > 900 с.
+        Последовательность в единицах 3600/512 с: 3600 ✗ → 1800 ✓ (t = 0) →
+        пройдено 256 из 512, рост запрещён (256 % 512 ≠ 0) → 1800 при t = 1800 ✗ →
+        900 ✓ → пройдено 384, рост запрещён (384 % 256 ≠ 0) → 900 ✓.
+        Равномерное дробление прежнего A-retry дало бы энергию 4 × 900 с.
+        """
+        sim, hydro, energy = _retry_run(
+            lambda s, dt: dt > 1800.0 or (dt > 900.0 and s.t >= 1800.0))
+        sim.run(_initial_state())
+
+        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0, 900.0, 900.0]
+        assert energy.dt_calls == [1800.0, 900.0, 900.0]
+
+    def test_substep_grows_after_success(self):
+        """После удачи подшаг удваивается — только когда граница кратна удвоенному (DEBT-015).
+
+        Двойник: до t = 900 с отказ на шагах > 900 с. 3600 ✗, 1800 ✗ → 900 ✓ →
+        пройдено 128, рост запрещён (128 % 256 ≠ 0) → 900 ✓ → пройдено 256,
+        рост: 256 % 256 = 0 → 1800 ✓. Без выравнивания (G1) энергия шла бы
+        900, 1800, 900 — подшаг 1800 с поперёк границы 1800 с; без роста
+        (G0) — 4 × 900 с.
+        """
+        sim, hydro, energy = _retry_run(lambda s, dt: s.t < 900.0 and dt > 900.0)
+        sim.run(_initial_state())
+
+        assert hydro.dt_calls == [3600.0, 1800.0, 900.0, 900.0, 1800.0]
+        assert energy.dt_calls == [900.0, 900.0, 1800.0]
+
+    def test_exhausted_subdivision_raises(self):
+        """Не сошлось и на наименьшем подшаге dt/2**max_retries — RuntimeError с фактами.
+
+        max_retries = 2: попытки 3600, 1800, 900 с — все отказ. Энергия не
+        вызывается ни разу: в накопитель баланса не попадает ни один
+        отказавший подшаг. Текст называет глубину и оба рычага.
+        """
+        sim, hydro, energy = _retry_run(lambda s, dt: True, max_retries=2)
+        with pytest.raises(
+                RuntimeError,
+                match=r"^HydroSolver не сошёлся при дроблении шага до dt/4 = ") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert "time.dt_integration" in msg
+        assert "numerics.max_retries" in msg
+        assert hydro.dt_calls == [3600.0, 1800.0, 900.0]
+        assert energy.dt_calls == []
+
+    def test_other_errors_not_subdivided(self):
+        """Ошибка кода в гидро (не HydroConvergenceError) не маскируется дроблением.
+
+        Simulator ловит только отказ сходимости; любой другой RuntimeError
+        уходит наружу с первого вызова, без повторов.
+        """
+
+        class _Broken(FailingHydroStub):
+            def solve(self, state, dt, bc):
+                self.dt_calls.append(dt)
+                raise RuntimeError("сбой двойника")
+
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = _Broken(inner_hydro, lambda s, dt: False)
+        sim = Simulator(grid, hydro, inner_energy, pvt,
+                        _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
+        with pytest.raises(RuntimeError, match="сбой двойника"):
+            sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0]

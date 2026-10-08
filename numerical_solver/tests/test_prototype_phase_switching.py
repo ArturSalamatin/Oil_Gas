@@ -23,6 +23,7 @@ import numpy as np
 import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
+from gpn_multiphase_solver.hydro.base import HydroConvergenceError
 from gpn_multiphase_solver.io.config import load_config
 from radial_blackoil.state import BlackOilState
 
@@ -241,47 +242,93 @@ class TestFourthStage:
 # B. Через адаптер: первый час останова сценария rs150
 # ═══════════════════════════════════════════════════════════
 
-def _run_rs150(flag):
-    """10 сут добычи + час останова; возвращает (история, подшаги первого часа)."""
+class _Stop(Exception):
+    """Обрыв расчёта после первого принятого подшага останова (Simulator его не ловит)."""
+
+
+def _run_rs150(flag, stop_after_first_ok=False):
+    """10 сут добычи + час останова; возвращает (история | None, вызовы гидро на останове)."""
     cfg = load_config(RS150)
     sim, init = SimulatorFactory.from_config(cfg)
     sim._hydro._model.phase_switching_stage = flag
-    subs = []
+    # calls — (dt, сошёлся) каждого вызова гидро на останове, включая отказавшие
+    calls = []
     orig = sim._hydro.solve
 
     def solve(state, dt, bc):
-        r = orig(state, dt, bc)
-        if state.t >= 10 * DAY - 1e-6:
-            subs.append(r.n_substeps)
+        shut = state.t >= 10 * DAY - 1e-6
+        try:
+            r = orig(state, dt, bc)
+        except HydroConvergenceError:
+            if shut:
+                calls.append((dt, False))
+            raise
+        if shut:
+            calls.append((dt, True))
+            if stop_after_first_ok:
+                raise _Stop
         return r
 
     sim._hydro.solve = solve
-    return sim.run(init), subs
+    try:
+        return sim.run(init), calls
+    except _Stop:
+        # Обрыв после первой удачи на останове: история не нужна, calls — да.
+        # Если исключение уйдёт в тест, calls — локальная переменная — до него
+        # не дойдёт.
+        return None, calls
 
 
 class TestShutinFirstHour:
     def test_first_hour_converges(self):
         """Первый час останова после 10 сут добычи (S_g у забоя ~0.44) — одним шагом.
 
-        До фикса: RuntimeError «HydroSolver не сошёлся после 512 подшагов
-        (dt_sub=7.03e+00 s)». Замер плана: 1 подшаг; p(r_w) = 176.6086 бар,
-        двухфазных 263, max S_g = 0.2281, T(r_w) = 397.7928 К.
+        До BUG-020: отказ равномерного A-retry адаптера на 512 подшагах по
+        7.03 с. Замер плана: 1 подшаг; p(r_w) = 176.6086 бар, двухфазных 263,
+        max S_g = 0.2281, T(r_w) = 397.7928 К.
         """
-        h, subs = _run_rs150(True)
-        assert subs[0] == 1
+        h, calls = _run_rs150(True)
+        assert calls == [(3600.0, True)]
         st = h.states[-1]
         assert st.p[0] / BAR == pytest.approx(176.6086, abs=1e-3)
         assert int(np.count_nonzero(st.regime == 1)) == 263
         assert st.T[0] == pytest.approx(397.7928, abs=1e-3)
 
-    def test_first_hour_fails_without_fourth_stage(self):
-        """Без ступени 4 тот же час не проходит и при 512 подшагах (~5 с).
+    def test_first_hour_needs_subdivision_without_fourth_stage(self):
+        """Без ступени 4 час одним шагом не проходит — Simulator дробит его (~2 с).
 
-        Фиксирует, что проходит именно ступень 4, а не, например, изменение
-        сценария. Начало текста — как цитируют README примеров.
+        Фиксирует, что час целиком решает именно ступень 4, а не, например,
+        изменение сценария. До DEBT-015 равномерное дробление не проходило и
+        при 512 подшагах. Расчёт обрывается после первого принятого подшага.
+        Замер аудита плана DEBT-015: (3600, ✗), (1800, ✗), (900, ✗), (450, ✗),
+        (225, ✗), (112.5, ✓).
         """
-        with pytest.raises(RuntimeError, match="HydroSolver не сошёлся после 512 подшагов"):
-            _run_rs150(False)
+        h, calls = _run_rs150(False, stop_after_first_ok=True)
+        assert h is None
+        assert calls[0] == (3600.0, False)
+        assert calls[-1][1] is True
+        assert calls[-1][0] < 3600.0
+
+    @pytest.mark.slow
+    def test_first_hour_passes_with_local_subdivision(self):
+        """Без ступени 4 час проходит локальным дроблением (DEBT-015; ~15 с, метка slow).
+
+        Замер плана DEBT-015: 60 принятых подшагов (7.03×2, 14.06×5, 28.125×11,
+        56.25×27, 112.5×15) и 34 отказа; p(r_w) = 185.3065 бар — на 8.7 бар выше,
+        чем одним шагом ступени 4 (176.6086 бар, test_first_hour_converges). Это
+        погрешность шага 1 ч, а не решателя (VAL-004). При расхождении —
+        разобрать, не подгонять.
+        """
+        h, calls = _run_rs150(False)
+        ok = [dt for dt, conv in calls if conv]
+        failed = [dt for dt, conv in calls if not conv]
+        assert len(ok) == 60
+        assert len(failed) == 34
+        assert sum(ok) == pytest.approx(3600.0, rel=1e-12)   # час пройден ровно один раз
+        st = h.states[-1]
+        assert st.p[0] / BAR == pytest.approx(185.3065, abs=1e-3)
+        assert int(np.count_nonzero(st.regime == 1)) == 255
+        assert st.T[0] == pytest.approx(397.8867, abs=1e-3)
 
 
 # ═══════════════════════════════════════════════════════════

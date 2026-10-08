@@ -8,7 +8,8 @@ github: 68
 branch: feat/feat-029/shutin-strong-cooling-example
 model_level: null
 status: реализован
-worktree: .worktrees/feat-029
+worktree: .worktrees/feat-029; удалён после влития
+merged: f511e39 (2026-10-08)
 audit:
   date: 2026-10-07
   round: 1

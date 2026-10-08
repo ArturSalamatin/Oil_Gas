@@ -270,6 +270,17 @@ class Simulator:
             T_new = self._energy.solve(
                 hydro_result, state, h, bc, collect=balance)
 
+            # 2a. Нефизичная T — отказ (DEBT-047). Гидродинамика от T не зависит
+            # (PVT при T0), поэтому без этой проверки T ≤ 0 доходит до истории
+            # как обычный результат: B_o < 0 в таблице до DEBT-044 дало
+            # T_min = −245.8 К (vault/issues/debt-044/probes/red_state.out.txt).
+            # Проверка здесь, а не в решателе энергии: одна на любой
+            # EnergySolver и на каждом подшаге — следующий подшаг с плохой T не
+            # начинается. RuntimeError не HydroConvergenceError: подшаг не
+            # делится, отказ уходит из run. Накопители баланса к этому моменту
+            # уже получили вклад подшага — неважно: run их не возвращает.
+            self._check_temperature(T_new, h, hydro_result.state.t)
+
             # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
             state = SimulationState(
                 p=hydro_result.state.p,
@@ -319,6 +330,24 @@ class Simulator:
             f"Если отказ вызван величиной шага, поможет больший "
             f"numerics.max_retries или меньший time.dt_integration; если шаг "
             f"не сходится и при мелких подшагах, причина не в его величине.")
+
+    def _check_temperature(self, T: np.ndarray, dt: float, t: float) -> None:
+        """Отказ, если после шага энергии T ≤ 0 или не конечна (DEBT-047)."""
+        # NaN и ±inf отсекает isfinite, T ≤ 0 — сравнение
+        bad = ~(np.isfinite(T) & (T > 0))
+        if not bad.any():
+            return
+        # Сообщение — факты, а не догадка о причине, как у отказа
+        # гидродинамики (_failure_message): первая от забоя плохая ячейка,
+        # её r и T, число таких ячеек. t — время конца подшага; dt — его
+        # длина (при локальном дроблении — подшаг, а не шаг расписания).
+        j = int(np.argmax(bad))
+        r = float(self._grid.r_centers[j])
+        raise RuntimeError(
+            f"Нефизичная температура после шага энергии dt = {dt:g} с к "
+            f"t = {t / DAY_TO_S:.4f} сут: в ячейке {j} (r = {r:.4g} м) "
+            f"T = {T[j]:.6g} К; ячеек с T ≤ 0 или не конечной T — "
+            f"{int(np.count_nonzero(bad))} из {T.size}.")
 
     def _mass_snapshot(self, mass: MassBalanceAccumulator | None,
                        state: SimulationState) -> dict | None:

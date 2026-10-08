@@ -9,6 +9,8 @@ B. Simulator.run(): цикл по времени, сохранение, смен
 C. Factory: from_config(baseline.json) → run()
 D. Физика: T сходится к T_ext, JT-охлаждение, стационарность p(r)
 E. Состав истории: записи на концах интервалов time.history (DEBT-013)
+F. Синхронное дробление шага энергии: подшаги гидро и энергии (BUG-010, DEBT-015)
+G. Отказ при нефизичной температуре: T ≤ 0 или не конечна (DEBT-047)
 """
 
 from pathlib import Path
@@ -582,3 +584,113 @@ class TestEnergySubstepsUnderRetry:
         with pytest.raises(RuntimeError, match="сбой двойника"):
             sim.run(_initial_state())
         assert hydro.dt_calls == [3600.0]
+
+
+# ═══════════════════════════════════════════════════════════
+# G. Отказ при нефизичной температуре (DEBT-047)
+# ═══════════════════════════════════════════════════════════
+#
+# Гидродинамика от T не зависит (PVT при T0), поэтому до DEBT-047 нефизичная T
+# доходила до истории без отказа и предупреждения: B_o < 0 в таблице до
+# DEBT-044 дало T_min = −245.8 К (vault/issues/debt-044/probes/red_state.out.txt),
+# c_p,o < 0 в конфиге — −7947 К (vault/issues/debt-047/probes/red_state.out.txt).
+# Тесты портят T обёрткой решателя энергии: ввод допустим, отказ обязан дать
+# сам Simulator, откуда бы ни взялась нефизичная T.
+
+
+class _CorruptingEnergySolver:
+    """Обёртка решателя энергии: на вызове on_call ставит T[cell] = value.
+
+    Физику не подменяет — делегирует настоящему TridiagEnergySolver и портит
+    только его результат.
+    """
+
+    def __init__(self, inner, value, cell=3, on_call=2):
+        self._inner = inner
+        self._value = value
+        self._cell = cell
+        self._on_call = on_call
+        self.n_calls = 0
+
+    def solve(self, hydro_result, state_prev, dt, bc, collect=None):
+        T = self._inner.solve(hydro_result, state_prev, dt, bc, collect)
+        self.n_calls += 1
+        if self.n_calls == self._on_call:
+            T = T.copy()
+            T[self._cell] = self._value
+        return T
+
+
+class TestNonphysicalTemperature:
+    """Simulator останавливает расчёт, если после шага энергии T ≤ 0 или не конечна."""
+
+    @pytest.mark.parametrize("value", [
+        -245.8,     # порядок замера DEBT-044 (B_o < 0 в таблице)
+        0.0,        # граница: абсолютный нуль недопустим
+        np.nan,     # NaN — не число: ловит isfinite
+        np.inf,
+        -np.inf,
+    ], ids=["negative", "zero", "nan", "inf", "minus_inf"])
+    def test_nonphysical_T_raises(self, value):
+        """Отказ называет шаг, время его конца, ячейку, её r и значение T.
+
+        24 шага по 1 ч, T испорчена на втором вызове энергии: конец шага
+        t = 7200 с = 0.0833 сут, ячейка 3 из 10.
+        """
+        grid, pvt, hydro, inner_energy, _ = _make_simulator()
+        energy = _CorruptingEnergySolver(inner_energy, value, cell=3, on_call=2)
+        sim = Simulator(grid, hydro, energy, pvt, _single_interval_schedule())
+
+        with pytest.raises(RuntimeError, match="Нефизичная температура") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert "dt = 3600 с" in msg
+        assert "t = 0.0833 сут" in msg
+        assert f"в ячейке 3 (r = {grid.r_centers[3]:.4g} м)" in msg
+        assert f"T = {value:.6g} К" in msg
+        assert "1 из 10" in msg
+        # Расчёт остановлен на испорченном шаге, а не дошёл до конца
+        assert energy.n_calls == 2
+
+    def test_small_positive_T_passes(self):
+        """T = 1 К нефизична для пласта, но положительна — расчёт идёт.
+
+        Критерий — только T > 0 и конечность (решение DEBT-047), окна
+        правдоподобия нет: тест ловит порог, добавленный без решения.
+        Без JT и дегазации, при стационарном p схема энергии монотонна,
+        и T дальше остаётся положительной.
+        """
+        grid, pvt, hydro, inner_energy, _ = _make_simulator()
+        energy = _CorruptingEnergySolver(inner_energy, 1.0, cell=3, on_call=2)
+        sim = Simulator(grid, hydro, energy, pvt, _single_interval_schedule())
+
+        history = sim.run(_initial_state())
+
+        assert energy.n_calls == 24
+        assert history.times[-1] == pytest.approx(86400.0)
+        assert np.all(history.states[-1].T > 0)
+
+    def test_raises_under_subdivision(self):
+        """Проверка работает и на подшагах локального дробления (DEBT-015).
+
+        Гидро отказывает на шаге 3600 с: Simulator делит его пополам и
+        проходит двумя подшагами по 1800 с. Отказавший шаг энергию не
+        вызывает — первый вызов энергии и есть первый подшаг. T испорчена
+        на нём: отказ называет его dt и не делит подшаг дальше (дробление
+        ловит только HydroConvergenceError).
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = FailingHydroStub(inner_hydro, lambda s, dt: dt > 1800.0)
+        energy = _CorruptingEnergySolver(inner_energy, -1.0, cell=0, on_call=1)
+        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+
+        with pytest.raises(RuntimeError, match="Нефизичная температура") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert "dt = 1800 с" in msg
+        assert "в ячейке 0" in msg
+        assert hydro.dt_calls == [3600.0, 1800.0]
+        assert energy.n_calls == 1

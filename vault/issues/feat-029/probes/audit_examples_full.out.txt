@@ -1,0 +1,294 @@
+........................................................................ [ 15%]
+........................................................................ [ 30%]
+........................................................................ [ 46%]
+........................................................................ [ 61%]
+........................................................................ [ 76%]
+........................................................................ [ 92%]
+.........FFFF......................F                                     [100%]
+================================== FAILURES ===================================
+____________ TestFactoryWarning.test_inconsistent_oil_table_warns _____________
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x000001E6EB1BED50>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_oil_table_wa0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x000001E6F6D41310>
+
+    def test_inconsistent_oil_table_warns(self, tmp_path, caplog):
+        # OIL_BAD: dB_o/dp = 0.35/1e7 = 3.5e-8 1/Па, dR_s/dp = 30/1e7 = 3e-6 1/Па,
+        # B_g линейна 0.020 → 0.008 на 5–15 МПа. c_ot < 0 там, где
+        # B_g < 3.5e-8/3e-6 = 0.011667, — выше 5 + 8.333e-3/1.2e-9 Па = 11.944 МПа
+>       msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_oil_table_wa0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-029\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+____________ TestFactoryWarning.test_inconsistent_gas_table_warns _____________
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x000001E6EB16EEA0>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_gas_table_wa0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x000001E6F6D41D10>
+
+    def test_inconsistent_gas_table_warns(self, tmp_path, caplog):
+        # GAS_BAD: B_g растёт на 10–15 МПа — c_g < 0 там; c_ot остаётся > 0
+        # (B_g·dR_s/dp ≥ 3.6e-8 > dB_o/dp = 1.5e-8 1/Па)
+>       msgs = _pvt_warnings(_table_config(tmp_path, gas=GAS_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_gas_table_wa0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-029\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_______ TestFactoryWarning.test_inconsistent_undersaturated_table_warns _______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x000001E6EB16EFD0>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_undersaturat0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x000001E6F1B6E190>
+
+    def test_inconsistent_undersaturated_table_warns(self, tmp_path, caplog):
+        # OIL_UNDER_BAD: выше p_b(30) = 15 МПа B_o растёт на 0.03 за 15 МПа —
+        # c_o = −(1/B_o)·dB_o/dp ≈ −1.7e-9 1/Па на всём диапазоне недонасыщенной
+        # нефти задачи: от p_b(R_s0 = 30) = 15 МПа до p0 = 20 МПа. Насыщенная
+        # кривая (первые точки веток) прежняя — c_ot и c_g не нарушены.
+>       msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_UNDER_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:204: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_inconsistent_undersaturat0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-029\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_____ TestFactoryWarning.test_consistent_table_with_degassing_no_warning ______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x000001E6EB1DEC30>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_consistent_table_with_deg0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x000001E6F1B6D940>
+
+    def test_consistent_table_with_degassing_no_warning(self, tmp_path, caplog):
+        # Штатные таблицы при p_wf = 5 МПа: насыщенная зона 5–15 МПа проверяется,
+        # нарушений нет (c_ot ≥ 4.3e-4 1/бар по замеру плана)
+>       assert _pvt_warnings(_table_config(tmp_path), caplog) == []
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:211: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-590/test_consistent_table_with_deg0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-029\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_______ TestFactoryWarning.test_consistent_configs_no_warning[baseline] _______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x000001E6EB29A210>
+config_path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/baseline.json')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x000001E6EB2B63C0>
+
+    @pytest.mark.parametrize("config_path", CONSISTENT_CONFIGS,
+                             ids=[p.parent.name if p.name == "config.json" else p.stem
+                                  for p in CONSISTENT_CONFIGS])
+    def test_consistent_configs_no_warning(self, config_path, caplog):
+        # Ложных срабатываний нет: все штатные примеры и базовый конфиг.
+        # Пример 20 с 2026-10-03 — R_s0 = 300, p_b = 30.29 МПа ниже границы
+        # 34.55 МПа, PVT согласована. Новый пример с несогласованной PVT уронит
+        # этот тест — намеренно: его README должен объяснить предупреждение.
+>       assert _pvt_warnings(load_config(config_path), caplog) == []
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:221: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/feat-029/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-029\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:275: FileNotFoundError
+============================= slowest 5 durations =============================
+105.94s call     tests/test_examples.py::TestRunAll::test_completes[17_shut_in_strong_cooling]
+31.18s call     tests/test_examples.py::TestRunAll::test_completes[13b_pwf_alternating]
+27.36s call     tests/test_examples.py::TestPvtPlot::test_plot_pvt_all_examples
+18.89s call     tests/test_examples.py::TestRunAll::test_completes[04a_high_gas_saturation]
+15.03s call     tests/test_examples.py::TestRunAll::test_completes[16_well_shut_in]
+=========================== short test summary info ===========================
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_oil_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_gas_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_undersaturated_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_consistent_table_with_degassing_no_warning
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_consistent_configs_no_warning[baseline]
+5 failed, 463 passed in 314.35s (0:05:14)

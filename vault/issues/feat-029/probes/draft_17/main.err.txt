@@ -1,0 +1,91 @@
+[INFO] Расчет: 53 интервалов, T_total = 2592000 с
+[INFO]   Интервал 1/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 2/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 3/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 4/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 5/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 6/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 7/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 8/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 9/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 10/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 11/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 12/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 13/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 14/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 15/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 16/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 17/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 18/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 8 substeps (dt_sub=4.50e+02 s); шаг энергии раздроблен на 8 подшагов
+[INFO]   Интервал 19/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 20/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 4 substeps (dt_sub=9.00e+02 s); шаг энергии раздроблен на 4 подшагов
+[INFO]   Интервал 21/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 22/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 23/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 24/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 4 substeps (dt_sub=9.00e+02 s); шаг энергии раздроблен на 4 подшагов
+[INFO]   Интервал 25/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 26/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 27/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 28/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 29/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 30/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 31/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 32/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 33/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 34/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 35/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 36/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 37/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 38/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 39/53: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 40/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 4 substeps (dt_sub=9.00e+02 s); шаг энергии раздроблен на 4 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 41/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 4 substeps (dt_sub=9.00e+02 s); шаг энергии раздроблен на 4 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 42/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 43/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 44/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO] Hydro: converged after 2 substeps (dt_sub=1.80e+03 s); шаг энергии раздроблен на 2 подшагов
+[INFO]   Интервал 45/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 46/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 47/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 48/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 49/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 50/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 51/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 52/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 53/53: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO] Симуляция завершена: 54 сохранённых шагов, T_final = 2592000 с

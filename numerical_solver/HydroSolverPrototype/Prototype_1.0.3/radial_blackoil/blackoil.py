@@ -22,6 +22,8 @@ BUG-020: a fourth stage of advance() (phase_switching_stage, off by default): th
 BUG-014 fallback with _newton_switching -- phase switches after every Newton
 iteration, per-cell update limits, no line search, upstream cells held on faces
 whose flow direction flips.
+DEBT-040: under BHP control the fallback does not try the 'open' well branch
+where it cannot be consistent (outer and all old cell pressures <= p_wf).
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -404,7 +406,8 @@ class RadialBlackOilModel:
     def _fallback(self,state_old,dt_s,max_active_iter,max_newton):
         """BUG-014 fallback: no lower bound on Sg; BHP control fixes the well branch
         (start from the old state's branch, accept a consistent result only, try the
-        other branch once); OIL_RATE control: a plain retry without the Sg bound."""
+        other branch once, 'open' only where it can be consistent, DEBT-040);
+        OIL_RATE control: a plain retry without the Sg bound."""
         self._sg_lower_bound=None
         try:
             if self.control_mode!='BHP':
@@ -413,6 +416,16 @@ class RadialBlackOilModel:
             target=float(self.p_bhp_bar)
             # Start from the branch of the old state; shut-in steps start on 'shut'.
             branch='shut' if float(state_old.pressure_bar[0])<=target else 'open'
+            # DEBT-040: 'open' is accepted only with p0 >= target (production, q >= 0).
+            # With the outer pressure and every old cell pressure <= target, a producing
+            # well and the outer boundary raise no cell above target (maximum principle
+            # of the pressure equation), so p0 <= target and 'open' cannot be consistent.
+            # Not proved for black oil with phase switches (c_t < 0 at Newton overshoots);
+            # measured: shut-in with BHP raised to the outer pressure after production
+            # (GPN example 20, 3 days) tried 'open' 1488 times, accepted it 0 times, and
+            # it took 38 % of the shut-in time.  A wrong guess here could only reject a
+            # step, never accept an inconsistent one.
+            open_hopeless=self.p_outer_bar<=target and float(np.max(state_old.pressure_bar))<=target
             tried=[]
             while True:
                 tried.append(branch); self._well_branch=branch
@@ -424,7 +437,7 @@ class RadialBlackOilModel:
                     if (p0>=target) if branch=='open' else (p0<=target): return new,rep
                 # Newton failed or the branch is inconsistent: the other branch, once
                 other='open' if branch=='shut' else 'shut'
-                if other in tried:
+                if other in tried or (other=='open' and open_hopeless):
                     rep.converged=False; return new,rep
                 branch=other
         finally:

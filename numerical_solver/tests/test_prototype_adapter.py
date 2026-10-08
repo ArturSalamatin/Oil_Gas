@@ -32,7 +32,7 @@ from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
 from gpn_multiphase_solver.pvt.prototype_adapter import PrototypePVTAdapter
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
 from gpn_multiphase_solver.bc import PressureControl, RateControl, WellControl
-from gpn_multiphase_solver.hydro.base import HydroSolver
+from gpn_multiphase_solver.hydro.base import HydroSolver, HydroConvergenceError
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.units import BAR_TO_PA, M2_TO_MD
 
@@ -697,7 +697,9 @@ def _bc(p_wf):
 
 
 class TestAdapterPwfUpStep:
-    """После отбора p_wf поднимают выше p[0]; адаптер не должен дробить шаг.
+    """После отбора p_wf поднимают выше p[0]; шаг сходится одним вызовом advance.
+
+    solve не бросает HydroConvergenceError — дробить шаг не нужно (DEBT-015).
 
     Подготовка: 6 ч отбора при p_wf = 80 бар → p[0] = 84.12 бар, у забоя
     11 двухфазных ячеек. До правки прототипа (BUG-014) шаг 1 ч не сходился
@@ -716,7 +718,6 @@ class TestAdapterPwfUpStep:
         # восстанавливается выше 114 бар — согласованный ответ: скважина снова
         # добывает. Прототип решает шаг запасным путём без дробления.
         r = adapter.solve(drawn_down, dt=3600.0, bc=_bc(114e5))
-        assert r.n_substeps == 1
         # Добыча: поток к скважине, по конвенции знаков G < 0. Замер −4.47e-3.
         assert r.G_o[0] < 0.0
         assert r.state.p[0] >= 114e5            # замер 116.57 бар
@@ -730,7 +731,6 @@ class TestAdapterPwfUpStep:
         # скважина закрыта, потоки через забой нулевые (закачки нет).
         # −0.0 (инверсия знака well-потоков в адаптере) проходит сравнение с 0.0.
         r = adapter.solve(drawn_down, dt=60.0, bc=_bc(190e5))
-        assert r.n_substeps == 1
         assert r.G_o[0] == 0.0
         assert r.G_g[0] == 0.0
         assert r.G_free_gas[0] == 0.0
@@ -760,16 +760,15 @@ def _step_rel_residuals(adapter, state_old, r, use_integrals=True):
 
 
 class TestMassBalanceIntegrals:
-    """Адаптер отдаёт запас прототипа и интегралы потоков по подшагам A-retry."""
+    """Адаптер отдаёт запас прототипа и интегралы потоков за шаг (подшаг один — DEBT-015)."""
 
     def test_integrals_equal_dt_flux_without_retry(self, result):
-        """Без дробления интеграл = DT·G побитово.
+        """Интеграл = DT·G побитово: адаптер делает один шаг (DEBT-015).
 
-        Один подшаг: 0.0 + DT·(−f) и DT·G[0], где G[0] = −f того же вызова
+        Один шаг: DT·(−f) и DT·G[0], где G[0] = −f того же вызова
         face_component_fluxes_sm3s на том же состоянии. Знак забоя
         инвертирован (G < 0 при добыче), контура — нет.
         """
-        assert result.n_substeps == 1
         assert result.int_G_o_well == DT * result.G_o[0]
         assert result.int_G_o_ext == DT * result.G_o[-1]
         assert result.int_G_g_well == DT * result.G_g[0]
@@ -790,42 +789,27 @@ class TestMassBalanceIntegrals:
         """Баланс массы шага замыкается на уровне допуска Ньютона (замер 1.5e-12)."""
         assert max(_step_rel_residuals(adapter, initial_state, result)) < 1e-6
 
-    def test_integrals_sum_retry_substeps(self, adapter, model, initial_state,
-                                          bc, monkeypatch):
-        """При A-retry интегралы — сумма по подшагам, а не DT·G последнего.
+    def test_failed_advance_raises_convergence_error(self, model, adapter,
+                                                     initial_state, bc, monkeypatch):
+        """Не сошедшийся advance — HydroConvergenceError; адаптер шаг не дробит (DEBT-015).
 
-        Первый вызов advance отказывает: адаптер дробит шаг на 2 подшага по
-        DT/2. Интегралы обязаны совпасть с суммой двух solve(DT/2) того же
-        адаптера — побитово (те же операции в том же порядке). Баланс шага с
-        интегралами замыкается (замер 6.5e-12), с потоком последнего подшага
-        на весь DT — нет (замер 8.7e-2): ловушка, ради которой интегралы
-        считает адаптер.
+        Дробит шаг Simulator. Суммирование интегралов по подшагам — теперь
+        дело Simulator и MassBalanceAccumulator (test_mass_balance.py,
+        TestSimulatorWiring). Ловушка «поток последнего подшага на весь шаг»
+        (замер DEBT-039: невязка 8.7e-2 против 6.5e-12) у адаптера
+        невозможна: подшаг один, интеграл — DT·G того же состояния.
         """
-        real = model.advance
         calls = []
 
-        def failing_first(proto_state, dt, *args, **kwargs):
+        def always_fails(proto_state, dt, *args, **kwargs):
             calls.append(dt)
-            if len(calls) == 1:
-                # Отчёт отказа: адаптер читает converged, iterations, residual_inf
-                return proto_state, SimpleNamespace(
-                    converged=False, iterations=0, residual_inf=1.0)
-            return real(proto_state, dt, *args, **kwargs)
+            # Отчёт отказа: адаптер читает converged, iterations, residual_inf
+            return proto_state, SimpleNamespace(
+                converged=False, iterations=0, residual_inf=1.0)
 
-        monkeypatch.setattr(model, "advance", failing_first)
-        r = adapter.solve(initial_state, dt=DT, bc=bc)
-        monkeypatch.undo()
+        monkeypatch.setattr(model, "advance", always_fails)
+        with pytest.raises(HydroConvergenceError, match="advance не сошёлся"):
+            adapter.solve(initial_state, dt=DT, bc=bc)
 
-        assert calls == [DT, DT / 2, DT / 2]
-        assert r.n_substeps == 2
-
-        h1 = adapter.solve(initial_state, dt=DT / 2, bc=bc)
-        h2 = adapter.solve(h1.state, dt=DT / 2, bc=bc)
-        assert r.int_G_o_well == h1.int_G_o_well + h2.int_G_o_well
-        assert r.int_G_o_ext == h1.int_G_o_ext + h2.int_G_o_ext
-        assert r.int_G_g_well == h1.int_G_g_well + h2.int_G_g_well
-        assert r.int_G_g_ext == h1.int_G_g_ext + h2.int_G_g_ext
-
-        assert max(_step_rel_residuals(adapter, initial_state, r)) < 1e-6
-        assert min(_step_rel_residuals(adapter, initial_state, r,
-                                       use_integrals=False)) > 1e-2
+        # Один вызов advance: повторов с меньшим шагом внутри адаптера нет
+        assert calls == [DT]

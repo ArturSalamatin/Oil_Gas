@@ -138,24 +138,27 @@ class TestFactoryTablePVT:
         assert isinstance(simulator._pvt, TableFullPVT)
 
     def test_factory_passes_max_retries(self):
-        """Factory доносит numerics.max_retries до адаптера (DEBT-007).
+        """Factory доносит numerics.max_retries до Simulator (DEBT-007, DEBT-015).
 
         Корень DEBT-007 в том, что Factory создавала адаптер тремя
         позиционными аргументами и лимит всегда оставался равным
-        значению по умолчанию. Тест закрывает именно эту дыру.
+        значению по умолчанию. Тест закрывает именно эту дыру. После
+        DEBT-015 шаг дробит Simulator — лимит живёт только там.
         """
         config = load_config(TABLE_CONFIG)
         config.numerics.max_retries = 7
         simulator, _ = SimulatorFactory.from_config(config)
 
-        assert simulator._hydro._max_retries == 7
+        assert simulator._max_retries == 7
+        # Лимит в одном месте: у адаптера его нет — он не дробит шаг
+        assert not hasattr(simulator._hydro, "_max_retries")
 
     def test_factory_default_max_retries(self):
-        """Без правки конфига адаптер получает штатные 9, а не 5."""
+        """Без правки конфига Simulator получает штатные 9, а не 5."""
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
-        assert simulator._hydro._max_retries == 9
+        assert simulator._max_retries == 9
 
     def test_relperm_is_prototype_adapter(self):
         """RelPerm = PrototypeRPAdapter при relperm.model='table'."""

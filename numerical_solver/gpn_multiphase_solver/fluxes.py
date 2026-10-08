@@ -20,8 +20,7 @@ def phase_fluxes_from_components(G_o: np.ndarray, G_g: np.ndarray,
                                  G_free_gas: np.ndarray,
                                  state: SimulationState, grid: Grid,
                                  pvt: HydroPVT, bc: BoundaryConditions,
-                                 p_wf: float,
-                                 n_substeps: int = 1) -> HydroResult:
+                                 p_wf: float) -> HydroResult:
     """Q, u, m, Gm из потоков компонентов G — общий шаг обоих гидро-путей. Ур. (eq:phase_flux)."""
     N = grid.N
     p = state.p
@@ -108,7 +107,6 @@ def phase_fluxes_from_components(G_o: np.ndarray, G_g: np.ndarray,
         m_o=m_o, m_g=m_g,
         Gm_o=Gm_o, Gm_g=Gm_g,
         p_wf=p_wf,
-        n_substeps=n_substeps,
     )
 
 

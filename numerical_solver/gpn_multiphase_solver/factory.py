@@ -74,7 +74,8 @@ class SimulatorFactory:
         # 7. Simulator
         simulator = Simulator(
             grid=grid, hydro=hydro, energy=energy, pvt=pvt,
-            schedule=schedule, output_config=config.output)
+            schedule=schedule, output_config=config.output,
+            max_retries=config.numerics.max_retries)
 
         # 8. Начальное состояние
         ic = config.initial_conditions
@@ -448,8 +449,7 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
 
     # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
     our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt
-    return PrototypeHydroAdapter(model, grid, our_pvt,
-                                 max_retries=nc.max_retries)
+    return PrototypeHydroAdapter(model, grid, our_pvt)
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):

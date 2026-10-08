@@ -170,9 +170,9 @@ class TridiagEnergySolver(EnergySolver):
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
         # Проба (DEBT-016): dt передаётся ФАКТИЧЕСКИЙ — тот, с которым
-        # собрана матрица. При A-retry Simulator дробит шаг и вызывает
-        # solve с dt_sub = dt/n_sub (BUG-010); шаг расписания здесь уже
-        # не при чём, а cap = V·(ρcp)/dt зависит именно от dt_sub.
+        # собрана матрица. При дроблении шага Simulator вызывает solve с
+        # подшагом h = dt/2**k (BUG-010, DEBT-015); шаг расписания здесь уже
+        # не при чём, а cap = V·(ρcp)/dt зависит именно от подшага.
         # d — в отклонениях от T_ref (DEBT-043): эталон проба сдвигает
         # тем же T_ref; T_old — абсолютная, как в состоянии.
         if self.matrix_probe is not None:

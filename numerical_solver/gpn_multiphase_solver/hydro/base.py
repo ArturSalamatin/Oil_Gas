@@ -10,6 +10,10 @@ from abc import ABC, abstractmethod
 from ..state import SimulationState, HydroResult, BoundaryConditions
 
 
+class HydroConvergenceError(RuntimeError):
+    """Шаг гидродинамики не сошёлся при данном dt; шаг дробит Simulator (DEBT-015)."""
+
+
 class HydroSolver(ABC):
     """Абстрактный гидродинамический солвер.
 
@@ -40,6 +44,10 @@ class HydroSolver(ABC):
 
         HydroSolver обновляет p, Sg, Rs, regime. T не трогает (splitting:
         температуру обновляет EnergySolver отдельно).
+
+        Один шаг без дробления (DEBT-015). Не сошёлся — HydroConvergenceError,
+        состояние не меняется; дробит шаг Simulator, чтобы энергия и балансы
+        шли ровно по принятым подшагам (BUG-010).
         """
         ...
 

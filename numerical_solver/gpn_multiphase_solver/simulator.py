@@ -6,7 +6,9 @@ Simulator координирует гидродинамику и теплопе�
 
 Цикл по времени (Template Method):
   Внешний: по интервалам schedule.intervals (смена BC)
-  Внутренний: n_sub подшагов × (hydro.solve → energy.solve → обновить state)
+  Внутренний: шаги dt_integration; шаг, на котором гидродинамика не
+  сошлась, дробится локально (DEBT-015): подшаг × (hydro.solve →
+  energy.solve → обновить state)
 """
 
 from __future__ import annotations
@@ -20,13 +22,14 @@ from .state import (
     BoundaryConditions, SimulationHistory,
 )
 from .grid.base import Grid
-from .hydro.base import HydroSolver
+from .hydro.base import HydroSolver, HydroConvergenceError
 from .energy.base import EnergySolver
 from .energy.balance import EnergyBalanceAccumulator
 from .mass_balance import MassBalanceAccumulator
 from .pvt.base import HydroPVT
 from .io.config import OutputConfig
-from .log import user_log
+from .units import DAY_TO_S
+from .log import user_log, dev_log
 
 
 # ── TimeSchedule: runtime-расписание ─────────────────────────
@@ -95,7 +98,8 @@ class Simulator:
     def __init__(self, grid: Grid, hydro: HydroSolver,
                  energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 output_config: OutputConfig | None = None):
+                 output_config: OutputConfig | None = None,
+                 max_retries: int = 9):
         """
         grid          — пространственная сетка (immutable, общая для всех модулей)
         hydro         — гидродинамический солвер (ABC: PrototypeHydroAdapter, ...)
@@ -103,12 +107,15 @@ class Simulator:
         pvt           — PVT-модель (для rho_o_std, rho_g_std в WellData)
         schedule      — расписание: интервалы + шаг интегрирования
         output_config — параметры вывода (log_level, format), опционально
+        max_retries   — глубина дробления шага: наименьший подшаг
+                        dt/2**max_retries (numerics.max_retries, DEBT-015)
         """
         self._grid = grid
         self._hydro = hydro
         self._energy = energy
         self._pvt = pvt
         self._schedule = schedule
+        self._max_retries = int(max_retries)
         # save_every удалён (DEBT-013): состав истории определяет только
         # структура time.history. output_config остаётся ради log_level
         # и format, поэтому из сигнатуры не убирается.
@@ -198,81 +205,120 @@ class Simulator:
     def _advance(self, state: SimulationState, dt: float,
                  bc: BoundaryConditions,
                  balance: EnergyBalanceAccumulator,
-                 mass: MassBalanceAccumulator | None,
-                 allow_subdivision: bool = True
+                 mass: MassBalanceAccumulator | None
                  ) -> tuple[SimulationState, HydroResult]:
-        """Один шаг dt: гидродинамика → энергия → новое состояние.
+        """Шаг dt: подшаги гидро → энергия; не сошедшийся подшаг делится пополам (DEBT-015)."""
+        # ── Локальное дробление (DEBT-015) ──
+        # Подшаг, на котором гидродинамика не сошлась (HydroConvergenceError),
+        # делится пополам и повторяется из того же состояния; принятый сразу
+        # проходит балансы и энергию. После удачи подшаг удваивается, если
+        # пройденная часть шага кратна удвоенному подшагу: подшаги остаются
+        # вида dt/2**k и стыкуются без остатка. Наименьший подшаг —
+        # dt/2**max_retries; не сошлось и на нём — RuntimeError.
+        #
+        # Энергия идёт ровно по подшагам гидро — BUG-010: расщепление
+        # «гидро → энергия» имеет порядок O(dt) и применимо лишь там, где
+        # устойчивы обе половины (замерено −1.39 К против −0.06 К при
+        # дроблении, пример 07 при dt = 450 с).
+        #
+        # Накопители (EnergyBalanceAccumulator, MassBalanceAccumulator) —
+        # кумулятивные сумматоры без отката. Откатывать нечего: отказ
+        # гидродинамики случается до энергии, в накопители попадают только
+        # принятые подшаги. Допущение «гидродинамика не зависит от T» не
+        # нужно: каждый подшаг гидро видит T, обновлённое предыдущими.
+        #
+        # Равномерное дробление (A-retry адаптера до DEBT-015) требовало,
+        # чтобы сходился каждый из 2**k равных подшагов: при немонотонной
+        # сходимости по dt (BUG-019, BUG-020) один неудачный подшаг из 512
+        # валил шаг, и останов из развитой газовой зоны при dt_integration =
+        # 1 сут не проходил. Локальное дробление выбирает подшаг на каждом
+        # участке отдельно.
 
-        Если гидро-решатель раздробил шаг на n_substeps подшагов (A-retry),
-        шаг энергии дробится на столько же. Причина — BUG-010: расщепление
-        «гидро → энергия» имеет порядок O(dt) и применимо лишь там, где
-        устойчивы обе половины. Решать энергию одним шагом по интервалу,
-        который гидродинамика признала слишком крупным, значит накопить
-        ошибку порядка градуса (замерено −1.39 К против −0.06 К при
-        дроблении, пример 07 при dt = 450 с).
+        # Шаг dt в единицах наименьшего подшага: пройденная часть и
+        # текущий подшаг — целые, ошибка округления не копится.
+        n_units = 2 ** self._max_retries
+        done = 0              # пройдено единиц
+        size = n_units        # текущий подшаг, единиц; всегда степень двойки
+        n_ok = n_fail = 0
+        h_min_ok = dt
+        while done < n_units:
+            # Деление на степень двойки точно: при глубине 1 подшаг побитово
+            # равен dt/2 прежнего A-retry, и истории примеров не меняются.
+            h = dt / (n_units // size)
 
-        Порядок вызовов критичен. `EnergyBalanceAccumulator` — кумулятивный
-        сумматор без отката: вклад, единожды добавленный в него, убрать
-        нельзя. Поэтому энергия решается только ПОСЛЕ того, как выяснено
-        окончательное число подшагов; результат «пробного» крупного шага
-        отбрасывается до того, как он попадёт в баланс. То же для
-        `MassBalanceAccumulator`: интегралы потоков добавляются только у
-        принятого результата (DEBT-039).
+            # 1. Гидродинамика → p, Sg, Rs + потоки на конце подшага
+            try:
+                hydro_result = self._hydro.solve(state, h, bc)
+            except HydroConvergenceError as exc:
+                # Ловим только отказ сходимости: ошибка кода в гидро
+                # (иной RuntimeError) дроблением не маскируется.
+                n_fail += 1
+                dev_log.debug(f"  подшаг {h:.3e} с не сошёлся: {exc}")
+                if size == 1:
+                    raise RuntimeError(self._failure_message(state, dt)) from exc
+                size //= 2
+                continue
 
-        allow_subdivision=False запрещает повторное дробление: так
-        ограничивается один уровень вложенности. Подшаг, который сам
-        потребовал retry, принимается как есть — иначе рекурсия не имеет
-        дна. На примере 07 такого не происходит ни разу (подшаги 225 и
-        200 с сходятся без дробления), это страховка для других конфигов.
-        """
-        # 1. Гидродинамика → p^{n+1}, Sg^{n+1}, Rs^{n+1} + потоки
-        hydro_result = self._hydro.solve(state, dt, bc)
+            # Баланс массы (DEBT-039): только принятый подшаг.
+            if mass is not None:
+                mass.add_step(hydro_result)
 
-        n_sub = getattr(hydro_result, 'n_substeps', 1)
+            # 2. Температура на замороженных p, Sg, Rs подшага.
+            # Решатель попутно отдаёт накопителю коэффициенты, которые
+            # уходят в СЛАУ, — баланс считается по тем же величинам,
+            # что и схема (DEBT-013).
+            T_new = self._energy.solve(
+                hydro_result, state, h, bc, collect=balance)
 
-        if allow_subdivision and n_sub > 1:
-            # Результат пробного шага отбрасываем целиком и проходим
-            # интервал заново — гидро и энергию вместе, тем же дроблением.
-            # Гидро-подшаги при этом считаются повторно: плата за то, что
-            # A-retry живёт внутри адаптера (DEBT-015).
-            dt_sub = dt / n_sub
-            for _ in range(n_sub):
-                state, hydro_result = self._advance(
-                    state, dt_sub, bc, balance, mass, allow_subdivision=False)
-            return state, hydro_result
+            # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
+            state = SimulationState(
+                p=hydro_result.state.p,
+                Sg=hydro_result.state.Sg,
+                Rs=hydro_result.state.Rs,
+                T=T_new,
+                regime=hydro_result.state.regime,
+                t=hydro_result.state.t,
+            )
+            n_ok += 1
+            h_min_ok = min(h_min_ok, h)
+            done += size
+            # Рост ×2 после удачи — только с выравниванием: граница кратна
+            # удвоенному подшагу, поэтому n_units − done кратно 2·size и
+            # удвоенный подшаг не выходит за конец шага. Без выравнивания
+            # появляются подшаги не вида dt/2**k (замер при планировании:
+            # 548 и 928 с при dt = 1 сут) и стык через остаток, а останов
+            # 20B при 1 сут не проходит.
+            if done < n_units and done % (2 * size) == 0:
+                size *= 2
 
-        if n_sub > 1:
-            # Вложенное дробление: принимаем как есть, но не молчим —
-            # часть ошибки расщепления здесь остаётся неисправленной.
-            user_log.warning(
-                f"Гидро раздробило подшаг dt={dt:.3g} с на {n_sub} частей; "
-                f"шаг энергии не дробится (предел вложенности). "
-                f"Точность T на этом шаге снижена — уменьшите dt_integration.")
+        if n_fail > 0:
+            # Видимо сказывается на времени расчёта — сообщаем, как прежде
+            # сообщал адаптер.
+            user_log.info(
+                f"Шаг {dt:.3g} с раздроблен: подшагов {n_ok}, наименьший "
+                f"{h_min_ok:.3g} с, отказов гидродинамики {n_fail}")
+        return state, hydro_result
 
-        # Баланс массы (DEBT-039): только ПРИНЯТЫЙ результат — пробный шаг
-        # выше отброшен до этой точки, как и для баланса энергии. При
-        # вложенном дроблении (n_sub > 1 здесь) G_o, G_g результата — потоки
-        # последнего внутреннего подшага, а int_G_* — интегралы по всем.
-        if mass is not None:
-            mass.add_step(hydro_result)
-
-        # 2. Температура на замороженных p, Sg, Rs.
-        # Решатель попутно отдаёт накопителю коэффициенты, которые
-        # уходят в СЛАУ, — баланс считается по тем же величинам,
-        # что и схема (DEBT-013).
-        T_new = self._energy.solve(
-            hydro_result, state, dt, bc, collect=balance)
-
-        # 3. Обновить состояние (splitting: T из energy, остальное из hydro)
-        new_state = SimulationState(
-            p=hydro_result.state.p,
-            Sg=hydro_result.state.Sg,
-            Rs=hydro_result.state.Rs,
-            T=T_new,
-            regime=hydro_result.state.regime,
-            t=hydro_result.state.t,
-        )
-        return new_state, hydro_result
+    def _failure_message(self, state: SimulationState, dt: float) -> str:
+        """Текст отказа: факты подшага, на котором исчерпано дробление (BUG-018, DEBT-015)."""
+        # Факты, а не догадка о причине: отказ бывает из-за величины шага
+        # (DEBT-007, BUG-003 — помогает дробление глубже) и не из-за неё
+        # (BUG-017, BUG-018 до исправления, BUG-019 — шаг не сходится и при
+        # мелких подшагах). Различить их здесь нельзя. Начало текста
+        # цитируют README примеров 03, 05, 06, 07, 10 и тесты — менять
+        # вместе с ними.
+        n_units = 2 ** self._max_retries
+        n_two = int(np.count_nonzero(state.regime == 1))
+        return (
+            f"HydroSolver не сошёлся при дроблении шага до dt/{n_units} = "
+            f"{dt / n_units:.2e} с на подшаге с t = {state.t / DAY_TO_S:.4f} сут: "
+            f"двухфазных ячеек {n_two} из {state.p.size}, "
+            f"max S_g = {float(np.max(state.Sg)):.3f}. "
+            f"Наименьший подшаг — time.dt_integration / 2**numerics.max_retries "
+            f"(сейчас max_retries = {self._max_retries}, допустимо до 20). "
+            f"Если отказ вызван величиной шага, поможет больший "
+            f"numerics.max_retries или меньший time.dt_integration; если шаг "
+            f"не сходится и при мелких подшагах, причина не в его величине.")
 
     def _mass_snapshot(self, mass: MassBalanceAccumulator | None,
                        state: SimulationState) -> dict | None:

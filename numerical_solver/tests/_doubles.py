@@ -11,11 +11,9 @@ tests/, чтобы его нельзя было по ошибке подстав
 (сигнатура совпадает с настоящим PrototypeHydroAdapter).
 """
 
-from dataclasses import replace
-
 import numpy as np
 
-from gpn_multiphase_solver.hydro.base import HydroSolver
+from gpn_multiphase_solver.hydro.base import HydroSolver, HydroConvergenceError
 from gpn_multiphase_solver.state import (
     SimulationState, HydroResult, BoundaryConditions)
 from gpn_multiphase_solver.grid.base import Grid
@@ -72,37 +70,29 @@ class LogProfileHydroStub(HydroSolver):
         return result
 
 
-class SubdividingHydroStub(HydroSolver):
-    """Двойник, сообщающий о дроблении шага, не выполняя его.
+class FailingHydroStub(HydroSolver):
+    """Двойник, отказывающий на заданных подшагах, — проверка локального дробления (DEBT-015)."""
 
-    Нужен для BUG-010: LogProfileHydroStub никогда не дробит шаг (он строит
-    аналитический профиль, а не решает уравнение), поэтому на нём нельзя
-    проверить, что Simulator реагирует на n_substeps > 1. Физика берётся
-    у LogProfileHydroStub, поле n_substeps проставляется принудительно.
+    # Физика — у внутреннего двойника. fails(state, dt) → True — бросить
+    # HydroConvergenceError, как PrototypeHydroAdapter при несошедшемся
+    # advance. Запоминает dt каждого вызова solve, включая отказавшие, —
+    # тест по этому списку проверяет последовательность подшагов.
 
-    Запоминает dt каждого вызова solve — тест по этому списку проверяет,
-    что интервал пройден нужным числом шагов нужной длины.
-    """
-
-    def __init__(self, inner: LogProfileHydroStub, n_substeps: int):
+    def __init__(self, inner: HydroSolver, fails):
         self._inner = inner
-        self._n_substeps = int(n_substeps)
+        self._fails = fails
         self.dt_calls: list[float] = []      # dt каждого вызова solve
 
     def solve(self, state: SimulationState, dt: float,
               bc: BoundaryConditions) -> HydroResult:
         self.dt_calls.append(dt)
-        result = self._inner.solve(state, dt, bc)
-        # О дроблении сообщаем только на ПЕРВОМ (крупном) вызове: подшаги,
-        # как и в примере 07, вложенного дробления не требуют (замерено при
-        # планировании BUG-010). Так двойник воспроизводит реальное поведение
-        # адаптера, а не бесконечную вложенность.
-        n = self._n_substeps if len(self.dt_calls) == 1 else 1
-        return replace(result, n_substeps=n)
+        if self._fails(state, dt):
+            raise HydroConvergenceError(
+                f"двойник: отказ при dt = {dt:g} с, t = {state.t:g} с")
+        return self._inner.solve(state, dt, bc)
 
     def component_inventories(self, state: SimulationState):
         """Запас — у внутреннего двойника (DEBT-039)."""
         # Без делегирования метод ABC вернул бы None, и Simulator не вёл бы
-        # баланс массы на обёрнутом двойнике с интегралами
-        # (test_mass_balance.py, пробный шаг не в интегралах).
+        # баланс массы на обёрнутом двойнике с интегралами (test_mass_balance.py).
         return self._inner.component_inventories(state)

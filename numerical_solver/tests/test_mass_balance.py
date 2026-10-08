@@ -24,7 +24,7 @@ from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.mass_balance import MASS_KEYS, MassBalanceAccumulator
 from gpn_multiphase_solver.simulator import Simulator
 
-from ._doubles import LogProfileHydroStub, SubdividingHydroStub
+from ._doubles import LogProfileHydroStub, FailingHydroStub
 from .test_simulator import _initial_state, _make_simulator, _single_interval_schedule
 
 # Модуль сборки невязки — общий для примеров (examples/mass_balance.py)
@@ -127,59 +127,47 @@ class _FluxIntegralStub(LogProfileHydroStub):
         return (0.0, 0.0)
 
 
-class _NestedSubdividingStub(SubdividingHydroStub):
-    """Сообщает о дроблении на КАЖДОМ вызове — путь вложенного дробления Simulator._advance."""
-
-    def solve(self, state, dt, bc):
-        self.dt_calls.append(dt)
-        # replace сохраняет int_G_* внутреннего двойника, меняет только n_substeps
-        return replace(self._inner.solve(state, dt, bc), n_substeps=self._n_substeps)
-
-
 class TestSimulatorWiring:
-    def test_pilot_step_not_counted(self):
-        """Пробный шаг, отброшенный при дроблении, в интегралы не попадает.
+    def test_failed_substep_not_counted(self):
+        """Отказавший подшаг в интегралы не попадает (DEBT-015).
 
-        SubdividingHydroStub на первом вызове сообщает n_substeps = 2:
-        Simulator отбрасывает пробный результат (3600 с) и проходит интервал
-        двумя шагами по 1800 с (BUG-010). Потоки двойника постоянны, поэтому
-        интеграл через забой — ровно 3600·G_o[0]; с пробным шагом было бы
-        5400·G_o[0]. Замер при планировании: равенство побитовое.
+        Двойник отказывает на шагах > 1800 с: 3600 ✗ → 1800 ✓ → 1800 ✓.
+        Отказавший вызов результата не возвращает — в интеграл он не
+        попадает по построению; тест ловит двойной учёт принятых подшагов.
+        Потоки двойника постоянны, поэтому интеграл через забой — ровно
+        3600·G_o[0]; при двойном учёте было бы 5400·G_o[0] и больше.
         """
         grid, pvt, inner, energy, _ = _make_simulator()
-        hydro = SubdividingHydroStub(_FluxIntegralStub(grid, pvt, inner._relperm),
-                                     n_substeps=2)
+        hydro = FailingHydroStub(_FluxIntegralStub(grid, pvt, inner._relperm),
+                                 lambda s, dt: dt > 1800.0)
         sim = Simulator(grid, hydro, energy, pvt,
                         _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
         history = sim.run(_initial_state())
 
         assert hydro.dt_calls == [3600.0, 1800.0, 1800.0]
-        # Не None: SubdividingHydroStub делегирует запас внутреннему двойнику
+        # Не None: FailingHydroStub делегирует запас внутреннему двойнику
         assert history.mass_balance[-1] is not None
         assert history.mass_balance[0]["cum_o_well"] == 0.0
         G0 = history.hydro_results[-1].G_o[0]
         assert history.mass_balance[-1]["cum_o_well"] == pytest.approx(
             3600.0 * G0, rel=1e-12)
 
-    def test_nested_subdivision_counted_once(self):
-        """Вложенное дробление: принятый как есть подшаг учтён ровно один раз.
+    def test_refined_substep_counted_once(self):
+        """Локальное дробление второй половины: каждый принятый подшаг учтён ровно один раз.
 
-        Двойник сообщает n_substeps = 2 на КАЖДОМ вызове. Simulator отбрасывает
-        пробный шаг (3600 с), проходит интервал двумя подшагами по 1800 с с
-        запретом повторного дробления, и каждый из них, снова «раздробленный»,
-        принимается как есть (simulator.py, ветка с предупреждением). Именно
-        на этом пути G_o, G_g результата — потоки последнего внутреннего
-        подшага, и интегралы обязаны прийти из int_G_*. Интеграл через забой —
-        ровно 3600·G_o[0] (замер при аудите: побитово).
+        Двойник: отказ на шагах > 1800 с и, с t = 1800 с, на шагах > 900 с.
+        Подшаги 3600 ✗, 1800 ✓, 1800 ✗, 900 ✓, 900 ✓ — в балансе только три
+        принятых (1800 + 900 + 900 с). Интеграл через забой — ровно 3600·G_o[0].
         """
         grid, pvt, inner, energy, _ = _make_simulator()
-        hydro = _NestedSubdividingStub(_FluxIntegralStub(grid, pvt, inner._relperm),
-                                       n_substeps=2)
+        hydro = FailingHydroStub(
+            _FluxIntegralStub(grid, pvt, inner._relperm),
+            lambda s, dt: dt > 1800.0 or (dt > 900.0 and s.t >= 1800.0))
         sim = Simulator(grid, hydro, energy, pvt,
                         _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0))
         history = sim.run(_initial_state())
 
-        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0]
+        assert hydro.dt_calls == [3600.0, 1800.0, 1800.0, 900.0, 900.0]
         G0 = history.hydro_results[-1].G_o[0]
         assert history.mass_balance[-1]["cum_o_well"] == pytest.approx(
             3600.0 * G0, rel=1e-12)

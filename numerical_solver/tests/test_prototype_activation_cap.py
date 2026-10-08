@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
+from gpn_multiphase_solver.hydro.base import HydroConvergenceError
 from gpn_multiphase_solver.io.config import load_config
 from radial_blackoil.blackoil import BlackOilNewtonReport, _sg_activation_cap
 from radial_blackoil.relperm import TabulatedRelPerm
@@ -45,7 +46,7 @@ def _sim(N=None, retries=None):
 
 
 def _first_step(sim, init, dt):
-    """Первый шаг истории через адаптер (с дроблением A-retry)."""
+    """Первый шаг истории — один вызов адаптера, без дробления (DEBT-015)."""
     return sim._hydro.solve(init, dt, sim._schedule.intervals[0].bc)
 
 
@@ -96,8 +97,8 @@ class TestFirstStep:
         исходный алгоритм advance, N = 350 — третья ступень (BUG-016).
         """
         sim, init, dt = _sim(N=N)
+        # Шаг сошёлся одним вызовом адаптера: иначе HydroConvergenceError
         res = _first_step(sim, init, dt)
-        assert res.n_substeps == 1
         assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
         assert res.state.p[0] == pytest.approx(p0_MPa * 1e6, abs=100.0)
 
@@ -106,11 +107,11 @@ class TestFirstStep:
 
         Если когда-нибудь этот тест упадёт (шаг сойдётся и без ограничения),
         сценарий перестал проверять BUG-018 — его надо заменить, а не удалять
-        проверку. max_retries = 0: без дробления, только три ступени advance.
+        проверку. Адаптер не дробит шаг (DEBT-015) — только ступени advance.
         """
-        sim, init, dt = _sim(retries=0)
+        sim, init, dt = _sim()
         sim._hydro._model.sg_activation_cap = None
-        with pytest.raises(RuntimeError):
+        with pytest.raises(HydroConvergenceError):
             _first_step(sim, init, dt)
 
     def test_guess_capped(self):
@@ -157,31 +158,37 @@ class TestFirstStep:
 
 
 # ═══════════════════════════════════════════════════════════
-# C. Сообщение адаптера при отказе
+# C. Сообщение при отказе (формирует Simulator, DEBT-015)
 # ═══════════════════════════════════════════════════════════
 
 def test_failure_message_reports_state_not_guess():
-    """Текст ошибки сообщает факты (шаг, подшаги, t, двухфазные ячейки, max S_g)
-    и не называет причину, которую адаптер не диагностировал.
+    """Текст ошибки сообщает факты (глубина дробления, t, двухфазные ячейки, max S_g)
+    и не называет причину, которую решатель не диагностировал.
 
     Прежний текст советовал увеличить max_retries и называл причину «обе фазы
     малоподвижны одновременно» — в BUG-018 это было неверно и то и другое.
-    Начало текста «HydroSolver не сошёлся после N подшагов» сохранено: его
-    цитируют README примеров 03, 06, 07, 10.
+    Текст формирует Simulator (DEBT-015); его начало цитируют README примеров
+    03, 05, 06, 07, 10. Подсказка BUG-020 «уменьшите dt_integration до 3600 с
+    при смене режима» снята: при локальном дроблении останов проходит и при
+    1 сут. Оба рычага — max_retries и dt_integration — названы.
     """
     sim, init, dt = _sim(retries=1)
     model = sim._hydro._model
+    calls = []
 
     def always_fails(state_old, dt_s, *a, **kw):
+        calls.append(dt_s)
         return state_old.copy(), BlackOilNewtonReport(False, 0, 1.0)
 
     model.advance = always_fails
     with pytest.raises(RuntimeError) as exc:
-        _first_step(sim, init, dt)
+        sim.run(init)
     msg = str(exc.value)
-    assert msg.startswith("HydroSolver не сошёлся после 2 подшагов")
+    assert msg.startswith("HydroSolver не сошёлся при дроблении шага до dt/2 = ")
     assert "t = 0.0000 сут" in msg
     assert "двухфазных ячеек 0 из 50" in msg
     assert "малоподвижны" not in msg
-    # BUG-020: подшаги A-retry равны — подсказка про dt_integration при смене режима скважины
     assert "time.dt_integration" in msg
+    assert "numerics.max_retries" in msg
+    # max_retries = 1: попытки dt и dt/2, обе отказ — дальше делить нельзя
+    assert calls == [dt, dt / 2]

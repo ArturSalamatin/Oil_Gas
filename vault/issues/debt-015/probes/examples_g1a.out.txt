@@ -1,0 +1,45 @@
+﻿01_single_phase_no_jt        ✓; счёт 0.2 с, в advance 0.0 с; advance принято 72, отказов 0; подшаги: 3600×72
+02_single_phase_jt           ✓; счёт 0.3 с, в advance 0.1 с; advance принято 72, отказов 0; подшаги: 3600×72
+03_standing_corey            ✓; счёт 0.5 с, в advance 0.2 с; advance принято 72, отказов 0; подшаги: 3600×72
+04_table_table               ✓; счёт 0.8 с, в advance 0.5 с; advance принято 72, отказов 0; подшаги: 3600×72
+04a_high_gas_saturation      ✓; счёт 19.3 с, в advance 14.6 с; advance принято 864, отказов 0; подшаги: 300×864
+05_standing_table_rp         ✓; счёт 0.3 с, в advance 0.1 с; advance принято 72, отказов 0; подшаги: 3600×72
+06_table_corey_rp            ✓; счёт 0.9 с, в advance 0.6 с; advance принято 72, отказов 0; подшаги: 3600×72
+07_degassing_adiabatic_only  ✓; счёт 0.9 с, в advance 0.5 с; advance принято 72, отказов 0; подшаги: 3600×72
+08_degassing_jt              ✓; счёт 0.8 с, в advance 0.5 с; advance принято 72, отказов 0; подшаги: 3600×72
+09_degassing_latent_heat     ✓; счёт 0.8 с, в advance 0.5 с; advance принято 72, отказов 0; подшаги: 3600×72
+10_deep_degassing            ✓; счёт 1.7 с, в advance 1.4 с; advance принято 73, отказов 1; подшаги: 1800×2, 3600×71; глубина>0: {1: 1}
+11_degassing_at_boundary     ✓; счёт 2.2 с, в advance 1.9 с; advance принято 72, отказов 0; подшаги: 3600×72
+12_large_drainage_radius     ✓; счёт 8.7 с, в advance 7.3 с; advance принято 360, отказов 0; подшаги: 3600×360
+13a_pwf_ramp_down            ✓; счёт 9.3 с, в advance 7.7 с; advance принято 360, отказов 0; подшаги: 3600×360
+13b_pwf_alternating          ✓; счёт 35.2 с, в advance 32.3 с; advance принято 720, отказов 0; подшаги: 3600×720
+14_high_gor_cooling          ✓; счёт 12.1 с, в advance 9.8 с; advance принято 360, отказов 0; подшаги: 86400×360
+15_oil_rate_ramp_up          ✓; счёт 8.0 с, в advance 6.6 с; advance принято 360, отказов 0; подшаги: 3600×360
+16_well_shut_in              ✓; счёт 15.5 с, в advance 12.9 с; advance принято 720, отказов 0; подшаги: 3600×720
+19_rs150_cooling             ✓; счёт 1.4 с, в advance 1.3 с; advance принято 30, отказов 0; подшаги: 86400×30
+20_rs300_cooling             ✓; счёт 4.8 с, в advance 4.4 с; advance принято 76, отказов 0; подшаги: 3600×48, 86400×28
+21_rs100_cooling             ✓; счёт 1.5 с, в advance 1.3 с; advance принято 30, отказов 0; подшаги: 86400×30
+01_single_phase_no_jt: побитово (27 массивов)
+02_single_phase_jt: побитово (27 массивов)
+03_standing_corey: побитово (27 массивов)
+04_table_table: побитово (27 массивов)
+04a_high_gas_saturation: побитово (27 массивов)
+05_standing_table_rp: побитово (27 массивов)
+06_table_corey_rp: побитово (27 массивов)
+07_degassing_adiabatic_only: побитово (27 массивов)
+08_degassing_jt: побитово (27 массивов)
+09_degassing_latent_heat: побитово (27 массивов)
+10_deep_degassing: побитово (27 массивов)
+11_degassing_at_boundary: побитово (27 массивов)
+12_large_drainage_radius: побитово (27 массивов)
+13a_pwf_ramp_down: побитово (27 массивов)
+13b_pwf_alternating: побитово (27 массивов)
+14_high_gor_cooling: побитово (27 массивов)
+15_oil_rate_ramp_up: побитово (27 массивов)
+16_well_shut_in: побитово (27 массивов)
+19_rs150_cooling: побитово (27 массивов)
+20_rs300_cooling: побитово (27 массивов)
+21_rs100_cooling: побитово (27 массивов)
+итого: различий 0
+tests/data/bug020_rs150/config.json G1a ступень4=1: ✓ p(r_w) = 176.6086 бар, 2ф = 263, T(r_w) = 397.7928 К; счёт 1.3 с, в advance 1.3 с; advance принято 11, отказов 0; подшаги: 3600×1, 86400×10
+tests/data/bug020_rs150/config.json G1a ступень4=0: ✓ p(r_w) = 185.3065 бар, 2ф = 255, T(r_w) = 397.8867 К; счёт 18.3 с, в advance 17.9 с; advance принято 70, отказов 34; подшаги: 7.0312×2, 14.0625×5, 28.125×11, 56.25×27, 112.5×15, 86400×10

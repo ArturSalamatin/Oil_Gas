@@ -1,0 +1,14 @@
+DEBT-015, планирование 2026-10-07, база cf86aa2: быстрый уровень с подменой local_g1a_plugin.py
+(.venv\Scripts\python -m pytest -p local_g1a_plugin tests/ -m "not slow" -q)
+
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_factory_passes_max_retries
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_factory_default_max_retries
+FAILED tests/test_mass_balance.py::TestSimulatorWiring::test_pilot_step_not_counted
+FAILED tests/test_mass_balance.py::TestSimulatorWiring::test_nested_subdivision_counted_once
+FAILED tests/test_prototype_activation_cap.py::test_failure_message_reports_state_not_guess
+FAILED tests/test_prototype_adapter.py::TestMassBalanceIntegrals::test_integrals_sum_retry_substeps
+FAILED tests/test_prototype_phase_switching.py::TestShutinFirstHour::test_first_hour_fails_without_fourth_stage
+FAILED tests/test_simulator.py::TestEnergySubstepsUnderRetry::test_energy_steps_match_hydro_substeps
+8 failed, 1100 passed, 236 deselected, 1 warning in 80.70s (0:01:20)
+
+Тяжёлый уровень с той же подменой: plugin_slow_tier.out.txt (236 passed).

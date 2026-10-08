@@ -2569,3 +2569,228 @@ class TestStandingCoreyCooling:
         """
         text = (EXAMPLES_DIR / name / "main.py").read_text(encoding="utf-8")
         assert "steady_state=False" in text
+
+
+# ═══════════════════════════════════════════════════════════
+# S. Сценарий 17: останов после сильного охлаждения забоя (FEAT-029)
+# ═══════════════════════════════════════════════════════════
+
+class TestShutInStrongCooling:
+    """Сценарий 17: конфиг 20 на N = 200; 15 сут добычи при 5 МПа, затем 15 сут останова.
+
+    Останов — управление по дебиту q_oil = 0 (eq:bc_rate_well): потоки
+    компонентов через забой нулевые, p_wf = p[0] (eq:bc_rate_pwf при q = 0).
+    Записи: 0 — начальное состояние; 1..15 — концы суток добычи; 16..39 —
+    часы первых суток останова (запись 15 + k — момент 15 сут + k ч);
+    40..53 — концы суток 17..30. Числа — замер плана FEAT-029
+    (vault/issues/feat-029/probes/plan_numbers.out.txt, 2026-10-07).
+    """
+
+    NAME = "17_shut_in_strong_cooling"
+    END_PROD = 15        # запись конца добычи (15 сут)
+
+    def test_config_follows_decisions(self):
+        """Конфиг 20 на N = 200; расписание 15 × 1 сут при 5 МПа, 24 × 1 ч и 14 × 1 сут с q_oil = 0.
+
+        Решения пользователя 2026-10-07: конфиг примера 20, 15 + 15 сут,
+        N = 200. dt_integration = 3600 с (BUG-020): суточный шаг останова
+        A-retry делит на равные подшаги — у 17 вдвое дольше (замер аудита
+        плана: 200 с против 104 с, T(r_w) на 30 сут отличается на 0.04 К),
+        на других состояниях может не сойтись.
+        Ловит: возврат к суточному шагу, потерю часовой записи первых суток
+        останова, подмену флюида, ОФП или тепловых констант.
+        """
+        cfg = load_config(EXAMPLES_DIR / self.NAME / "config.json")
+        assert cfg.grid.N == 200
+        assert cfg.time.dt_integration == 3600.0
+        ic = cfg.initial_conditions
+        assert (ic.p0, ic.T0, ic.Rs0) == (33.0e6, 380.0, 300.0)
+        assert cfg.pvt.model == "standing" and cfg.relperm.model == "corey"
+        assert cfg.relperm.S_gc == 0.1 and cfg.relperm.S_or == 0.05
+        assert cfg.pvt.co_undersaturated == 3.3e-9
+        assert cfg.rock.permeability == 1e-14
+        assert cfg.thermal.L_degas == 170000.0
+        hist = cfg.time.history
+        assert len(hist) == 15 + 24 + 14
+        for h in hist[:15]:
+            assert (h.control, h.dt, h.p_wf) == ("pressure", 86400.0, 5.0e6)
+        for k, h in enumerate(hist[15:]):
+            assert h.control == "rate" and h.q_oil == 0.0
+            assert h.min_bhp == 101325.0 and h.p_wf is None
+            assert h.dt == (3600.0 if k < 24 else 86400.0)
+
+    def test_production_cools_and_degasses(self, results):
+        """На конце добычи забой охлаждён на 15 К, газ выделился, скважина добывает нефть и газ.
+
+        Утверждения общих тестов test_oil_production, test_gas_appears,
+        test_gas_produced — на записи 15 вместо последней (17 исключён из
+        них списком ENDS_SHUT_IN). Охлаждение — теплота выделения газа.
+        Замер: T(r_w) = 365.0166 К (ΔT = -14.983 К), q_o = 3.33438e-3
+        м³ст/с, GOR = 271.85 < R_s0 = 300 (газ копится в пласте до порога
+        S_gc), S_g(r_w) = 0.4490, газ в 165 ячейках из 200 (до 51.9 м).
+        Ловит: потерю скрытой теплоты, смену знака mu_JT, подмену ОФП.
+        """
+        r = results[self.NAME]
+        st = r["history"].states[self.END_PROD]
+        assert st.T[0] == pytest.approx(365.0166, abs=2e-3)
+        assert r["q_o"][self.END_PROD] == pytest.approx(3.33438e-3, rel=1e-4)
+        gor = r["q_g"][self.END_PROD] / r["q_o"][self.END_PROD]
+        assert 0.0 < gor < r["Rs0"]
+        assert st.Sg[0] == pytest.approx(0.4490, abs=1e-3)
+        assert np.count_nonzero(st.Sg > 0.0) == 165
+
+    def test_shut_in_stops_flow_through_well(self, results):
+        """На всех записях останова q_o = q_g = 0 точно, фактическое p_wf = p[0].
+
+        Знак: q_o_std = -G_o[0]; при q_oil = 0 прототип ставит потоки забоя
+        ровно 0 (ветка OIL_RATE: bhp = p0). Замер: max|p_wf - p[0]| = 0 Па.
+        Ловит: утечку через забой при останове, запись уставки вместо
+        фактического p_wf.
+        """
+        r = results[self.NAME]
+        h = r["history"]
+        for n in range(self.END_PROD + 1, len(h.states)):
+            assert r["q_o"][n] == 0.0 and r["q_g"][n] == 0.0, f"запись {n}"
+            assert h.well_data[n].p_wf == h.states[n].p[0], f"запись {n}"
+
+    def test_pressure_builds_up_past_pb(self, results):
+        """p(r_w) не убывает после останова; выше p_b — около 12 ч; на финале p = p0.
+
+        Замер: 5.1545 МПа (15 сут) -> 24.5554 (1 ч) -> 30.4537 (запись 27,
+        15.5 сут — первая выше p_b = 30.2921 МПа) -> 31.6425 (16 сут) ->
+        33.0000 (27 сут); наименьшее приращение между записями 3.7 Па;
+        финал max|p - p0| = 2.3 Па. Допуск ±1 запись: на записи 26 до p_b
+        не хватает 2.2 кПа — граница хрупкая.
+        Ловит: потерю притока через контур, «залипание» давления у забоя.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        pw = np.array([s.p[0] for s in states])
+        assert np.all(np.diff(pw[self.END_PROD:]) >= 0.0)
+        assert pw[self.END_PROD + 1] == pytest.approx(24.5554e6, rel=1e-4)
+        pb = float(_pvt_of_config(r["config"]).pb(np.array([r["Rs0"]]))[0])
+        above = [n for n in range(self.END_PROD, len(pw)) if pw[n] > pb]
+        assert abs(above[0] - 27) <= 1, f"выше p_b с записи {above[0]}"
+        p0 = r["config"].initial_conditions.p0
+        assert np.max(np.abs(states[-1].p - p0)) < 10.0
+
+    def test_gas_dissolves_at_well_and_ring_remains(self, results):
+        """У забоя газ растворяется за первый час; кольцо газа 3.6–24 м остаётся до конца.
+
+        Физика: у забоя при 5 МПа газ занимает 45 % пор, но по массе его
+        мало (B_g = 0.026); при сжатии он растворяется весь, нефть остаётся
+        недонасыщенной, R_s застывает (79.51 у забоя). На 3.6–24 м газа за
+        добычу скопилось больше, чем нефть растворяет и при p0: там газ
+        остаётся (S_g до 0.062), нефть насыщена сверх R_s0 —
+        R_s = R_s,eq(33 МПа) = 332.41. Течения после выравнивания давления
+        нет, диффузии в модели нет.
+        Замер: ячеек с газом 165 (15 сут) -> 117 (1 ч) -> 66 (16 сут) -> 51
+        (с 21 сут, 3.63–24.27 м); ячейка 0 без газа с записи 16.
+        Ловит: залипание ячеек в двухфазном режиме, утечку газа через забой,
+        растворение сверх равновесия.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        rr = r["grid"].r_centers
+        assert all(s.Sg[0] == 0.0 for s in states[self.END_PROD + 1:])
+        n_gas = [int(np.count_nonzero(s.Sg > 0.0)) for s in states]
+        assert np.all(np.diff(n_gas[self.END_PROD:]) <= 0), n_gas
+        final = states[-1]
+        gas = final.Sg > 0.0
+        assert np.count_nonzero(gas) == 51
+        assert 3.5 < rr[gas].min() and rr[gas].max() < 25.0
+        rs_eq = _pvt_of_config(r["config"]).Rs_eq(final.p)
+        assert np.max(np.abs(final.Rs[gas] - rs_eq[gas])) <= 1e-10
+        assert final.Rs[gas].min() > r["Rs0"]           # 332.41 > 300
+        assert np.max(final.Rs - rs_eq) <= 1e-10        # пересыщенных нет
+        assert final.Rs[0] == pytest.approx(79.51, abs=0.01)
+
+    def test_wellbore_warms_monotonically(self, results):
+        """T(r_w) на останове строго растёт: +3.76 К за 1 ч, к 30 сут недогрев 2.69 К.
+
+        Физика (члены схемы по ячейкам зоны r < 1 м, проба плана): в первый
+        час зона греется растворением своего газа (61 %) и сжатием (35 %);
+        дальше газа у забоя нет, и тепло приходит теплопроводностью из
+        зоны, где газ ещё растворяется (сутки 2–15: 97 % нагрева зоны).
+        Конвекции через забой нет. Замер: 365.0166 (15 сут) -> 368.7791
+        (1 ч) -> 373.6456 (16 сут) -> 377.3093 К (30 сут); наименьшее
+        приращение между записями 0.0646 К.
+        Ловит: потерю адиабатического члена или теплоты растворения,
+        конвекцию через закрытый забой.
+        """
+        T = np.array([s.T[0] for s in results[self.NAME]["history"].states])
+        E = self.END_PROD
+        assert np.all(np.diff(T[E:]) > 0.0)
+        assert T[E + 1] == pytest.approx(368.7791, abs=2e-3)
+        assert T[39] == pytest.approx(373.6456, abs=2e-3)
+        assert T[-1] == pytest.approx(377.3093, abs=2e-3)
+
+    def test_gas_ring_warmer_than_T0(self, results):
+        """На финале кольцо газа теплее T0: max ΔT = +0.22 К на 22.5 м.
+
+        Физика: в кольце газ растворялся при росте давления — теплота
+        растворения и сжатие нагрели его выше пластовой температуры, а
+        теплопроводность за 15 сут тепло не отвела. Профиль T немонотонен:
+        у забоя -2.69 К, на 10 м -0.04 К, на 22.5 м +0.22 К, у контура
+        +0.001 К. Замер: max ΔT = +0.2216 К.
+        Ловит: потерю члена растворения, неверный знак теплоты дегазации.
+        """
+        r = results[self.NAME]
+        final = r["history"].states[-1]
+        dT = final.T - r["config"].initial_conditions.T0
+        k = int(np.argmax(dT))
+        assert dT[k] == pytest.approx(0.2216, abs=2e-3)
+        rr = r["grid"].r_centers
+        gas = final.Sg > 0.0
+        assert rr[gas].min() <= rr[k] <= rr[gas].max()
+
+    def test_shut_in_heating_sources(self, results):
+        """На останове пласт греют сжатие (77 %) и растворение газа (22 %).
+
+        Приращения членов баланса энергии по области от конца добычи до
+        30 сут (energy_balance.compute_balance), Дж: ΔE = +1.776e11,
+        адиабатический +1.371e11, дегазация (здесь — растворение)
+        +3.960e10, Джоуль–Томсон +6.8e8, конвекция +2.0e8. За добычу член
+        дегазации отрицателен (-2.226e11): газ выделялся и охлаждал.
+        Ловит: смену знака члена дегазации при растворении, потерю
+        адиабатического члена.
+        """
+        import sys
+        sys.path.insert(0, str(EXAMPLES_DIR))
+        from energy_balance import compute_balance
+
+        r = results[self.NAME]
+        bal = compute_balance(r["history"], r["grid"], r["config"])
+        E = self.END_PROD
+        d = {k: float(bal[k][-1] - bal[k][E])
+             for k in ("delta_E", "cum_adiab", "cum_deg", "cum_jt", "cum_conv")}
+        assert d["delta_E"] == pytest.approx(1.776e11, rel=2e-3)
+        assert d["cum_adiab"] == pytest.approx(1.371e11, rel=2e-3)
+        assert d["cum_deg"] == pytest.approx(3.960e10, rel=2e-3)
+        assert bal["cum_deg"][E] < 0.0   # добыча: выделение газа охлаждает
+        assert abs(d["cum_jt"]) + abs(d["cum_conv"]) < 0.01 * d["delta_E"]
+
+    def test_plots_cover_production_phase(self, results):
+        """pvt.png и relperm.png 17 показывают диапазон добычи, а не только останов.
+
+        На последней записи p = 33 МПа почти всюду и S_g <= 0.0625 (кольцо).
+        По всей истории: p 5.1545…33 МПа (p_b = 30.29 МПа внутри), S_g до
+        0.44899 (запись 15). Ловит возврат к диапазону по последней записи.
+        """
+        r = results[self.NAME]
+        rep = _pvt_module().report_pvt(r["config"], r["history"])
+        assert rep["p_lo"] == pytest.approx(5.1545e6, rel=1e-4)
+        assert rep["p_lo"] < rep["pb"] < rep["p_hi"]
+        _lo, hi = _relperm_module()._sg_range(r["history"])
+        assert hi == pytest.approx(0.44899, abs=1e-4)
+
+    def test_main_settings(self):
+        """main.py 17: 7 моментов профилей, без стационарной аналитики, наложения штатные.
+
+        Как у 16 (решение FEAT-019): профили равномерно 0, 5, …, 30 сут;
+        стационар последнего интервала (q = 0) тривиален — p = p0 всюду.
+        """
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=7" in text
+        assert "steady_state=False" in text
+        assert "overlays=" not in text

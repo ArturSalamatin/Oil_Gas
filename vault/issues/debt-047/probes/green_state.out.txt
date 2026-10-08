@@ -1,0 +1,43 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-047\numerical_solver\gpn_multiphase_solver\simulator.py
+
+== load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 10 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено 0.0  [config.py:367]
+c_p_oil_negative       load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено -2000.0  [config.py:367]
+c_p_oil_inf            load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено inf  [config.py:367]
+c_p_gas_zero           load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено 0.0  [config.py:367]
+c_p_gas_negative       load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено -1000.0  [config.py:367]
+rho_cp_solid_zero      load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено 0.0  [config.py:367]
+rho_cp_solid_negative  load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено -1250000.0  [config.py:367]
+lambda_solid_negative  load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено -1.5  [config.py:373]
+lambda_solid_inf       load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено inf  [config.py:373]
+lambda_oil_negative    load_config: ValueError: rock.lambda_oil должна быть конечной и ≥ 0, получено -0.14  [config.py:373]
+lambda_gas_negative    load_config: ValueError: rock.lambda_gas должна быть конечной и ≥ 0, получено -0.04  [config.py:373]
+L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 4.78e-10 К
+                         журнал: thermal.L_degas = -168000.0 Дж/кг < 0: выделение газа в расчёте нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. Проверьте знак.
+L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+
+== load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено 0.0  [config.py:367]
+c_p_oil_negative       load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено -2000.0  [config.py:367]
+c_p_oil_inf            load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено inf  [config.py:367]
+c_p_gas_zero           load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено 0.0  [config.py:367]
+c_p_gas_negative       load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено -1000.0  [config.py:367]
+rho_cp_solid_zero      load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено 0.0  [config.py:367]
+rho_cp_solid_negative  load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено -1250000.0  [config.py:367]
+lambda_solid_negative  load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено -1.5  [config.py:373]
+lambda_solid_inf       load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено inf  [config.py:373]
+lambda_oil_negative    load_config: ValueError: rock.lambda_oil должна быть конечной и ≥ 0, получено -0.14  [config.py:373]
+lambda_gas_negative    load_config: ValueError: rock.lambda_gas должна быть конечной и ≥ 0, получено -0.04  [config.py:373]
+L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…355.13 К, конечны: True, max|T − T_эт| = 3.23 К
+                         журнал: thermal.L_degas = -168000.0 Дж/кг < 0: выделение газа в расчёте нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. Проверьте знак.
+L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+
+== в обход _validate (правка после load_config), from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 11.783…350 К, конечны: True, max|T − T_эт| = 340 К
+c_p_oil_negative       run: RuntimeError: Нефизичная температура после шага энергии dt = 3600 с к t = 0.0417 сут: в ячейке 0 (r = 0.1032 м) T = -2.71906 К; ячеек с T ≤ 0 или не конечной T — 14 из 100.  [simulator.py:346]
+rho_cp_solid_negative  run: RuntimeError: Нефизичная температура после шага энергии dt = 3600 с к t = 0.1667 сут: в ячейке 0 (r = 0.1032 м) T = -926753 К; ячеек с T ≤ 0 или не конечной T — 62 из 100.  [simulator.py:346]

@@ -7,7 +7,8 @@ issue: DEBT-047
 github: 76
 branch: refactor/debt-047/temperature-sanity-check
 status: реализован
-worktree: .worktrees/debt-047
+worktree: .worktrees/debt-047; удалён после влития
+merged: 2ea602f (2026-10-08)
 audit:
   date: 2026-10-08
   round: 2

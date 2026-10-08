@@ -1611,7 +1611,7 @@ class TestHighGasSaturation:
         # Здесь сетка другая (N = 80), и проверяется, что штатных девяти
         # удвоений достаточно.
         # Присваивание строго ДО SimulatorFactory.from_config: фабрика читает
-        # max_retries один раз при сборке адаптера (factory.py:207).
+        # max_retries один раз при сборке Simulator (SimulatorFactory.from_config).
         cfg.numerics.max_retries = NumericsConfig().max_retries
 
         sim, initial = SimulatorFactory.from_config(cfg)

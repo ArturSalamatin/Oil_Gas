@@ -146,14 +146,15 @@ class NumericsConfig:
     sg_switch_tol: float = 1e-9
     jacobian_mode: str = "grouped"
     linear_solver: str = "sparse"
-    # Лимит дробления шага в A-retry (PrototypeHydroAdapter): при
-    # расходимости Newton шаг дробится на 2**attempt подшагов, attempt
-    # не превышает max_retries. Значение 9 (512 подшагов) — запас, а не
-    # порог. Порогом оно было до BUG-014 (пример 03, N = 75, p_wf = 6 МПа)
-    # и до BUG-016 (пример 04a, N = 80, высокая Sg — BUG-003); после них
-    # оба сценария проходят без дробления. Таблицы README примеров 03 и
-    # 04 дают не больше 5 удвоений (замер DEBT-041). Лимит читается только
-    # при отказе, сходящийся расчёт он не замедляет.
+    # Глубина дробления шага (Simulator, локальное дробление DEBT-015):
+    # подшаг, на котором Newton не сошёлся, делится пополам, наименьший
+    # подшаг — time.dt_integration / 2**max_retries. Значение 9 (dt/512) —
+    # запас, а не порог. Порогом оно было до BUG-014 (пример 03, N = 75,
+    # p_wf = 6 МПа) и до BUG-016 (пример 04a, N = 80, высокая Sg — BUG-003);
+    # после них оба сценария проходят без дробления. Таблицы README примеров
+    # 03 и 04 дают не больше 5 удвоений (замер DEBT-041, повторён DEBT-015 —
+    # те же числа). Лимит читается только при отказе, сходящийся расчёт он
+    # не замедляет.
     max_retries: int = 9
 
 
@@ -364,7 +365,7 @@ def _validate(cfg: SimulationConfig) -> None:
     # только там известен номер объекта в JSON — после разворачивания
     # блока он теряется, и сообщение указало бы не на место правки.
 
-    # max_retries управляет числом попыток A-retry (2**max_retries подшагов).
+    # max_retries — глубина дробления шага (наименьший подшаг dt/2**max_retries, DEBT-015).
     # bool исключается явно: в Python bool — подкласс int, а True как лимит бессмыслен.
     mr = cfg.numerics.max_retries
     if isinstance(mr, bool) or not isinstance(mr, int):
@@ -372,7 +373,7 @@ def _validate(cfg: SimulationConfig) -> None:
     if mr < 0 or mr > 20:
         raise ValueError(
             f"numerics.max_retries должен быть в [0, 20], получено {mr}. "
-            f"Верхняя граница защищает от опечатки: 2**20 подшагов недостижимо.")
+            f"Верхняя граница защищает от опечатки: дробление до dt/2**20 бессмысленно.")
 
 
 def _validate_interval(h: HistoryInterval, where: str) -> None:

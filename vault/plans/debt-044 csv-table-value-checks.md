@@ -7,7 +7,8 @@ issue: DEBT-044
 github: 74
 branch: refactor/debt-044/csv-table-value-checks
 status: реализован
-worktree: .worktrees/debt-044
+worktree: .worktrees/debt-044; удалён после влития
+merged: 5011af2 (2026-10-08)
 audit:
   date: 2026-10-07
   round: 2

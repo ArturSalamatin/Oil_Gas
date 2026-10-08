@@ -125,6 +125,9 @@ def _create_pvt(config: SimulationConfig):
         # DEBT-038: ветви PVTO — до BlackOilPVT: он их не проверяет, ошибочную
         # таблицу молча интерполирует, а пустую встречает IndexError
         _check_pvto_branches(oil_rows, pc.oil_pvt_file)
+        # DEBT-044: число строк и рост давления газа проверяет и BlackOilPVT
+        # (pvt.py:32), но на английском и без имени файла
+        _check_gas_pvt_table(gas_rows, pc.gas_pvt_file)
 
         from radial_blackoil.pvt import BlackOilPVT
         proto_pvt = BlackOilPVT(oil_rows, gas_rows)
@@ -166,7 +169,7 @@ def _check_rs0_in_table(Rs0: float, rs_values, oil_pvt_file: str) -> None:
 
 
 def _check_pvto_branches(oil_rows: list[tuple], oil_pvt_file: str) -> None:
-    """Ветви PVTO: ≥ 2 строк, p и p_b(R_s) растут, иначе ValueError (DEBT-038)."""
+    """PVTO: ≥ 2 ветвей по ≥ 2 строк, p и p_b(R_s) растут, иначе ValueError (DEBT-038, DEBT-044)."""
     # Правила формата PVTO (OPM Flow Manual, §8.3.245): в ветви — насыщенная
     # точка p_b(R_s) и строки недонасыщенной нефти по возрастанию давления;
     # p_b растёт с R_s. Первые два правила проверяет и XLSX-ридер прототипа
@@ -191,6 +194,14 @@ def _check_pvto_branches(oil_rows: list[tuple], oil_pvt_file: str) -> None:
     branches: dict[float, list[float]] = {}
     for Rs, p_bar, _, _ in oil_rows:
         branches.setdefault(Rs, []).append(p_bar)
+    # DEBT-044: B_o, μ_o интерполируются между соседними ветвями R_s; с одной
+    # ветвью BlackOilPVT отказывает без имени файла (pvt.py:46)
+    if len(branches) < 2:
+        Rs = list(branches)[0]
+        raise ValueError(
+            f"{oil_pvt_file}: одна ветвь R_s = {Rs:g} м³ст/м³ст, нужно не меньше "
+            f"двух: B_o и μ_o интерполируются между ветвями R_s. У дегазированной "
+            f"нефти (Rs0 = 0) добавьте ветвь с R_s > 0.")
     for Rs, p_bar in sorted(branches.items()):
         p_mpa = [p * BAR_TO_PA / 1e6 for p in p_bar]   # только для сообщений
         if len(p_bar) < 2:
@@ -216,6 +227,47 @@ def _check_pvto_branches(oil_rows: list[tuple], oil_pvt_file: str) -> None:
                 f"p_b = {pb_hi * BAR_TO_PA / 1e6:g} МПа у ветви R_s = {Rs_hi:g} "
                 f"при p_b = {pb_lo * BAR_TO_PA / 1e6:g} МПа у ветви R_s = {Rs_lo:g} "
                 f"м³ст/м³ст. p_b — давление первой строки ветви.")
+
+
+def _check_gas_pvt_table(gas_rows: list[tuple], gas_pvt_file: str) -> None:
+    """Таблица газа: ≥ 2 строк, давление строго растёт, иначе ValueError (DEBT-044)."""
+    # Правила PVDG (OPM Flow Manual, табл. 8.127). Их же проверяют XLSX-ридер
+    # прототипа (input_reader.py:71-72) и BlackOilPVT (pvt.py:32) — последний
+    # без имени файла. B_g(p), μ_g(p) интерполируются np.interp по давлению,
+    # а он не проверяет рост узлов и на нерастущих молча ошибается.
+    # Убывание B_g (PVDG его тоже требует) не проверяется: рост B_g — это
+    # c_g < 0, о нём предупреждает _warn_negative_compressibility (BUG-019).
+    # Значения столбцов (p, B_g, μ_g > 0) проверены при разборе (_GAS_PVT_LIMITS).
+    if len(gas_rows) < 2:
+        raise ValueError(
+            f"{gas_pvt_file}: строк данных {len(gas_rows)}, нужно не меньше двух: "
+            f"B_g и μ_g интерполируются по давлению.")
+    for k in range(1, len(gas_rows)):
+        # давление в барах — как его получает BlackOilPVT; в сообщении — МПа
+        p_prev, p_k = gas_rows[k - 1][0], gas_rows[k][0]
+        if p_k <= p_prev:
+            raise ValueError(
+                f"{gas_pvt_file}: давление не растёт строго: "
+                f"{p_k * BAR_TO_PA / 1e6:g} МПа после {p_prev * BAR_TO_PA / 1e6:g} МПа. "
+                f"Строки — по возрастанию давления.")
+
+
+def _check_relperm_table(Sg: list, relperm_file: str) -> None:
+    """Таблица ОФП: ≥ 2 строк, S_g строго растёт, иначе ValueError (DEBT-044)."""
+    # Правила SGOF (OPM Flow Manual, табл. 8.165). Их же проверяет
+    # TabulatedRelPerm (relperm.py:5) — без имени файла; k_ro(S_g), k_rg(S_g)
+    # интерполируются np.interp по S_g. Пределы S_g, k_r в [0, 1] проверены
+    # при разборе (_RELPERM_LIMITS). Монотонность k_r, которую требует SGOF,
+    # не проверяется (решение пользователя 2026-10-07, план DEBT-044).
+    if len(Sg) < 2:
+        raise ValueError(
+            f"{relperm_file}: строк данных {len(Sg)}, нужно не меньше двух: "
+            f"k_ro и k_rg интерполируются по S_g.")
+    for k in range(1, len(Sg)):
+        if Sg[k] <= Sg[k - 1]:
+            raise ValueError(
+                f"{relperm_file}: S_g не растёт строго: {Sg[k]:g} после {Sg[k - 1]:g}. "
+                f"Строки — по возрастанию S_g.")
 
 
 # Допуск пересыщения на старте, м³ст/м³ст, — rs_switch_tol решателя
@@ -316,6 +368,8 @@ def _create_relperm(config: SimulationConfig):
     elif rc.model == "table":
         # CSV → TabulatedRelPerm (прототип) → PrototypeRPAdapter
         Sg, kro, krg = _read_relperm_csv(config.config_dir / rc.file)
+        # DEBT-044: те же правила проверяет TabulatedRelPerm, но без имени файла
+        _check_relperm_table(Sg, rc.file)
 
         from radial_blackoil.relperm import TabulatedRelPerm
         proto_rp = TabulatedRelPerm(Sg, kro, krg)
@@ -434,8 +488,28 @@ _OIL_PVT_COLUMNS = ["Rs_sm3_sm3", "pressure_Pa", "Bo", "mu_o_Pa_s"]
 _GAS_PVT_COLUMNS = ["pressure_Pa", "Bg", "mu_g_Pa_s"]
 _RELPERM_COLUMNS = ["Sg", "kro", "krg"]
 
+# Допустимые значения столбцов (DEBT-044): пара (текст для сообщения, проверка).
+# lambda v: v > 0 — короткая функция: True, если значение v допустимо.
+# Проверяется значение из файла, до перевода единиц: сравнение с 0 и 1 от
+# единиц не зависит. Почему такие пределы:
+#   - B и μ стоят в знаменателях запасов и подвижностей (blackoil.py:162, 182):
+#     ноль — деление на ноль, отрицательное значение — отрицательная масса или
+#     подвижность (проба vault/issues/debt-044/probes/red_state.py: при B_o < 0
+#     расчёт проходит до конца с T = −246 К и без единого сообщения);
+#   - давление абсолютное, R_s — объём растворённого газа: меньше нуля не бывают;
+#   - S_g, k_ro, k_rg — доли, [0, 1], как в SGOF (OPM Flow Manual, табл. 8.165)
+#     и в CoreyRP (k_r,max ≤ 1, pvt/relperm.py:21).
+_POSITIVE = ("> 0", lambda v: v > 0)
+_NON_NEGATIVE = ("≥ 0", lambda v: v >= 0)
+_FRACTION = ("в [0, 1]", lambda v: 0 <= v <= 1)
+_OIL_PVT_LIMITS = {"Rs_sm3_sm3": _NON_NEGATIVE, "pressure_Pa": _POSITIVE,
+                   "Bo": _POSITIVE, "mu_o_Pa_s": _POSITIVE}
+_GAS_PVT_LIMITS = {"pressure_Pa": _POSITIVE, "Bg": _POSITIVE, "mu_g_Pa_s": _POSITIVE}
+_RELPERM_LIMITS = {"Sg": _FRACTION, "kro": _FRACTION, "krg": _FRACTION}
 
-def _read_numeric_csv(csv_path: Path, columns: list[str], kind: str) -> list[tuple]:
+
+def _read_numeric_csv(csv_path: Path, columns: list[str], limits: dict,
+                      kind: str) -> list[tuple]:
     """Строки числовой CSV-таблицы в единицах файла; ошибка в строке → ValueError (DEBT-042)."""
     # До DEBT-042 ошибочная строка пропускалась молча, лишние поля
     # отбрасывались: опечатка удаляла строку таблицы, десятичная запятая
@@ -445,10 +519,11 @@ def _read_numeric_csv(csv_path: Path, columns: list[str], kind: str) -> list[tup
     #     без проверки файл без заголовка терял первую строку данных;
     #   - пустая строка (нет полей или все поля пустые) пропускается;
     #   - в остальных строках полей ровно len(columns), каждое — конечное
-    #     число (float() принимает nan и inf, их отсекает np.isfinite).
-    # Число строк и допустимость значений здесь не проверяются. Часть из них
-    # делают _check_pvto_branches (нефть) и конструкторы прототипа (газ, ОФП);
-    # B_g > 0, mu_g > 0, S_g в [0, 1] не проверяет никто — DEBT-044.
+    #     число (float() принимает nan и inf, их отсекает np.isfinite);
+    #   - значение в пределах столбца limits[col] (DEBT-044): здесь известен
+    #     номер строки файла, после разбора он теряется.
+    # Правила таблицы целиком (число строк, рост давления и S_g, ветви R_s)
+    # проверяют _check_pvto_branches, _check_gas_pvt_table, _check_relperm_table.
     if not csv_path.exists():
         raise ValueError(f"Файл {kind} не найден: {csv_path}")
     name = csv_path.name
@@ -485,6 +560,9 @@ def _read_numeric_csv(csv_path: Path, columns: list[str], kind: str) -> list[tup
                     raise ValueError(f"{where}, столбец {col}: {field!r} не число.") from None
                 if not np.isfinite(value):
                     raise ValueError(f"{where}, столбец {col}: {field!r} — не конечное число.")
+                text, ok = limits[col]
+                if not ok(value):
+                    raise ValueError(f"{where}, столбец {col}: {field!r} — должно быть {text}.")
                 values.append(value)
             rows.append(tuple(values))
     return rows
@@ -496,7 +574,7 @@ def _read_oil_pvt_csv(csv_path: Path) -> list[tuple]:
     CSV: Rs_sm3_sm3, pressure_Pa, Bo, mu_o_Pa_s.
     Конвертация: p Па→бар, μ Па·с→сП.
     """
-    rows = _read_numeric_csv(csv_path, _OIL_PVT_COLUMNS, "oil PVT")
+    rows = _read_numeric_csv(csv_path, _OIL_PVT_COLUMNS, _OIL_PVT_LIMITS, "oil PVT")
     return [(Rs, p / BAR_TO_PA, Bo, mu / CP_TO_PA_S) for Rs, p, Bo, mu in rows]
 
 
@@ -506,7 +584,7 @@ def _read_gas_pvt_csv(csv_path: Path) -> list[tuple]:
     CSV: pressure_Pa, Bg, mu_g_Pa_s.
     Конвертация: p Па→бар, μ Па·с→сП.
     """
-    rows = _read_numeric_csv(csv_path, _GAS_PVT_COLUMNS, "gas PVT")
+    rows = _read_numeric_csv(csv_path, _GAS_PVT_COLUMNS, _GAS_PVT_LIMITS, "gas PVT")
     return [(p / BAR_TO_PA, Bg, mu / CP_TO_PA_S) for p, Bg, mu in rows]
 
 
@@ -515,12 +593,12 @@ def _read_relperm_csv(csv_path: Path) -> tuple[list, list, list]:
 
     CSV: Sg, kro, krg. Безразмерные, конвертация не нужна.
     """
-    rows = _read_numeric_csv(csv_path, _RELPERM_COLUMNS, "relperm")
+    rows = _read_numeric_csv(csv_path, _RELPERM_COLUMNS, _RELPERM_LIMITS, "relperm")
     # Столбцы собираются из целых строк: строку с ошибкой разборщик
     # отвергает до записи, поэтому длины Sg, kro, krg совпадают.
     # Не zip(*rows): на таблице из одного заголовка (rows = []) распаковка
     # падает ValueError без имени файла; так — три пустых списка, и отказ
-    # даёт TabulatedRelPerm, как до DEBT-042
+    # с именем файла даёт _check_relperm_table (DEBT-044)
     Sg = [r[0] for r in rows]
     kro = [r[1] for r in rows]
     krg = [r[2] for r in rows]

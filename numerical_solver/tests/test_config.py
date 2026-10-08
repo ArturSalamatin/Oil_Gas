@@ -3,12 +3,14 @@
 Проверяет:
 - Чтение baseline.json — все поля, значения, defaults.
 - Валидацию: отсутствующие секции, невалидные значения.
+- Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047).
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
 - Минимальный конфиг: только обязательные секции.
 """
 
 import json
+import logging
 import pytest
 from pathlib import Path
 
@@ -511,6 +513,80 @@ class TestMaxRetriesValidation:
         raw["numerics"] = {"max_retries": True}
         with pytest.raises(ValueError, match="max_retries"):
             load_config(_write_json(tmp_path, raw))
+
+
+class TestValidationThermal:
+    """Тепловые параметры (DEBT-047, P8 §5).
+
+    Ошибка в них не роняет расчёт, а даёт правдоподобную, но неверную T.
+    Комментарии к случаям — замер до DEBT-047 (vault/issues/debt-047/probes/
+    red_state.out.txt: baseline, 24 ч; отклонение — от эталона по всем
+    записям и ячейкам): все случаи проходили load_config и run без сообщения.
+    """
+
+    @pytest.mark.parametrize("section, key, value", [
+        # p_wf = 6 МПа: T_min = 11.8 К при эталоне 349.7 К
+        ("thermal", "c_p_oil", 0.0),
+        # T_min = −7947 К
+        ("thermal", "c_p_oil", -2000.0),
+        # NaN проходит `v <= 0` молча; JSON допускает литерал NaN
+        ("thermal", "c_p_oil", float("nan")),
+        # отказ scipy в СЛАУ энергии без имени параметра
+        ("thermal", "c_p_oil", float("inf")),
+        # газовая зона: отклонение T 0.06 и 0.13 К
+        ("thermal", "c_p_gas", 0.0),
+        ("thermal", "c_p_gas", -1000.0),
+        # отклонение 0.9 К; при (ρc_p)_s < 0 — T до ±7e42 К, конечна
+        ("rock", "rho_cp_solid", 0.0),
+        ("rock", "rho_cp_solid", -1.25e6),
+        # обратная теплопроводность: отклонение — тысячные доли кельвина
+        ("rock", "lambda_solid", -1.5),
+        ("rock", "lambda_oil", -0.14),
+        ("rock", "lambda_gas", -0.04),
+        ("rock", "lambda_solid", float("nan")),
+        ("rock", "lambda_solid", float("inf")),
+    ], ids=["c_p_oil_zero", "c_p_oil_negative", "c_p_oil_nan", "c_p_oil_inf",
+            "c_p_gas_zero", "c_p_gas_negative",
+            "rho_cp_solid_zero", "rho_cp_solid_negative",
+            "lambda_solid_negative", "lambda_oil_negative", "lambda_gas_negative",
+            "lambda_solid_nan", "lambda_solid_inf"])
+    def test_invalid_rejected(self, tmp_path, section, key, value):
+        """Недопустимое значение → ValueError с полным именем параметра."""
+        raw = _minimal_raw()
+        raw[section][key] = value
+        with pytest.raises(ValueError, match=f"{section}.{key}"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_zero_conductivity_accepted(self, tmp_path):
+        """λ = 0 — штатный режим «без теплопроводности» (примеры 01–09, 04a)."""
+        raw = _minimal_raw()
+        raw["rock"].update(lambda_solid=0.0, lambda_oil=0.0, lambda_gas=0.0)
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.rock.lambda_solid == 0.0
+
+    def test_negative_L_warns(self, tmp_path, caplog):
+        """L < 0 — предупреждение, не отказ: физически возможно (P8 §5).
+
+        Q_deg = −L·ṁ: при L < 0 выделение газа нагревает пласт (замер:
+        T_max 355.1 К против 352.2 К у эталона при p_wf = 6 МПа).
+        """
+        raw = _minimal_raw()
+        raw["thermal"]["L_degas"] = -1.68e5
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.thermal.L_degas == -1.68e5
+        text = "\n".join(r.getMessage() for r in caplog.records
+                         if r.levelno >= logging.WARNING)
+        assert "thermal.L_degas" in text
+
+    @pytest.mark.parametrize("L", [0.0, 1.68e5], ids=["zero", "positive"])
+    def test_nonnegative_L_no_warning(self, tmp_path, caplog, L):
+        """L ≥ 0 — без предупреждения; L = 0 (теплота дегазации выключена) — граница."""
+        raw = _minimal_raw()
+        raw["thermal"]["L_degas"] = L
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 
 
 # ═════════════════════════════════════════════════════════════

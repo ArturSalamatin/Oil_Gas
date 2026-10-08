@@ -11,6 +11,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Optional
 
+from ..log import user_log
+
 
 # ── Секция geometry ──────────────────────────────────────────
 
@@ -347,6 +349,40 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(f"porosity должна быть в (0, 1], получено {r.porosity}")
     if r.permeability <= 0:
         raise ValueError(f"permeability должна быть > 0, получено {r.permeability}")
+
+    # Тепловые параметры (DEBT-047, P8 §5). Ошибка в них не роняет расчёт,
+    # а даёт правдоподобную, но неверную T. Замер до DEBT-047
+    # (vault/issues/debt-047/probes/red_state.out.txt, baseline, 24 ч):
+    # c_p,o = 0 при p_wf = 6 МПа — T_min = 11.8 К; (ρc_p)_s = 0 — 0.9 К
+    # отклонения; λ < 0 — тысячные доли кельвина. Условие `0 < v < inf`
+    # отсекает и NaN (JSON допускает литералы NaN и Infinity, сравнение с NaN
+    # всегда False), и inf (иначе отказ дала бы scipy в СЛАУ энергии —
+    # «array must not contain infs or NaNs», без имени параметра).
+    inf = float("inf")
+    th = cfg.thermal
+    for name, value in (("rock.rho_cp_solid", r.rho_cp_solid),
+                        ("thermal.c_p_oil", th.c_p_oil),
+                        ("thermal.c_p_gas", th.c_p_gas)):
+        if not (0 < value < inf):
+            raise ValueError(f"{name} должна быть конечной и > 0, получено {value}")
+    # λ = 0 допустимо: так отключают теплопроводность (примеры 01–09, 04a)
+    for name, value in (("rock.lambda_solid", r.lambda_solid),
+                        ("rock.lambda_oil", r.lambda_oil),
+                        ("rock.lambda_gas", r.lambda_gas)):
+        if not (0 <= value < inf):
+            raise ValueError(f"{name} должна быть конечной и ≥ 0, получено {value}")
+    # L < 0 — предупреждение, не отказ (решение пользователя, DEBT-047).
+    # Q_deg = −L·ṁ (energy/tridiag.py, compute_degassing): при L < 0
+    # выделение газа нагревает пласт (замер: +3.2 К при p_wf = 6 МПа).
+    # По Стендингу p_b растёт с T, то есть при заданном p R_s с ростом T
+    # убывает: растворение газа экзотермично, дегазация поглощает теплоту,
+    # L > 0. Для систем, где растворимость газа растёт с T, L < 0 физически
+    # возможен (P8 §5), поэтому расчёт не запрещается.
+    if th.L_degas < 0:
+        user_log.warning(
+            f"thermal.L_degas = {th.L_degas} Дж/кг < 0: выделение газа в расчёте "
+            f"нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. "
+            f"Проверьте знак.")
 
     ic = cfg.initial_conditions
     if ic.p0 <= 0:

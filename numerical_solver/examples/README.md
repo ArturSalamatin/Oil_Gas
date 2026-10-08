@@ -736,7 +736,7 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 | [mass_balance.py](mass_balance.py) | баланс массы нефтяного и газового компонентов | `python examples\mass_balance.py 16` |
 | [temperature_asymptotics.py](temperature_asymptotics.py) | однофазная асимптотика $T = T_{ext} + \mu_{JT}(p-p_{ext})$ | `python examples\temperature_asymptotics.py 02` |
 | [two_phase_analytics.py](two_phase_analytics.py) | GOR $= R_{s,0}$, $S_g$ из замыкания, фронт, Дюпюи | `python examples\two_phase_analytics.py 03` |
-| [convergence.py](convergence.py) | механика серий и регрессии порядка (эталон — у примера) | — |
+| [convergence.py](convergence.py) | прогон серии по $\Delta t$ или $N$ с измерением метрики (эталон и обработка серии — у вызывающего скрипта) | — |
 | [check_energy_balance_all.py](check_energy_balance_all.py) | баланс энергии всех примеров, единый порог невязки $10^{-12}$ | `python examples\check_energy_balance_all.py` |
 | [verify_balance_vs_solver.py](verify_balance_vs_solver.py) | сверка диагностики с решателем через инструментирование СЛАУ | `python examples\verify_balance_vs_solver.py` |
 | [compare_script_copies.py](compare_script_copies.py) | детектор расползания копий скриптов по AST | `python examples\compare_script_copies.py` |

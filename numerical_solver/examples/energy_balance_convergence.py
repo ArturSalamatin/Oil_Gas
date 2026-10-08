@@ -55,8 +55,9 @@ for _p in (str(_ROOT), str(_EXAMPLES),
         sys.path.insert(0, _p)
 
 from energy_balance import compute_balance  # noqa: E402
-# fit_order не импортируется: невязка — округления, порядка по Δt у неё
-# нет, проверяется уровень (см. шапку модуля).
+# Из convergence — только прогон серии: невязка — округления, порядка
+# по Δt у неё нет, проверяется уровень (см. шапку этого модуля, раздел
+# «СМЫСЛ ПРОВЕРКИ»).
 from convergence import run_series  # noqa: E402
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402

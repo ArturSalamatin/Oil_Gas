@@ -1,0 +1,2 @@
+﻿20_rs300_cooling B dt_int=86400 base max_retries=9: ✓; счёт 201.2 с, в advance 199.6 с; advance принято 348, отказов 187
+tests/data/bug020_rs150/config.json base ступень4=0: ✓ p(r_w) = 185.3065 бар, 2ф = 255, T(r_w) = 397.8867 К; счёт 15.0 с, в advance 14.7 с; advance принято 70, отказов 34

@@ -6,7 +6,7 @@ date: 2026-10-07
 issue: DEBT-015
 github: 61
 branch: refactor/debt-015/hydro-retry-in-simulator
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-015
 audit:
   date: 2026-10-08
@@ -940,3 +940,17 @@ class FailingHydroStub(HydroSolver):
   - 🔵 Baseline-ссылки `cf86aa2` → `0a28abc`.
   
   Пробы раунда: `feat029_numbers.py`, выводы `audit2_*.out.txt`. Временный `plan_numbers_17_shut_in_strong_cooling.npz` в каталоге проб FEAT-029 удалён.
+- 2026-10-08 — **реализован** в `.worktrees/debt-015`, ветка от `723698a`; база на старте — 1352 теста, быстрый уровень 1116.
+  - Шаги 1–5 по плану: коммиты `d7d8498`, `723a12f`, `639c80f`, `15be88d`. После шага 3 полный прогон 1357 passed.
+  - **Отступление от плана:** FEAT-029 влился в базу во время реализации (`f511e39`). Перед шагом 6 база слита в ветку (`e765c7c`, без конфликтов) и выполнены пункты «если пример 17 в базе»:
+    - комментарий и docstring 17 — `e75b1d2`;
+    - перемер 17 — `impl_17_pre.out.txt` и `impl_17.out.txt` совпали с замером аудита до знака;
+    - распределение дробления 17 — `ex17_substeps.py`: 34 часа, 2–7 подшагов;
+    - README 17 — `b1705fc`.
+  - Шаг 6: истории 21 примера побитово; 20B при 1 сут — 348/187; rs150 — 185.3065 бар, 70/34; 22 теста 17 зелёные.
+  - Шаг 7: README `b1705fc`, vault — коммит реализации.
+  - Итог — 1379 passed (полный, 484 с).
+  - Мелочи сверх текста плана:
+    - удалена хвостовая проверка «ловушки без интегралов» в старом `test_integrals_sum_retry_substeps` — для одного шага адаптера неприменима;
+    - поправлены заголовок раздела C в `test_prototype_activation_cap.py`, docstring класса `TestMassBalanceIntegrals` и комментарий `cap` в `tridiag.py`.
+  - Параметр `use_integrals` помощника `_step_rel_residuals` теперь не используется — оставлен.

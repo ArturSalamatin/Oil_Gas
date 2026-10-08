@@ -45,6 +45,7 @@ ALL_EXAMPLES = [
     "14_high_gor_cooling",
     "15_oil_rate_ramp_up",
     "16_well_shut_in",
+    "17_shut_in_strong_cooling",
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
@@ -56,11 +57,13 @@ SINGLE_PHASE = ["01_single_phase_no_jt", "02_single_phase_jt"]
 # Семейства 2 и 3: pwf < pb → разгазирование обязано произойти.
 TWO_PHASE = [n for n in ALL_EXAMPLES if n not in SINGLE_PHASE]
 
-# Сценарии, заканчивающиеся остановом скважины (FEAT-019): на последней
-# записи дебит нулевой, свободный газ растворился. Утверждения «скважина
-# добывает» и «газ выделяется» на последней записи для них неверны по смыслу;
-# у них то же проверяется на конце добычи — в классе сценария (TestWellShutIn).
-ENDS_SHUT_IN = ["16_well_shut_in"]
+# Сценарии, заканчивающиеся остановом скважины (FEAT-019, FEAT-029): на
+# последней записи дебит нулевой. Утверждения «скважина добывает» и «газ
+# выделяется» на последней записи для них неверны по смыслу (у 17 газ на
+# финале есть — кольцо 3.6–24 м, — но дебит газа нулевой); у них то же
+# проверяется на конце добычи — в классе сценария (TestWellShutIn,
+# TestShutInStrongCooling).
+ENDS_SHUT_IN = ["16_well_shut_in", "17_shut_in_strong_cooling"]
 PRODUCING_AT_END = [n for n in ALL_EXAMPLES if n not in ENDS_SHUT_IN]
 TWO_PHASE_AT_END = [n for n in TWO_PHASE if n not in ENDS_SHUT_IN]
 
@@ -131,7 +134,7 @@ class _LazyResults(dict):
 def results():
     """Сценарии ALL_EXAMPLES: расчёт при первом обращении, один раз на сессию."""
     # Ленивый расчёт (DEBT-032): выборочный запуск теста на одном примере
-    # стоит одного расчёта, а не двадцати одного (~255 с). Имя фикстуры читает
+    # стоит одного расчёта, а не двадцати двух (~6 мин). Имя фикстуры читает
     # хук tests/conftest.py: тесты на ней получают метку slow.
     return _LazyResults()
 

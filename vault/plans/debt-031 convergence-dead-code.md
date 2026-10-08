@@ -7,7 +7,8 @@ issue: DEBT-031
 github: 75
 branch: refactor/debt-031/convergence-dead-code
 status: реализован
-worktree: .worktrees/debt-031
+merged: 002a96e (2026-10-08)
+worktree: .worktrees/debt-031; удалён после влития
 audit:
   date: 2026-10-07
   found: 5

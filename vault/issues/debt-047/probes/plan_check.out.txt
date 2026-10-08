@@ -1,0 +1,69 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py
+План: debt-047 temperature-sanity-check.md
+== 1. Правки плана
+   numerical_solver/tests/test_simulator.py #1: «до» найдено 1 раз
+   numerical_solver/tests/test_simulator.py #2: в конец
+   numerical_solver/gpn_multiphase_solver/simulator.py #1: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/simulator.py #2: «до» найдено 1 раз
+   numerical_solver/tests/test_config.py #1: «до» найдено 1 раз
+   numerical_solver/tests/test_config.py #2: «до» найдено 1 раз
+   numerical_solver/tests/test_config.py #3: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/io/config.py #1: «до» найдено 1 раз
+   numerical_solver/gpn_multiphase_solver/io/config.py #2: «до» найдено 1 раз
+   vault/knowledge/decisions/P8-формат-ввода-json.md #1: «до» найдено 1 раз
+   vault/knowledge/decisions/модули-simulator-оркестратор.md #1: «до» найдено 1 раз
+   итог: все применимы
+   добавленные строки кода: максимум 88 симв.
+== 2. Тесты плана на текущем коде (ожидание: 20 failed, 150 passed)
+   FAILED ..\vault\issues\debt-047\probes\plan_check_tmp\tests_plan\test_simulator.py::TestNonphysicalTemperature::test_raises_under_subdivision
+   20 failed, 150 passed in 4.60s
+== 3. Тесты плана на коде с правками (ожидание: 170 passed)
+   ..........................                                               [100%]
+   170 passed in 2.84s
+== 3a. То же с настройками pytest проекта и conftest, -m "not slow" (ожидание: 170 passed)
+   ..........................                                               [100%]
+   170 passed in 2.82s
+== 4. Проба red_state на коде с правками
+   Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py
+   == load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 10 МПа
+   эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+   c_p_oil_zero           load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено 0.0  [config.py:367]
+   c_p_oil_negative       load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено -2000.0  [config.py:367]
+   c_p_oil_inf            load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено inf  [config.py:367]
+   c_p_gas_zero           load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено 0.0  [config.py:367]
+   c_p_gas_negative       load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено -1000.0  [config.py:367]
+   rho_cp_solid_zero      load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено 0.0  [config.py:367]
+   rho_cp_solid_negative  load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено -1250000.0  [config.py:367]
+   lambda_solid_negative  load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено -1.5  [config.py:373]
+   lambda_solid_inf       load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено inf  [config.py:373]
+   lambda_oil_negative    load_config: ValueError: rock.lambda_oil должна быть конечной и ≥ 0, получено -0.14  [config.py:373]
+   lambda_gas_negative    load_config: ValueError: rock.lambda_gas должна быть конечной и ≥ 0, получено -0.04  [config.py:373]
+   L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 4.78e-10 К
+                            журнал: thermal.L_degas = -168000.0 Дж/кг < 0: выделение газа в расчёте нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. Проверьте знак.
+   L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+   mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+   == load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+   эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+   c_p_oil_zero           load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено 0.0  [config.py:367]
+   c_p_oil_negative       load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено -2000.0  [config.py:367]
+   c_p_oil_inf            load_config: ValueError: thermal.c_p_oil должна быть конечной и > 0, получено inf  [config.py:367]
+   c_p_gas_zero           load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено 0.0  [config.py:367]
+   c_p_gas_negative       load_config: ValueError: thermal.c_p_gas должна быть конечной и > 0, получено -1000.0  [config.py:367]
+   rho_cp_solid_zero      load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено 0.0  [config.py:367]
+   rho_cp_solid_negative  load_config: ValueError: rock.rho_cp_solid должна быть конечной и > 0, получено -1250000.0  [config.py:367]
+   lambda_solid_negative  load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено -1.5  [config.py:373]
+   lambda_solid_inf       load_config: ValueError: rock.lambda_solid должна быть конечной и ≥ 0, получено inf  [config.py:373]
+   lambda_oil_negative    load_config: ValueError: rock.lambda_oil должна быть конечной и ≥ 0, получено -0.14  [config.py:373]
+   lambda_gas_negative    load_config: ValueError: rock.lambda_gas должна быть конечной и ≥ 0, получено -0.04  [config.py:373]
+   L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…355.13 К, конечны: True, max|T − T_эт| = 3.23 К
+                            журнал: thermal.L_degas = -168000.0 Дж/кг < 0: выделение газа в расчёте нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. Проверьте знак.
+   L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+   mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+   == в обход _validate (правка после load_config), from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+   эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+   c_p_oil_zero           ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 11.783…350 К, конечны: True, max|T − T_эт| = 340 К
+   c_p_oil_negative       run: RuntimeError: Нефизичная температура после шага энергии dt = 3600 с к t = 0.0417 сут: в ячейке 0 (r = 0.1032 м) T = -2.71906 К; ячеек с T ≤ 0 или не конечной T — 14 из 100.  [simulator.py:346]
+   rho_cp_solid_negative  run: RuntimeError: Нефизичная температура после шага энергии dt = 3600 с к t = 0.1667 сут: в ячейке 0 (r = 0.1032 м) T = -926753 К; ячеек с T ≤ 0 или не конечной T — 62 из 100.  [simulator.py:346]
+== 5. Быстрый уровень на коде с правками (ожидание: 1155 passed)
+   -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+   1155 passed, 250 deselected, 1 warning in 73.98s (0:01:13)

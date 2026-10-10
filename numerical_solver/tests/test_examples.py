@@ -797,47 +797,9 @@ class TestSharedChecks:
             path = EXAMPLES_DIR / module
             assert path.is_file(), f"нет общего модуля examples/{module}"
 
-    def test_convergence_users_import(self, monkeypatch):
-        """convergence.py и скрипты на run_series импортируются (DEBT-031).
-
-        Скрипты сходимости запускаются только вручную, и других тестов,
-        которые бы их импортировали, нет: удалённое из convergence.py имя
-        или потерянный импорт обнаружились бы лишь при ручном запуске.
-        runpy.run_path с run_name ≠ "__main__" выполняет импорты верхнего
-        уровня, но не блок __main__ — серия прогонов не запускается.
-        """
-        import builtins
-        import dis
-        import runpy
-        import sys
-
-        # Скрипты сами вставляют свои каталоги в sys.path (04a — папку
-        # примера со своим main.py). Подменяем список копией: monkeypatch
-        # вернёт исходный после теста, и папка 04a не перекроет модули
-        # в других тестах.
-        monkeypatch.setattr(sys, "path", list(sys.path))
-        for script in ("convergence.py",
-                       "energy_balance_convergence.py",
-                       "04a_high_gas_saturation/grid_convergence.py"):
-            namespace = runpy.run_path(str(EXAMPLES_DIR / script),
-                                       run_name="__import_check__")
-            # run_series определена в convergence.py и импортирована обоими
-            # скриптами — её наличие в пространстве имён и есть проверка.
-            run_series = namespace.get("run_series")
-            assert callable(run_series), (
-                f"examples/{script}: нет run_series после импорта")
-            # Импорт видит только имена, нужные при загрузке модуля. Имя,
-            # нужное лишь при вызове (deepcopy в теле run_series), пропало
-            # бы молча — проверяем, что каждое глобальное имя тела
-            # определено в модуле или среди встроенных.
-            missing = sorted(
-                ins.argval for ins in dis.get_instructions(run_series)
-                if ins.opname == "LOAD_GLOBAL"
-                and ins.argval not in run_series.__globals__
-                and not hasattr(builtins, ins.argval))
-            assert not missing, (
-                f"examples/{script}: run_series ссылается на "
-                f"неопределённые имена {missing}")
+    # Имена, которые скрипты examples/ берут из общих модулей, проверяет
+    # tests/test_example_scripts.py (DEBT-046) — без исполнения скриптов.
+    # Он заменил тест импорта convergence.py и его пользователей (DEBT-031).
 
     def test_energy_balance_reported_for_all_examples(self, tmp_path):
         """run_example печатает баланс энергии — проверка подключения.

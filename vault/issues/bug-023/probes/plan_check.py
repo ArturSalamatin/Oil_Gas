@@ -55,11 +55,13 @@ def patched_text(only=None, verbose=False):
         if only is not None and num not in only:
             continue
         n_old, n_new = text.count(e["до"]), text.count(e["после"])
-        if n_old == 1:
+        # «после» проверяется первым: у правки #2 (импорт) «до» входит в «после»
+        # целиком и находится и в уже исправленном файле
+        if n_new == 1:
+            status = "уже применена («после» найдено 1 раз)"
+        elif n_old == 1:
             text = text.replace(e["до"], e["после"])
             status = "«до» найдено 1 раз"
-        elif n_old == 0 and n_new == 1:
-            status = "уже применена («после» найдено 1 раз)"
         else:
             ok = False
             status = f"«до» найдено {n_old} раз, «после» — {n_new} — ОШИБКА"

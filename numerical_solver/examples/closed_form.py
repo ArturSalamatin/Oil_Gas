@@ -17,7 +17,7 @@
 
     GOR = q_g / q_o = Rs0.
 
-Подставляя выражения для потоков (eq. 8, 9 problem_statement.tex),
+Подставляя выражения для потоков (eq:flux_oil, eq:flux_gas problem_statement.tex),
 
     G^o = T · kro/(mu_o Bo) · dp,
     G^g = T · [Rs·kro/(mu_o Bo) + krg/(mu_g Bg)] · dp,

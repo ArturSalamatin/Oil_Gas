@@ -79,8 +79,8 @@ class TridiagEnergySolver(EnergySolver):
         N = self._grid.N
 
         # Граничные условия на контуре: T_ext — Дирихле по температуре,
-        # Rs_ext — состав притока (eq. bc_Sg_ext: R_s|_ext = R_s^0).
-        # p_ext используется ниже, в _ext_properties (eq. bc_props_ext).
+        # Rs_ext — состав притока (eq:bc_Sg_ext: R_s|_ext = R_s^0).
+        # p_ext используется ниже, в _ext_properties (eq:bc_props_ext).
         T_ext = bc.T_ext
         Rs_ext = bc.Rs_ext
 
@@ -202,7 +202,10 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def compute_cell_properties(self, p, Sg, Rs, So, T_old):
-        """Тепловые PVT (eq. 5, 7) и вспомогательные величины в ячейках."""
+        """Тепловые PVT и вспомогательные величины в ячейках.
+
+        Ур. (eq:main_rhocpeff), (eq:lambda_eff).
+        """
         pvt = self._pvt
         rock = self._rock
         phi = rock.porosity
@@ -216,11 +219,11 @@ class TridiagEnergySolver(EnergySolver):
         mu_JT_g = pvt.mu_JT_gas(p, T_old)
         L = pvt.L_degas(p, T_old)
 
-        # Эффективная теплоёмкость (eq. 5), Дж/(м³·К)
+        # Эффективная теплоёмкость (eq:main_rhocpeff), Дж/(м³·К)
         rho_cp_eff = ((1 - phi) * rock.rho_cp_solid
                       + phi * (So * rho_o * c_p_o + Sg * rho_g * c_p_g))
 
-        # Эффективная теплопроводность (eq. 7), Вт/(м·К)
+        # Эффективная теплопроводность (eq:lambda_eff), Вт/(м·К)
         lambda_eff = ((1 - phi) * rock.lambda_solid
                       + phi * (So * rock.lambda_oil + Sg * rock.lambda_gas))
 
@@ -234,7 +237,7 @@ class TridiagEnergySolver(EnergySolver):
         """Свойства фаз при условиях контура. Ур. (eq:bc_props_ext).
 
         На контуре задано: p = p_ext, T = T_ext, Rs = Rs_ext, Sg = 0
-        (eq. bc_Sg_ext). При притоке через грань N выше по потоку
+        (eq:bc_Sg_ext). При притоке через грань N выше по потоку
         находится контур, поэтому ρ, c_p и μ_JT берутся здесь, а не
         из ячейки N-1 (DEBT-017).
 
@@ -267,7 +270,7 @@ class TridiagEnergySolver(EnergySolver):
 
     def compute_convective_coefficients(self, Q_o, Q_g, rho_o, rho_g,
                                           c_p_o, c_p_g, N, ext):
-        """Φ_α[f] = ρ_α_up · c_p_α_up · Q_α[f] (eq. 23).
+        """Φ_α[f] = ρ_α_up · c_p_α_up · Q_α[f] (определение под eq:energy_conv_face).
         Против потока раздельно по каждой фазе (по знаку Q_α).
         ext — свойства контура из _ext_properties (eq:bc_props_ext).
         Возвращает Φ⁺, Φ⁻, Φ_o, Φ_g — все [N+1].
@@ -431,7 +434,7 @@ class TridiagEnergySolver(EnergySolver):
         return J_jt
 
     # ──────────────────────────────────────────────────────
-    # Подшаг 5b: адиабатический эффект (eq. 29)
+    # Подшаг 5b: адиабатический эффект (eq:Qad_disc — форма при c_r = 0, DEBT-057)
     # ──────────────────────────────────────────────────────
 
     def compute_adiabatic(self, So, Sg, rho_o, rho_g, c_p_o, c_p_g,
@@ -473,7 +476,7 @@ class TridiagEnergySolver(EnergySolver):
         дискретное правило Лейбница точно (невязка ~1e-15); вариант с
         общим множителем 1/B_o[j] даёт ~5e-3.
 
-        Rs_ext — состав притока с контура (eq. bc_Sg_ext): R_s|_ext = R_s^0.
+        Rs_ext — состав притока с контура (eq:bc_Sg_ext): R_s|_ext = R_s^0.
         """
         phi = self._rock.porosity
         V = self._grid.volumes
@@ -492,7 +495,7 @@ class TridiagEnergySolver(EnergySolver):
         # тоже нет, поэтому ячейка назначается сама себе левым соседом:
         # разность Rs[0] − Rs[0] = 0, и забойная грань вклада не даёт при
         # ЛЮБОМ знаке потока. Отдельной ветви для этого не требуется.
-        # Справа от ячейки N-1 — контур, состав задан ГУ (eq. bc_Sg_ext).
+        # Справа от ячейки N-1 — контур, состав задан ГУ (eq:bc_Sg_ext).
         # Брать Rs[N-1] нельзя: при p_{N-1} < p_b это состав дегазированной
         # нефти вместо состава притока (DEBT-009).
         Rs_left = np.concatenate(([Rs[0]], Rs[:-1]))

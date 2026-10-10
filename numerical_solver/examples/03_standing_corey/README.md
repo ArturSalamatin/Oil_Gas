@@ -99,7 +99,7 @@ $$G^{\text{своб.газ}}(r) = |G^o|\,\bigl[R_{s,0} - R_s(p(r))\bigr]$$
 
 ### 2. Насыщенность $S_g$ — алгебраическая функция давления
 
-Расписав GOR $= R_{s,0}$ через подвижности (ур. 8–9 `problem_statement.tex`):
+Расписав GOR $= R_{s,0}$ через подвижности (`eq:flux_oil`, `eq:flux_gas` в `problem_statement.tex`):
 
 $$\frac{G^g}{G^o} = R_s + \frac{k_{rg}/(\mu_g B_g)}{k_{ro}/(\mu_o B_o)} = R_{s,0}$$
 

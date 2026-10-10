@@ -1036,7 +1036,7 @@ class TestPvtPlot:
         """Плотности сводки равны \\eqref{eq:rho_oil}, а не своей формуле.
 
         rho_o = (rho_o_ст + Rs*rho_g_ст)/Bo,  rho_g = rho_g_ст/Bg
-        (problem_statement.tex, строки 1838-1840 и таблица обозначений).
+        (eq:rho_oil и таблица обозначений problem_statement.tex).
         Проверка ловит попытку пересчитать плотность в модуле вместо
         вызова pvt.rho_o / pvt.rho_g.
         """

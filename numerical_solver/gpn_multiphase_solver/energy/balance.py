@@ -204,7 +204,8 @@ class EnergyBalanceAccumulator:
         self._T_ext = T_ext
 
         # ── Конвекция (обе фазы): ОТЛОЖЕНА до add_accumulation ──
-        # Φ_α = ρ_α cp_α Q_α (eq. 23). Знак: Q < 0 (поток к скважине) ⇒ Φ < 0.
+        # Φ_α = ρ_α cp_α Q_α (определение под eq:energy_conv_face).
+        # Знак: Q < 0 (поток к скважине) ⇒ Φ < 0.
         # Φ приходит с ВСЕХ граней, upstream раздельно по каждой фазе —
         # иначе при противотоке фаз (Φ_o и Φ_g разных знаков на одной
         # грани) расщепление Φ⁺/Φ⁻ было бы неверным.
@@ -231,7 +232,7 @@ class EnergyBalanceAccumulator:
         self.cum_jt += np.sum(J_jt) * dt
 
         # ── Адиабатика (обе фазы) ──
-        # Q_ad = φ Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt, Вт/м³ (eq. 29).
+        # Q_ad = φ Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt, Вт/м³ (eq:Qad_disc, c_r = 0).
         # Решатель ставит V[j]·Q_ad[j] в правую часть — суммируем то же.
         self.cum_adiab += np.sum(V * Q_ad) * dt
 
@@ -316,7 +317,7 @@ class EnergyBalanceAccumulator:
         self._dt_substep = None
 
         # Накопление берётся ТОЧНО так, как его дискретизует схема
-        # (\eqref{eq:energy_disc_full}, problem_statement.tex:1334):
+        # (\eqref{eq:energy_disc_full}):
         # cap_j = V_j (ρcp)^{n}_j / dt стоит в матрице и в
         # правой части ОДНИМ И ТЕМ ЖЕ множителем, поэтому шаговый вклад —
         # это V (ρcp)^{n} (T^{n+1} - T^{n}), а НЕ разность запасов

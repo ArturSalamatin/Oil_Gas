@@ -23,6 +23,7 @@ from gpn_multiphase_solver.io.config import load_config, SimulationConfig
 from gpn_multiphase_solver.factory import (
     SimulatorFactory,
     _read_oil_pvt_csv, _read_gas_pvt_csv, _read_relperm_csv,
+    _create_pvt, _create_relperm, _get_or_create_proto_pvt, _get_or_create_proto_rp,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.pvt.table_full import TableFullPVT
@@ -160,12 +161,25 @@ class TestFactoryTablePVT:
 
         assert simulator._max_retries == 9
 
-    def test_relperm_is_prototype_adapter(self):
-        """RelPerm = PrototypeRPAdapter при relperm.model='table'."""
+    def test_prototype_relperm_from_csv(self):
+        """Прототип получает табличную ОФП с узлами CSV, а не пересчёт на 101 узле (DEBT-006).
+
+        Пересчёт на сетке np.linspace(0, 1, 101) — ветка CoreyRP. Для таблицы
+        он дал бы 101 узел и сдвинул порог активации газа sg_activation_cap
+        (BUG-018, radial_blackoil/blackoil.py:49-54 — последний узел с
+        k_ro > 0) с 0.6 на 0.79: в configs/table_pvt/relperm.csv k_ro = 0
+        впервые в узле 0.8, предыдущий узел — 0.6, а на 101 узле — 0.79.
+        Замер при планировании DEBT-006: на примерах 04 и 05 такая подмена
+        меняет историю лишь в последних битах (отн. ≤ 4e-14) — числовые
+        тесты её не видят, видит только этот.
+        """
         config = load_config(TABLE_CONFIG)
-        _, _ = SimulatorFactory.from_config(config)
-        # Проверяем через hydro (у которого relperm внутри модели)
-        # Проверка: relperm создаётся без ошибок — достаточно
+        assert isinstance(_create_relperm(config), PrototypeRPAdapter)
+        simulator, _ = SimulatorFactory.from_config(config)
+        model = simulator._hydro._model
+        Sg, _, _ = _read_relperm_csv(config.config_dir / config.relperm.file)
+        np.testing.assert_array_equal(model.relperm.sg, Sg)
+        assert model.sg_activation_cap == 0.6
 
     def test_initial_state_shapes(self):
         """Начальное состояние: размеры массивов = N."""
@@ -217,27 +231,27 @@ class TestPVTConsistency:
     """Один BlackOilPVT в обёртке и в модели."""
 
     def test_pvt_objects_are_same(self):
-        """proto_pvt в PrototypePVTAdapter и в RadialBlackOilModel — один объект."""
+        """Один BlackOilPVT у прототипа и обёртки; один FullPVT у адаптера, энергии, Simulator."""
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
         hydro = simulator._hydro
         assert isinstance(hydro, PrototypeHydroAdapter)
 
-        # proto_pvt через модель
-        model_pvt = hydro._model.pvt
-        # proto_pvt через адаптер → pvt._pvt
-        adapter_pvt = hydro._pvt._pvt
-
-        assert model_pvt is adapter_pvt
+        # Прототип считает тем же BlackOilPVT, что лежит под TableFullPVT
+        assert hydro._model.pvt is simulator._pvt.hydro.proto_pvt
+        # Пересчёт потоков в адаптере, энергия и Simulator — один объект
+        # FullPVT (DEBT-006; прежде адаптер получал развёрнутый PrototypePVTAdapter)
+        assert hydro._pvt is simulator._pvt
+        assert simulator._energy._pvt is simulator._pvt
 
     def test_bo_consistency(self):
         """Bo через обёртку и через прототип совпадают."""
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
-        our_pvt = simulator._pvt._hydro  # PrototypePVTAdapter
-        proto_pvt = our_pvt._pvt          # BlackOilPVT
+        our_pvt = simulator._pvt.hydro   # PrototypePVTAdapter
+        proto_pvt = our_pvt.proto_pvt    # BlackOilPVT
 
         p_pa = 15e6
         Rs = 20.0
@@ -247,6 +261,60 @@ class TestPVTConsistency:
         bo_proto = proto_pvt.bo(np.array([p_bar]), np.array([Rs]))[0]
 
         assert bo_our == pytest.approx(bo_proto)
+
+    def test_proto_pvt_shared_for_table(self):
+        """Табличная PVT: прототипу — тот же BlackOilPVT, что под обёрткой (DEBT-006)."""
+        config = load_config(TABLE_CONFIG)
+        pvt = _create_pvt(config)
+        proto = _get_or_create_proto_pvt(pvt, config.initial_conditions.p0)
+        assert proto is pvt.hydro.proto_pvt
+
+    def test_proto_rp_shared_for_table(self):
+        """Табличная ОФП: прототипу — тот же TabulatedRelPerm, а не 101 узел (DEBT-006)."""
+        relperm = _create_relperm(load_config(TABLE_CONFIG))
+        assert _get_or_create_proto_rp(relperm) is relperm.proto_rp
+
+
+class TestWrapperAccess:
+    """Публичный доступ к объектам прототипа под обёртками (DEBT-006).
+
+    Фабрика и скрипты графиков берут BlackOilPVT и TabulatedRelPerm через
+    свойства, а не через приватные поля _hydro, _pvt, _rp. Свойства только
+    для чтения: подмена объекта разорвала бы «один источник» PVT/ОФП для
+    прототипа и наших модулей (vault/knowledge/decisions/согласованность-pvt-hydro.md).
+    """
+
+    def _wrappers(self):
+        """Три обёртки над объектами-метками: конструкторы лишь сохраняют ссылки."""
+        proto_pvt, proto_rp = object(), object()
+        adapter = PrototypePVTAdapter(proto_pvt, rho_o_std=850.0, rho_g_std=0.85)
+        table = TableFullPVT(adapter, c_p_oil=2000.0, c_p_gas=2200.0,
+                             mu_JT_oil=-4e-7, mu_JT_gas=3e-6, L_degas=0.0)
+        rp = PrototypeRPAdapter(proto_rp)
+        return proto_pvt, proto_rp, adapter, table, rp
+
+    def test_prototype_pvt_adapter_proto_pvt(self):
+        """PrototypePVTAdapter.proto_pvt — тот самый объект, что передан в конструктор."""
+        proto_pvt, _, adapter, _, _ = self._wrappers()
+        assert adapter.proto_pvt is proto_pvt
+
+    def test_table_full_pvt_hydro(self):
+        """TableFullPVT.hydro — тот самый адаптер, а через него — объект прототипа."""
+        proto_pvt, _, adapter, table, _ = self._wrappers()
+        assert table.hydro is adapter
+        assert table.hydro.proto_pvt is proto_pvt
+
+    def test_prototype_rp_adapter_proto_rp(self):
+        """PrototypeRPAdapter.proto_rp — тот самый объект, что передан в конструктор."""
+        _, proto_rp, _, _, rp = self._wrappers()
+        assert rp.proto_rp is proto_rp
+
+    def test_accessors_read_only(self):
+        """Присвоить свойству нельзя — AttributeError: общий объект не подменить."""
+        _, _, adapter, table, rp = self._wrappers()
+        for obj, name in ((adapter, "proto_pvt"), (table, "hydro"), (rp, "proto_rp")):
+            with pytest.raises(AttributeError):
+                setattr(obj, name, object())
 
 
 # ═══════════════════════════════════════════════════════════

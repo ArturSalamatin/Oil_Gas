@@ -1438,6 +1438,41 @@ class TestWorkingRange:
 
 
 # ═══════════════════════════════════════════════════════════
+# J3. Узлы таблиц на графиках — по классу модели (DEBT-006)
+# ═══════════════════════════════════════════════════════════
+
+class TestTableNodesByClass:
+    """Скрипты графиков находят узлы таблиц по классу модели, а не по приватным полям.
+
+    До DEBT-006 _table_nodes (relperm_plot.py) тестов не имел, а узлы PVT
+    проверяли в основном тесты на фикстуре results (метка slow). Здесь —
+    быстрые проверки без расчёта.
+    """
+
+    def test_relperm_nodes_from_csv(self):
+        """Табличная ОФП примера 04: узлы — ровно строки relperm.csv."""
+        from gpn_multiphase_solver.factory import _create_relperm, _read_relperm_csv
+        cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
+        nodes = _relperm_module()._table_nodes(_create_relperm(cfg))
+        expected = _read_relperm_csv(cfg.config_dir / cfg.relperm.file)
+        assert nodes is not None, "у табличной ОФП узлы обязаны быть"
+        for got, exp in zip(nodes, expected):
+            np.testing.assert_array_equal(got, exp)
+
+    def test_relperm_nodes_none_for_corey(self):
+        """Кори примера 03: выделенных точек нет — None."""
+        from gpn_multiphase_solver.factory import _create_relperm
+        cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
+        assert _relperm_module()._table_nodes(_create_relperm(cfg)) is None
+
+    def test_pvt_nodes_none_for_standing(self):
+        """Стендинг примера 03: узлов PVT нет — None (без фикстуры results, DEBT-006)."""
+        cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
+        Rs0 = float(cfg.initial_conditions.Rs0)
+        assert _pvt_module()._pvt_table_nodes(_pvt_of_config(cfg), Rs0) is None
+
+
+# ═══════════════════════════════════════════════════════════
 # K. Сценарий 04a: высокая газонасыщенность (FEAT-015)
 # ═══════════════════════════════════════════════════════════
 

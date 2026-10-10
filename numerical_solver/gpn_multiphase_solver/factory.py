@@ -449,9 +449,12 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     if isinstance(pvt, TableFullPVT):
         _warn_initial_table_range(model, ic)
 
-    # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
-    our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt
-    return PrototypeHydroAdapter(model, grid, our_pvt)
+    # Пересчёт потоков (Q, u, m) — тем же объектом FullPVT, что у решателя
+    # энергии и Simulator (DEBT-006). Прежде табличный путь разворачивал
+    # TableFullPVT до PrototypePVTAdapter проверкой поля _hydro через hasattr;
+    # числа те же побитово: TableFullPVT делегирует гидро-методы без
+    # арифметики, а rho_o, rho_g — общие методы HydroPVT.
+    return PrototypeHydroAdapter(model, grid, pvt)
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):
@@ -460,8 +463,12 @@ def _get_or_create_proto_pvt(pvt, p0: float):
     Табличный путь: TableFullPVT → PrototypePVTAdapter → BlackOilPVT (извлечь).
     Аналитический путь (Standing и др.): обернуть HydroPVT через адаптер.
     """
-    if hasattr(pvt, '_hydro') and hasattr(pvt._hydro, '_pvt'):
-        return pvt._hydro._pvt
+    # DEBT-006: ветку выбирает класс, а не наличие приватных полей. Прежняя
+    # проверка поля _hydro через hasattr при переименовании поля молча уводила
+    # таблицу в ветку адаптера; теперь переименование свойства — AttributeError.
+    if isinstance(pvt, TableFullPVT):
+        # Тот же объект, что под обёрткой у наших модулей: один источник PVT
+        return pvt.hydro.proto_pvt
 
     return HydroPVTtoBlackOilAdapter(pvt, p_max_pa=p0)
 
@@ -472,8 +479,11 @@ def _get_or_create_proto_rp(relperm):
     PrototypeRPAdapter — извлечь TabulatedRelPerm.
     CoreyRP — протабулировать на сетке Sg.
     """
-    if hasattr(relperm, '_rp'):
-        return relperm._rp
+    # DEBT-006: ветка — по классу, как у PVT
+    if isinstance(relperm, PrototypeRPAdapter):
+        # Тот же TabulatedRelPerm: узлы таблицы, а с ними и порог активации
+        # газа sg_activation_cap (BUG-018) — из CSV, а не из пересчёта на 101 узел
+        return relperm.proto_rp
 
     from radial_blackoil.relperm import TabulatedRelPerm
     Sg = np.linspace(0.0, 1.0, 101)

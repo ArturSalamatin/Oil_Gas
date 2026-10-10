@@ -7,18 +7,21 @@
 
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import (
-    SimulatorFactory, _get_or_create_proto_rp, _create_pvt,
+    SimulatorFactory, _get_or_create_proto_pvt, _get_or_create_proto_rp, _create_pvt,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
+from gpn_multiphase_solver.pvt.hydro_to_blackoil_adapter import HydroPVTtoBlackOilAdapter
 from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.units import BAR_TO_PA
+from radial_blackoil.relperm import TabulatedRelPerm
 
 
 BASELINE = Path(__file__).parent.parent / "configs" / "baseline.json"
@@ -46,6 +49,17 @@ class TestFactoryStandingHydro:
         config = load_config(BASELINE)
         simulator, _ = SimulatorFactory.from_config(config)
         assert isinstance(simulator._hydro, PrototypeHydroAdapter)
+
+    def test_standing_pvt_shared(self):
+        """Стендинг: прототипу — адаптер над тем же StandingFullPVT, что у энергии (DEBT-006)."""
+        simulator, _ = SimulatorFactory.from_config(load_config(BASELINE))
+        model_pvt = simulator._hydro._model.pvt
+        assert isinstance(model_pvt, HydroPVTtoBlackOilAdapter)
+        # Поле адаптера читает тест, а не фабрика: это проверка тождества,
+        # а не выбор ветки
+        assert model_pvt._hydro is simulator._pvt
+        assert simulator._hydro._pvt is simulator._pvt
+        assert simulator._energy._pvt is simulator._pvt
 
     def test_standing_pipeline_runs(self):
         """baseline.json → Factory → run → history содержит данные."""
@@ -179,6 +193,33 @@ class TestCoreyToTabulated:
         Sg_test = np.array([0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0])
         np.testing.assert_allclose(
             proto_rp.krg(Sg_test), corey.krg(Sg_test), atol=1e-4)
+
+
+class TestBranchByClass:
+    """Ветку фабрики выбирает класс объекта, а не имена его приватных полей (DEBT-006).
+
+    До DEBT-006 фабрика проверяла hasattr(pvt, '_hydro') и hasattr(relperm,
+    '_rp'): любой объект с полями таких имён уходил в ветку «извлечь объект
+    прототипа», а переименование поля в обёртке — в ветку «обернуть или
+    протабулировать». Обе ошибки молчаливые. Здесь объектам Стендинга и Кори
+    подставлены посторонние поля с «нужными» именами — ветка не должна
+    измениться.
+    """
+
+    def test_pvt_branch_ignores_private_field_names(self):
+        """StandingFullPVT с посторонним _hydro._pvt по-прежнему оборачивается адаптером."""
+        pvt = _create_pvt(load_config(BASELINE))
+        pvt._hydro = SimpleNamespace(_pvt="посторонний объект")
+        proto = _get_or_create_proto_pvt(pvt, P0)
+        assert isinstance(proto, HydroPVTtoBlackOilAdapter)
+
+    def test_rp_branch_ignores_private_field_names(self):
+        """CoreyRP с посторонним _rp по-прежнему табулируется на 101 узле."""
+        corey = CoreyRP(S_or=0.2, S_gc=0.05, n_o=2.0, n_g=2.0)
+        corey._rp = "посторонний объект"
+        proto = _get_or_create_proto_rp(corey)
+        assert isinstance(proto, TabulatedRelPerm)
+        assert proto.sg.size == 101
 
 
 # ═══════════════════════════════════════════════════════════

@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-006
 github: 88
 branch: refactor/debt-006/factory-explicit-proto-access
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-006
 audit:
   date: 2026-10-10

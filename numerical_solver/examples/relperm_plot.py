@@ -42,13 +42,18 @@ from figure_io import save_figure  # noqa: E402
 def _table_nodes(relperm):
     """Узлы таблицы (Sg, kro, krg), если модель табличная, иначе None.
 
-    PrototypeRPAdapter оборачивает TabulatedRelPerm прототипа в `_rp`;
-    там узлы лежат в полях sg / kro_tab / krg_tab (radial_blackoil/relperm.py).
-    У аналитических моделей (CoreyRP) выделенных точек нет — возвращаем None.
+    PrototypeRPAdapter оборачивает TabulatedRelPerm прототипа (свойство
+    proto_rp); там узлы лежат в полях sg / kro_tab / krg_tab
+    (radial_blackoil/relperm.py). У аналитических моделей (CoreyRP)
+    выделенных точек нет — возвращаем None.
     """
-    proto = getattr(relperm, "_rp", None)
-    if proto is None or not hasattr(proto, "sg"):
+    # Импорт локальный — как _create_relperm в plot_relperm
+    from gpn_multiphase_solver.pvt.prototype_adapter import PrototypeRPAdapter
+    # По классу, а не по приватному полю _rp через getattr (DEBT-006):
+    # переименование поля молча убирало бы узлы с графика
+    if not isinstance(relperm, PrototypeRPAdapter):
         return None
+    proto = relperm.proto_rp
     return (np.asarray(proto.sg, float),
             np.asarray(proto.kro_tab, float),
             np.asarray(proto.krg_tab, float))

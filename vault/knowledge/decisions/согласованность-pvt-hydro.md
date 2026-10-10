@@ -97,6 +97,21 @@ rp_adapter = PrototypeRPAdapter(proto_rp)
 
 Если пользователь выбрал `pvt.model = "standing"` — StandingFullPVT создаётся и передаётся в гидро и энергию. Если `pvt.model = "table"` — TableFullPVT. Гидро-модуль не знает и не проверяет тип — работает через ABC.
 
+## Как фабрика получает объекты прототипа (DEBT-006)
+
+`SimulatorFactory` выбирает ветку по классу, а не по приватным полям обёрток:
+
+| Объект наших модулей | Прототипу (`RadialBlackOilModel`) |
+|---|---|
+| `TableFullPVT` | `pvt.hydro.proto_pvt` — тот же `BlackOilPVT` |
+| любой другой `HydroPVT` (`StandingFullPVT`) | `HydroPVTtoBlackOilAdapter(pvt, p_max_pa=p0)` |
+| `PrototypeRPAdapter` | `relperm.proto_rp` — тот же `TabulatedRelPerm` |
+| любая другая `RelPermModel` (`CoreyRP`) | `TabulatedRelPerm` на 101 узле `np.linspace(0, 1, 101)` |
+
+Свойства `hydro`, `proto_pvt`, `proto_rp` — только для чтения. `PrototypeHydroAdapter`, `TridiagEnergySolver` и `Simulator` держат **один** объект `FullPVT`. Объект ОФП из фабрики нужен только для сборки ОФП прототипа: наши модули в расчёте его не держат (пересчёт потоков идёт от покомпонентных потоков прототипа).
+
+До DEBT-006 ветку выбирали `hasattr(pvt, '_hydro')` и `hasattr(relperm, '_rp')`. Переименование приватного поля молча уводило таблицу ОФП в табуляцию на 101 узел: порог активации газа `sg_activation_cap` (BUG-018) у таблиц примеров сдвигался с 0.6 на 0.79, история менялась в последних битах — числовые тесты этого не видят. Скрипты графиков (`examples/pvt_plot.py`, `examples/relperm_plot.py`) тоже переведены на свойства.
+
 ## Связанные заметки
 
 - [[P5-pvt-архитектура]] — HydroPVT → FullPVT, стратегии

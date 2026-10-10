@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: BUG-027
 github: 97
 branch: fix/bug-027/tex-conductive-face-mean
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-027
 audit:
   date: 2026-10-10

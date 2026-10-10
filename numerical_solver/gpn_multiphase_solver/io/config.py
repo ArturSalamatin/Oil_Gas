@@ -371,6 +371,19 @@ def _validate(cfg: SimulationConfig) -> None:
                         ("rock.lambda_gas", r.lambda_gas)):
         if not (0 <= value < inf):
             raise ValueError(f"{name} должна быть конечной и ≥ 0, получено {value}")
+    # L, μ_JT,o, μ_JT,g — только конечность, знак любой (DEBT-049, P8 §5):
+    # у жидкости μ_JT обычно < 0 (нагрев при дросселировании), у газа > 0;
+    # L < 0 возможна (см. ниже). Без проверки NaN и ±inf проходили загрузку,
+    # а run падал в СЛАУ энергии — «array must not contain infs or NaNs»,
+    # без имени параметра (vault/issues/debt-049/probes/red_state.out.txt).
+    # Проверка — до предупреждения о L < 0: иначе при L = −inf в журнал
+    # сначала ушло бы предупреждение о знаке, а следом отказ.
+    for name, value in (("thermal.L_degas", th.L_degas),
+                        ("thermal.mu_JT_oil", th.mu_JT_oil),
+                        ("thermal.mu_JT_gas", th.mu_JT_gas)):
+        if not (-inf < value < inf):
+            raise ValueError(f"{name} должно быть конечным числом (знак любой), "
+                             f"получено {value}")
     # L < 0 — предупреждение, не отказ (решение пользователя, DEBT-047).
     # Q_deg = −L·ṁ (energy/tridiag.py, compute_degassing): при L < 0
     # выделение газа нагревает пласт (замер: +3.2 К при p_wf = 6 МПа).
@@ -383,6 +396,19 @@ def _validate(cfg: SimulationConfig) -> None:
             f"thermal.L_degas = {th.L_degas} Дж/кг < 0: выделение газа в расчёте "
             f"нагревает пласт (Q_deg = −L·ṁ > 0); при L > 0 дегазация охлаждает. "
             f"Проверьте знак.")
+    # μ_JT,o > 0 — предупреждение, не отказ (решение пользователя, DEBT-049).
+    # μ_JT = (∂T/∂p)_h = v(αT − 1)/c_p (problem_statement.tex, eq:muJT_def):
+    # у нефти αT ≈ 0.3 (α ≈ 1e-3 1/К, T ≈ 350 К), μ_JT,o ≈ −4e-7 К/Па —
+    # при дросселировании нефть греется. μ_JT,o > 0 требует αT > 1, для
+    # нефти в пласте это нереально; вероятная причина — знак ε = −μ_JT из
+    # литературы (Шарафутдинов и др., 2019), так было в конфигах примеров
+    # до 2026-09-29. У газа μ_JT,g < 0 законен выше давления инверсии —
+    # без предупреждения.
+    if th.mu_JT_oil > 0:
+        user_log.warning(
+            f"thermal.mu_JT_oil = {th.mu_JT_oil} К/Па > 0: нефть при дросселировании "
+            f"в расчёте охлаждается; у жидкости μ_JT = v(αT − 1)/c_p < 0 (нагрев). "
+            f"Проверьте знак: в литературе встречается ε = −μ_JT.")
 
     ic = cfg.initial_conditions
     if ic.p0 <= 0:

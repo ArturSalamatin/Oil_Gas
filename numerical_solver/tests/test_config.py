@@ -3,7 +3,8 @@
 Проверяет:
 - Чтение baseline.json — все поля, значения, defaults.
 - Валидацию: отсутствующие секции, невалидные значения.
-- Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047).
+- Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047);
+  L, μ_JT,o, μ_JT,g — конечные, знак любой, предупреждение при μ_JT,o > 0 (DEBT-049).
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
 - Минимальный конфиг: только обязательные секции.
@@ -586,6 +587,64 @@ class TestValidationThermal:
         raw["thermal"]["L_degas"] = L
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             load_config(_write_json(tmp_path, raw))
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+    # L, μ_JT,o, μ_JT,g: знак по физике любой (P8 §5), проверяется только
+    # конечность (DEBT-049). Замер до DEBT-049 (vault/issues/debt-049/probes/
+    # red_state.out.txt, раздел 1): все 9 случаев при p_wf = 10 и 6 МПа
+    # проходили load_config и from_config, а run падал в solve_banded scipy —
+    # «array must not contain infs or NaNs», без имени параметра.
+    # _write_json пишет NaN и ±inf литералами JSON NaN, Infinity, -Infinity.
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")],
+                             ids=["nan", "inf", "-inf"])
+    @pytest.mark.parametrize("key", ["L_degas", "mu_JT_oil", "mu_JT_gas"])
+    def test_nonfinite_scalar_rejected(self, tmp_path, key, value):
+        """NaN и ±inf в L, μ_JT,o, μ_JT,g → ValueError с полным именем параметра."""
+        raw = _minimal_raw()
+        raw["thermal"][key] = value
+        with pytest.raises(ValueError, match=f"thermal.{key} .*конечным"):
+            load_config(_write_json(tmp_path, raw))
+
+    # Конечность проверяется раньше знака. При обратном порядке в журнал
+    # ушло бы предупреждение о знаке (L < 0 или μ_JT,o > 0), а следом
+    # отказ — два сообщения о разных причинах.
+    @pytest.mark.parametrize("key, value", [
+        ("L_degas", float("-inf")),
+        ("mu_JT_oil", float("inf")),
+    ], ids=["L_minus_inf", "mu_JT_oil_plus_inf"])
+    def test_nonfinite_no_sign_warning(self, tmp_path, caplog, key, value):
+        """Не конечное значение со «знаком предупреждения»: отказ без предупреждения."""
+        raw = _minimal_raw()
+        raw["thermal"][key] = value
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            with pytest.raises(ValueError, match=f"thermal.{key}"):
+                load_config(_write_json(tmp_path, raw))
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+    def test_positive_mu_JT_oil_warns(self, tmp_path, caplog):
+        """μ_JT,o > 0 — предупреждение, не отказ (решение пользователя, DEBT-049)."""
+        # μ_JT = v(αT − 1)/c_p: у нефти αT ≈ 0.3, μ_JT,o ≈ −4e-7 К/Па.
+        # +4e-7 — знак ε = −μ_JT из литературы (Шарафутдинов и др., 2019);
+        # так было в конфигах примеров до 2026-09-29.
+        raw = _minimal_raw()
+        raw["thermal"]["mu_JT_oil"] = 4.0e-7
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.thermal.mu_JT_oil == 4.0e-7
+        text = "\n".join(r.getMessage() for r in caplog.records
+                         if r.levelno >= logging.WARNING)
+        assert "thermal.mu_JT_oil" in text
+
+    def test_negative_mu_JT_gas_no_warning(self, tmp_path, caplog):
+        """μ_JT,g < 0 при μ_JT,o < 0 — без отказа и без предупреждения."""
+        # У газа μ_JT < 0 законен выше давления инверсии: проверка конечности
+        # не должна стать проверкой знака, а предупреждение — касаться газа.
+        # μ_JT,o = −4e-7 — значение конфигов проекта (нагрев нефти).
+        raw = _minimal_raw()
+        raw["thermal"].update(mu_JT_oil=-4.0e-7, mu_JT_gas=-4.0e-6)
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert (cfg.thermal.mu_JT_oil, cfg.thermal.mu_JT_gas) == (-4.0e-7, -4.0e-6)
         assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 
 

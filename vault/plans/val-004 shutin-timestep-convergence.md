@@ -7,7 +7,7 @@ date: 2026-10-10
 issue: VAL-004
 github: 90
 branch: val/val-004/shutin-timestep-convergence
-status: в процессе
+status: реализован
 worktree: .worktrees/val-004
 audit:
   date: 2026-10-10

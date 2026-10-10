@@ -313,22 +313,24 @@ class TestShutinFirstHour:
     def test_first_hour_passes_with_local_subdivision(self):
         """Без ступени 4 час проходит локальным дроблением (DEBT-015; ~15 с, метка slow).
 
-        Замер плана DEBT-015: 60 принятых подшагов (7.03×2, 14.06×5, 28.125×11,
-        56.25×27, 112.5×15) и 34 отказа; p(r_w) = 185.3065 бар — на 8.7 бар выше,
+        Замер плана BUG-022: 70 принятых подшагов (7.03×4, 14.06×8, 28.125×15,
+        56.25×32, 112.5×11) и 41 отказ; p(r_w) = 185.3236 бар — на 8.7 бар выше,
         чем одним шагом ступени 4 (176.6086 бар, test_first_hour_converges). Это
-        погрешность шага 1 ч, а не решателя (VAL-004). При расхождении —
+        погрешность шага 1 ч, а не решателя (VAL-004). До BUG-022 — 60 и 34
+        (DEBT-015): без ступени 4 решения, недобравшие условие сходимости по ячейке,
+        исчерпывают лимит итераций ступеней 1–3 (27 раз). При расхождении —
         разобрать, не подгонять.
         """
         h, calls = _run_rs150(False)
         ok = [dt for dt, conv in calls if conv]
         failed = [dt for dt, conv in calls if not conv]
-        assert len(ok) == 60
-        assert len(failed) == 34
+        assert len(ok) == 70
+        assert len(failed) == 41
         assert sum(ok) == pytest.approx(3600.0, rel=1e-12)   # час пройден ровно один раз
         st = h.states[-1]
-        assert st.p[0] / BAR == pytest.approx(185.3065, abs=1e-3)
+        assert st.p[0] / BAR == pytest.approx(185.3236, abs=1e-3)
         assert int(np.count_nonzero(st.regime == 1)) == 255
-        assert st.T[0] == pytest.approx(397.8867, abs=1e-3)
+        assert st.T[0] == pytest.approx(397.8869, abs=1e-3)
 
 
 # ═══════════════════════════════════════════════════════════

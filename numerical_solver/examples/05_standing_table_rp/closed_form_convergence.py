@@ -69,7 +69,7 @@ def run_one(N: int, dt: float, max_retries: int = 9) -> dict:
     config = load_config(HERE / "config.json")
     config.grid.N = N
     config.time.dt_integration = dt
-    # Глубина дробления шага в A-retry — см. GRIDS.
+    # Глубина локального дробления шага (DEBT-015) — см. GRIDS.
     config.numerics.max_retries = max_retries
     # Нужен один прогон длиной DURATION_S, а не расписание примера:
     # усекаем историю до одного интервала. Промежуточные состояния здесь

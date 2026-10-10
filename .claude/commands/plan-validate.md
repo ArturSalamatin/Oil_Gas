@@ -23,7 +23,7 @@ cd numerical_solver
 
 Уровни прогона (DEBT-032): метку `slow` несут тесты на фикстуре `results` из `tests/test_examples.py` (ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference` и тесты на сгущённой сетке. Полный прогон — один раз в конце реализации и на шагах, которые план помечает «Регресс: полный».
 
-⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — pytest берёт его из того же дерева (`pythonpath` в `[tool.pytest.ini_options]` `numerical_solver/pyproject.toml`, DEBT-059). Скрипты вне pytest берут установленный дистрибутив `radial-blackoil` (`pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]"`); в worktree — `PYTHONPATH` на worktree (правило 3 `/implement`).
 
 По умолчанию новые задачи относятся к `numerical_solver/`. Если задача явно про метод моментов — использовать вторую строку таблицы.
 

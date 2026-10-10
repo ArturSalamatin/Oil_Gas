@@ -27,11 +27,11 @@ cd numerical_solver
 
 Уровни прогона (DEBT-032): метку `slow` несут тесты на фикстуре `results` из `tests/test_examples.py` (ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference` и тесты на сгущённой сетке. Полный прогон — один раз в конце реализации и на шагах, которые план помечает «Регресс: полный».
 
-⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — pytest берёт его из того же дерева (`pythonpath` в `[tool.pytest.ini_options]` `numerical_solver/pyproject.toml`, DEBT-059). Скрипты вне pytest берут установленный дистрибутив `radial-blackoil` (`pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]"`); в worktree — `PYTHONPATH` на worktree (правило 3 `/implement`).
 
 **Правка прототипа** (`numerical_solver/HydroSolverPrototype/Prototype_1.0.3/`): тесты `numerical_solver` её не ловят — у прототипа свои тесты и регрессия против эталона `regression/golden/`, сверенного с CMG IMEX (DEBT-029). Команды — из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`:
 ```powershell
-..\..\.venv\Scripts\python -m pytest tests -q                  # тесты прототипа, 80 шт., ~45 с
+..\..\.venv\Scripts\python -m pytest tests -q                  # тесты прототипа, 97 шт. на 2026-10-10, ~45 с
 ..\..\.venv\Scripts\python regression\run_regression.py --quick # регрессия T00–T11 без T05, ~8 мин
 ..\..\.venv\Scripts\python regression\run_regression.py         # полная, с T05, ~45 мин
 ```
@@ -303,7 +303,7 @@ ls vault/plans/<id-lowercase>*
 3. **Ключевой сценарий.** Собрать в `vault/issues/<id-lowercase>/probes/` минимальный рабочий пример из плана (конфиг, вызов API) и запустить. Ловит: неверные параметры, изменившиеся сигнатуры, расходимость решателя, отсутствие ожидаемого эффекта.
 4. **Числа плана.** Если план обещает конкретные значения (физическая величина, число шагов, размер файла, время) — проверить хотя бы выборочно.
 5. **Цепочка артефактов.** Если план создаёт файлы (CSV, графики, отчёты) — прогнать создание в `vault/issues/<id-lowercase>/probes/` и посмотреть результат, а не только на отсутствие исключения.
-6. **Прототип.** Если план меняет `HydroSolverPrototype/` — тесты прототипа (~45 с) запустить: база должна быть 80 passed. Регрессию `--quick` (~8 мин) — если план опирается на её исход (baseline «11/11 PASS», «побитно»).
+6. **Прототип.** Если план меняет `HydroSolverPrototype/` — тесты прототипа (~45 с) запустить: база — все passed (97 на 2026-10-10). Регрессию `--quick` (~8 мин) — если план опирается на её исход (baseline «11/11 PASS», «побитно»).
 
 Правило: **утверждение плана, которое проверяется командой за минуту, должно быть проверено, а не принято на веру.** Особенно если оно звучит правдоподобно — правдоподобные ошибки живут в планах дольше всего.
 

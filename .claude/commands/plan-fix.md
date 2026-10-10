@@ -23,11 +23,11 @@ cd numerical_solver
 
 Уровни прогона (DEBT-032): метку `slow` несут тесты на фикстуре `results` из `tests/test_examples.py` (ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference` и тесты на сгущённой сетке. Полный прогон — один раз в конце реализации и на шагах, которые план помечает «Регресс: полный».
 
-⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — его подключает `tests/conftest.py` через `sys.path`. Скрипты вне pytest должны делать это сами.
+⚠️ Для `numerical_solver` тестам нужен прототип `radial_blackoil` — pytest берёт его из того же дерева (`pythonpath` в `[tool.pytest.ini_options]` `numerical_solver/pyproject.toml`, DEBT-059). Скрипты вне pytest берут установленный дистрибутив `radial-blackoil` (`pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]"`); в worktree — `PYTHONPATH` на worktree (правило 3 `/implement`).
 
 **Правка прототипа** (`numerical_solver/HydroSolverPrototype/Prototype_1.0.3/` — `radial_blackoil/`, `run_prototype.py`): тесты `numerical_solver` её не ловят — у прототипа свои тесты и своя регрессия против эталона `regression/golden/`, сверенного с CMG IMEX (DEBT-029: правки BUG-014/016/018 месяц проверялись только на примерах GPN, расхождение с эталоном нашлось позже). Команды — из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`:
 ```powershell
-..\..\.venv\Scripts\python -m pytest tests -q                  # тесты прототипа, 80 шт., ~45 с
+..\..\.venv\Scripts\python -m pytest tests -q                  # тесты прототипа, 97 шт. на 2026-10-10, ~45 с
 ..\..\.venv\Scripts\python regression\run_regression.py --quick # регрессия T00–T11 без T05, ~8 мин
 ..\..\.venv\Scripts\python regression\run_regression.py         # полная, с T05, ~45 мин
 ```
@@ -222,7 +222,7 @@ ls vault/plans/<id-lowercase>*
 2. Прочитай связанные vault-заметки (ссылки ниже)
 3. Создай ветку: `git checkout -b <branch>`
 4. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
-5. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень). Если план меняет прототип — ещё до правки, из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`: `..\..\.venv\Scripts\python -m pytest tests -q` и `..\..\.venv\Scripts\python regression\run_regression.py --quick` (ожидается 80 passed и 11/11 PASS)
+5. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень). Если план меняет прототип — ещё до правки, из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`: `..\..\.venv\Scripts\python -m pytest tests -q` и `..\..\.venv\Scripts\python regression\run_regression.py --quick` (ожидается: все passed — 97 на 2026-10-10 — и 11/11 PASS)
 6. Воспроизведи баг: `.venv/Scripts/python -m pytest tests/<file> -k "<test>" -v`
 7. Начни с шага 1. После каждого шага: тест шага и регресс по полю «Регресс»; полный прогон — в конце (`/implement` §3.1)
 ```

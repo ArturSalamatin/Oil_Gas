@@ -19,7 +19,6 @@
 
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
-$env:PYTHONPATH = "$PWD\HydroSolverPrototype\Prototype_1.0.3"
 .venv\Scripts\python -c @'
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
@@ -31,7 +30,7 @@ print("шагов:", hist.n_saved)
 '@
 ```
 
-⚠️ `radial_blackoil` не установлен в venv — нужен `PYTHONPATH` (или `sys.path`, как в `tests/conftest.py`). Без него — `ModuleNotFoundError`.
+⚠️ `radial_blackoil` — установленный дистрибутив `radial-blackoil` (DEBT-059). `ModuleNotFoundError: radial_blackoil` — не выполнена установка: `.venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"` из `numerical_solver`.
 
 Если в `examples/` есть готовый сценарий — предпочесть его:
 ```powershell

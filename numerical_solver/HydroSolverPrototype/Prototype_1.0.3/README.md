@@ -78,6 +78,16 @@ python .\regression\run_regression.py
 
 This reruns the frozen production Excel cases and compares the numerical CSV outputs with the exact golden outputs of the validated core build. The final output-only additions do not alter those golden numerical results.
 
+## Installation as a package (GPN project)
+
+Since DEBT-059 of the GPN project the package `radial_blackoil` is an installable distribution `radial-blackoil` (`pyproject.toml` in this directory), version `1.0.3+gpn.1`: Prototype 1.0.3 with the local changes listed in `CHANGELOG_1.0.3.md`. The GPN solver (`numerical_solver/pyproject.toml`) requires exactly this version. Install both from `numerical_solver`:
+
+```powershell
+python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
+```
+
+Only the package is installed. The Excel workflow above (`run_prototype.py`, `run.bat`), `tests/` and `regression/` are run from this directory as before and do not need the installation. `VERSION.txt`, `BUILD.txt`, `radial_blackoil/build_info.py` and the `prototype_version` / `build_id` fields of `run_summary` still name the 1.0.3 release: the regression compares them with the golden outputs. `PACKAGE_MANIFEST_SHA256.txt` lists the files of the 2026-08-25 delivery and does not match the current code.
+
 ## Documentation
 
 Start with:

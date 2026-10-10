@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-050
 github: 80
 branch: refactor/debt-050/orchestrator-note-local-splitting
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-050
 audit:
   date: 2026-10-10
@@ -550,7 +550,7 @@ class SimulationHistory:
 
 5. **`numerical_solver/gpn_multiphase_solver/simulator.py:101, 109, 119-121`** (аудит 2026-10-10) — параметр `output_config` мёртвый: `Simulator` его не сохраняет и не читает, а docstring («параметры вывода (log_level, format)») и комментарий («остаётся ради log_level и format») утверждают обратное. Журнал настраивает `factory.py:45`. Варианты — убрать параметр (вызов `factory.py:77`) или поправить комментарий; код, не vault — вне DEBT-050.
 
-Пункты 1–3 — кандидаты на одну запись DEBT «устаревшие описания дробления и SimulationHistory в соседних заметках», пункт 5 — на отдельную (код); регистрация — по решению пользователя.
+Пункты 1–3 — кандидаты на одну запись DEBT «устаревшие описания дробления и SimulationHistory в соседних заметках», пункт 5 — на отдельную (код). Зарегистрированы 2026-10-10 по решению пользователя: пп. 1–3 — [[DEBT-052]], п. 5 и «A-retry» в комментариях тестов — [[DEBT-053]].
 
 ## Оценка
 

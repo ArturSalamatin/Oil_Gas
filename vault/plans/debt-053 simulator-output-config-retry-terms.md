@@ -7,7 +7,8 @@ issue: DEBT-053
 github: 84
 branch: refactor/debt-053/simulator-output-config-retry-terms
 status: реализован
-worktree: .worktrees/debt-053
+worktree: .worktrees/debt-053; удалён после влития
+merged: 031d6d8 (2026-10-10)
 audit:
   date: 2026-10-10
   found: 5

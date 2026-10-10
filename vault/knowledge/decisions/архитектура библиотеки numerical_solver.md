@@ -10,7 +10,7 @@ metadata:
 > **Проектный этап (2026-08); сверено с кодом в [[DEBT-052]] (2026-10-10).** Заметка начата как замысел до передачи гидродинамического прототипа и обновлялась выборочно (дерево пакета, абзац FEAT-020 в §4). Интерфейсы, псевдокод и образцы ниже — **не текущий код**:
 > - нет в коде: `NewtonHydroSolver` (гидродинамику решает прототип через `PrototypeHydroAdapter`), `StandingPVT` (есть `StandingFullPVT`), `HydroUnitDecorator`, `EnergyUnitDecorator` (единицы переводят адаптеры прототипа по константам `units.py`), `HydroSolver.velocities`, `SimulationResult`;
 > - ABC названы иначе: `PVTModel` → `HydroPVT`, `FullPVT`, `DifferentiableHydroPVT`; `RPModel` → `RelPermModel`; проводимости `Grid` — `trans_internal`, `trans_well`, `trans_ext`;
-> - сигнатуры: `HydroSolver.solve(state, dt, bc) → HydroResult`; `EnergySolver.solve(hydro_result, state_prev, dt, bc, collect=None) → T`; `Simulator(grid, hydro, energy, pvt, schedule, output_config=None, max_retries=9)`, `run(initial_state) → SimulationHistory`; `SimulatorFactory.from_config(config) → (Simulator, initial_state)`;
+> - сигнатуры: `HydroSolver.solve(state, dt, bc) → HydroResult`; `EnergySolver.solve(hydro_result, state_prev, dt, bc, collect=None) → T`; `Simulator(grid, hydro, energy, pvt, schedule, max_retries=9)` (`output_config` удалён в [[DEBT-053]]), `run(initial_state) → SimulationHistory`; `SimulatorFactory.from_config(config) → (Simulator, initial_state)`;
 > - дерево пакета неполное (нет `units.py`, `mass_balance.py`, `energy/balance.py`, `pvt/consistency.py`, `pvt/hydro_to_blackoil_adapter.py`), в `tests/` — 29 файлов, а не 5;
 > - образец JSON и раздел «Связь с внешним гидродинамическим модулем» — до прототипа.
 >

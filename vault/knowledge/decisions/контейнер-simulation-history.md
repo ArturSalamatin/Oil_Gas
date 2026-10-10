@@ -1,11 +1,13 @@
 ---
 name: контейнер-simulation-history
-description: SimulationHistory — контейнер результатов расчёта, контракт Simulator→I/O, отбор записей по расписанию, накопленный баланс энергии
+description: SimulationHistory — контейнер результатов расчёта, контракт Simulator→I/O, отбор записей по расписанию, накопленные балансы энергии и массы
 metadata:
   type: project
 ---
 
 # SimulationHistory — контейнер результатов
+
+> **Обновлено 2026-10-10 ([[DEBT-052]]):** разделы «Методы», «Жизненный цикл» и «История» — по коду (`state.py:138-185`, `io/output.py`). Проектные разделы «Методы (будущее, не реализуем в фазе 3)» и «Реализация в фазе 3» сняты.
 
 ## Мотивация
 
@@ -84,45 +86,58 @@ class SimulationHistory:
 состоянии — запас $M(0)$ и нулевые интегралы, не нулевой снимок. У тестовых
 двойников, не сохраняющих массу, все снимки — `None`.
 
-### Методы (будущее, не реализуем в фазе 3)
+### Методы (реализовано: state.py)
 
 ```python
-def append(self, t, state, hydro, well):
-    """Добавить шаг."""
-
-def to_arrays(self) -> dict[str, np.ndarray]:
-    """Конвертация в словарь массивов для NPZ."""
+def append(self, t: float, state: SimulationState,
+           hydro: HydroResult, well: WellData,
+           balance: dict | None = None,
+           mass_balance: dict | None = None) -> None:
+    """Добавить один сохранённый шаг."""
 
 @property
 def n_saved(self) -> int:
+    """Число сохранённых шагов."""
     return len(self.times)
 ```
 
-Методы добавятся в фазе 6–7. В фазе 3 — чистый dataclass без логики.
+`append` дописывает по элементу во все шесть списков. `balance=None` даёт
+нулевой снимок, `mass_balance=None` записывается как `None` — нулевого
+снимка массы нет (см. выше). Начальную запись `Simulator.run` делает без
+`balance` и с запасом $M(0)$ в `mass_balance`, записи на концах интервалов —
+со снимками обоих накопителей ([[модули-simulator-оркестратор]]).
+
+Упаковка в массивы — не метод контейнера, а функция
+`history_to_arrays(history)` модуля `io/output.py`: `times` — `[K]`; `p`,
+`T`, `Sg`, `Rs` — `[K, N]`; `q_o_std`, `q_g_std`, `p_wf`, `T_wf` — `[K]`.
+Поля `balance` и `mass_balance` в неё не входят — их читают постобработки
+`examples/energy_balance.py` и `examples/mass_balance.py`.
 
 ## Жизненный цикл
 
 ```
-Factory ──создаёт──→ Simulator
+Factory ──создаёт──→ (Simulator, initial_state)
                          │
-                    run() цикл по времени
+                    run(initial_state) — цикл по времени
                          │
                     ◄──── SimulationHistory (наполняется)
                          │
                     return SimulationHistory
                          │
-I/O ◄────────────────────┘
-    save_npz(history, path)
-    plot_profiles(history, ...)
-    plot_well_dynamics(history, ...)
+I/O (io/output.py) ◄─────┘
+    save_npz(history, grid, path), save_csv(history, grid, path)
+    save_well_csv(history, path)
+    plot_profiles(history, grid, ...), plot_2d_map(history, grid, ...)
+    plot_wellbore_dynamics(history, ...), plot_well_rate(history, ...)
 ```
 
-## Реализация в фазе 3
+## История
 
-В `state.py`:
-- Определить `SimulationHistory` как `@dataclass` с четырьмя полями
-- Конструктор по умолчанию: пустые списки
-- Метод `append(t, state, hydro, well)` для удобства наполнения
+Фаза 3 (2026-08): `@dataclass` с четырьмя полями (`times`, `states`,
+`hydro_results`, `well_data`), пустые списки по умолчанию, метод
+`append(t, state, hydro, well)`. Задуманный метод `to_arrays` реализован
+функцией `history_to_arrays` модуля I/O. Поле `balance` и аргумент `append`
+к нему — [[DEBT-013]], `mass_balance` — [[DEBT-039]].
 
 ## Связанные заметки
 

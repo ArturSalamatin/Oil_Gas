@@ -2865,7 +2865,7 @@ def _prototype_input_module():
     """Модуль examples/18_prototype_input/prototype_input.py, загруженный по пути файла."""
     # Папку примера в sys.path не кладём: в ней main.py, он перекрыл бы
     # одноимённые модули других тестов. Модуль импортирует пакет, прототип
-    # (путь — conftest), numpy; figure_io — лениво, только для рисунков.
+    # (путь — pythonpath в pyproject.toml), numpy; figure_io — лениво, только для рисунков.
     import importlib.util
     path = EXAMPLES_DIR / "18_prototype_input" / "prototype_input.py"
     spec = importlib.util.spec_from_file_location("prototype_input_18", path)

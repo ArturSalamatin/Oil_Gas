@@ -8,6 +8,8 @@
   L, μ_JT,o, μ_JT,g — конечные, знак любой, предупреждение при μ_JT,o > 0 (DEBT-049).
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
+- Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
+  и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056).
 - Минимальный конфиг: только обязательные секции.
 """
 
@@ -763,6 +765,162 @@ class TestValidationNumbers:
         raw["geometry"]["h"] = 10
         cfg = load_config(_write_json(tmp_path, raw))
         assert (cfg.geometry.h, cfg.time.dt_integration) == (10, 3600)
+
+
+# Скважина: скин и забойное давление против p0 (DEBT-056). Замер до DEBT-056
+# (vault/issues/debt-056/probes/skin_range.out.txt, baseline, 24 ч при
+# p_wf = 6 МПа): s = −0.5 и −2 — отказ после дробления шага до dt/512 с советом
+# увеличить max_retries (проводимость забойной грани прототипа
+# 2πkh/(ln(r_1/r_w) + s) < 0, ln(r_1/r_w) = 0.031); s = 1e6, p_wf = 25 МПа,
+# min_bhp = 25 МПа при p0 = 20 МПа — расчёт без притока и без сообщения.
+def _warning_messages(caplog):
+    """Тексты записей журнала уровня WARNING и выше."""
+    return [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+def _history_raw(second):
+    """Минимальный конфиг с двумя объектами истории: добыча при 10 МПа и second."""
+    raw = _minimal_raw()
+    raw["time"]["history"] = [
+        {"dt": 86400, "control": "pressure", "p_wf": 10e6}, second]
+    return raw
+
+
+class TestValidationWell:
+    """Скин ≥ 0; предупреждения при skin > 50 и при p_wf, min_bhp ≥ p0 (DEBT-056)."""
+
+    # −0.01 — внутри окна T_w > 0 (у _minimal_raw ln(r_1/r_w) = ln 500 / 20 = 0.31),
+    # но отрицательный скин в проекте не предусмотрен (решение пользователя)
+    @pytest.mark.parametrize("skin", [-0.01, -0.5, -2.0],
+                             ids=["small", "acid", "fracture"])
+    def test_negative_skin_rejected(self, tmp_path, skin):
+        """Любой s < 0 → ValueError с именем поля."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": skin}
+        with pytest.raises(ValueError, match=r"numerics\.skin = .* < 0"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_negative_skin_message_gives_equivalent_radius(self, tmp_path):
+        """Обход в сообщении: r_well = r_w·e^(−s) = 0.1·e^0.5 = 0.1649 м, оговорка о температуре."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": -0.5}
+        with pytest.raises(ValueError) as exc:
+            load_config(_write_json(tmp_path, raw))
+        text = str(exc.value)
+        assert "geometry.r_well" in text and "0.1649" in text
+        assert "температура забоя" in text
+
+    # −1e300 — конечное (проходит DEBT-051), но r_w·e^(−s) переполнил бы np.exp:
+    # сравнение с R_ext — в логарифмах, RuntimeWarning превращён здесь в ошибку
+    @pytest.mark.filterwarnings("error::RuntimeWarning")
+    @pytest.mark.parametrize("skin", [-7.0, -1e300], ids=["minus7", "minus1e300"])
+    def test_equivalent_radius_beyond_drainage(self, tmp_path, skin):
+        """s = −7: r_w·e^7 = 109.7 м ≥ R_ext = 50 м — обход неприменим, сообщение так и говорит."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": skin}
+        with pytest.raises(ValueError, match="неприменим"):
+            load_config(_write_json(tmp_path, raw))
+
+    # 50 — граница: предупреждение строго при s > 50 (решение пользователя)
+    @pytest.mark.parametrize("skin", [0.0, 5.0, 50.0],
+                             ids=["zero", "damaged", "threshold"])
+    def test_skin_up_to_threshold_silent(self, tmp_path, caplog, skin):
+        """0 ≤ s ≤ 50 — без отказа и без предупреждения."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": skin}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.skin == skin
+        assert _warning_messages(caplog) == []
+
+    @pytest.mark.parametrize("skin", [50.5, 1e3, 1e6], ids=["above", "1e3", "1e6"])
+    def test_large_skin_warns(self, tmp_path, caplog, skin):
+        """s > 50 — предупреждение с именем поля; расчёт допускается."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": skin}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.skin == skin
+        msgs = _warning_messages(caplog)
+        assert len(msgs) == 1 and "numerics.skin" in msgs[0]
+
+    def test_large_skin_warning_gives_inflow_ratio(self, tmp_path, caplog):
+        """s = 1000, R_ext/r_w = 500: доля притока ln 500 / (ln 500 + 1000) = 0.6 %."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": 1000.0}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        assert "0.6%" in _warning_messages(caplog)[0]
+
+    @pytest.mark.parametrize("p_wf", [20e6, 25e6], ids=["equal_p0", "above_p0"])
+    def test_pwf_not_below_p0_warns(self, tmp_path, caplog, p_wf):
+        """p_wf ≥ p0 = 20 МПа во втором объекте истории — одно предупреждение с history[1]."""
+        # При добыче p ≤ p0 во всём пласте: интервал целиком без притока (eq:bc_pwf_shutin)
+        raw = _history_raw({"dt": 86400, "control": "pressure", "p_wf": p_wf})
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        msgs = _warning_messages(caplog)
+        assert len(msgs) == 1
+        assert "history[1]" in msgs[0] and "p_wf" in msgs[0]
+
+    def test_min_bhp_not_below_p0_warns(self, tmp_path, caplog):
+        """control='rate', q_oil > 0, min_bhp = 25 МПа > p0 — одно предупреждение с history[1]."""
+        raw = _history_raw({"dt": 86400, "control": "rate",
+                            "q_oil": 5.787e-4, "min_bhp": 25e6})
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        msgs = _warning_messages(caplog)
+        assert len(msgs) == 1
+        assert "history[1]" in msgs[0] and "min_bhp" in msgs[0]
+
+    # q_oil = 0 — намеренный останов (примеры 16, 17: min_bhp = 101325 Па);
+    # min_bhp при нулевом дебите на итог не влияет — предупреждать не о чем
+    @pytest.mark.parametrize("min_bhp", [101325.0, 25e6], ids=["atm", "above_p0"])
+    def test_shut_in_by_rate_silent(self, tmp_path, caplog, min_bhp):
+        """control='rate', q_oil = 0 — без предупреждения при любом min_bhp."""
+        raw = _history_raw({"dt": 86400, "control": "rate",
+                            "q_oil": 0.0, "min_bhp": min_bhp})
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        assert _warning_messages(caplog) == []
+
+    def test_block_warns_once(self, tmp_path, caplog):
+        """Блок {duration, dt_out} с p_wf > p0: 24 интервала, предупреждение — одно."""
+        # Одно на объект JSON: номер объекта — место правки (как у ошибок, FEAT-018)
+        raw = _minimal_raw()
+        raw["time"]["history"] = [{"duration": 86400, "dt_out": 3600,
+                                   "control": "pressure", "p_wf": 25e6}]
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert len(cfg.time.history) == 24
+        msgs = _warning_messages(caplog)
+        assert len(msgs) == 1 and "history[0]" in msgs[0]
+
+    def test_production_silent(self, tmp_path, caplog):
+        """Штатный конфиг: s = 0, p_wf = 10 МПа < p0 — предупреждений нет."""
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, _minimal_raw()))
+        assert _warning_messages(caplog) == []
+
+    # Предупреждения — после всех отказов: конфиг с ошибкой в другом поле не
+    # выдаёт сначала предупреждение, а следом отказ (два сообщения о разном)
+    @pytest.mark.parametrize("change, error", [
+        ({"history_p_wf": 25e6, "porosity": 0.0}, "porosity"),
+        ({"skin": 1e3, "max_retries": 25}, "max_retries"),
+    ], ids=["pwf_and_porosity", "skin_and_max_retries"])
+    def test_no_warning_before_error(self, tmp_path, caplog, change, error):
+        """Ошибка в другом поле → ValueError без предупреждений о скине и забое."""
+        raw = _minimal_raw()
+        if "history_p_wf" in change:
+            raw["time"]["history"][0]["p_wf"] = change["history_p_wf"]
+            raw["rock"]["porosity"] = change["porosity"]
+        else:
+            raw["numerics"] = {"skin": change["skin"],
+                               "max_retries": change["max_retries"]}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            with pytest.raises(ValueError, match=error):
+                load_config(_write_json(tmp_path, raw))
+        assert _warning_messages(caplog) == []
 
 
 # ═════════════════════════════════════════════════════════════

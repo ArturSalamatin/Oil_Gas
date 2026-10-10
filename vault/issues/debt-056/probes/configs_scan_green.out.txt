@@ -1,0 +1,2 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-056\numerical_solver\gpn_multiphase_solver\io\config.py
+конфигов: 30, с замечаниями: 0

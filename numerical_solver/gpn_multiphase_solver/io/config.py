@@ -11,6 +11,8 @@ from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+
 from ..log import user_log
 
 
@@ -139,7 +141,7 @@ class NumericsConfig:
     """Параметры численного метода (передаются в Newton-солвер прототипа)."""
     dt_min: float = 1.0                    # минимальный шаг, с
     dt_max: float = 86400.0                # максимальный шаг, с
-    skin: float = 0.0                      # скин-фактор
+    skin: float = 0.0                      # скин-фактор: ≥ 0, > 50 — предупреждение (DEBT-056)
     newton_max_iter: int = 15
     newton_rtol: float = 1e-8
     newton_atol: float = 1e-11
@@ -212,9 +214,13 @@ _HISTORY_FORMS = (
 _MULTIPLE_RTOL = 1e-9
 
 
-def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
-    """Развернуть краткие формы time.history в список интервалов (FEAT-018)."""
+def _expand_history(raw_history: list[dict]
+                    ) -> tuple[list[HistoryInterval], list[tuple[str, HistoryInterval]]]:
+    """Развернуть time.history (FEAT-018); второй результат — пары (место в JSON, образец)."""
     intervals: list[HistoryInterval] = []
+    # Образец интервала на каждый объект JSON с его местом history[i]:
+    # по ним _warn_well_shut предупреждает один раз на объект (DEBT-056)
+    blocks: list[tuple[str, HistoryInterval]] = []
     for i, raw_entry in enumerate(raw_history):
         where = f"history[{i}]"
         entry = dict(raw_entry)          # копия: не портим исходный словарь
@@ -263,11 +269,12 @@ def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
         # прототипу по всем полям. Номер в сообщении — номер объекта
         # в JSON, то есть место, которое пользователь правит.
         _validate_interval(proto, where)
+        blocks.append((where, proto))
         # replace() — отдельный объект на каждый интервал: общий объект
         # в n позициях списка менял бы весь блок при правке одного
         # интервала (тесты правят history[k] после загрузки).
         intervals.extend(replace(proto) for _ in range(n))
-    return intervals
+    return intervals, blocks
 
 
 # ── Загрузка ─────────────────────────────────────────────────
@@ -300,7 +307,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     # Краткие формы {dt, repeat} и {duration, dt_out} разворачиваются
     # здесь же (FEAT-018); решатель видит только явные интервалы.
     time_raw = raw["time"]
-    history = _expand_history(time_raw.pop("history"))
+    history, history_blocks = _expand_history(time_raw.pop("history"))
     time_cfg = TimeConfig(history=history, **time_raw)
 
     # ── Опциональные секции ──
@@ -332,6 +339,11 @@ def load_config(path: str | Path) -> SimulationConfig:
     )
 
     _validate(config)
+    # Предупреждения — после всех проверок _validate: конфиг с ошибкой в любом
+    # поле не выдаёт предупреждение перед отказом (DEBT-056)
+    _warn_large_skin(config)
+    # p0 к этому моменту проверен в _validate: число, конечное, > 0
+    _warn_well_shut(history_blocks, config.initial_conditions.p0)
     return config
 
 
@@ -339,6 +351,11 @@ def load_config(path: str | Path) -> SimulationConfig:
 # Интервалы истории — в _validate_interval: там известен номер объекта JSON.
 _NUMERIC_SECTIONS = ("geometry", "grid", "rock", "pvt", "relperm", "thermal",
                      "initial_conditions", "time", "numerics")
+
+# Порог предупреждения о скине (решение пользователя, DEBT-056). У baseline
+# (R_ext/r_w = 500) при s = 50 установившийся однофазный приток — 11 %
+# от притока без скина при той же депрессии.
+_SKIN_WARN = 50.0
 
 
 def _require_finite_number(value, name: str) -> None:
@@ -395,6 +412,38 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(f"porosity должна быть в (0, 1], получено {r.porosity}")
     if r.permeability <= 0:
         raise ValueError(f"permeability должна быть > 0, получено {r.permeability}")
+
+    # ── Скважина: скин-фактор (DEBT-056, P8 §5) ──
+    # Проводимость забойной грани прототипа (radial_blackoil/grid.py,
+    # well_transmissibility_m3): T_w = 2πkh / (ln(r_1/r_w) + s), r_1 — центр
+    # первой ячейки; ln(r_1/r_w) = ln(R_ext/r_w)/(2N), на сетках проекта
+    # 0.01…0.16. Скин стимулированной скважины (s ≈ −0.5…−5) даёт T_w < 0;
+    # замер до DEBT-056 (vault/issues/debt-056/probes/skin_range.out.txt):
+    # s = −0.5 и −2 — отказ после дробления шага до dt/512 с советом увеличить
+    # max_retries. Отрицательный скин в проекте не предусмотрен (решение
+    # пользователя) — отказ при любом s < 0, сетка проверке не нужна. Обход —
+    # приведённый радиус скважины r_w·e^(−s): при s = 0 установившийся
+    # однофазный приток тот же, p − p_wf = qμ/(2πkh)·ln(r/(r_w·e^(−s))).
+    s = cfg.numerics.skin
+    if s < 0:
+        # r_w·e^(−s) < R_ext сравнивается в логарифмах: при s = −1e300 (конечное,
+        # проходит DEBT-051) np.exp(−s) переполняется с RuntimeWarning
+        ln_re_rw = np.log(g.R_ext / g.r_well)
+        if -s < ln_re_rw:
+            r_eq = g.r_well * np.exp(-s)
+            hint = (f"Обход: geometry.r_well = r_w·e^(−s) = {r_eq:.4g} м и "
+                    f"numerics.skin = 0 (приведённый радиус скважины: тот же "
+                    f"установившийся однофазный приток); температура забоя тогда "
+                    f"относится к r = {r_eq:.4g} м, а не к r_w = {g.r_well} м.")
+        else:
+            hint = (f"Приведённый радиус r_w·e^(−s) не меньше R_ext = {g.R_ext} м "
+                    f"(s ≤ −ln(R_ext/r_w) = {-ln_re_rw:.3g}) — обход через "
+                    f"geometry.r_well неприменим.")
+        raise ValueError(
+            f"numerics.skin = {s} < 0: отрицательный скин (стимулированная "
+            f"скважина) в проекте не предусмотрен — проводимость забойной грани "
+            f"2πkh/(ln(r_1/r_w) + s) на сетках проекта неположительна уже при "
+            f"s ≈ −0.01…−0.16. {hint}")
 
     # Тепловые параметры (DEBT-047, P8 §5). Ошибка в них не роняет расчёт,
     # а даёт правдоподобную, но неверную T. Замер до DEBT-047
@@ -512,3 +561,48 @@ def _validate_interval(h: HistoryInterval, where: str) -> None:
     else:
         raise ValueError(
             f"{where}.control = '{h.control}': допустимы 'pressure', 'rate'")
+
+
+def _warn_large_skin(cfg: SimulationConfig) -> None:
+    """Предупреждение при скине выше _SKIN_WARN (DEBT-056)."""
+    # s > 50 — предупреждение, не отказ (решение пользователя, DEBT-056).
+    # Доля установившегося однофазного притока при той же депрессии:
+    # q(s)/q(0) = ln(R_ext/r_w) / (ln(R_ext/r_w) + s); на сетке прототипа
+    # сопротивления граней складываются ровно в ln(R_ext/r_w). Замер до
+    # DEBT-056 (vault/issues/debt-056/probes/skin_range.out.txt): s = 1e3 —
+    # минимум p 19.91 МПа при p0 = 20, s = 1e6 — притока нет, расчёт молча идёт.
+    s = cfg.numerics.skin
+    if s > _SKIN_WARN:
+        g = cfg.geometry
+        ln_re_rw = np.log(g.R_ext / g.r_well)
+        ratio = ln_re_rw / (ln_re_rw + s)
+        user_log.warning(
+            f"numerics.skin = {s} > {_SKIN_WARN:g}: установившийся однофазный приток "
+            f"при той же депрессии — {ratio:.1%} от притока без скина "
+            f"(ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = {ln_re_rw:.3g}). "
+            f"Проверьте значение.")
+
+
+def _warn_well_shut(blocks: list[tuple[str, HistoryInterval]], p0: float) -> None:
+    """Объекты истории, где скважина заведомо закрыта (DEBT-056). Ур. (eq:bc_pwf_shutin)."""
+    # Только добыча (FEAT-020): при p_wf ≥ p в ячейке забоя приток нулевой,
+    # нагнетания нет. При добыче давление в пласте не выше p0 (контур питания
+    # держит p0, источников нет), поэтому p_wf ≥ p0 закрывает скважину на весь
+    # интервал; при control='rate' то же даёт min_bhp ≥ p0 — забой не может
+    # опуститься ниже p0. Замер до DEBT-056 (vault/issues/debt-056/probes/
+    # skin_range.out.txt): p_wf = 25 МПа и min_bhp = 25 МПа при p0 = 20 МПа —
+    # расчёт без притока и без сообщения.
+    for where, h in blocks:
+        if h.control == "pressure" and h.p_wf >= p0:
+            user_log.warning(
+                f"{where}: p_wf = {h.p_wf:.6g} Па ≥ p0 = {p0:.6g} Па — давление "
+                f"в пласте при добыче не выше p0, скважина в этом интервале "
+                f"закрыта и не добывает (нагнетание не поддержано). Останов "
+                f"обычно задают control='rate', q_oil = 0.")
+        # q_oil = 0 — намеренный останов (примеры 16, 17): min_bhp при нулевом
+        # дебите на итог не влияет, предупреждать не о чем
+        elif h.control == "rate" and h.q_oil > 0 and h.min_bhp >= p0:
+            user_log.warning(
+                f"{where}: min_bhp = {h.min_bhp:.6g} Па ≥ p0 = {p0:.6g} Па при "
+                f"q_oil = {h.q_oil:.6g} м³ст/с — забой не может опуститься ниже "
+                f"p0, скважина в этом интервале закрыта, дебит не достигается.")

@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-056
 github: 87
 branch: refactor/debt-056/skin-bhp-range-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-056
 audit:
   date: 2026-10-10

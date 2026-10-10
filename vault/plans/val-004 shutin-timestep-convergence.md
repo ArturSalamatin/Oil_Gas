@@ -8,7 +8,8 @@ issue: VAL-004
 github: 90
 branch: val/val-004/shutin-timestep-convergence
 status: реализован
-worktree: .worktrees/val-004
+worktree: .worktrees/val-004; удалён после влития
+merged: 11ea42d (2026-10-10)
 audit:
   date: 2026-10-10
   round: 2

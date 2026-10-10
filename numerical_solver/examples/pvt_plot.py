@@ -70,6 +70,7 @@ import numpy as np  # noqa: E402
 
 from gpn_multiphase_solver.io.output import plot_pvt_properties  # noqa: E402
 from gpn_multiphase_solver.units import BAR_TO_PA  # noqa: E402
+from gpn_multiphase_solver.pvt.table_full import TableFullPVT  # noqa: E402
 
 # PVT берём у того же решателя, что считал задачу; помощник уже есть —
 # заводить второй способ доступа к одному объекту незачем.
@@ -132,7 +133,7 @@ def _describe(config) -> str:
 def _pvt_table_nodes(pvt, Rs0: float):
     """Узлы табличного PVT в Па, раздельно по фазам, иначе None.
 
-    Цепочка обёрток: TableFullPVT._hydro -> PrototypePVTAdapter._pvt ->
+    Цепочка обёрток: TableFullPVT.hydro -> PrototypePVTAdapter.proto_pvt ->
     BlackOilPVT прототипа, где всё лежит в БАРАХ (поля gp, pb, branches).
     У аналитического PVT (Standing) выделенных точек нет — возвращаем None,
     маркеры на гладкой корреляции вводили бы в заблуждение.
@@ -145,10 +146,12 @@ def _pvt_table_nodes(pvt, Rs0: float):
     интерполируется по dp = p - pb(Rs), а не по p, поэтому значения
     считаются вызовом PVT в точке узла (это делает ядро).
     """
-    hydro = getattr(pvt, "_hydro", None)
-    proto = getattr(hydro, "_pvt", None) if hydro is not None else None
-    if proto is None or not hasattr(proto, "gp"):
+    # Табличный ли PVT — по классу, BlackOilPVT — через публичные свойства
+    # (DEBT-006). Прежде getattr по приватным _hydro, _pvt: их переименование
+    # молча убирало бы маркеры узлов с графика.
+    if not isinstance(pvt, TableFullPVT):
         return None
+    proto = pvt.hydro.proto_pvt
 
     p_gas = np.asarray(proto.gp, float) * BAR_TO_PA        # газовая таблица
     p_sat = np.asarray(proto.pb, float) * BAR_TO_PA        # точки насыщения

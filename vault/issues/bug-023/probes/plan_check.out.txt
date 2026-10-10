@@ -1,0 +1,40 @@
+﻿Тест: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_energy_matrix_examples.py
+План: bug-023 jt-reference-left-face.md
+== 1. Правки плана
+   #1: «до» найдено 1 раз
+   #2: «до» найдено 1 раз
+   #3: «до» найдено 1 раз
+   #4: «до» найдено 1 раз
+   #5: «до» найдено 1 раз
+   #6: «до» найдено 1 раз
+   #7: «до» найдено 1 раз
+   итог: все применимы
+   добавленные строки: максимум 93 симв.
+   строка «ALL_EXAMPLES = [»: 58 → 63
+   строка «# slow (DEBT-032): 22 штатных»: 684 → 762
+   строка «Те же 22 сценария»: 55 → 60
+   строка «def test_matrix_matches_reference»: 691 → 769
+== 2. Только шаг 1 (#2, #6): новый тест на текущем эталоне — ожидание: 1 failed
+               err_msg="эталон _ref_jt; до BUG-023 не хватало вклада левой грани [0, 20, 120, 360]")
+   E       эталон _ref_jt; до BUG-023 не хватало вклада левой грани [0, 20, 120, 360]
+   E       Mismatched elements: 3 / 4 (75%)
+   E       Mismatch at indices:
+   E        [1]: -420.0 (ACTUAL), -400.0 (DESIRED)
+   E        [2]: -960.0 (ACTUAL), -840.0 (DESIRED)
+   E        [3]: -2400.0 (ACTUAL), -2040.0 (DESIRED)
+   E        ACTUAL: array([ -115.,  -420.,  -960., -2400.])
+   E        DESIRED: array([ -115.,  -400.,  -840., -2040.])
+   1 failed, 24 deselected in 0.88s
+== 3. Все правки, -m "not slow" — ожидание: 3 passed
+   3 passed, 22 deselected in 2.06s
+== 4. Сверка 02 с испорченным эталоном
+      текущий код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_energy_matrix_examples.py
+        нулевой допуск в ячейке 0   : правая часть d: max |d - d_ref| / допуск = inf в ячейке 0
+        NaN в d_ref[0]              : правая часть d: max |d - d_ref| / допуск = nan в ячейке 0
+        d_ref[3] · (1 + 1e-9)       : правая часть d: max |d - d_ref| / допуск = 4.62e+02 в ячейке 3
+      код плана : D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-023\probes\plan_check_tmp\all\test_energy_matrix_examples.py
+        нулевой допуск в ячейке 0   : правая часть d: 1 яч. вне допуска, первая — 0: |d - d_ref| = 4.14e+01 при допуске 0.00e+00; d = 4.138363e+01, d_ref = 0.000000e+00
+        NaN в d_ref[0]              : правая часть d: 1 яч. вне допуска, первая — 0: |d - d_ref| = nan при допуске nan; d = 4.138363e+01, d_ref = nan
+        d_ref[3] · (1 + 1e-9)       : правая часть d: 1 яч. вне допуска, первая — 3: |d - d_ref| = 4.07e-08 при допуске 8.81e-11; d = 4.070388e+01, d_ref = 4.070388e+01
+== 5. Все правки, файл целиком со slow — ожидание: 25 passed
+   25 passed in 186.01s (0:03:06)

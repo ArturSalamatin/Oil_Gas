@@ -1,0 +1,10 @@
+﻿SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+тест: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\tests\test_energy_matrix_examples.py
+== 1. Синтетика N = 4: нефть от скважины, газ к скважине
+   по формуле (вручную): [ -115.  -400.  -840. -2040.]
+   эталон _ref_jt:       [ -115.  -420.  -960. -2400.] — НЕ совпадает, разность [  0.  20. 120. 360.]
+   решатель compute_jt:  [ -115.  -400.  -840. -2040.] — совпадает
+== 2. Сообщение сверки d при нулевом допуске
+   d_err / d_lim = [ 0. inf nan]; предупреждений numpy: 2
+   сообщение теста: max = nan в ячейке 2
+   упавшие ячейки (d_err > d_lim): [1]

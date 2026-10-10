@@ -1,0 +1,24 @@
+﻿SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+пример                       вызовов граней Q>0  max Q_o>0  max Q_g>0 max |Q·Δp| при Q>0
+01_single_phase_no_jt             72          0   0.00e+00   0.00e+00           0.00e+00
+02_single_phase_jt                72          0   0.00e+00   0.00e+00           0.00e+00
+03_standing_corey                 72          0   0.00e+00   0.00e+00           0.00e+00
+04_table_table                    72          0   0.00e+00   0.00e+00           0.00e+00
+04a_high_gas_saturation          864          0   0.00e+00   0.00e+00           0.00e+00
+05_standing_table_rp              72          0   0.00e+00   0.00e+00           0.00e+00
+06_table_corey_rp                 72          0   0.00e+00   0.00e+00           0.00e+00
+07_degassing_adiabatic_only       72          0   0.00e+00   0.00e+00           0.00e+00
+08_degassing_jt                   72          0   0.00e+00   0.00e+00           0.00e+00
+09_degassing_latent_heat          72          0   0.00e+00   0.00e+00           0.00e+00
+10_deep_degassing                 73          0   0.00e+00   0.00e+00           0.00e+00
+11_degassing_at_boundary          72          0   0.00e+00   0.00e+00           0.00e+00
+12_large_drainage_radius         360          0   0.00e+00   0.00e+00           0.00e+00
+13a_pwf_ramp_down                360          0   0.00e+00   0.00e+00           0.00e+00
+13b_pwf_alternating              720          0   0.00e+00   0.00e+00           0.00e+00
+14_high_gor_cooling              360          0   0.00e+00   0.00e+00           0.00e+00
+15_oil_rate_ramp_up              360          0   0.00e+00   0.00e+00           0.00e+00
+16_well_shut_in                  720       8115   5.62e-12   0.00e+00           2.16e-15
+17_shut_in_strong_cooling        768       1546   1.39e-11   0.00e+00           4.06e-15
+19_rs150_cooling                  30          0   0.00e+00   0.00e+00           0.00e+00
+20_rs300_cooling                  76          0   0.00e+00   0.00e+00           0.00e+00
+21_rs100_cooling                  30          0   0.00e+00   0.00e+00           0.00e+00

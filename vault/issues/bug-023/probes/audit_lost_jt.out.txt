@@ -1,0 +1,4 @@
+﻿SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+пример                       вызовов  с ΔJ≠0  max |ΔJ|, Вт  max |ΔJ|/допуск
+16_well_shut_in                  720     267      1.38e-15         2.64e-05
+17_shut_in_strong_cooling        768     124      2.71e-15         3.02e-05

@@ -7,7 +7,8 @@ issue: DEBT-046
 github: 77
 branch: refactor/debt-046/examples-scripts-import-check
 status: реализован
-worktree: .worktrees/debt-046
+merged: 1171a84 (2026-10-10)
+worktree: .worktrees/debt-046; удалён после влития
 audit:
   date: 2026-10-10
   found: 9

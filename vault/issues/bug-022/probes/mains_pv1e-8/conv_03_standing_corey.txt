@@ -1,0 +1,16 @@
+── Прогон: dt = 3600 с ──
+   max rel = 6.47e-16, final rel = 6.47e-16
+── Прогон: dt = 900 с ──
+   max rel = 1.76e-15, final rel = 1.61e-15
+── Прогон: dt = 360 с ──
+   max rel = 9.52e-16, final rel = 8.66e-16
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-022\probes\examples_copy_pv1e-8\03_standing_corey\output\energy_balance_convergence.png
+
+  dt, с   финальная    максимальная
+    3600   6.471e-16    6.471e-16
+     900   1.613e-15    1.756e-15
+     360   8.661e-16    9.522e-16
+
+Худшая финальная невязка по серии: 1.613e-15 (порог 1e-12) — OK
+EMF: 1 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-022\probes\examples_copy_pv1e-8\03_standing_corey\output\emf (2.8 с)

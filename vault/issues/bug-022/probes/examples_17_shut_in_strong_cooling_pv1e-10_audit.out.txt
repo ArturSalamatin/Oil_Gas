@@ -1,0 +1,6 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver; вариант pv1e-10; eps = 1e-10, нормировка pv; kappa = —; R_ext = примера
+модули: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver; D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+17_shut_in_strong_cooling     245.2 с  отпечаток 1cb905f0f02e  якобианов 37777  шагов 1148  отказов 214  ступени {1: 489, 3: 98, 4: 347}  отказы Ньютона {'maxit': 476, 'maxit base': 288, 'maxit4': 162, 'stall': 468, 'stall base': 647}
+    балансы: энергия на конце 2.01e-15; масса max — нефть 1.24e-13, газ 9.62e-14
+    R_s(r_w): запись 16 79.32708, 39 79.50301, 43 79.53596, конец 79.53668 (t = 30.00 сут); min dR_s по записям 16..53 = +1.40e-07, убываний 0
+    сутки 20-30: 79.53596 79.53640 79.53657 79.53664 79.53666 79.53667 79.53668 79.53668 79.53668 79.53668 79.53668

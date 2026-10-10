@@ -1,0 +1,183 @@
+
+BUG-022 эмуляция: {'eps': 1e-08, 'norm': 'pv', 'soft': False, 'refine': False, 'require_mark': True}
+........................................................................ [  4%]
+........................................................................ [  9%]
+........................................................................ [ 14%]
+........................................................................ [ 19%]
+........................................................................ [ 24%]
+........................................................................ [ 29%]
+........................................................................ [ 34%]
+........................................................................ [ 38%]
+........................................................................ [ 43%]
+................................................F....................... [ 48%]
+........................................................................ [ 53%]
+........................................................................ [ 58%]
+........................................................................ [ 63%]
+........................................................................ [ 68%]
+........................................................................ [ 72%]
+......................F................................................. [ 77%]
+....................................F................................... [ 82%]
+........................................................................ [ 87%]
+........................................................................ [ 92%]
+........................................................................ [ 97%]
+.........................................                                [100%]
+================================== FAILURES ===================================
+_____ TestShutInStrongCooling.test_gas_dissolves_at_well_and_ring_remains _____
+
+self = <tests.test_examples.TestShutInStrongCooling object at 0x0000018B877E7AD0>
+results = {'01_single_phase_no_jt': {'history': SimulationHistory(times=[0.0, 3600.0, 7200.0, 10800.0, 14400.0, 18000.0, 21600.0...17186, 0.16696875, 0.16678715,
+       0.16662468, 0.16647957, 0.16634989, 0.16623408, 0.16613081,
+       0.16603853])}}
+
+    def test_gas_dissolves_at_well_and_ring_remains(self, results):
+        """У забоя газ растворяется за первый час; кольцо газа 3.6–24 м остаётся до конца.
+    
+        Физика: у забоя при 5 МПа газ занимает 45 % пор, но по массе его
+        мало (B_g = 0.026); при сжатии он растворяется весь, нефть остаётся
+        недонасыщенной, R_s застывает (79.51 у забоя). На 3.6–24 м газа за
+        добычу скопилось больше, чем нефть растворяет и при p0: там газ
+        остаётся (S_g до 0.062), нефть насыщена сверх R_s0 —
+        R_s = R_s,eq(33 МПа) = 332.41. Течения после выравнивания давления
+        нет, диффузии в модели нет.
+        Замер: ячеек с газом 165 (15 сут) -> 117 (1 ч) -> 66 (16 сут) -> 51
+        (с 21 сут, 3.63–24.27 м); ячейка 0 без газа с записи 16.
+        Ловит: залипание ячеек в двухфазном режиме, утечку газа через забой,
+        растворение сверх равновесия.
+        """
+        r = results[self.NAME]
+        states = r["history"].states
+        rr = r["grid"].r_centers
+        assert all(s.Sg[0] == 0.0 for s in states[self.END_PROD + 1:])
+        n_gas = [int(np.count_nonzero(s.Sg > 0.0)) for s in states]
+        assert np.all(np.diff(n_gas[self.END_PROD:]) <= 0), n_gas
+        final = states[-1]
+        gas = final.Sg > 0.0
+        assert np.count_nonzero(gas) == 51
+        assert 3.5 < rr[gas].min() and rr[gas].max() < 25.0
+        rs_eq = _pvt_of_config(r["config"]).Rs_eq(final.p)
+        assert np.max(np.abs(final.Rs[gas] - rs_eq[gas])) <= 1e-10
+        assert final.Rs[gas].min() > r["Rs0"]           # 332.41 > 300
+        assert np.max(final.Rs - rs_eq) <= 1e-10        # пересыщенных нет
+>       assert final.Rs[0] == pytest.approx(79.51, abs=0.01)
+E       assert np.float64(79.53668177687952) == 79.51 ± 0.01
+E         
+E         comparison failed
+E         Obtained: 79.53668177687952
+E         Expected: 79.51 ± 0.01
+
+tests\test_examples.py:2711: AssertionError
+_______ TestFirstStep.test_first_step_converges[350-0.417217-5.140841] ________
+
+self = <tests.test_prototype_activation_cap.TestFirstStep object at 0x0000018B879BA990>
+N = 350, sg0 = 0.417217, p0_MPa = 5.140841
+
+    @pytest.mark.parametrize("N, sg0, p0_MPa", [
+        (50, 0.410017, 5.925090),
+        (350, 0.417217, 5.140841),
+    ])
+    def test_first_step_converges(self, N, sg0, p0_MPa):
+        """Первые сутки — одним шагом, без дробления.
+    
+        До исправления: RuntimeError после 512 подшагов при N = 50 и 350
+        (S_g «закрытого сосуда» у забоя 0.905 / 0.912 > 1 - S_or = 0.8).
+        Замер плана (vault/issues/bug-018/probes/freeze_case.py). N = 50 решает
+        исходный алгоритм advance, N = 350 — третья ступень (BUG-016).
+        """
+        sim, init, dt = _sim(N=N)
+        # Шаг сошёлся одним вызовом адаптера: иначе HydroConvergenceError
+>       res = _first_step(sim, init, dt)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_prototype_activation_cap.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_prototype_activation_cap.py:50: in _first_step
+    return sim._hydro.solve(init, dt, sim._schedule.intervals[0].bc)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <gpn_multiphase_solver.hydro.prototype_adapter.PrototypeHydroAdapter object at 0x0000018B94159CD0>
+state = SimulationState(p=array([46900000., 46900000., 46900000., 46900000., 46900000., 46900000.,
+       46900000., 46900000...., 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=0.0)
+dt = 86400.0
+bc = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000018B8ECA5F90>, p_ext=46900000.0, T_ext=380.0, Rs_ext=500.0, Sg_ext=0.0)
+
+    def solve(self, state: SimulationState, dt: float,
+              bc: BoundaryConditions) -> HydroResult:
+        """Один шаг advance без дробления; не сошёлся — HydroConvergenceError (DEBT-015)."""
+        from radial_blackoil.state import BlackOilState
+    
+        # ── Шаг 1: управление скважиной ──
+        # Прототип ждёт бар и м³ст/сут; конфиг и WellControl — в СИ.
+        well = bc.well
+        if isinstance(well, PressureControl):
+            self._model.set_bhp_control(well.p_wf / BAR_TO_PA)
+        elif isinstance(well, RateControl):
+            # Дебит нефти: p_bhp выражается из уравнения притока внутри
+            # Ньютона (blackoil.py, _well_fluxes; eq:bc_rate_pwf); min_bhp —
+            # нижняя граница, при p[0] <= min_bhp скважина закрыта.
+            self._model.set_oil_rate_control(well.q_oil * DAY_TO_S,
+                                             well.min_bhp / BAR_TO_PA)
+        else:
+            raise NotImplementedError(
+                f"PrototypeHydroAdapter поддерживает PressureControl и RateControl, "
+                f"получено {type(well).__name__}")
+    
+        # ── Шаг 2: SimulationState (Па) → BlackOilState (бар) ──
+        proto_state = BlackOilState(
+            pressure_bar=state.p / BAR_TO_PA,
+            rs_sm3_sm3=state.Rs.copy(),
+            sg=state.Sg.copy(),
+            gas_active=(state.regime == 1),
+        )
+    
+        # ── Шаг 3: advance ──
+        new_proto, report = self._model.advance(proto_state, dt)
+        if not report.converged:
+            # Дробит шаг Simulator (DEBT-015): делит пополам только этот
+            # подшаг и повторяет его из того же состояния. Здесь — факты
+            # отказа для журнала; текст для пользователя — в Simulator.
+>           raise HydroConvergenceError(
+                f"advance не сошёлся: dt = {dt:.3e} с, "
+                f"t = {state.t / DAY_TO_S:.4f} сут, итераций {report.iterations}, "
+                f"невязка {report.residual_inf:.2e}")
+E           gpn_multiphase_solver.hydro.base.HydroConvergenceError: advance не сошёлся: dt = 8.640e+04 с, t = 0.0000 сут, итераций 4, невязка 6.51e-15
+
+gpn_multiphase_solver\hydro\prototype_adapter.py:110: HydroConvergenceError
+______ TestShutinFirstHour.test_first_hour_passes_with_local_subdivision ______
+
+self = <tests.test_prototype_phase_switching.TestShutinFirstHour object at 0x0000018B879C7950>
+
+    @pytest.mark.slow
+    def test_first_hour_passes_with_local_subdivision(self):
+        """Без ступени 4 час проходит локальным дроблением (DEBT-015; ~15 с, метка slow).
+    
+        Замер плана DEBT-015: 60 принятых подшагов (7.03×2, 14.06×5, 28.125×11,
+        56.25×27, 112.5×15) и 34 отказа; p(r_w) = 185.3065 бар — на 8.7 бар выше,
+        чем одним шагом ступени 4 (176.6086 бар, test_first_hour_converges). Это
+        погрешность шага 1 ч, а не решателя (VAL-004). При расхождении —
+        разобрать, не подгонять.
+        """
+        h, calls = _run_rs150(False)
+        ok = [dt for dt, conv in calls if conv]
+        failed = [dt for dt, conv in calls if not conv]
+>       assert len(ok) == 60
+E       assert 70 == 60
+E        +  where 70 = len([112.5, 7.03125, 7.03125, 7.03125, 7.03125, 14.0625, ...])
+
+tests\test_prototype_phase_switching.py:325: AssertionError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_examples.py::TestShutInStrongCooling::test_gas_dissolves_at_well_and_ring_remains
+FAILED tests/test_prototype_activation_cap.py::TestFirstStep::test_first_step_converges[350-0.417217-5.140841]
+FAILED tests/test_prototype_phase_switching.py::TestShutinFirstHour::test_first_hour_passes_with_local_subdivision
+3 failed, 1478 passed, 1 warning in 675.62s (0:11:15)

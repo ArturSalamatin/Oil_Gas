@@ -1,0 +1,30 @@
+﻿.venv\Scripts\python : [INFO] Расчет: 22 интервалов, T_total = 2592000 с
+At line:1 char:352
++ ... t=Get-Date; .venv\Scripts\python "$P\draft_18\main_draft.py" > "$P\dr ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([INFO] Расчет: ...tal = 2592000 с:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[INFO]   Интервал 1/22: dt_hist=60 с, 1 подшагов, dt_actual=60.0 с
+[INFO]   Интервал 2/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 3/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 4/22: dt_hist=172800 с, 48 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 5/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 6/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 7/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 8/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 9/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 10/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 11/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 12/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 13/22: dt_hist=691200 с, 192 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 14/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 15/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 16/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 17/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 18/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 19/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 20/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 21/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 22/22: dt_hist=1209600 с, 336 подшагов, dt_actual=3600.0 с
+[INFO] Симуляция завершена: 23 сохранённых шагов, T_final = 2592000 с

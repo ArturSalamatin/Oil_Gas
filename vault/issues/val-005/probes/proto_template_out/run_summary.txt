@@ -1,0 +1,10 @@
+Prototype 1.0.3 | build 1.0.3-prebeta-final-regression-20260825a
+STATUS: SUCCESS
+Input: INPUT_TEMPLATE.xlsx
+Output: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-005\probes\proto_template_out
+Accepted/rejected steps: 781/0
+Wall time: 12.3692 s
+Material balance max errors: oil=6.98522e-11% initial, gas=1.22933e-09% initial
+QC report/state/material: True/True/True
+WARNINGS:
+- OIL_PVT saturated locus above table: gas-active max P=182.14005 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation.

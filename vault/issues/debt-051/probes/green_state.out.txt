@@ -1,0 +1,73 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-051\numerical_solver\gpn_multiphase_solver\simulator.py
+
+== Раздел A, NaN в полях вне thermal, p_wf = 6 МПа: 24 ч
+эталон (без подмены)               ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+geometry.r_well                    load_config: ValueError: geometry.r_well должно быть конечным числом, получено nan  [config.py:353]
+geometry.R_ext                     load_config: ValueError: geometry.R_ext должно быть конечным числом, получено nan  [config.py:353]
+geometry.h                         load_config: ValueError: geometry.h должно быть конечным числом, получено nan  [config.py:353]
+rock.porosity                      load_config: ValueError: rock.porosity должно быть конечным числом, получено nan  [config.py:353]
+rock.permeability                  load_config: ValueError: rock.permeability должно быть конечным числом, получено nan  [config.py:353]
+rock.p_ref                         load_config: ValueError: rock.p_ref должно быть конечным числом, получено nan  [config.py:353]
+rock.compressibility               load_config: ValueError: rock.compressibility должно быть конечным числом, получено nan  [config.py:353]
+pvt.rho_o_std                      load_config: ValueError: pvt.rho_o_std должно быть конечным числом, получено nan  [config.py:353]
+pvt.rho_g_std                      load_config: ValueError: pvt.rho_g_std должно быть конечным числом, получено nan  [config.py:353]
+pvt.co_undersaturated              load_config: ValueError: pvt.co_undersaturated должно быть конечным числом, получено nan  [config.py:353]
+relperm.S_or                       load_config: ValueError: relperm.S_or должно быть конечным числом, получено nan  [config.py:353]
+relperm.S_gc                       load_config: ValueError: relperm.S_gc должно быть конечным числом, получено nan  [config.py:353]
+relperm.n_o                        load_config: ValueError: relperm.n_o должно быть конечным числом, получено nan  [config.py:353]
+relperm.n_g                        load_config: ValueError: relperm.n_g должно быть конечным числом, получено nan  [config.py:353]
+relperm.kro_max                    load_config: ValueError: relperm.kro_max должно быть конечным числом, получено nan  [config.py:353]
+relperm.krg_max                    load_config: ValueError: relperm.krg_max должно быть конечным числом, получено nan  [config.py:353]
+initial_conditions.p0              load_config: ValueError: initial_conditions.p0 должно быть конечным числом, получено nan  [config.py:353]
+initial_conditions.T0              load_config: ValueError: initial_conditions.T0 должно быть конечным числом, получено nan  [config.py:353]
+initial_conditions.Rs0             load_config: ValueError: initial_conditions.Rs0 должно быть конечным числом, получено nan  [config.py:353]
+time.dt_integration                load_config: ValueError: time.dt_integration должно быть конечным числом, получено nan  [config.py:353]
+time.start_day                     load_config: ValueError: time.start_day должно быть конечным числом, получено nan  [config.py:353]
+numerics.dt_min                    load_config: ValueError: numerics.dt_min должно быть конечным числом, получено nan  [config.py:353]
+numerics.dt_max                    load_config: ValueError: numerics.dt_max должно быть конечным числом, получено nan  [config.py:353]
+numerics.skin                      load_config: ValueError: numerics.skin должно быть конечным числом, получено nan  [config.py:353]
+numerics.newton_rtol               load_config: ValueError: numerics.newton_rtol должно быть конечным числом, получено nan  [config.py:353]
+numerics.newton_atol               load_config: ValueError: numerics.newton_atol должно быть конечным числом, получено nan  [config.py:353]
+numerics.rs_switch_tol             load_config: ValueError: numerics.rs_switch_tol должно быть конечным числом, получено nan  [config.py:353]
+numerics.sg_switch_tol             load_config: ValueError: numerics.sg_switch_tol должно быть конечным числом, получено nan  [config.py:353]
+history.dt                         load_config: ValueError: history[0].dt должно быть конечным числом, получено nan  [config.py:353]
+history.p_wf                       load_config: ValueError: history[0].p_wf должно быть конечным числом, получено nan  [config.py:353]
+
+== Раздел B, ±inf, p_wf = 6 МПа: 24 ч
+geometry.R_ext = inf               load_config: ValueError: geometry.R_ext должно быть конечным числом, получено inf  [config.py:353]
+geometry.h = inf                   load_config: ValueError: geometry.h должно быть конечным числом, получено inf  [config.py:353]
+rock.permeability = inf            load_config: ValueError: rock.permeability должно быть конечным числом, получено inf  [config.py:353]
+rock.compressibility = inf         load_config: ValueError: rock.compressibility должно быть конечным числом, получено inf  [config.py:353]
+pvt.rho_o_std = inf                load_config: ValueError: pvt.rho_o_std должно быть конечным числом, получено inf  [config.py:353]
+pvt.co_undersaturated = inf        load_config: ValueError: pvt.co_undersaturated должно быть конечным числом, получено inf  [config.py:353]
+relperm.n_o = inf                  load_config: ValueError: relperm.n_o должно быть конечным числом, получено inf  [config.py:353]
+initial_conditions.p0 = inf        load_config: ValueError: initial_conditions.p0 должно быть конечным числом, получено inf  [config.py:353]
+initial_conditions.T0 = inf        load_config: ValueError: initial_conditions.T0 должно быть конечным числом, получено inf  [config.py:353]
+initial_conditions.Rs0 = inf       load_config: ValueError: initial_conditions.Rs0 должно быть конечным числом, получено inf  [config.py:353]
+time.dt_integration = inf          load_config: ValueError: time.dt_integration должно быть конечным числом, получено inf  [config.py:353]
+numerics.skin = inf                load_config: ValueError: numerics.skin должно быть конечным числом, получено inf  [config.py:353]
+numerics.skin = -inf               load_config: ValueError: numerics.skin должно быть конечным числом, получено -inf  [config.py:353]
+history.dt = inf                   load_config: ValueError: history[0].dt должно быть конечным числом, получено inf  [config.py:353]
+history.p_wf = inf                 load_config: ValueError: history[0].p_wf должно быть конечным числом, получено inf  [config.py:353]
+
+== Раздел C, управление по дебиту: 50 м³ст/сут при min_bhp = 6 МПа и 1000 м³ст/сут при min_bhp = 15 МПа: 24 ч
+эталон rate (без подмены)          ПРОШЛИ: t = 24 ч, S_g max 0, T 349.98…350.09 К, p 19.37…20 МПа, конечны: True
+history.q_oil                      load_config: ValueError: history[0].q_oil должно быть конечным числом, получено nan  [config.py:353]
+history.min_bhp                    load_config: ValueError: history[0].min_bhp должно быть конечным числом, получено nan  [config.py:353]
+history.q_oil = inf                load_config: ValueError: history[0].q_oil должно быть конечным числом, получено inf  [config.py:353]
+эталон rate_hi (без подмены)       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.87…351.07 К, p 15.03…20 МПа, конечны: True
+history.min_bhp, rate_hi           load_config: ValueError: history[0].min_bhp должно быть конечным числом, получено nan  [config.py:353]
+
+== Раздел D, краткая форма {duration, dt_out}, p_wf = 6 МПа: 24 ч
+эталон блока (без подмены)         ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+history.duration                   load_config: ValueError: history[0].duration должно быть конечным числом, получено nan  [config.py:353]
+history.dt_out                     load_config: ValueError: history[0].dt_out должно быть конечным числом, получено nan  [config.py:353]
+
+== Раздел E, нечисловые значения, p_wf = 6 МПа: 24 ч
+rock.porosity = '0.2'              load_config: ValueError: rock.porosity должно быть числом, получено '0.2'  [config.py:349]
+time.dt_integration = '3600'       load_config: ValueError: time.dt_integration должно быть числом, получено '3600'  [config.py:349]
+initial_conditions.p0 = 'abc'      load_config: ValueError: initial_conditions.p0 должно быть числом, получено 'abc'  [config.py:349]
+geometry.h = None                  load_config: ValueError: geometry.h должно быть числом, получено None  [config.py:349]
+rock.permeability = True           load_config: ValueError: rock.permeability должно быть числом, получено True  [config.py:349]
+pvt.rho_o_std = '850'              load_config: ValueError: pvt.rho_o_std должно быть числом, получено '850'  [config.py:349]
+numerics.skin = '0'                load_config: ValueError: numerics.skin должно быть числом, получено '0'  [config.py:349]

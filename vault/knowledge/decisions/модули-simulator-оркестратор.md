@@ -1,11 +1,13 @@
 ---
 name: модули-simulator-оркестратор
-description: Simulator (Mediator) — цикл по времени, расписание BC, адаптация dt, SimulationState, SimulationHistory
+description: Simulator (Mediator) — цикл по времени, расписание BC, локальное дробление шага в _advance (DEBT-015), SimulationState, SimulationHistory
 metadata:
   type: project
 ---
 
 # Simulator — оркестратор (Mediator)
+
+> **Обновлено 2026-10-10 ([[DEBT-050]]):** цикл шага, конструктор, фабрика и `SimulationHistory` — по коду после [[DEBT-015]] (локальное дробление в `Simulator._advance`, параметр `max_retries`) и [[DEBT-047]] (`_check_temperature`).
 
 ## Класс Simulator (реализовано: simulator.py)
 
@@ -20,7 +22,8 @@ class Simulator:
     def __init__(self, grid: Grid, hydro: HydroSolver,
                  energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 output_config: OutputConfig | None = None):
+                 output_config: OutputConfig | None = None,
+                 max_retries: int = 9):
         ...
 
     def run(self, initial_state: SimulationState) -> SimulationHistory:
@@ -30,6 +33,12 @@ class Simulator:
 
 pvt нужен для WellData (rho_o_std, rho_g_std → массовые дебиты).
 initial_state передаётся в run() — Factory создаёт его отдельно.
+max_retries — глубина локального дробления шага (DEBT-015): наименьший
+подшаг dt/2**max_retries. Фабрика передаёт `numerics.max_retries`
+(целое в [0, 20], по умолчанию 9 — проверка в `_validate`).
+output_config Simulator принимает, но не сохраняет и не читает (после
+DEBT-013 — только ради сигнатуры); уровень журнала задаёт фабрика
+(`setup_logging(config.output.log_level)`).
 
 ## SimulationState — состояние системы (реализовано: state.py)
 

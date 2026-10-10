@@ -7,7 +7,8 @@ issue: DEBT-006
 github: 88
 branch: refactor/debt-006/factory-explicit-proto-access
 status: реализован
-worktree: .worktrees/debt-006
+worktree: .worktrees/debt-006; удалён после влития
+merged: 87e99a1 (2026-10-10)
 audit:
   date: 2026-10-10
   found: 3

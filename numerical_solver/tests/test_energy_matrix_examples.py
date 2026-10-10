@@ -795,9 +795,17 @@ def test_matrix_matches_reference(example):
         # (_ref_d_scale). Поэлементный rtol у нуля мерил бы шум сокращения.
         d_err = np.abs(d - ref_d)
         d_lim = RTOL * (np.abs(ref_d) + d_scale)
-        assert np.all(d_err <= d_lim), (
-            f"{where}, правая часть d: max |d - d_ref| / допуск = "
-            f"{np.max(d_err / d_lim):.2e} в ячейке {int(np.argmax(d_err / d_lim))}")
+        # Ячейку отказа ищем по маске, а не по argmax(d_err / d_lim): при
+        # нулевом допуске (все слагаемые эталона в ячейке нулевые) отношение
+        # даёт inf или nan (0/0), и argmax указывал на первый nan — ячейку,
+        # которая не падала (BUG-023: «nan в ячейке 69» при отказе в 68).
+        # ~(<=), а не >: NaN в d или d_ref обязан валить сверку, а сравнение
+        # с NaN всегда ложно.
+        bad = np.flatnonzero(~(d_err <= d_lim))
+        assert bad.size == 0, (
+            f"{where}, правая часть d: {bad.size} яч. вне допуска, первая — "
+            f"{bad[0]}: |d - d_ref| = {d_err[bad[0]]:.2e} при допуске "
+            f"{d_lim[bad[0]]:.2e}; d = {d[bad[0]]:.6e}, d_ref = {ref_d[bad[0]]:.6e}")
 
         # Границы — структура схемы, а не арифметика: строгое равенство.
         # a[0] = 0: на забое Нейман, кондуктивный поток через левую грань

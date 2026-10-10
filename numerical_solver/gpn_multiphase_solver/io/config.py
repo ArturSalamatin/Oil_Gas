@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import Optional
 
@@ -230,6 +230,10 @@ def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
             # Длина интервала — ровно dt_out: моменты записи t0 + k·dt_out.
             duration = entry.pop("duration")
             dt = entry.pop("dt_out")
+            # Число и конечность — до сравнений: NaN проходит `<= 0`, а
+            # round(duration / dt) ниже падал на нём без имени поля (DEBT-051)
+            _require_finite_number(duration, f"{where}.duration")
+            _require_finite_number(dt, f"{where}.dt_out")
             if duration <= 0:
                 raise ValueError(
                     f"{where}.duration должна быть > 0, получено {duration}")
@@ -331,8 +335,50 @@ def load_config(path: str | Path) -> SimulationConfig:
     return config
 
 
+# Секции, числовые поля которых проверяет _check_numeric_fields (DEBT-051).
+# Интервалы истории — в _validate_interval: там известен номер объекта JSON.
+_NUMERIC_SECTIONS = ("geometry", "grid", "rock", "pvt", "relperm", "thermal",
+                     "initial_conditions", "time", "numerics")
+
+
+def _require_finite_number(value, name: str) -> None:
+    """Число (не строка, null, bool) и конечное, иначе ValueError с именем name (DEBT-051)."""
+    # bool — подкласс int: true в числовом поле — опечатка, а не 1.0
+    # (замер: permeability = true — 1 м², отказ после дробления до dt/512)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} должно быть числом, получено {value!r}")
+    # Сравнение с NaN ложно: условие отсекает и NaN, и ±inf (литералы JSON
+    # NaN, Infinity, -Infinity; 1e999 модуль json тоже читает как inf)
+    if not (-float("inf") < value < float("inf")):
+        raise ValueError(f"{name} должно быть конечным числом, получено {value}")
+
+
+def _check_numeric_fields(obj, where: str) -> None:
+    """Числовые поля dataclass-секции obj — через _require_finite_number (DEBT-051)."""
+    # Аннотации — строки (from __future__ import annotations): «float»,
+    # «Optional[float]». Поле с иначе записанной аннотацией выпадет из проверки
+    # (страж — test_config.py::test_field_list_covers_known_fields). null
+    # допустим только в Optional-поле. Значение float в поле другого типа
+    # (NaN в grid.N) проверяется на конечность.
+    for f in fields(obj):
+        value = getattr(obj, f.name)
+        typed = f.type == "float" or (f.type == "Optional[float]" and value is not None)
+        if typed or isinstance(value, float):
+            _require_finite_number(value, f"{where}.{f.name}")
+
+
 def _validate(cfg: SimulationConfig) -> None:
     """Физическая валидация параметров."""
+    # Число и конечность всех числовых полей — до проверок диапазона (DEBT-051).
+    # Проверки вида `v <= 0` NaN пропускают: сравнение с NaN ложно. Замер до
+    # DEBT-051 (vault/issues/debt-051/probes/red_state.out.txt, 24 ч при
+    # p_wf = 6 МПа): NaN в p0, porosity и ещё 11 полях — отказ после дробления
+    # первого шага до dt/512 с советом увеличить max_retries; skin = ±inf и
+    # p_wf = +inf — расчёт без добычи; min_bhp = NaN — ограничение по забою
+    # снято молча (забой 7.12 МПа при min_bhp = 15 МПа).
+    for name in _NUMERIC_SECTIONS:
+        _check_numeric_fields(getattr(cfg, name), name)
+
     g = cfg.geometry
     if g.r_well <= 0:
         raise ValueError(f"r_well должен быть > 0, получено {g.r_well}")
@@ -354,10 +400,10 @@ def _validate(cfg: SimulationConfig) -> None:
     # а даёт правдоподобную, но неверную T. Замер до DEBT-047
     # (vault/issues/debt-047/probes/red_state.out.txt, baseline, 24 ч):
     # c_p,o = 0 при p_wf = 6 МПа — T_min = 11.8 К; (ρc_p)_s = 0 — 0.9 К
-    # отклонения; λ < 0 — тысячные доли кельвина. Условие `0 < v < inf`
-    # отсекает и NaN (JSON допускает литералы NaN и Infinity, сравнение с NaN
-    # всегда False), и inf (иначе отказ дала бы scipy в СЛАУ энергии —
-    # «array must not contain infs or NaNs», без имени параметра).
+    # отклонения; λ < 0 — тысячные доли кельвина. NaN и inf сюда не доходят:
+    # их отвергает _check_numeric_fields в начале функции (DEBT-051). Условие
+    # `0 < v < inf` осталось от DEBT-047, где отсекало и их (иначе отказ дала
+    # бы scipy в СЛАУ энергии без имени параметра).
     inf = float("inf")
     th = cfg.thermal
     for name, value in (("rock.rho_cp_solid", r.rho_cp_solid),
@@ -371,19 +417,11 @@ def _validate(cfg: SimulationConfig) -> None:
                         ("rock.lambda_gas", r.lambda_gas)):
         if not (0 <= value < inf):
             raise ValueError(f"{name} должна быть конечной и ≥ 0, получено {value}")
-    # L, μ_JT,o, μ_JT,g — только конечность, знак любой (DEBT-049, P8 §5):
-    # у жидкости μ_JT обычно < 0 (нагрев при дросселировании), у газа > 0;
-    # L < 0 возможна (см. ниже). Без проверки NaN и ±inf проходили загрузку,
-    # а run падал в СЛАУ энергии — «array must not contain infs or NaNs»,
-    # без имени параметра (vault/issues/debt-049/probes/red_state.out.txt).
-    # Проверка — до предупреждения о L < 0: иначе при L = −inf в журнал
-    # сначала ушло бы предупреждение о знаке, а следом отказ.
-    for name, value in (("thermal.L_degas", th.L_degas),
-                        ("thermal.mu_JT_oil", th.mu_JT_oil),
-                        ("thermal.mu_JT_gas", th.mu_JT_gas)):
-        if not (-inf < value < inf):
-            raise ValueError(f"{name} должно быть конечным числом (знак любой), "
-                             f"получено {value}")
+    # L, μ_JT,o, μ_JT,g — знак любой (P8 §5): у жидкости μ_JT обычно < 0
+    # (нагрев при дросселировании), у газа > 0; L < 0 возможна (см. ниже).
+    # Конечность проверил _check_numeric_fields в начале функции (DEBT-051;
+    # до него — отдельный цикл DEBT-049): раньше предупреждений о знаке, так
+    # что при L = −inf в журнал не уходит предупреждение перед отказом.
     # L < 0 — предупреждение, не отказ (решение пользователя, DEBT-047).
     # Q_deg = −L·ṁ (energy/tridiag.py, compute_degassing): при L < 0
     # выделение газа нагревает пласт (замер: +3.2 К при p_wf = 6 МПа).
@@ -440,6 +478,9 @@ def _validate(cfg: SimulationConfig) -> None:
 
 def _validate_interval(h: HistoryInterval, where: str) -> None:
     """Проверка одного интервала истории; where — его место в JSON."""
+    # Число и конечность dt, p_wf, q_oil, min_bhp — до сравнений (DEBT-051):
+    # `h.min_bhp <= 0` NaN пропускал, и ограничение по забою снималось молча
+    _check_numeric_fields(h, where)
     if h.dt <= 0:
         raise ValueError(f"{where}.dt должен быть > 0, получено {h.dt}")
     if h.control == "pressure":

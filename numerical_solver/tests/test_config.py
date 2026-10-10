@@ -2,7 +2,8 @@
 
 Проверяет:
 - Чтение baseline.json — все поля, значения, defaults.
-- Валидацию: отсутствующие секции, невалидные значения.
+- Валидацию: отсутствующие секции, невалидные значения; любое числовое поле —
+  число и конечное, с именем поля в отказе (DEBT-051).
 - Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047);
   L, μ_JT,o, μ_JT,g — конечные, знак любой, предупреждение при μ_JT,o > 0 (DEBT-049).
 - Опциональные секции: numerics, output — defaults при отсутствии.
@@ -13,6 +14,7 @@
 import json
 import logging
 import pytest
+from dataclasses import fields
 from pathlib import Path
 
 from gpn_multiphase_solver.io.config import (
@@ -646,6 +648,121 @@ class TestValidationThermal:
             cfg = load_config(_write_json(tmp_path, raw))
         assert (cfg.thermal.mu_JT_oil, cfg.thermal.mu_JT_gas) == (-4.0e-7, -4.0e-6)
         assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+# Поля float секций — по аннотациям dataclass, как в _check_numeric_fields:
+# новое поле попадает в тест без правки списка. grid — без float-полей
+# (N — int), интервалы истории — отдельными тестами (номер объекта JSON).
+_FLOAT_FIELDS = [
+    (section, f.name)
+    for section, cls in (("geometry", GeometryConfig), ("rock", RockConfig),
+                         ("pvt", PVTConfig), ("relperm", RelPermConfig),
+                         ("thermal", ThermalConfig), ("initial_conditions", InitialConfig),
+                         ("time", TimeConfig), ("numerics", NumericsConfig))
+    for f in fields(cls) if f.type == "float"
+]
+
+
+# Число и конечность любого числового поля (DEBT-051). Замер до DEBT-051
+# (vault/issues/debt-051/probes/red_state.out.txt, 24 ч при p_wf = 6 МПа):
+# NaN в p0, porosity и ещё 11 полях — отказ после дробления первого шага до
+# dt/512 с советом увеличить max_retries; skin = ±inf, p_wf = +inf — расчёт
+# без добычи; min_bhp = NaN — ограничение по забою снято молча (забой
+# 7.12 МПа при min_bhp = 15 МПа); строка или null — TypeError без имени поля.
+class TestValidationNumbers:
+    """Числовые поля конфига: число (не строка, null, bool) и конечное (DEBT-051)."""
+
+    def test_field_list_covers_known_fields(self):
+        """Список float-полей из аннотаций содержит известные поля, их не меньше 37."""
+        # Страж способа отбора: если аннотации сменят вид («float | None»),
+        # список опустеет вместе с проверкой в _check_numeric_fields
+        known = {("geometry", "r_well"), ("rock", "porosity"), ("pvt", "rho_o_std"),
+                 ("relperm", "n_o"), ("thermal", "L_degas"), ("initial_conditions", "p0"),
+                 ("time", "dt_integration"), ("numerics", "skin")}
+        assert known <= set(_FLOAT_FIELDS)
+        assert len(_FLOAT_FIELDS) >= 37
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf")], ids=["nan", "inf"])
+    @pytest.mark.parametrize("section, key", _FLOAT_FIELDS,
+                             ids=[f"{s}.{k}" for s, k in _FLOAT_FIELDS])
+    def test_nonfinite_rejected(self, tmp_path, section, key, value):
+        """NaN и inf в float-поле секции → ValueError «<секция>.<поле> должно быть конечным»."""
+        raw = _minimal_raw()
+        raw.setdefault(section, {})[key] = value
+        with pytest.raises(ValueError, match=rf"{section}\.{key} должно быть конечным"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("section, key, value", [
+        ("rock", "porosity", "0.2"),           # строка-число: был TypeError без имени
+        ("time", "dt_integration", "3600"),
+        ("initial_conditions", "p0", "abc"),
+        ("geometry", "h", None),               # null в обязательном числе
+        ("rock", "permeability", True),        # было 1 м² — отказ после dt/512
+        ("numerics", "skin", False),
+        ("thermal", "c_p_oil", "2000"),
+    ], ids=["porosity_str", "dt_integration_str", "p0_text", "h_null",
+            "permeability_true", "skin_false", "c_p_oil_str"])
+    def test_non_number_rejected(self, tmp_path, section, key, value):
+        """Строка, null, true/false в float-поле → ValueError «… должно быть числом»."""
+        raw = _minimal_raw()
+        raw.setdefault(section, {})[key] = value
+        with pytest.raises(ValueError, match=rf"{section}\.{key} должно быть числом"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_nonfinite_in_int_field_rejected(self, tmp_path):
+        """NaN в целом поле (grid.N) — тоже отказ по конечности."""
+        # `N < 1` NaN пропускает: сравнение с NaN ложно
+        raw = _minimal_raw()
+        raw["grid"]["N"] = float("nan")
+        with pytest.raises(ValueError, match=r"grid\.N должно быть конечным"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf")], ids=["nan", "inf"])
+    @pytest.mark.parametrize("interval, key", [
+        ({"control": "pressure", "p_wf": 6e6}, "dt"),
+        ({"control": "pressure", "p_wf": 6e6}, "p_wf"),
+        ({"control": "rate", "q_oil": 5.787e-4, "min_bhp": 6e6}, "q_oil"),
+        ({"control": "rate", "q_oil": 5.787e-4, "min_bhp": 6e6}, "min_bhp"),
+    ], ids=["dt", "p_wf", "q_oil", "min_bhp"])
+    def test_interval_nonfinite_rejected(self, tmp_path, interval, key, value):
+        """NaN и inf в поле интервала истории → ValueError с history[i].<поле>."""
+        # Второй интервал испорчен — номер в сообщении указывает на него
+        raw = _minimal_raw()
+        good = {"dt": 3600.0, **interval}
+        raw["time"]["history"] = [good, dict(good, **{key: value})]
+        with pytest.raises(ValueError, match=rf"history\[1\]\.{key} должно быть конечным"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("key, value", [("p_wf", "6e6"), ("dt", True)],
+                             ids=["p_wf_str", "dt_true"])
+    def test_interval_non_number_rejected(self, tmp_path, key, value):
+        """Строка или bool в поле интервала → ValueError «history[i].<поле> должно быть числом»."""
+        raw = _minimal_raw()
+        good = {"dt": 3600.0, "control": "pressure", "p_wf": 6e6}
+        raw["time"]["history"] = [good, dict(good, **{key: value})]
+        with pytest.raises(ValueError, match=rf"history\[1\]\.{key} должно быть числом"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("key, value", [
+        ("duration", float("nan")), ("dt_out", float("nan")),
+        ("duration", float("inf")), ("dt_out", "3600"),
+    ], ids=["duration_nan", "dt_out_nan", "duration_inf", "dt_out_str"])
+    def test_block_fields_checked(self, tmp_path, key, value):
+        """duration, dt_out краткой формы — число и конечное до round(duration / dt_out)."""
+        # До DEBT-051 NaN давал «cannot convert float NaN to integer» без имени поля
+        raw = _minimal_raw()
+        block = {"duration": 86400.0, "dt_out": 3600.0, "control": "pressure", "p_wf": 6e6}
+        block[key] = value
+        raw["time"]["history"] = [block]
+        with pytest.raises(ValueError, match=rf"history\[0\]\.{key} должно быть"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_integer_values_accepted(self, tmp_path):
+        """Целые числа JSON в float-полях допустимы (dt_integration: 3600 в baseline.json)."""
+        raw = _minimal_raw()
+        raw["geometry"]["h"] = 10
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert (cfg.geometry.h, cfg.time.dt_integration) == (10, 3600)
 
 
 # ═════════════════════════════════════════════════════════════

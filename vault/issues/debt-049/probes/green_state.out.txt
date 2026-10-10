@@ -1,0 +1,52 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-049\numerical_solver\gpn_multiphase_solver\simulator.py
+
+== Раздел 1, тепловые скаляры: 24 ч при p_wf = 10 МПа
+эталон (без подмены)             ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, p 10.05…20 МПа, T конечны: True, p конечны: True
+L_degas_nan                      load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено nan  [config.py:385]
+L_degas_inf                      load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено inf  [config.py:385]
+L_degas_-inf                     load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+mu_JT_oil_nan                    load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено nan  [config.py:385]
+mu_JT_oil_inf                    load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено inf  [config.py:385]
+mu_JT_oil_-inf                   load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+mu_JT_gas_nan                    load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено nan  [config.py:385]
+mu_JT_gas_inf                    load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено inf  [config.py:385]
+mu_JT_gas_-inf                   load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+
+== Раздел 1, тепловые скаляры: 24 ч при p_wf = 6 МПа
+эталон (без подмены)             ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, T конечны: True, p конечны: True
+L_degas_nan                      load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено nan  [config.py:385]
+L_degas_inf                      load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено inf  [config.py:385]
+L_degas_-inf                     load_config: ValueError: thermal.L_degas должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+mu_JT_oil_nan                    load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено nan  [config.py:385]
+mu_JT_oil_inf                    load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено inf  [config.py:385]
+mu_JT_oil_-inf                   load_config: ValueError: thermal.mu_JT_oil должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+mu_JT_gas_nan                    load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено nan  [config.py:385]
+mu_JT_gas_inf                    load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено inf  [config.py:385]
+mu_JT_gas_-inf                   load_config: ValueError: thermal.mu_JT_gas должно быть конечным числом (знак любой), получено -inf  [config.py:385]
+
+== Раздел 2, NaN в прочих полях: 24 ч при p_wf = 6 МПа
+эталон (без подмены)             ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, T конечны: True, p конечны: True
+geometry.r_well                  from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+geometry.R_ext                   from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+geometry.h                       from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+rock.porosity                    run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+rock.permeability                from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+pvt.rho_o_std                    run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+pvt.rho_g_std                    run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+pvt.co_undersaturated            run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+relperm.S_or                     from_config: ValueError: S_or must be in [0, 1), got nan  [relperm.py:14]
+relperm.S_gc                     from_config: ValueError: S_gc must be in [0, 1), got nan  [relperm.py:16]
+relperm.n_o                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+relperm.n_g                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+relperm.kro_max                  from_config: ValueError: kro_max, krg_max must be in (0, 1]  [relperm.py:22]
+relperm.krg_max                  from_config: ValueError: kro_max, krg_max must be in (0, 1]  [relperm.py:22]
+initial_conditions.p0            run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+initial_conditions.T0            run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+initial_conditions.Rs0           run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+time.dt_integration              run: ValueError: cannot convert float NaN to integer  [simulator.py:75]
+time.start_day                   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, T конечны: True, p конечны: True
+numerics.dt_min                  ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, T конечны: True, p конечны: True
+numerics.dt_max                  ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, T конечны: True, p конечны: True
+numerics.skin                    run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+history.p_wf                     run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший подшаг — time.dt_integration /   [simulator.py:258]
+history.dt                       run: ValueError: cannot convert float NaN to integer  [simulator.py:75]

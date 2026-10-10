@@ -6,8 +6,9 @@ date: 2026-10-10
 issue: DEBT-049
 github: 81
 branch: refactor/debt-049/thermal-scalars-finite-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-049
+implemented: 2026-10-10 — a100be1 (код и тесты), 1bd8ce6 (P8, заметка), vault-коммит итога; полный прогон 1494 passed
 audit:
   date: 2026-10-10
   round: 1

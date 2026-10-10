@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-050
 github: 80
 branch: refactor/debt-050/orchestrator-note-local-splitting
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-050
 audit:
   date: 2026-10-10

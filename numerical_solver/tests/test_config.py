@@ -845,7 +845,7 @@ class TestValidationWell:
         assert len(msgs) == 1 and "numerics.skin" in msgs[0]
 
     def test_large_skin_warning_gives_inflow_ratio(self, tmp_path, caplog):
-        """s = 1000, R_ext/r_w = 500: приток ln 500 / (ln 500 + 1000) = 0.6 % от притока без скина."""
+        """s = 1000, R_ext/r_w = 500: доля притока ln 500 / (ln 500 + 1000) = 0.6 %."""
         raw = _minimal_raw()
         raw["numerics"] = {"skin": 1000.0}
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
@@ -885,7 +885,7 @@ class TestValidationWell:
         assert _warning_messages(caplog) == []
 
     def test_block_warns_once(self, tmp_path, caplog):
-        """Блок {duration, dt_out} с p_wf > p0 разворачивается в 24 интервала, предупреждение — одно."""
+        """Блок {duration, dt_out} с p_wf > p0: 24 интервала, предупреждение — одно."""
         # Одно на объект JSON: номер объекта — место правки (как у ошибок, FEAT-018)
         raw = _minimal_raw()
         raw["time"]["history"] = [{"duration": 86400, "dt_out": 3600,

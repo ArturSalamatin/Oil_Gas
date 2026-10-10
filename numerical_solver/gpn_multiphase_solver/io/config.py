@@ -214,9 +214,13 @@ _HISTORY_FORMS = (
 _MULTIPLE_RTOL = 1e-9
 
 
-def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
-    """Развернуть краткие формы time.history в список интервалов (FEAT-018)."""
+def _expand_history(raw_history: list[dict]
+                    ) -> tuple[list[HistoryInterval], list[tuple[str, HistoryInterval]]]:
+    """Развернуть time.history (FEAT-018); второй результат — пары (место в JSON, образец)."""
     intervals: list[HistoryInterval] = []
+    # Образец интервала на каждый объект JSON с его местом history[i]:
+    # по ним _warn_well_shut предупреждает один раз на объект (DEBT-056)
+    blocks: list[tuple[str, HistoryInterval]] = []
     for i, raw_entry in enumerate(raw_history):
         where = f"history[{i}]"
         entry = dict(raw_entry)          # копия: не портим исходный словарь
@@ -265,11 +269,12 @@ def _expand_history(raw_history: list[dict]) -> list[HistoryInterval]:
         # прототипу по всем полям. Номер в сообщении — номер объекта
         # в JSON, то есть место, которое пользователь правит.
         _validate_interval(proto, where)
+        blocks.append((where, proto))
         # replace() — отдельный объект на каждый интервал: общий объект
         # в n позициях списка менял бы весь блок при правке одного
         # интервала (тесты правят history[k] после загрузки).
         intervals.extend(replace(proto) for _ in range(n))
-    return intervals
+    return intervals, blocks
 
 
 # ── Загрузка ─────────────────────────────────────────────────
@@ -302,7 +307,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     # Краткие формы {dt, repeat} и {duration, dt_out} разворачиваются
     # здесь же (FEAT-018); решатель видит только явные интервалы.
     time_raw = raw["time"]
-    history = _expand_history(time_raw.pop("history"))
+    history, history_blocks = _expand_history(time_raw.pop("history"))
     time_cfg = TimeConfig(history=history, **time_raw)
 
     # ── Опциональные секции ──
@@ -337,6 +342,8 @@ def load_config(path: str | Path) -> SimulationConfig:
     # Предупреждения — после всех проверок _validate: конфиг с ошибкой в любом
     # поле не выдаёт предупреждение перед отказом (DEBT-056)
     _warn_large_skin(config)
+    # p0 к этому моменту проверен в _validate: число, конечное, > 0
+    _warn_well_shut(history_blocks, config.initial_conditions.p0)
     return config
 
 
@@ -574,3 +581,28 @@ def _warn_large_skin(cfg: SimulationConfig) -> None:
             f"при той же депрессии — {ratio:.1%} от притока без скина "
             f"(ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = {ln_re_rw:.3g}). "
             f"Проверьте значение.")
+
+
+def _warn_well_shut(blocks: list[tuple[str, HistoryInterval]], p0: float) -> None:
+    """Объекты истории, где скважина заведомо закрыта (DEBT-056). Ур. (eq:bc_pwf_shutin)."""
+    # Только добыча (FEAT-020): при p_wf ≥ p в ячейке забоя приток нулевой,
+    # нагнетания нет. При добыче давление в пласте не выше p0 (контур питания
+    # держит p0, источников нет), поэтому p_wf ≥ p0 закрывает скважину на весь
+    # интервал; при control='rate' то же даёт min_bhp ≥ p0 — забой не может
+    # опуститься ниже p0. Замер до DEBT-056 (vault/issues/debt-056/probes/
+    # skin_range.out.txt): p_wf = 25 МПа и min_bhp = 25 МПа при p0 = 20 МПа —
+    # расчёт без притока и без сообщения.
+    for where, h in blocks:
+        if h.control == "pressure" and h.p_wf >= p0:
+            user_log.warning(
+                f"{where}: p_wf = {h.p_wf:.6g} Па ≥ p0 = {p0:.6g} Па — давление "
+                f"в пласте при добыче не выше p0, скважина в этом интервале "
+                f"закрыта и не добывает (нагнетание не поддержано). Останов "
+                f"обычно задают control='rate', q_oil = 0.")
+        # q_oil = 0 — намеренный останов (примеры 16, 17): min_bhp при нулевом
+        # дебите на итог не влияет, предупреждать не о чем
+        elif h.control == "rate" and h.q_oil > 0 and h.min_bhp >= p0:
+            user_log.warning(
+                f"{where}: min_bhp = {h.min_bhp:.6g} Па ≥ p0 = {p0:.6g} Па при "
+                f"q_oil = {h.q_oil:.6g} м³ст/с — забой не может опуститься ниже "
+                f"p0, скважина в этом интервале закрыта, дебит не достигается.")

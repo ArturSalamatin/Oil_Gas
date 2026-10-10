@@ -9,7 +9,7 @@ issue: BUG-024
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/93
 branch: fix/bug-024/daily-shutin-cell-tolerance
 base: e511933
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-024
 audit:
   date: 2026-10-10

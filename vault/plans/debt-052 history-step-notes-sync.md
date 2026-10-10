@@ -7,7 +7,8 @@ issue: DEBT-052
 github: 83
 branch: refactor/debt-052/history-step-notes-sync
 status: реализован
-worktree: .worktrees/debt-052
+worktree: .worktrees/debt-052; удалён после влития
+merged: 734e782 (2026-10-10)
 audit:
   date: 2026-10-10
   found: 7

@@ -191,7 +191,8 @@ Schedule прототипа — более общий формат (абсолю
     "sg_switch_tol": 1e-9,
     "jacobian_mode": "grouped",
     "linear_solver": "sparse",
-    "max_retries": 9
+    "max_retries": 9,
+    "newton_cell_tol": 1e-8
 }
 ```
 
@@ -199,16 +200,30 @@ Schedule прототипа — более общий формат (абсолю
 - `dt_min`, `dt_max` — ⚠️ объявлены в `NumericsConfig`, но **никакой модуль их не читает** (проверено grep при DEBT-007). Дробление шага в `Simulator._advance` (локальное, DEBT-015) их не использует: глубина дробления задаётся `max_retries`, а не нижней границей подшага. Учтено в DEBT-008
 - `max_retries` — глубина дробления шага в `Simulator` (локальное, DEBT-015): подшаг, на котором Newton не сошёлся, делится пополам, наименьший подшаг `dt_integration`/2**max_retries. Допустимо 0…20, по умолчанию 9 (dt/512). Значение — измеренный порог DEBT-007; порог немонотонен по сетке, для отдельных конфигураций нужно 10–11
   - Уточнение (DEBT-041, 2026-10-07): порог DEBT-007 снят BUG-014, порог BUG-003 (04a, $N = 80$) — BUG-016; 9 теперь запас, а не порог. Обоснование — комментарий `NumericsConfig.max_retries` (`io/config.py`); пример 03 требует не больше 4 удвоений (README 03).
-- `newton_*`, `max_active_set_iter`, `*_switch_tol`, `jacobian_mode`, `linear_solver` — передаются в RadialBlackOilModel и advance()
+- `newton_cell_tol` — порог условия сходимости Ньютона по ячейке (BUG-022): решение принимается, если кроме абсолютного критерия прототипа в каждой ячейке $\max_c |F_c|\,\Delta t/V_p \le$ порога. Положительное конечное число или `null` (выключено), по умолчанию 1e-8; передаётся прототипу (`cell_tol`). Порог заметно ниже $\sim 2.2\cdot10^{-16}(R_{ext}/r_w)^2$ не достигается из-за округлений — шаги дробятся (пример 17 при 1e-10: отказов шагов 214 против 47; [[DEBT-055]])
+- `jacobian_mode`, `linear_solver`, `newton_cell_tol` — передаются в `RadialBlackOilModel`; `newton_max_iter`, `newton_rtol`, `newton_atol`, `max_active_set_iter`, `*_switch_tol` — ⚠️ не передаются никуда, прототип берёт свои умолчания ([[DEBT-008]])
 - Если параметр не задан в JSON — берётся default из прототипа
 
 Примечание: dt_integration из секции `time` и из `numerics` — одна и та же величина. Хранить в одном месте (в `time`), в `numerics` не дублировать.
 
 ## 5. Валидация
 
-Валидация данных для гидро — ответственность прототипа (конструкторы BlackOilPVT, TabulatedRelPerm, RadialGrid проверяют входные данные). Исключение — тип и конечность чисел: их для всех полей проверяет наш config (DEBT-051, ниже).
+Кто проверяет входные данные — по коду (сверено при [[DEBT-056]]). До DEBT-056 здесь стояло «валидация данных для гидро — ответственность прототипа»; по коду это не так: скалярные поля проверяет наш config, таблицы и согласованность — наша фабрика, проверки прототипа повторяют часть наших и срабатывают позже — на них не полагаемся.
 
-Валидация данных для температуры — ответственность нашего config (`_validate`, `io/config.py`; DEBT-047):
+| Этап | Где | Что |
+|---|---|---|
+| `load_config` | `io/config.py`: `_check_numeric_fields`, `_require_finite_number` | тип и конечность всех чисел ([[DEBT-051]]) |
+| | `_expand_history`, `_validate_interval` | формы `time.history` (FEAT-018); `control`, `p_wf > 0`, `q_oil ≥ 0`, `min_bhp > 0`, неиспользуемые поля (DEBT-008) |
+| | `_validate` | геометрия, сетка, порода, тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin` |
+| | `_warn_large_skin`, `_warn_well_shut` (после `_validate`) | предупреждения: `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
+| `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO (DEBT-042, DEBT-044, DEBT-038) |
+| | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход за таблицы (BUG-017) |
+| сетка GPN | `grid/log_radial.py` (`LogRadialGrid`) | повтор проверок геометрии |
+| прототип | `radial_blackoil/grid.py`, `pvt.py`, `relperm.py`, `blackoil.py` | повтор геометрии; монотонность таблиц; режимы якобиана и решателя СЛАУ; $q \ge 0$. `skin` прототип не проверяет |
+
+Проверки — только на пути JSON → `load_config` → `from_config`. Конфиг, собранный в коде, и прототип, вызванный напрямую, их не получают.
+
+Тепловые параметры — наш config (`_validate`, `io/config.py`; DEBT-047, DEBT-049):
 - `thermal.c_p_oil`, `thermal.c_p_gas`, `rock.rho_cp_solid` — конечные и > 0
 - `rock.lambda_solid`, `rock.lambda_oil`, `rock.lambda_gas` — конечные и ≥ 0: λ = 0 отключает теплопроводность (примеры 01–09, 04a). До DEBT-047 здесь стояло «λ > 0», но проверки не было, а примеры с λ = 0 ему противоречили
 - `thermal.L_degas` — конечное, любой знак (физически); L < 0 — предупреждение в журнале, расчёт идёт. Для Стендинга L > 0: $p_b$ растёт с T, растворение газа экзотермично, дегазация поглощает теплоту; L < 0 возможен для систем, где растворимость газа растёт с T
@@ -224,9 +239,16 @@ Schedule прототипа — более общий формат (абсолю
 
 Замер до DEBT-051 (`vault/issues/debt-051/probes/red_state.out.txt`): `skin` = ±inf и `p_wf` = +inf давали расчёт без добычи, `min_bhp` = NaN снимал ограничение по забою молча (7.12 МПа при 15 МПа), NaN в 13 полях — отказ после дробления до dt/512 с советом увеличить `max_retries`.
 
+Скважина — наш config ([[DEBT-056]]; отказ — `_validate`, предупреждения — `_warn_large_skin`, `_warn_well_shut` после `_validate`, в `io/config.py`):
+- `numerics.skin` ≥ 0. $s < 0$ → `ValueError`: проводимость забойной грани прототипа $T_w = 2\pi kh/(\ln(r_1/r_w) + s)$ (`radial_blackoil/grid.py`, `well_transmissibility_m3`) на сетках проекта ($\ln(r_1/r_w) = \ln(R_{ext}/r_w)/(2N) \approx 0.01…0.16$) неположительна уже при $s \approx -0.01…-0.16$; отрицательный скин в проекте не предусмотрен (решение пользователя). Сообщение даёт обход — `geometry.r_well` = $r_w e^{-s}$ (приведённый радиус скважины: тот же установившийся однофазный приток, при разгазировании у забоя — приближённо), `skin` = 0; температура забоя тогда относится к радиусу $r_w e^{-s}$. При $r_w e^{-s} \ge R_{ext}$ сообщение говорит, что обход неприменим
+- $s > 50$ — предупреждение с долей установившегося однофазного притока $\ln(R_{ext}/r_w)/(\ln(R_{ext}/r_w) + s)$ (у baseline при $s = 50$ — 11 %), расчёт идёт
+- `p_wf` $\ge p_0$ (`control = "pressure"`) или `min_bhp` $\ge p_0$ при `q_oil > 0` (`control = "rate"`) в любом объекте `time.history` — предупреждение `history[i]: …`, одно на объект JSON. Оба предупреждения — после всех отказов `load_config`. При добыче давление в пласте не выше $p_0$, поэтому интервал целиком без притока (`eq:bc_pwf_shutin`). `q_oil = 0` — намеренный останов (примеры 16, 17), без предупреждения
+
+Замер до DEBT-056 (`vault/issues/debt-056/probes/skin_range.out.txt`): $s$ = −0.5, −2 — отказ через dt/512 с советом увеличить `max_retries`; $s$ = 1e6, `p_wf` = 25 МПа, `min_bhp` = 25 МПа при $p_0$ = 20 МПа — расчёт без притока, молча.
+
 Температура в расчёте — `Simulator._advance` после каждого подшага энергии (DEBT-047): $T \le 0$ или не конечная $T$ → `RuntimeError` с $\Delta t$ подшага, временем его конца, ячейкой, $r$ и значением. Правдоподобную, но неверную $T$ эта проверка не ловит: $c_{p,o} = 0$ в обход проверки ввода даёт $T_{\min} = 11.8$ К (`vault/issues/debt-047/probes/red_state.out.txt`).
 
-Общая валидация (geometry, grid) — наш Factory:
+Геометрия, сетка, порода — наш config (`_validate`); `LogRadialGrid` и `RadialGrid` прототипа повторяют:
 - rw > 0, re > rw, h > 0, N ≥ 1
 - 0 < φ ≤ 1, k > 0
 
@@ -234,6 +256,10 @@ Schedule прототипа — более общий формат (абсолю
 - табличная PVT: `Rs0` в диапазоне веток `oil_pvt.csv` — иначе `ValueError`
 - обе модели PVT: недонасыщенный старт `Rs0 <= Rs_eq(p0)` (допуск 1e-5 м³ст/м³ст) — иначе `ValueError`
 - табличная PVT: выход начального состояния за PVT- и ОФП-таблицы прототипа — предупреждение в журнале
+
+Численные параметры — наш config (`_validate`):
+- `numerics.max_retries` — целое в [0, 20] (DEBT-007)
+- `numerics.newton_cell_tol` — положительное конечное число или `null` (BUG-022)
 
 ## 6. Единая Grid
 
@@ -341,7 +367,8 @@ Grid не изменяется после создания. Модули тол�
         "skin": 0.0,
         "jacobian_mode": "grouped",
         "linear_solver": "sparse",
-        "max_retries": 9
+        "max_retries": 9,
+        "newton_cell_tol": 1e-8
     },
     "output": {
         "log_level": "INFO",

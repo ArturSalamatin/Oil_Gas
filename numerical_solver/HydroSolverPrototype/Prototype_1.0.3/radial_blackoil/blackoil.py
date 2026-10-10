@@ -24,6 +24,9 @@ iteration, per-cell update limits, no line search, upstream cells held on faces
 whose flow direction flips.
 DEBT-040: under BHP control the fallback does not try the 'open' well branch
 where it cannot be consistent (outer and all old cell pressures <= p_wf).
+BUG-022: a per-cell convergence test (constructor argument cell_tol, off by
+default): a Newton solve also needs max_c |F_c,i|*dt/PV_i <= cell_tol in every
+cell i (PV_i: pore volume of state_old), besides the absolute test.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -58,7 +61,7 @@ class RadialBlackOilModel:
                  outer_rs_sm3_sm3, skin=0.0, rs_switch_tol=1e-5,
                  sg_switch_tol=1e-9, gas_residual_scale=None,
                  jacobian_mode='grouped', linear_solver='sparse',
-                 phase_switching_stage=False):
+                 phase_switching_stage=False, cell_tol=None):
         self.grid=grid; self.rock=rock; self.pvt=pvt; self.relperm=relperm
         self.p_bhp_bar=float(p_bhp_bar); self.p_outer_bar=float(p_outer_bar)
         self.outer_rs=float(outer_rs_sm3_sm3); self.skin=float(skin)
@@ -99,6 +102,22 @@ class RadialBlackOilModel:
         # (None outside it, face_component_fluxes_sm3s then picks it by the pressure drop).
         self.phase_switching_stage=bool(phase_switching_stage); self._phase_switching=False
         self._upwind_frozen=None; self._upwind_left=None
+        # BUG-022: per-cell convergence test, off by default so that the prototype's own
+        # runs and its regression golden stay bitwise; the GPN factory turns it on.  The
+        # absolute test ||F||_inf <= atol + rtol*||F0||_inf (m3st/s) is one for all cells;
+        # on the log grid the well cell has ~(r_w/r_e)^2 of the outer cell's pore volume,
+        # and the same residual there is a ~1e6 times larger relative error (GPN example
+        # 17: Rs of the shut-in well cell wandered by +-0.015 a day, where it can only grow).
+        # With cell_tol a solve also needs max_c |F_c,i|*dt/PV_i <= cell_tol in every cell i
+        # (the gas rows divided by gas_residual_scale, as in residual).  For an undersaturated
+        # cell upstream of no face (the shut-in well cell) its Rs enters the storage only, and
+        # the Rs error of a step is estimated by cell_tol*Bo*(gas_residual_scale + Rs).  Far
+        # below ~eps_mach*PV_max/PV_min the test is not met and steps are split (GPN example
+        # 17 at cell_tol = 1e-10: 214 rejected steps against 47; the mechanism is not
+        # established -- both the line search and the stage-4 Newton stall).
+        if cell_tol is not None and not 0.0<float(cell_tol)<np.inf:
+            raise ValueError('cell_tol must be a positive finite number or None')
+        self.cell_tol=None if cell_tol is None else float(cell_tol)
 
     def set_bhp_control(self,bhp_bar):
         self.control_mode='BHP'; self.p_bhp_bar=float(bhp_bar)
@@ -223,6 +242,15 @@ class RadialBlackOilModel:
         return np.concatenate([(oi1-oi0)/float(dt_s)+qo,(gi1-gi0)/float(dt_s)+qg])
     def residual(self,z,state_old,dt_s,gas_active):
         r=self.physical_residual(z,state_old,dt_s,gas_active); r[self.grid.n:]/=self.gas_residual_scale; return r
+    def _cell_weights(self,state_old,dt_s):
+        """BUG-022: dt/PV_i of the per-cell convergence test (pore volume of state_old); None when the test is off."""
+        if self.cell_tol is None: return None
+        return float(dt_s)/self.rock.pore_volume_m3(self.grid.bulk_volumes_m3,state_old.pressure_bar)
+    def _cells_converged(self,f,w):
+        """BUG-022: max_c |f_c,i|*dt/PV_i <= cell_tol over the oil and gas rows of f = residual(); True when the test is off."""
+        if w is None: return True
+        n=self.grid.n
+        return max(float(np.max(np.abs(f[:n])*w)),float(np.max(np.abs(f[n:])*w)))<=self.cell_tol
     def _pressure_fd_step(self,p_bar,gas_active,p_rel_step=1e-6,p_abs_step=1e-4):
         """One-sided pressure perturbation that stays on the same PVTO-saturation segment.
 
@@ -315,6 +343,9 @@ class RadialBlackOilModel:
     def _newton_fixed_active_set(self,z0,state_old,dt_s,gas_active,max_iter=15,rtol=1e-8,atol_sm3s=1e-11):
         z=np.asarray(z0,float).copy(); f=self.residual(z,state_old,dt_s,gas_active); nrm=np.linalg.norm(f,np.inf)
         scale=max(nrm,1e-9); tol=atol_sm3s+rtol*scale
+        # BUG-022: dt/PV_i of the per-cell test (None when it is off); a solve converges only
+        # when every cell meets it too, else it fails and advance tries its next stage
+        w=self._cell_weights(state_old,dt_s)
         # BUG-016: norm of the line search; the convergence test stays on ||F||_inf.
         # With defaults the comparison is norm(ft,inf)<nrm, bitwise as before.
         merit=(lambda v: np.linalg.norm(v)) if self._line_search_l2 else (lambda v: np.linalg.norm(v,np.inf))
@@ -324,7 +355,7 @@ class RadialBlackOilModel:
         # bitwise the f0 that the Jacobian call returns at the same z: wherever the
         # solve converged before, iterates and reports are unchanged, and the
         # Jacobian that was built only to detect convergence is no longer built.
-        if nrm<=tol: return z,BlackOilNewtonReport(True,0,float(nrm))
+        if nrm<=tol and self._cells_converged(f,w): return z,BlackOilNewtonReport(True,0,float(nrm))
         for it in range(1,max_iter+1):
             J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active)
             try: dz=self._linear_solve(J,-f)
@@ -343,7 +374,7 @@ class RadialBlackOilModel:
                 alpha*=0.5
             if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
             nrm=np.linalg.norm(f,np.inf)
-            if nrm<=tol: return z,BlackOilNewtonReport(True,it,float(nrm))
+            if nrm<=tol and self._cells_converged(f,w): return z,BlackOilNewtonReport(True,it,float(nrm))
         return z,BlackOilNewtonReport(False,max_iter,float(nrm))
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
@@ -505,6 +536,8 @@ class RadialBlackOilModel:
         state_old=state_old.copy(); n=self.grid.n; nf=max(n-1,0)
         mask=state_old.gas_active.copy(); z=self.pack(state_old,mask)
         scale=max(np.linalg.norm(self.residual(z,state_old,dt_s,mask),np.inf),1e-9); tol=atol_sm3s+rtol*scale
+        # BUG-022: dt/PV_i of the per-cell test, None when it is off
+        w=self._cell_weights(state_old,dt_s)
         switched=total=0; flips=np.zeros(nf,int); prev=None; polish=False
         self._upwind_frozen=np.zeros(nf,bool); self._upwind_left=np.zeros(nf,bool)
         try:
@@ -521,13 +554,16 @@ class RadialBlackOilModel:
                 if nrm<=tol and switched==0:
                     fz=self._upwind_frozen
                     if fz is None or np.array_equal(self._upwind_left[fz],left[fz]):
-                        new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
-                        # same bound as _trial_is_reasonable: no root with Sg > 0.98
-                        ok=not np.any(new.sg[mask]>0.98)
-                        return new,BlackOilNewtonReport(ok,it-1,float(nrm),1,total)
-                    # converged with a held upstream cell the solution contradicts: polish
-                    # without holding, so the result solves the original upwind scheme
-                    self._upwind_frozen=None; polish=True; continue
+                        # BUG-022: and the per-cell test; not met -- iterate on (up to max_iter)
+                        if self._cells_converged(f,w):
+                            new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
+                            # same bound as _trial_is_reasonable: no root with Sg > 0.98
+                            ok=not np.any(new.sg[mask]>0.98)
+                            return new,BlackOilNewtonReport(ok,it-1,float(nrm),1,total)
+                    else:
+                        # converged with a held upstream cell the solution contradicts: polish
+                        # without holding, so the result solves the original upwind scheme
+                        self._upwind_frozen=None; polish=True; continue
                 if it>max_iter: break
                 try: dz=self._linear_solve(J,-f)
                 except Exception: break

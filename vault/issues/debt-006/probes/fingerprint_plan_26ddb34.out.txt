@@ -1,0 +1,7 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+03_standing_corey: записей 73, sha256 a9e942cd9b706ff5ddef89114dde5c3be1a1a56dc97c2cba4180a32eb2cec28f
+  p[0] = 8046561.079609794 Па, T[0] = 352.76799508797865 К, q_o = 0.010854273305442218 м³ст/с
+04_table_table: записей 73, sha256 cb0c1dce8f857f1edf0d70aea70eb8774eaa6d0f19ea2414166e2b2a6949a30a
+  p[0] = 8165939.266106598 Па, T[0] = 351.4915470893315 К, q_o = 0.0058759532017356175 м³ст/с
+05_standing_table_rp: записей 73, sha256 9f5ed783194312eb9e06f6470035b1d18234054fa5aeee48eef54a4f5f0cc99f
+  p[0] = 8131937.846217722 Па, T[0] = 352.7914909024474 К, q_o = 0.010908572655965502 м³ст/с

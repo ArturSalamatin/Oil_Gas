@@ -167,9 +167,10 @@ metadata:
 
 | Поле | Тип | Описание |
 |---|---|---|
-| `newton_tol_abs` | float | Абсолютная невязка |
-| `newton_tol_rel` | float | Относительная невязка |
-| `newton_max_iter` | int | Макс. итераций Ньютона |
+| `newton_cell_tol` | float или null | Порог условия сходимости Ньютона по ячейке, $\max_c |F_c|\Delta t/V_p$ (BUG-022), по умолчанию 1e-8; null — выключено |
+| `max_retries` | int | Глубина дробления шага в `Simulator`, 0…20 (DEBT-007, DEBT-015) |
+| `skin`, `jacobian_mode`, `linear_solver` | float, str, str | Передаются прототипу |
+| `newton_atol`, `newton_rtol`, `newton_max_iter`, `max_active_set_iter`, `rs_switch_tol`, `sg_switch_tol`, `dt_min`, `dt_max` | — | ⚠️ объявлены, но никем не читаются ([[DEBT-008]]) |
 
 ### output
 

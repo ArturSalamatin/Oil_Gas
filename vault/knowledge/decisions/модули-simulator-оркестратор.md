@@ -22,7 +22,6 @@ class Simulator:
     def __init__(self, grid: Grid, hydro: HydroSolver,
                  energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 output_config: OutputConfig | None = None,
                  max_retries: int = 9):
         ...
 
@@ -36,9 +35,8 @@ initial_state передаётся в run() — Factory создаёт его о
 max_retries — глубина локального дробления шага (DEBT-015): наименьший
 подшаг dt/2**max_retries. Фабрика передаёт `numerics.max_retries`
 (целое в [0, 20], по умолчанию 9 — проверка в `_validate`).
-output_config Simulator принимает, но не сохраняет и не читает (после
-DEBT-013 — только ради сигнатуры); уровень журнала задаёт фабрика
-(`setup_logging(config.output.log_level)`).
+Параметр output_config удалён в [[DEBT-053]]: Simulator его не читал;
+уровень журнала задаёт фабрика (`setup_logging(config.output.log_level)`).
 
 ## SimulationState — состояние системы (реализовано: state.py)
 

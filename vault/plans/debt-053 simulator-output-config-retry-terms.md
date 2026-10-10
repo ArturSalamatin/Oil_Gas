@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-053
 github: 84
 branch: refactor/debt-053/simulator-output-config-retry-terms
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-053
 audit:
   date: 2026-10-10

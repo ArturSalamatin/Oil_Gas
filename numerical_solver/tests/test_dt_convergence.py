@@ -24,17 +24,21 @@ from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import load_config
 
 # Пример 07: mu_JT = 0, L_degas = 0, lambda = 0 — в энергии работают
-# только конвекция и адиабатический член. Табличный PVT: именно на нём
-# A-retry срабатывает и проявлялся BUG-010.
+# только конвекция и адиабатический член. Табличный PVT: на нём проявлялся
+# BUG-010 — при dt = 1200, 720, 450, 400 с гидродинамика дробила шаг,
+# а энергия шла одним шагом, и ошибка выбивалась из тренда в 6–24 раза.
+# Замер DEBT-053 (2026-10-10, vault/issues/debt-053/probes/): сейчас шаг
+# примера 07 не дробится ни при одном dt из DT_LIST, поэтому здесь
+# проверяется только сходимость T по dt. Сам механизм (энергия идёт по
+# подшагам гидродинамики) проверяют test_simulator.py
+# (test_energy_steps_match_hydro_substeps, двойник) и
+# test_energy_matrix_examples.py (test_energy_substeps_preserve_total_time,
+# пример 10).
 CONFIG = (Path(__file__).parent.parent / "examples"
           / "07_degassing_adiabatic_only" / "config.json")
 
 DT_REF = 50.0          # эталон: 72 подшага на интервал 3600 с
 DT_LIST = [1800.0, 1200.0, 900.0, 720.0, 600.0, 450.0, 400.0, 360.0]
-
-# Аномальные до фикса dt (n_sub = 3, 5, 8, 9 — там срабатывает A-retry).
-# Именно они выбивались из тренда в 6–24 раза.
-DT_WITH_RETRY = [1200.0, 720.0, 450.0, 400.0]
 
 
 def _run_first_interval(dt_integration: float) -> np.ndarray:
@@ -95,21 +99,3 @@ class TestTemperatureConvergenceInDt:
                 f"dt={dt:g} с выбивается из тренда O(dt): "
                 f"ошибка {err:.4e} К при ожидаемой ~{expected:.4e} К "
                 f"(отношение {ratio:.1f})")
-
-    def test_retry_steps_match_their_neighbours(self, errors):
-        """Шаги с A-retry не хуже соседних без него.
-
-        Прямая проверка механизма BUG-010: при dt из DT_WITH_RETRY
-        гидродинамика дробит шаг, и раньше энергия этого не делала.
-        Теперь дробление синхронно, поэтому такие шаги обязаны давать
-        ошибку того же порядка, что соседи, а не на порядок большую.
-        """
-        ordered = sorted(errors, reverse=True)
-        for dt in DT_WITH_RETRY:
-            i = ordered.index(dt)
-            neighbours = [errors[ordered[j]]
-                          for j in (i - 1, i + 1) if 0 <= j < len(ordered)]
-            assert errors[dt] <= 2.0 * max(neighbours), (
-                f"Шаг с A-retry dt={dt:g} с даёт {errors[dt]:.4e} К "
-                f"против соседних {neighbours} — дробление энергии "
-                f"не сработало")

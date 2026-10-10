@@ -10,7 +10,7 @@
   G. README: обязательные разделы на месте
 
 Расчёты кэшируются на уровне сессии (фикстура results): каждый сценарий
-считается один раз, при первом обращении; все 21 — около 255 с.
+считается один раз, при первом обращении; все 23 — около 5.5 мин.
 Тесты на фикстуре помечены slow (хук в tests/conftest.py, DEBT-032).
 """
 
@@ -46,6 +46,7 @@ ALL_EXAMPLES = [
     "15_oil_rate_ramp_up",
     "16_well_shut_in",
     "17_shut_in_strong_cooling",
+    "18_prototype_input",
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
@@ -75,6 +76,7 @@ NEEDS_SG_SECTION = [
     "11_degassing_at_boundary", "12_large_drainage_radius",
     "13a_pwf_ramp_down", "13b_pwf_alternating", "14_high_gor_cooling", "15_oil_rate_ramp_up",
     "16_well_shut_in",
+    "18_prototype_input",
 ]
 
 
@@ -134,7 +136,7 @@ class _LazyResults(dict):
 def results():
     """Сценарии ALL_EXAMPLES: расчёт при первом обращении, один раз на сессию."""
     # Ленивый расчёт (DEBT-032): выборочный запуск теста на одном примере
-    # стоит одного расчёта, а не двадцати двух (~5 мин). Имя фикстуры читает
+    # стоит одного расчёта, а не двадцати трёх (~5.5 мин). Имя фикстуры читает
     # хук tests/conftest.py: тесты на ней получают метку slow.
     return _LazyResults()
 

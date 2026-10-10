@@ -57,7 +57,7 @@ from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 22 сценария, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 23 сценария, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -80,6 +80,7 @@ ALL_EXAMPLES = [
     "15_oil_rate_ramp_up",
     "16_well_shut_in",
     "17_shut_in_strong_cooling",
+    "18_prototype_input",
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
@@ -759,10 +760,11 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
 # A. Сверка матрицы с эталоном на конфигах примеров
 # ═══════════════════════════════════════════════════════════
 
-# slow (DEBT-032): 22 штатных прогона с эталоном на каждом вызове solve —
-# ~280 с без 17, из них примеры 14 / 13b / 04a — 70 / 59 / 41 с, 16 — 31 с;
-# 17 (останов из развитой газовой зоны, FEAT-029) — ~95 с. Покрытие
-# не урезается: все 22 примера идут в полном прогоне (развилка предусмотрена
+# slow (DEBT-032): 23 штатных прогона с эталоном на каждом вызове solve —
+# ~280 с без 17 и 18, из них примеры 14 / 13b / 04a — 70 / 59 / 41 с, 16 — 31 с;
+# 17 (останов из развитой газовой зоны, FEAT-029) — ~95 с, 18 (вход
+# прототипа, VAL-005) — ~20 с. Покрытие
+# не урезается: все 23 примера идут в полном прогоне (развилка предусмотрена
 # планом DEBT-016, раздел «Решение о slow»).
 @pytest.mark.slow
 @pytest.mark.parametrize("example", ALL_EXAMPLES)

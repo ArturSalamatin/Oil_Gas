@@ -1,0 +1,34 @@
+# Installable distribution of Prototype 1.0.3 with the local changes of the
+# GPN project (DEBT-059, CHANGELOG_1.0.3.md). Only the package
+# radial_blackoil is installed; run_prototype.py, run.bat, tests/,
+# regression/ and docs/ stay in this directory and are run from it as before.
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radial-blackoil"
+dynamic = ["version"]
+description = "1D radial black-oil simulator: Prototype 1.0.3 with local changes of the GPN project"
+requires-python = ">=3.10"
+# Lower bounds as in numerical_solver/pyproject.toml. Validated: the versions
+# of requirements.txt (1.0.3 release) and numpy 2.5.2, scipy 1.18.1 (GPN venv).
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    # results.xlsx and PNG plots of run_workbook (output_artifacts.py,
+    # imported lazily); run_workbook is part of the package API.
+    "matplotlib>=3.7",
+    "XlsxWriter>=3.2",
+]
+
+[tool.setuptools.dynamic]
+# Read statically from the literal in radial_blackoil/__init__.py, without
+# importing the package: the isolated build environment has no numpy.
+version = {attr = "radial_blackoil.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+# Explicit: tests/ (a package, it has __init__.py), regression/, docs/,
+# INPUT/ and OUTPUT/ lie next to radial_blackoil and must not be installed.
+include = ["radial_blackoil*"]

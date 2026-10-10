@@ -7,7 +7,8 @@ issue: DEBT-010
 github: 92
 branch: refactor/debt-010/docstring-eq-labels
 status: реализован
-worktree: .worktrees/debt-010
+worktree: .worktrees/debt-010; удалён после влития
+merged: b3ffaac (2026-10-10)
 audit:
   date: 2026-10-10
   found: 6

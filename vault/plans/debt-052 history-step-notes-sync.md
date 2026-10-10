@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-052
 github: 83
 branch: refactor/debt-052/history-step-notes-sync
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-052
 audit:
   date: 2026-10-10

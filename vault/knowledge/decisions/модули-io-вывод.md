@@ -99,6 +99,8 @@ def load_config(path: str) -> SimulationConfig:
 
 ## output.py — сохранение результатов
 
+> **Эскизы проектного этапа; сверено с кодом в [[DEBT-052]] (2026-10-10).** Код в разделах «output.py» и «Визуализация» — замысел, не текущий `numerical_solver/gpn_multiphase_solver/io/output.py`. Метода `SimulationHistory.to_arrays` нет: упаковку в массивы делает функция `history_to_arrays(history)` того же модуля ([[контейнер-simulation-history]]). Текущие сигнатуры: `save_npz(history, grid, path)`, `save_csv(history, grid, path)`, `save_well_csv(history, path)`, `plot_profiles(history, grid, times_to_plot, field='T', ax=None)`, `plot_wellbore_dynamics(history, axes=None)`, `plot_well_rate(history, ax=None)`, `plot_2d_map(history, grid, field='T', ax=None)`, `plot_pvt_properties(pvt, Rs0, p_range, ...)`. Состав NPZ: `r`, `times`, `p`, `T`, `Sg`, `Rs`, `q_o_std`, `q_g_std`, `p_wf`, `T_wf`. Время на графиках — в сутках (плашка FEAT-022 в конце раздела «Визуализация»).
+
 ### NPZ (по умолчанию)
 
 ```python

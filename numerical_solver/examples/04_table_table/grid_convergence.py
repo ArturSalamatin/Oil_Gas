@@ -50,7 +50,7 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parents[1]))
 sys.path.insert(0, str(HERE.parents[0]))
 
-from example_runner import _PROTO_ROOT  # noqa: E402,F401  (подключает прототип)
+import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
 
 from gpn_multiphase_solver.factory import SimulatorFactory, _create_relperm  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402

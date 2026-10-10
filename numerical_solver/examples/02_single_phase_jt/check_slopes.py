@@ -37,7 +37,6 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
-sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
 # examples/ — для figure_io (FEAT-026).
 sys.path.insert(0, str(SOLVER_ROOT / "examples"))
 

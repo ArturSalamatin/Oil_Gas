@@ -27,23 +27,10 @@ for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
-# ── Подключение прототипа radial_blackoil ────────────────────
-# Прототип не установлен в venv (pyproject.toml включает только
-# gpn_multiphase_solver*), но Factory импортирует его при создании
-# PrototypeHydroAdapter. Тесты подключают через tests/conftest.py,
-# у примеров conftest нет — добавляем путь сами, тем же механизмом.
-# Factory использует ленивые импорты, поэтому достаточно сделать это
-# до первого вызова from_config().
-_SOLVER_ROOT = Path(__file__).resolve().parents[1]   # numerical_solver/
-_PROTO_ROOT = _SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"
-if not _PROTO_ROOT.is_dir():
-    raise RuntimeError(
-        f"Не найден каталог прототипа radial_blackoil:\n  {_PROTO_ROOT}\n"
-        "Он нужен всем примерам (Factory создаёт PrototypeHydroAdapter).\n"
-        "Проверьте, что репозиторий выгружен целиком."
-    )
-if str(_PROTO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROTO_ROOT))
+# ── Прототип radial_blackoil ─────────────────────────────────
+# Установленный дистрибутив radial-blackoil, зависимость пакета (DEBT-059):
+# pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]" из
+# numerical_solver (examples/README.md, «Запуск»). Путь сюда не добавляется.
 
 # ── Графики без интерактивного окна ──────────────────────────
 # Agg — backend без GUI. Задаётся до импорта pyplot, иначе matplotlib

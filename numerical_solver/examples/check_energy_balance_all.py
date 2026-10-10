@@ -29,7 +29,6 @@ HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parent
 sys.path.insert(0, str(SOLVER_ROOT))
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
 
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402

@@ -101,11 +101,7 @@ if __name__ == "__main__":
     _HERE = Path(__file__).resolve().parent
     sys.path.insert(0, str(_HERE))
     sys.path.insert(0, str(_HERE.parent))
-    # radial_blackoil (прототип гидродинамики) не установлен в venv —
-    # подключается через sys.path, как в tests/conftest.py
-    _PROTO = _HERE.parent / "HydroSolverPrototype" / "Prototype_1.0.3"
-    if str(_PROTO) not in sys.path:
-        sys.path.insert(0, str(_PROTO))
+    # radial_blackoil (прототип гидродинамики) — установленный дистрибутив (DEBT-059)
 
     from gpn_multiphase_solver.factory import SimulatorFactory
     from gpn_multiphase_solver.io.config import load_config

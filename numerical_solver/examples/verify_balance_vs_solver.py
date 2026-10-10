@@ -27,14 +27,10 @@ import numpy as np
 
 _EXAMPLES = Path(__file__).resolve().parent
 _ROOT = _EXAMPLES.parent
-# Прототип radial_blackoil подключается conftest-ом только под pytest,
-# автономному скрипту приходится делать это самому.
+# Прототип radial_blackoil — установленный дистрибутив (DEBT-059), путь к нему не добавляется
 for _p in (str(_ROOT), str(_EXAMPLES), str(_EXAMPLES / "03_standing_corey")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-_PROTO = _ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"
-if _PROTO.exists() and str(_PROTO) not in sys.path:
-    sys.path.insert(0, str(_PROTO))
 
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import load_config

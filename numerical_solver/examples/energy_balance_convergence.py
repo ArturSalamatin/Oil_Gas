@@ -49,8 +49,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 _EXAMPLES = Path(__file__).resolve().parent
 _ROOT = _EXAMPLES.parent
-for _p in (str(_ROOT), str(_EXAMPLES),
-           str(_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3")):
+# Прототип radial_blackoil — установленный дистрибутив (DEBT-059), путь к нему не добавляется
+for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

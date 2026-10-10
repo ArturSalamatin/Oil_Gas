@@ -6,6 +6,7 @@
   число и конечное, с именем поля в отказе (DEBT-051).
 - Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047);
   L, μ_JT,o, μ_JT,g — конечные, знак любой, предупреждение при μ_JT,o > 0 (DEBT-049).
+- numerics.newton_cell_tol: положительное конечное или null (BUG-022).
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
@@ -517,6 +518,40 @@ class TestMaxRetriesValidation:
         raw = _minimal_raw()
         raw["numerics"] = {"max_retries": True}
         with pytest.raises(ValueError, match="max_retries"):
+            load_config(_write_json(tmp_path, raw))
+
+
+class TestNewtonCellTolValidation:
+    """numerics.newton_cell_tol — порог условия сходимости Ньютона по ячейке (BUG-022).
+
+    Положительное конечное число или null (условие выключено). Фабрика передаёт его
+    прототипу (cell_tol); неверное значение отсекается при загрузке, а не в
+    конструкторе модели.
+    """
+
+    def test_default(self, tmp_path):
+        """Без поля — 1e-8 (замер BUG-022)."""
+        cfg = load_config(_write_json(tmp_path, _minimal_raw()))
+        assert cfg.numerics.newton_cell_tol == 1e-8
+
+    def test_explicit_value_read(self, tmp_path):
+        """Значение из JSON доходит до конфига без изменений."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"newton_cell_tol": 1e-6}
+        assert load_config(_write_json(tmp_path, raw)).numerics.newton_cell_tol == 1e-6
+
+    def test_null_disables(self, tmp_path):
+        """null — условие выключено (None)."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"newton_cell_tol": None}
+        assert load_config(_write_json(tmp_path, raw)).numerics.newton_cell_tol is None
+
+    @pytest.mark.parametrize("value", [0.0, -1e-8, float("nan"), float("inf"), True, "1e-8"])
+    def test_invalid_rejected(self, tmp_path, value):
+        """0 и отрицательный невыполнимы, NaN и inf бессмысленны, bool и строка — опечатка типа."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"newton_cell_tol": value}
+        with pytest.raises(ValueError, match="newton_cell_tol"):
             load_config(_write_json(tmp_path, raw))
 
 

@@ -191,7 +191,8 @@ Schedule прототипа — более общий формат (абсолю
     "sg_switch_tol": 1e-9,
     "jacobian_mode": "grouped",
     "linear_solver": "sparse",
-    "max_retries": 9
+    "max_retries": 9,
+    "newton_cell_tol": 1e-8
 }
 ```
 
@@ -199,7 +200,8 @@ Schedule прототипа — более общий формат (абсолю
 - `dt_min`, `dt_max` — ⚠️ объявлены в `NumericsConfig`, но **никакой модуль их не читает** (проверено grep при DEBT-007). Дробление шага в `Simulator._advance` (локальное, DEBT-015) их не использует: глубина дробления задаётся `max_retries`, а не нижней границей подшага. Учтено в DEBT-008
 - `max_retries` — глубина дробления шага в `Simulator` (локальное, DEBT-015): подшаг, на котором Newton не сошёлся, делится пополам, наименьший подшаг `dt_integration`/2**max_retries. Допустимо 0…20, по умолчанию 9 (dt/512). Значение — измеренный порог DEBT-007; порог немонотонен по сетке, для отдельных конфигураций нужно 10–11
   - Уточнение (DEBT-041, 2026-10-07): порог DEBT-007 снят BUG-014, порог BUG-003 (04a, $N = 80$) — BUG-016; 9 теперь запас, а не порог. Обоснование — комментарий `NumericsConfig.max_retries` (`io/config.py`); пример 03 требует не больше 4 удвоений (README 03).
-- `newton_*`, `max_active_set_iter`, `*_switch_tol`, `jacobian_mode`, `linear_solver` — передаются в RadialBlackOilModel и advance()
+- `newton_cell_tol` — порог условия сходимости Ньютона по ячейке (BUG-022): решение принимается, если кроме абсолютного критерия прототипа в каждой ячейке $\max_c |F_c|\,\Delta t/V_p \le$ порога. Положительное конечное число или `null` (выключено), по умолчанию 1e-8; передаётся прототипу (`cell_tol`). Порог заметно ниже $\sim 2.2\cdot10^{-16}(R_{ext}/r_w)^2$ не достигается из-за округлений — шаги дробятся (пример 17 при 1e-10: отказов шагов 214 против 47; [[DEBT-055]])
+- `jacobian_mode`, `linear_solver`, `newton_cell_tol` — передаются в `RadialBlackOilModel`; `newton_max_iter`, `newton_rtol`, `newton_atol`, `max_active_set_iter`, `*_switch_tol` — ⚠️ не передаются никуда, прототип берёт свои умолчания ([[DEBT-008]])
 - Если параметр не задан в JSON — берётся default из прототипа
 
 Примечание: dt_integration из секции `time` и из `numerics` — одна и та же величина. Хранить в одном месте (в `time`), в `numerics` не дублировать.
@@ -254,6 +256,10 @@ Schedule прототипа — более общий формат (абсолю
 - табличная PVT: `Rs0` в диапазоне веток `oil_pvt.csv` — иначе `ValueError`
 - обе модели PVT: недонасыщенный старт `Rs0 <= Rs_eq(p0)` (допуск 1e-5 м³ст/м³ст) — иначе `ValueError`
 - табличная PVT: выход начального состояния за PVT- и ОФП-таблицы прототипа — предупреждение в журнале
+
+Численные параметры — наш config (`_validate`):
+- `numerics.max_retries` — целое в [0, 20] (DEBT-007)
+- `numerics.newton_cell_tol` — положительное конечное число или `null` (BUG-022)
 
 ## 6. Единая Grid
 
@@ -361,7 +367,8 @@ Grid не изменяется после создания. Модули тол�
         "skin": 0.0,
         "jacobian_mode": "grouped",
         "linear_solver": "sparse",
-        "max_retries": 9
+        "max_retries": 9,
+        "newton_cell_tol": 1e-8
     },
     "output": {
         "log_level": "INFO",

@@ -10,6 +10,8 @@
 Исправление: начальное S_g не выше наибольшего узла таблицы ОФП, где k_ro > 0
 (RadialBlackOilModel.sg_activation_cap). Меняется только стартовая точка
 Ньютона: уравнения и критерий сходимости прежние, решение то же.
+Тест первых суток выключает условие сходимости по ячейке (BUG-022): оно меняет
+число подшагов, а не стартовую точку.
 
 План: vault/plans/bug-018 closed-flash-sg-activation.md.
 """
@@ -97,10 +99,45 @@ class TestFirstStep:
         исходный алгоритм advance, N = 350 — третья ступень (BUG-016).
         """
         sim, init, dt = _sim(N=N)
+        # BUG-022: тест — про стартовую точку Ньютона (ограничение S_g), а не про критерий
+        # сходимости, поэтому условие по ячейке выключено. С ним шаг 86400 с при N = 350 не
+        # решает ни одна ступень (линейный поиск встаёт при выполненном абсолютном критерии),
+        # и Simulator проходит сутки двумя подшагами — test_first_day_with_cell_tol.
+        sim._hydro._model.cell_tol = None
         # Шаг сошёлся одним вызовом адаптера: иначе HydroConvergenceError
         res = _first_step(sim, init, dt)
         assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
         assert res.state.p[0] == pytest.approx(p0_MPa * 1e6, abs=100.0)
+
+    def test_first_day_with_cell_tol(self):
+        """N = 350 с условием по ячейке (BUG-022): первые сутки — двумя подшагами Simulator.
+
+        Замер плана BUG-022 (vault/issues/bug-022/probes/failing_tests.out.txt): шаг 86400 с
+        ступени 1–4 не решают (ступени 1–3 — отказ линейного поиска при выполненном
+        абсолютном критерии, невязка 6.5e-15), Simulator делит его пополам: 2 × 43200 с.
+        На 1 сут S_g(r_w) = 0.418464, p(r_w) = 5.142747 МПа — против 0.417217 и
+        5.140841 одним шагом: погрешность шага по времени, а не решателя.
+        Ловит: срыв дробления при условии по ячейке (больше подшагов — разобрать, не подгонять).
+        """
+        sim, init, _ = _sim(N=350)
+        calls = []
+        orig = sim._hydro.solve
+
+        def solve(state, dt, bc):
+            try:
+                r = orig(state, dt, bc)
+            except HydroConvergenceError:
+                calls.append((dt, False))
+                raise
+            calls.append((dt, True))
+            return r
+
+        sim._hydro.solve = solve
+        h = sim.run(init)
+        assert calls == [(86400.0, False), (43200.0, True), (43200.0, True)]
+        st = h.states[-1]
+        assert st.Sg[0] == pytest.approx(0.418464, abs=1e-5)
+        assert st.p[0] == pytest.approx(5.142747e6, abs=100.0)
 
     def test_without_cap_fails(self):
         """Без ограничения сценарий по-прежнему не сходится — он воспроизводит баг.

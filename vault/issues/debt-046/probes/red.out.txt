@@ -1,0 +1,49 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+
+(а) from-импорт верхнего уровня: удалено figure_io.export_emf
+  текст упоминает: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '04a_high_gas_saturation/plot_profiles_50k.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py']
+  вариант 1 ловит: ['01_single_phase_no_jt/main.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '04a_high_gas_saturation/plot_profiles_50k.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py']
+  вариант 2 ловит: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '04a_high_gas_saturation/plot_profiles_50k.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py']
+  только 2: ['01_single_phase_no_jt/spatial_convergence.py']; только 1: ['temperature_asymptotics.py']
+
+(а) from-импорт верхнего уровня: удалено closed_form.solve_closed
+  текст упоминает: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'two_phase_analytics.py']
+  вариант 1 ловит: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', 'temperature_asymptotics.py', 'two_phase_analytics.py']
+  вариант 2 ловит: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', 'two_phase_analytics.py']
+  только 2: []; только 1: ['temperature_asymptotics.py']
+
+(б) from-импорт в функции + верхний: удалено gpn_multiphase_solver.factory.SimulatorFactory
+  текст упоминает: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04_table_table/main.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'check_energy_balance_all.py', 'convergence.py', 'energy_balance.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  вариант 1 ловит: ['02_single_phase_jt/check_slopes.py', '04_table_table/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'check_energy_balance_all.py', 'example_runner.py', 'temperature_asymptotics.py', 'verify_balance_vs_solver.py']
+  вариант 2 ловит: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04_table_table/main.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'check_energy_balance_all.py', 'convergence.py', 'energy_balance.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  только 2: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/main.py', '05_standing_table_rp/main.py', 'convergence.py', 'energy_balance.py', 'mass_balance.py', 'two_phase_analytics.py']; только 1: []
+
+(б) from-импорт в функции: удалено gpn_multiphase_solver.io.config.load_config
+  текст упоминает: ['01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'check_energy_balance_all.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  вариант 1 ловит: ['02_single_phase_jt/check_slopes.py', '04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'check_energy_balance_all.py', 'example_runner.py', 'temperature_asymptotics.py', 'verify_balance_vs_solver.py']
+  вариант 2 ловит: ['01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'check_energy_balance_all.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  только 2: ['01_single_phase_no_jt/spatial_convergence.py', '03_standing_corey/main.py', 'energy_balance.py', 'energy_balance_convergence.py', 'mass_balance.py', 'two_phase_analytics.py']; только 1: []
+
+(в) alias.attr: удалено two_phase_analytics.report
+  текст упоминает: ['03_standing_corey/main.py', '04_table_table/main.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/main.py', '14_high_gor_cooling/main.py', '15_oil_rate_ramp_up/main.py', 'closed_form.py', 'energy_balance.py', 'example_runner.py', 'pvt_plot.py', 'relperm_plot.py', 'rs_analytics.py', 'temperature_asymptotics.py', 'verify_balance_vs_solver.py']
+  вариант 1 ловит: ['temperature_asymptotics.py']
+  вариант 2 ловит: ['03_standing_corey/main.py', '04_table_table/main.py', '05_standing_table_rp/main.py']
+  только 2: ['03_standing_corey/main.py', '04_table_table/main.py', '05_standing_table_rp/main.py']; только 1: ['temperature_asymptotics.py']
+
+(в) alias.attr: удалено temperature_asymptotics.single_phase_asymptote
+  текст упоминает: ['02_single_phase_jt/main.py', '03_standing_corey/main.py', '05_standing_table_rp/main.py']
+  вариант 1 ловит: ['temperature_asymptotics.py']
+  вариант 2 ловит: ['02_single_phase_jt/main.py', '03_standing_corey/main.py', '05_standing_table_rp/main.py']
+  только 2: ['02_single_phase_jt/main.py', '03_standing_corey/main.py', '05_standing_table_rp/main.py']; только 1: ['temperature_asymptotics.py']
+
+(в) alias.attr (реэкспорт): удалено two_phase_analytics.solve_closed
+  текст упоминает: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'closed_form.py']
+  вариант 1 ловит: ['temperature_asymptotics.py']
+  вариант 2 ловит: ['05_standing_table_rp/closed_form_convergence.py']
+  только 2: ['05_standing_table_rp/closed_form_convergence.py']; только 1: ['temperature_asymptotics.py']
+
+(г) имя только в теле функции: convergence.py без deepcopy
+  вариант 1: ['deepcopy в run_series']
+  вариант 2: не проверяет имена самого скрипта (по построению)
+
+Вопрос 4: run_example(title → figure_title) ловит сверка сигнатуры в 22 скриптах: ['01_single_phase_no_jt/main.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/main.py', '04a_high_gas_saturation/main.py', '05_standing_table_rp/main.py', '06_table_corey_rp/main.py', '07_degassing_adiabatic_only/main.py', '08_degassing_jt/main.py', '09_degassing_latent_heat/main.py', '10_deep_degassing/main.py', '11_degassing_at_boundary/main.py', '12_large_drainage_radius/main.py', '13a_pwf_ramp_down/main.py', '13b_pwf_alternating/main.py', '14_high_gor_cooling/main.py', '15_oil_rate_ramp_up/main.py', '16_well_shut_in/main.py', '17_shut_in_strong_cooling/main.py', '19_rs150_cooling/main.py', '20_rs300_cooling/main.py', '21_rs100_cooling/main.py']

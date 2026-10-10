@@ -1,0 +1,6 @@
+﻿.....................................................                    [100%]
+============================= slowest 3 durations =============================
+1.70s call     ::test_script_names_resolve[01_single_phase_no_jt/main.py]
+0.04s call     ::test_script_names_resolve[closed_form.py]
+0.03s call     ::test_script_names_resolve[two_phase_analytics.py]
+53 passed in 2.53s

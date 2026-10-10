@@ -1,0 +1,47 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+Скриптов: 45
+01_single_phase_no_jt/main.py                           main=да  from_верх= 4 from_в_функции= 1 alias.attr= 0 run_example=1 верхний_уровень=—
+01_single_phase_no_jt/spatial_convergence.py            main=НЕТ from_верх= 5 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@113', 'Expr@125', 'For@126', 'For@137', 'Expr@143', 'Expr@144', 'Expr@146', 'Expr@147', 'Expr@148', 'Expr@149', 'Expr@151', 'Expr@153', 'Expr@156', 'Expr@157', 'Expr@158', 'Expr@159', 'Expr@161']
+02_single_phase_jt/check_slopes.py                      main=да  from_верх= 4 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+02_single_phase_jt/main.py                              main=да  from_верх= 4 from_в_функции= 1 alias.attr= 1 run_example=1 верхний_уровень=—
+03_standing_corey/main.py                               main=да  from_верх= 2 from_в_функции= 1 alias.attr= 4 run_example=1 верхний_уровень=—
+04_table_table/grid_convergence.py                      main=да  from_верх= 7 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+04_table_table/main.py                                  main=да  from_верх= 2 from_в_функции= 0 alias.attr= 1 run_example=1 верхний_уровень=—
+04a_high_gas_saturation/grid_convergence.py             main=да  from_верх= 5 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+04a_high_gas_saturation/main.py                         main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+04a_high_gas_saturation/plot_profiles_50k.py            main=да  from_верх= 2 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+04a_high_gas_saturation/rewrite_history.py              main=да  from_верх= 0 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+05_standing_table_rp/closed_form_convergence.py         main=да  from_верх= 5 from_в_функции= 0 alias.attr= 1 run_example=0 верхний_уровень=—
+05_standing_table_rp/main.py                            main=да  from_верх= 6 from_в_функции= 0 alias.attr= 5 run_example=1 верхний_уровень=—
+06_table_corey_rp/main.py                               main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+07_degassing_adiabatic_only/main.py                     main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+08_degassing_jt/main.py                                 main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+09_degassing_latent_heat/main.py                        main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+10_deep_degassing/main.py                               main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+11_degassing_at_boundary/main.py                        main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+12_large_drainage_radius/main.py                        main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+13a_pwf_ramp_down/main.py                               main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+13b_pwf_alternating/main.py                             main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+14_high_gor_cooling/main.py                             main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+15_oil_rate_ramp_up/main.py                             main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+16_well_shut_in/main.py                                 main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+17_shut_in_strong_cooling/main.py                       main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+19_rs150_cooling/main.py                                main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+20_rs300_cooling/main.py                                main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+21_rs100_cooling/main.py                                main=да  from_верх= 1 from_в_функции= 0 alias.attr= 0 run_example=1 верхний_уровень=—
+check_energy_balance_all.py                             main=да  from_верх= 3 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+closed_form.py                                          main=НЕТ from_верх= 0 from_в_функции= 2 alias.attr= 0 run_example=0 верхний_уровень=—
+compare_script_copies.py                                main=НЕТ from_верх= 0 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@69']
+convergence.py                                          main=НЕТ from_верх= 0 from_в_функции= 1 alias.attr= 0 run_example=0 верхний_уровень=['For@33']
+energy_balance.py                                       main=да  from_верх= 5 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@54']
+energy_balance_convergence.py                           main=да  from_верх= 6 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@52']
+example_runner.py                                       main=НЕТ from_верх=20 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@26', 'If@39', 'If@45']
+figure_io.py                                            main=НЕТ from_верх= 0 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+mass_balance.py                                         main=да  from_верх= 7 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=['For@44']
+pvt_plot.py                                             main=НЕТ from_верх= 4 from_в_функции= 1 alias.attr= 0 run_example=0 верхний_уровень=—
+relperm_plot.py                                         main=НЕТ from_верх= 1 from_в_функции= 2 alias.attr= 0 run_example=0 верхний_уровень=—
+rs_analytics.py                                         main=НЕТ from_верх= 0 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+run_all.py                                              main=да  from_верх= 0 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+temperature_asymptotics.py                              main=да  from_верх= 2 from_в_функции= 0 alias.attr= 0 run_example=0 верхний_уровень=—
+two_phase_analytics.py                                  main=да  from_верх= 5 from_в_функции= 1 alias.attr= 0 run_example=0 верхний_уровень=['For@97']
+verify_balance_vs_solver.py                             main=да  from_верх= 3 from_в_функции= 0 alias.attr= 1 run_example=0 верхний_уровень=['For@32', 'If@36']

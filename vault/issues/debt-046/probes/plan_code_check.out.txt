@@ -1,0 +1,11 @@
+﻿--- проба
++++ план
+@@ -21,4 +20,0 @@
+-
+-ПРОБА ПЛАНА: файл совпадает с numerical_solver/tests/test_example_scripts.py
+-из плана, кроме строки EXAMPLES_DIR. Запуск из numerical_solver/:
+-    .venv\\Scripts\\python -m pytest -c pyproject.toml -p tests.conftest ..\\vault\\issues\\debt-046\\probes\\test_plan_debt046.py -q
+@@ -39,2 +35 @@
+-# ПРОБА: в плане — Path(__file__).parent.parent / "examples".
+-EXAMPLES_DIR = Path.cwd() / "examples"
++EXAMPLES_DIR = Path(__file__).parent.parent / "examples"

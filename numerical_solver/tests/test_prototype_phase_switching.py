@@ -18,6 +18,7 @@ BUG-014 с _newton_switching — переключение фаз после ка
 vault/issues/bug-020/probes/plan_tests_check.out.txt.
 """
 
+import copy
 from pathlib import Path
 
 import numpy as np
@@ -534,3 +535,53 @@ class TestRsStepLimit:
         keep = ~mask & (z0[n:] + 1.0 < model.pvt.rs_sat(z0[:n]))
         assert np.count_nonzero(keep) > 0
         assert np.array_equal(z1[n:][keep], z0[n:][keep] + 1e-3)
+
+
+class TestDailyShutin:
+    def test_daily_shutin_passes_default_retries(self):
+        """10 сут добычи + 3 сут останова (q_oil = 0) при dt_integration = 1 сут и max_retries = 9 (~6 с).
+
+        До BUG-024: отказ «не сошёлся при дроблении шага до dt/512» на подшаге
+        t = 10.0781 сут — ступень 4 не сходилась ни на одном подшаге от 1 сут до 169 с
+        (застой при R_s = 0 у забоя или хаос; проходил ли расчёт, зависело от
+        округлений предыдущих шагов: с условием по ячейке 1e-7 — да, 1e-8 — нет).
+        Замер плана BUG-024: на останове 17 вызовов гидро, 7 отказов, принято 10
+        подшагов, наименьший 5400 с; p(r_w) = 327.2428 бар, T(r_w) = 375.3667 К.
+        Давление ниже, чем при шаге 1 ч (328.10 бар), — погрешность суточного шага.
+        Ловит: возврат к неограниченному шагу R_s в ступени 4 (BUG-024).
+        """
+        cfg = load_config(RS300)
+        cfg.output.log_level = "ERROR"
+        hist = list(cfg.time.history)
+        for _ in range(3):
+            x = copy.deepcopy(hist[0])
+            x.control, x.p_wf, x.q_oil, x.min_bhp = "rate", None, 0.0, 101325.0
+            hist.append(x)
+        cfg.time.history = hist
+        # штатные значения замороженного конфига: шаг 1 сут, глубина дробления 9 (dt/512)
+        assert cfg.time.dt_integration == DAY and cfg.numerics.max_retries == 9
+        sim, init = SimulatorFactory.from_config(cfg)
+        calls = []
+        orig = sim._hydro.solve
+
+        def solve(state, dt, bc):
+            shut = state.t >= 10 * DAY - 1e-6
+            try:
+                r = orig(state, dt, bc)
+            except HydroConvergenceError:
+                if shut:
+                    calls.append((dt, False))
+                raise
+            if shut:
+                calls.append((dt, True))
+            return r
+
+        sim._hydro.solve = solve
+        st = sim.run(init).states[-1]
+        ok = [dt for dt, conv in calls if conv]
+        failed = [dt for dt, conv in calls if not conv]
+        assert len(ok) == 10 and len(failed) == 7
+        assert sum(ok) == pytest.approx(3 * DAY, rel=1e-12)   # трое суток пройдены ровно один раз
+        assert min(ok) == 5400.0
+        assert st.p[0] / BAR == pytest.approx(327.2428, abs=1e-3)
+        assert st.T[0] == pytest.approx(375.3667, abs=1e-3)

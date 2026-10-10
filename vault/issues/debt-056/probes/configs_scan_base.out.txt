@@ -1,0 +1,2 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\io\config.py
+конфигов: 32, с замечаниями: 0

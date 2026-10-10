@@ -2801,3 +2801,215 @@ class TestShutInStrongCooling:
         assert "n_profiles=7" in text
         assert "steady_state=False" in text
         assert "overlays=" not in text
+
+
+# ═══════════════════════════════════════════════════════════
+# T. Сценарий 18: вход прототипа — книга INPUT_TEMPLATE.xlsx (VAL-005)
+# ═══════════════════════════════════════════════════════════
+
+def _prototype_input_module():
+    """Модуль examples/18_prototype_input/prototype_input.py, загруженный по пути файла."""
+    # Папку примера в sys.path не кладём: в ней main.py, он перекрыл бы
+    # одноимённые модули других тестов. Модуль импортирует пакет, прототип
+    # (путь — conftest), numpy; figure_io — лениво, только для рисунков.
+    import importlib.util
+    path = EXAMPLES_DIR / "18_prototype_input" / "prototype_input.py"
+    spec = importlib.util.spec_from_file_location("prototype_input_18", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="module")
+def prototype_18(tmp_path_factory):
+    """Прототип на книге примера 18 штатным путём run_workbook (~12 с): профили и дебиты по отметкам."""
+    pi = _prototype_input_module()
+    out = tmp_path_factory.mktemp("prototype_18")
+    pi.run_prototype(pi.BOOK, out)
+    return pi.load_prototype(out)
+
+
+class TestPrototypeInput:
+    """Сценарий 18: книга прототипа INPUT_TEMPLATE.xlsx → конфиг; сверка с прототипом и CMG IMEX T07.
+
+    Гидродинамику считает Ньютон прототипа (PrototypeHydroAdapter), табличное
+    PVT от T не зависит: сверка проверяет перевод книги, адаптер и наш шаг по
+    времени, а не физику фильтрации (её авторы прототипа сверили с IMEX сами).
+    Записи: 0 — начальное состояние; 1..22 — строки SCHEDULE книги: 1 мин;
+    1, 2, 4, 5 сут; 5 сут + 10…60 с; 6, 14, 15 сут; 15 сут + 10…60 с; 16,
+    30 сут. Числа — замер плана VAL-005
+    (vault/issues/val-005/probes/plan_numbers_dt3600.out.txt, 2026-10-08).
+    """
+
+    NAME = "18_prototype_input"
+
+    def test_files_reproduce_conversion(self, tmp_path):
+        """config.json и три CSV папки — ровно то, что даёт конвертация книги.
+
+        Ловит: ручную правку файлов примера в обход книги; правку конвертера
+        без перегенерации файлов. Сравнение построчное, не побайтное:
+        окончания строк в рабочей копии зависят от настроек git.
+        """
+        pi = _prototype_input_module()
+        pi.convert(pi.BOOK, tmp_path)
+        for name in ("config.json", "oil_pvt.csv", "gas_pvt.csv", "relperm.csv"):
+            got = (tmp_path / name).read_text(encoding="utf-8").splitlines()
+            ref = (EXAMPLES_DIR / self.NAME / name).read_text(encoding="utf-8").splitlines()
+            assert got == ref, f"{name}: файл примера расходится с конвертацией книги"
+
+    def test_config_follows_decisions(self):
+        """Конфиг: геометрия и пласт книги, шаг = DTMAX, теплофизика примера 14, режимы 150/120/100 бар.
+
+        dt_integration = 3600 с = DTMAX книги: против прототипа max|Δp| 0.0054
+        бар, суточный шаг — 1.93 бар и 9 % по q_o против IMEX, шаг 600 с —
+        71 с расчёта вместо 13 без выигрыша (замер плана). Теплофизика и
+        плотности — не из книги (прототип изотермический), решение
+        пользователя 2026-10-08: значения примера 14. Ловит: смену шага,
+        подмену тепловых констант, сдвиг смены режима.
+        """
+        cfg = load_config(EXAMPLES_DIR / self.NAME / "config.json")
+        assert cfg.time.dt_integration == 3600.0
+        assert cfg.grid.N == 100
+        g = cfg.geometry
+        assert (g.r_well, g.R_ext, g.h) == (0.1, 100.0, 10.0)
+        assert cfg.rock.permeability == 9.869233e-16 and cfg.rock.porosity == 0.2
+        ic = cfg.initial_conditions
+        assert (ic.p0, ic.T0, ic.Rs0) == (200e5, 350.0, 50.0)
+        assert (cfg.pvt.rho_o_std, cfg.pvt.rho_g_std) == (850.0, 0.85)
+        th = cfg.thermal
+        assert (th.c_p_oil, th.c_p_gas, th.mu_JT_oil, th.mu_JT_gas, th.L_degas) == \
+            (2000.0, 2850.0, -4e-7, 4e-6, 230000.0)
+        hist = cfg.time.history
+        assert len(hist) == 22
+        # Начала интервалов, сут: смена режима — ровно на 5 и 15 сут
+        t = np.cumsum([0.0] + [h.dt for h in hist]) / 86400.0
+        for k, h in enumerate(hist):
+            expected = 150e5 if t[k] < 5.0 else (120e5 if t[k] < 15.0 else 100e5)
+            assert h.control == "pressure" and h.p_wf == expected, f"интервал {k}"
+        assert t[-1] == pytest.approx(30.0, abs=1e-9)
+
+    def test_imex_reference_applies(self):
+        """Эталон IMEX T07 применим к шаблону и к самой T07, но не к книгам с другим MODEL, таблицами или режимами.
+
+        T01 — те же MODEL и таблицы, режим 100 бар с начала; T06 — другое p0;
+        T08c — расширенная PVTO и подъём p_wf. Ловит: сверку с IMEX на книге,
+        для которой эталона нет.
+        """
+        pi = _prototype_input_module()
+        inputs = pi.PROTO_ROOT / "regression" / "inputs"
+        assert pi.imex_applicable(pi.BOOK)
+        assert pi.imex_applicable(inputs / "T07.xlsx")
+        for case in ("T01", "T06", "T08c"):
+            assert not pi.imex_applicable(inputs / f"{case}.xlsx"), case
+
+    def test_main_settings(self):
+        """main.py 18: 6 моментов профилей, без стационарной аналитики, сверка с прототипом и IMEX вызывается."""
+        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
+        assert "n_profiles=6" in text
+        assert "steady_state=False" in text
+        assert "report_and_plot(" in text
+
+    def test_conversion_rate_book(self, tmp_path):
+        """Книга с управлением по дебиту (T09 прототипа): OIL_RATE → control="rate", сутки → секунды, Minimum BHP → min_bhp.
+
+        T09: 2 м³ст/сут нефти при Minimum BHP 100 бар, 7 интервалов. Шаблон
+        эту ветку конвертера не задействует. Ловит: потерю перевода суток в
+        секунды, подмену min_bhp другим давлением, отказ проверки конфига.
+        """
+        pi = _prototype_input_module()
+        pi.convert(pi.PROTO_ROOT / "regression" / "inputs" / "T09.xlsx", tmp_path)
+        hist = load_config(tmp_path / "config.json").time.history
+        assert len(hist) == 7
+        for h in hist:
+            assert (h.control, h.q_oil, h.min_bhp, h.p_wf) == ("rate", 2.0 / 86400.0, 100e5, None)
+
+    def test_conversion_refuses_unsupported_book(self, tmp_path, monkeypatch):
+        """Книгу, которую решатель молча поставил бы иначе, конвертер отвергает с именем параметра.
+
+        Решатель держит на контуре p0 и берёт опорное давление породы равным
+        p0 (factory.py, CompressibleRock); у управления по дебиту нижняя
+        граница p_wf обязательна. Листы подменяются в памяти (_read_book),
+        файл книги не меняется. Ловит: молчаливую подмену p_e, p_ref и
+        min_bhp.
+        """
+        import copy
+        pi = _prototype_input_module()
+        base = pi._read_book(pi.BOOK)
+
+        def edited(sheet, key_col, key, changes):
+            """Копия листов книги с правкой первой строки листа sheet, где key_col == key."""
+            sheets = copy.deepcopy(base)
+            rows = [list(r) for r in sheets[sheet]]
+            h = [str(x).strip() if x is not None else "" for x in rows[0]]
+            for r in rows[1:]:
+                if r[h.index(key_col)] == key:
+                    for col, value in changes.items():
+                        r[h.index(col)] = value
+                    break
+            sheets[sheet] = rows
+            return sheets
+
+        cases = {
+            "Reference pressure": edited("MODEL", "Parameter", "Reference pressure",
+                                         {"Value": 190.0}),
+            "Outer-boundary pressure": edited("MODEL", "Parameter", "Outer-boundary pressure",
+                                              {"Value": 210.0}),
+            # Первая строка SCHEDULE (0 сут) — OIL_RATE без нижней границы p_wf
+            "Minimum BHP": edited("SCHEDULE", "Time, day", 0.0,
+                                  {"Control mode": "OIL_RATE",
+                                   "Oil-rate target, Sm3/day": 2.0,
+                                   "Minimum BHP, bar(a)": None}),
+        }
+        for what, sheets in cases.items():
+            monkeypatch.setattr(pi, "_read_book", lambda book, _s=sheets: _s)
+            with pytest.raises(ValueError, match=what):
+                pi.convert(pi.BOOK, tmp_path / what.replace(" ", "_"))
+
+    def test_matches_prototype(self, results, prototype_18):
+        """Расчёт совпадает с прототипом на той же книге на всех 22 отметках SCHEDULE.
+
+        Различие — только последовательность шагов по времени: у нас 3600 с,
+        у прототипа 1 мин с ростом до 60 мин. Замер: max|Δp| 0.0054 бар,
+        |ΔS_g| 3.1e-4, |ΔR_s| 1.7e-3, q_o 0.006 %, q_g 0.068 %, GOR 0.067 %;
+        p_wf совпадает точно. Допуски TOL_PROTOTYPE — запас ~3 раза. Ловит
+        ошибку перевода книги (k на 1 % — q_o 0.94 %; c_r = 0 — 1.38 бар;
+        скин 0.1 — 7.4 бар), суточный шаг (1.93 бар), потерю отметки
+        SCHEDULE в истории (compare падает с именем отметки).
+        """
+        pi = _prototype_input_module()
+        days = sorted(t for t in prototype_18 if t > 0.0)
+        assert len(days) == 22
+        worst = pi.compare(results[self.NAME]["history"], prototype_18, days)
+        bad = {k: worst[k] for k, lim in pi.TOL_PROTOTYPE.items() if not worst[k] <= lim}
+        assert not bad, f"расхождение с прототипом вне допуска: {bad}"
+
+    def test_matches_imex_t07(self, results):
+        """Против CMG IMEX T07 — на уровне приёмки прототипа авторами (запас ~10 %).
+
+        Отметки 1, 2, 4, 5, 6, 14, 15, 16, 30 сут (отметки «+1 мин» авторы
+        исключили). Авторы: Δp 0.1374 бар, ΔS_g 0.0046, RMSE 0.00227, ΔR_s
+        0.0445, q_o 0.51 %, q_g 2.52 %, GOR 2.56 %; замер плана — 0.1373 /
+        0.0046 / 0.00227 / 0.0445 / 0.51 / 2.59 / 2.62. Ловит то же, что
+        сверка с прототипом, грубее: k на 1 % — q_o 1.41 %, Δp 0.168 бар.
+        """
+        pi = _prototype_input_module()
+        worst = pi.compare(results[self.NAME]["history"], pi.load_imex(), pi.STABLE_DAYS)
+        bad = {k: worst[k] for k, lim in pi.TOL_IMEX.items() if not worst[k] <= lim}
+        assert not bad, f"расхождение с IMEX вне допуска: {bad}"
+
+    def test_wellbore_cools(self, results):
+        """Забой холоднее T0 на всех записях после пуска: на 0.20…0.64 К.
+
+        Охлаждение — адиабатическое расширение и теплота выделения газа
+        (баланс энергии за 30 сут: −1.19e10 и −8.9e8 Дж против +4.6e8 Дж
+        Джоуля–Томсона). После каждого снижения p_wf забой за минуту
+        охлаждается на ~0.4 К и затем прогревается. Замер: от −0.6431 К
+        (запись 20, 15 сут + 60 с) до −0.1994 К (запись 5, 5 сут); на 30 сут
+        −0.4892 К. Ловит: смену знака теплового эффекта, ошибку единиц
+        тепловых констант.
+        """
+        h = results[self.NAME]["history"]
+        dT = np.array([s.T[0] for s in h.states[1:]]) - 350.0
+        assert np.all((dT > -1.0) & (dT < -0.1)), dT
+        assert dT.min() == pytest.approx(-0.6431, abs=2e-3)
+        assert dT[-1] == pytest.approx(-0.4892, abs=2e-3)

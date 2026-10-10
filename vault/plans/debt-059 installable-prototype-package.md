@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-059
 github: 94
 branch: refactor/debt-059/installable-prototype-package
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-059
 audit:
   date: 2026-10-10

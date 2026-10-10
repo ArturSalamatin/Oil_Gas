@@ -212,7 +212,8 @@ def test_failure_message_reports_state_not_guess():
     Текст формирует Simulator (DEBT-015); его начало цитируют README примеров
     03, 05, 06, 07, 10. Подсказка BUG-020 «уменьшите dt_integration до 3600 с
     при смене режима» снята: при локальном дроблении останов проходит и при
-    1 сут. Оба рычага — max_retries и dt_integration — названы.
+    1 сут (между BUG-022 и BUG-024 — нет: на конфигах 19 и 20 нужен был
+    max_retries = 11). Оба рычага — max_retries и dt_integration — названы.
     """
     sim, init, dt = _sim(retries=1)
     model = sim._hydro._model

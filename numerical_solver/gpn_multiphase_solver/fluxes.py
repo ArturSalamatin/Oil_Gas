@@ -1,6 +1,7 @@
 """Вычисление потоков через грани: G, Q, u, m, Gm + upstream.
 
-Eq. 8, 9, 24 problem_statement.tex. Конвенция: >0 = от скважины (рост r).
+Ур. (eq:flux_oil), (eq:flux_gas), (eq:phase_flux) problem_statement.tex.
+Конвенция: >0 = от скважины (рост r).
 
 phase_fluxes_from_components — шаг «Q, u, m, Gm из G», общий для обоих
 гидро-путей: compute_fluxes (путь тестов и двойников, G по Дарси) и
@@ -175,11 +176,11 @@ def compute_fluxes(state: SimulationState, grid: Grid,
         else:
             up = f
 
-        # G_o = T * (kro/(μo·Bo))_up * dp — поток нефтяного компонента, м³ст/с (eq. 8)
+        # G_o = T * (kro/(μo·Bo))_up * dp — поток нефтяного компонента, м³ст/с (eq:flux_oil)
         G_o[f] = T_f * mob_o[up] * dp
         # G_free_gas = T * (krg/(μg·Bg))_up * dp — свободный газ, м³ст/с
         G_free_gas[f] = T_f * mob_g[up] * dp
-        # G_g = (Rs_up * mob_o_up + mob_g_up) * T * dp — полный газовый компонент (eq. 9)
+        # G_g = (Rs_up * mob_o_up + mob_g_up) * T * dp — полный газовый компонент (eq:flux_gas)
         G_g[f] = T_f * (Rs[up] * mob_o[up] + mob_g[up]) * dp
 
     # ── Забой (f = 0) ────────────────────────────────────────

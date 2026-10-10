@@ -83,7 +83,7 @@ def _bc(T_ext, Rs_ext=RS0, p_ext=P0):
     """Граничные условия для энергетического решателя (DEBT-009).
 
     Rs_ext по умолчанию = RS0: во всех этих тестах контур насыщен,
-    поэтому состав притока совпадает с начальным (eq. bc_Sg_ext).
+    поэтому состав притока совпадает с начальным (eq:bc_Sg_ext).
 
     p_ext, T_ext, Rs_ext используются энергетическим решателем при
     втекании через контурную грань: свойства фаз берутся при условиях
@@ -567,7 +567,7 @@ class TestZeroPhaseConduction:
 # ═══════════════════════════════════════════════════════════
 
 class TestComputeCellProperties:
-    """compute_cell_properties: rho_cp_eff (eq. 5), lambda_eff (eq. 7)."""
+    """compute_cell_properties: rho_cp_eff (eq:main_rhocpeff), lambda_eff (eq:lambda_eff)."""
 
     def test_rho_cp_eff_formula(self):
         """rho_cp_eff = (1-phi)*rho_cp_s + phi*(So*rho_o*cp_o + Sg*rho_g*cp_g).
@@ -915,7 +915,7 @@ class TestComputeDegassing:
         """Приток с контура (G_o < 0): upstream = ГУ, а не ячейка N-1.
 
         Физика: через контур поступает нефть с составом Rs^0
-        (eq. bc_Sg_ext, problem_statement.tex:1469-1472). Если в ячейке
+        (eq:bc_Sg_ext, problem_statement.tex). Если в ячейке
         N-1 началось разгазирование (Rs < Rs^0), схема обязана взять
         на контурной грани состав ПРИТОКА, а не обеднённый состав
         последней ячейки. DEBT-009.

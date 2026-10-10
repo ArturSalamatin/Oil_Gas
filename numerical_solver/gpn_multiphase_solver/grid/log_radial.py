@@ -1,11 +1,15 @@
-"""LogRadialGrid — логарифмическая радиальная сетка. Eq. 10-13, problem_statement.tex."""
+"""LogRadialGrid — логарифмическая радиальная сетка.
+
+Ур. (eq:log_grid), (eq:cell_center), (eq:volume), (eq:transmissibility)
+problem_statement.tex.
+"""
 
 import numpy as np
 from .base import Grid
 
 
 def _cell_centers_mass(r_left: np.ndarray, r_right: np.ndarray) -> np.ndarray:
-    """Центры масс кольцевых слоёв (vectorized). Eq. 12, problem_statement.tex.
+    """Центры масс кольцевых слоёв (vectorized). Ур. (eq:cell_center) problem_statement.tex.
 
     r_j = r_right * sqrt(exp(-x*ln(x)/(1-x) - 1)),  x = (r_left/r_right)^2
     """
@@ -22,7 +26,7 @@ class LogRadialGrid(Grid):
     """Логарифмическая радиальная сетка с центрами масс.
 
     Грани: geomspace(r_well, R_ext, N+1).
-    Центры: центр масс кольцевого слоя (eq. 12).
+    Центры: центр масс кольцевого слоя (eq:cell_center).
     Проводимости: T = 2πkh / ln(r_center[j+1]/r_center[j]).
     Immutable после создания.
     """
@@ -53,20 +57,20 @@ class LogRadialGrid(Grid):
         self._h = float(h)
         self._k = float(k)
 
-        # Грани (eq. 10)
+        # Грани (eq:log_grid)
         self._r_faces = np.geomspace(r_well, R_ext, N + 1)
 
-        # Центры (eq. 12)
+        # Центры (eq:cell_center)
         self._r_centers = _cell_centers_mass(
             self._r_faces[:-1], self._r_faces[1:]
         )
 
-        # Объёмы (eq. 13)
+        # Объёмы (eq:volume)
         self._volumes = np.pi * h * (
             self._r_faces[1:] ** 2 - self._r_faces[:-1] ** 2
         )
 
-        # Проводимости внутренних граней (eq. 19)
+        # Проводимости внутренних граней (eq:transmissibility)
         kh = k * h
         if N > 1:
             self._trans_internal = (

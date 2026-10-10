@@ -36,9 +36,9 @@ class EnergySolver(ABC):
             state_prev   — состояние на предыдущем шаге (T^n, p^n, Rs^n)
             dt           — шаг по времени, с
             bc           — граничные условия на контуре: T_ext (Дирихле по T),
-                           Rs_ext (состав притока, eq. bc_Sg_ext) и p_ext —
+                           Rs_ext (состав притока, eq:bc_Sg_ext) и p_ext —
                            при втекании через грань N свойства фаз берутся
-                           при условиях контура (eq. bc_props_ext, DEBT-017).
+                           при условиях контура (eq:bc_props_ext, DEBT-017).
                            Передаётся объектом целиком — как в
                            HydroSolver.solve (DEBT-009)
             collect      — накопитель баланса энергии (DEBT-013), опционально

@@ -66,7 +66,7 @@ class HydroPVT(ABC):
         ...
 
     def rho_o(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray:
-        """Плотность нефтяной фазы, кг/м³. Eq. 51 problem_statement.tex."""
+        """Плотность нефтяной фазы, кг/м³. Ур. (eq:rho_oil) problem_statement.tex."""
         return (self.rho_o_std + Rs * self.rho_g_std) / self.Bo(p, Rs)
 
     def rho_g(self, p: np.ndarray) -> np.ndarray:

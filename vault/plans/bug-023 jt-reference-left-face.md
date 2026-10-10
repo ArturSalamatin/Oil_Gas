@@ -4,7 +4,7 @@ date: 2026-10-10
 issue: BUG-023
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/86
 branch: fix/bug-023/jt-reference-left-face
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-023
 audit:
   date: 2026-10-10

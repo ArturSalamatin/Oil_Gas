@@ -1,0 +1,10 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\io\config.py
+history[0] после перевода: {'duration': 259200.0, 'dt_out': 3600.0, 'control': 'pressure', 'p_wf': 8000000.0}
+
+сейчас: отбрасывается только dt: control = {'duration': 259200.0, 'dt_out': 3600.0, 'control': 'pressure', 'p_wf': 8000000.0}
+  uniform: ValueError: history[0]: неверный набор полей времени (dt, dt_out, duration, repeat); допустимы dt, dt + repeat или duration + dt_out
+  stepped: 144 интервалов, dt = [3600.0], сумма 518400 с
+
+исправление: отбрасываются все ключи времени: control = {'control': 'pressure', 'p_wf': 8000000.0}
+  uniform: 72 интервалов, dt = [300.0], сумма 21600 с
+  stepped: 17 интервалов, dt = [300.0, 3600.0], сумма 21600 с

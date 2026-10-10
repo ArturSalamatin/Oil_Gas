@@ -23,6 +23,7 @@ from gpn_multiphase_solver.io.config import load_config, SimulationConfig
 from gpn_multiphase_solver.factory import (
     SimulatorFactory,
     _read_oil_pvt_csv, _read_gas_pvt_csv, _read_relperm_csv,
+    _create_pvt, _create_relperm, _get_or_create_proto_pvt, _get_or_create_proto_rp,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.pvt.table_full import TableFullPVT
@@ -160,12 +161,25 @@ class TestFactoryTablePVT:
 
         assert simulator._max_retries == 9
 
-    def test_relperm_is_prototype_adapter(self):
-        """RelPerm = PrototypeRPAdapter при relperm.model='table'."""
+    def test_prototype_relperm_from_csv(self):
+        """Прототип получает табличную ОФП с узлами CSV, а не пересчёт на 101 узле (DEBT-006).
+
+        Пересчёт на сетке np.linspace(0, 1, 101) — ветка CoreyRP. Для таблицы
+        он дал бы 101 узел и сдвинул порог активации газа sg_activation_cap
+        (BUG-018, radial_blackoil/blackoil.py:49-54 — последний узел с
+        k_ro > 0) с 0.6 на 0.79: в configs/table_pvt/relperm.csv k_ro = 0
+        впервые в узле 0.8, предыдущий узел — 0.6, а на 101 узле — 0.79.
+        Замер при планировании DEBT-006: на примерах 04 и 05 такая подмена
+        меняет историю лишь в последних битах (отн. ≤ 4e-14) — числовые
+        тесты её не видят, видит только этот.
+        """
         config = load_config(TABLE_CONFIG)
-        _, _ = SimulatorFactory.from_config(config)
-        # Проверяем через hydro (у которого relperm внутри модели)
-        # Проверка: relperm создаётся без ошибок — достаточно
+        assert isinstance(_create_relperm(config), PrototypeRPAdapter)
+        simulator, _ = SimulatorFactory.from_config(config)
+        model = simulator._hydro._model
+        Sg, _, _ = _read_relperm_csv(config.config_dir / config.relperm.file)
+        np.testing.assert_array_equal(model.relperm.sg, Sg)
+        assert model.sg_activation_cap == 0.6
 
     def test_initial_state_shapes(self):
         """Начальное состояние: размеры массивов = N."""
@@ -247,6 +261,18 @@ class TestPVTConsistency:
         bo_proto = proto_pvt.bo(np.array([p_bar]), np.array([Rs]))[0]
 
         assert bo_our == pytest.approx(bo_proto)
+
+    def test_proto_pvt_shared_for_table(self):
+        """Табличная PVT: прототипу — тот же BlackOilPVT, что под обёрткой (DEBT-006)."""
+        config = load_config(TABLE_CONFIG)
+        pvt = _create_pvt(config)
+        proto = _get_or_create_proto_pvt(pvt, config.initial_conditions.p0)
+        assert proto is pvt.hydro.proto_pvt
+
+    def test_proto_rp_shared_for_table(self):
+        """Табличная ОФП: прототипу — тот же TabulatedRelPerm, а не 101 узел (DEBT-006)."""
+        relperm = _create_relperm(load_config(TABLE_CONFIG))
+        assert _get_or_create_proto_rp(relperm) is relperm.proto_rp
 
 
 class TestWrapperAccess:

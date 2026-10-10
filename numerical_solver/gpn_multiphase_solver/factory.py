@@ -74,8 +74,7 @@ class SimulatorFactory:
         # 7. Simulator
         simulator = Simulator(
             grid=grid, hydro=hydro, energy=energy, pvt=pvt,
-            schedule=schedule, output_config=config.output,
-            max_retries=config.numerics.max_retries)
+            schedule=schedule, max_retries=config.numerics.max_retries)
 
         # 8. Начальное состояние
         ic = config.initial_conditions

@@ -27,7 +27,6 @@ from .energy.base import EnergySolver
 from .energy.balance import EnergyBalanceAccumulator
 from .mass_balance import MassBalanceAccumulator
 from .pvt.base import HydroPVT
-from .io.config import OutputConfig
 from .units import DAY_TO_S
 from .log import user_log, dev_log
 
@@ -98,7 +97,6 @@ class Simulator:
     def __init__(self, grid: Grid, hydro: HydroSolver,
                  energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 output_config: OutputConfig | None = None,
                  max_retries: int = 9):
         """
         grid          — пространственная сетка (immutable, общая для всех модулей)
@@ -106,7 +104,6 @@ class Simulator:
         energy        — тепловой солвер (ABC: TridiagEnergySolver, ...)
         pvt           — PVT-модель (для rho_o_std, rho_g_std в WellData)
         schedule      — расписание: интервалы + шаг интегрирования
-        output_config — параметры вывода (log_level, format), опционально
         max_retries   — глубина дробления шага: наименьший подшаг
                         dt/2**max_retries (numerics.max_retries, DEBT-015)
         """
@@ -117,8 +114,8 @@ class Simulator:
         self._schedule = schedule
         self._max_retries = int(max_retries)
         # save_every удалён (DEBT-013): состав истории определяет только
-        # структура time.history. output_config остаётся ради log_level
-        # и format, поэтому из сигнатуры не убирается.
+        # структура time.history. output_config удалён (DEBT-053): Simulator
+        # его не читал — уровень журнала задаёт фабрика (setup_logging).
 
     def run(self, initial_state: SimulationState) -> SimulationHistory:
         """Основной цикл по времени.

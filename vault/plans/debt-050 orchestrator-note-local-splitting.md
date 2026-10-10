@@ -7,7 +7,8 @@ issue: DEBT-050
 github: 80
 branch: refactor/debt-050/orchestrator-note-local-splitting
 status: реализован
-worktree: .worktrees/debt-050
+worktree: .worktrees/debt-050; удалён после влития
+merged: 7bc1843 (2026-10-10)
 audit:
   date: 2026-10-10
   found: 8

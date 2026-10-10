@@ -1,0 +1,13 @@
+﻿
+collecting ... Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\__init__.py
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_annulus_green PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_annulus_red_on_old_doc PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_heat_flux_green PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_heat_flux_red_on_old_doc PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_mean_between_green PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_mean_between_red_on_old_doc PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_uniform_mean_green PASSED
+..\vault\issues\bug-027\probes\plan_tests_check.py::test_uniform_mean_red_on_old_doc PASSED
+============================== 8 passed in 0.81s ==============================
+
+

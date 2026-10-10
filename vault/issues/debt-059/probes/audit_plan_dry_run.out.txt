@@ -1,0 +1,10 @@
+﻿Правки по блокам плана: все блоки «До» найдены
+test_packaging.py: 8 passed in 2.67s
+test_packaging.py с -o pythonpath=: 1 failed, 7 passed in 1.76s
+  FAILED tests/test_packaging.py::TestTestsUseThisTree::test_package_imported_from_this_tree[radial_blackoil-home1]
+число тестов: 1687 tests collected in 4.21s
+быстрый уровень: 1425 passed, 262 deselected, 1 warning in 92.36s (0:01:32)
+пути импортов с PYTHONPATH: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_audit\numerical_solver\gpn_multiphase_solver\__init__.py ; D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_audit\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+пример 03_standing_corey с PYTHONPATH: rc=0;      S_g макс = 0.08151 (аналитика) vs 0.08134 (расчёт)
+пример 18_prototype_input с PYTHONPATH: rc=0;   max|ΔGOR|   = 2.62       допуск 3       %          в допуске
+пример 03 без PYTHONPATH: rc=1; ModuleNotFoundError: No module named 'radial_blackoil'

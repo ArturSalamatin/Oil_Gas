@@ -1,0 +1,18 @@
+﻿gpn_multiphase_solver: сторонние импорты ['matplotlib', 'numpy', 'radial_blackoil', 'scipy']
+radial_blackoil: сторонние импорты ['matplotlib', 'numpy', 'scipy', 'xlsxwriter']
+__version__ прототипа: '1.0.3'
+вставок в sys.path всего: 81; с путём к прототипу: 14
+  examples\01_single_phase_no_jt\spatial_convergence.py: sys.path.insert(0, str(SOLVER_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\02_single_phase_jt\check_slopes.py: sys.path.insert(0, str(SOLVER_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\05_standing_table_rp\closed_form_convergence.py: sys.path.insert(0, str(SOLVER_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\18_prototype_input\prototype_input.py: sys.path.insert(0, str(PROTO_ROOT))
+  examples\check_energy_balance_all.py: sys.path.insert(0, str(SOLVER_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\convergence.py: sys.path.insert(0, _p) | (str(_ROOT), str(_EXAMPLES), str(_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\energy_balance.py: sys.path.insert(0, _p) | (str(_ROOT), str(_EXAMPLES), str(_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\energy_balance_convergence.py: sys.path.insert(0, _p) | (str(_ROOT), str(_EXAMPLES), str(_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\example_runner.py: sys.path.insert(0, str(_PROTO_ROOT))
+  examples\mass_balance.py: sys.path.insert(0, _p) | (str(_ROOT), str(_EXAMPLES), str(_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\temperature_asymptotics.py: sys.path.insert(0, str(_PROTO))
+  examples\two_phase_analytics.py: sys.path.insert(0, _p) | (str(_ROOT), str(_EXAMPLES), str(_ROOT / 'HydroSolverPrototype' / 'Prototype_1.0.3'))
+  examples\verify_balance_vs_solver.py: sys.path.insert(0, str(_PROTO))
+  tests\conftest.py: sys.path.insert(0, str(_PROTO_ROOT))

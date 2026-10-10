@@ -1,0 +1,29 @@
+﻿OK 29: `r_faces[f]` | eq. 10 → `eq:log_grid`
+OK 30: `r_centers[j]` | eq. 12 → `eq:cell_center` («центр масс» не трогать — DEBT-0
+OK 31: `volumes[j]` | eq. 13 → `eq:volume`
+OK 32: `trans_internal[f]` | eq. 19 → `eq:transmissibility`
+OK 33: `trans_well` | §4.3 → формула без номера над `eq:bc_flux_well`
+OK 34: `trans_ext` | §4.3 → формула без номера над `eq:bc_flux_well`
+OK 77: `G_o[f]` | eq. 8 → `eq:flux_oil`
+OK 78: `G_g[f]` | eq. 9 → `eq:flux_gas`
+OK 79: `G_free_gas[f]` | из eq. 9 → второе слагаемое `eq:flux_gas`
+OK 158: `Q_o[f]` | eq. 24 → `eq:phase_flux`
+OK 159: `Q_g[f]` | eq. 24 → `eq:phase_flux`
+OK 190: `u_o[f]` | eq. 1 → `eq:darcy`
+OK 191: `u_g[f]` | eq. 1 → `eq:darcy`
+OK 232: `F_oil[j]` | eq. 14 → `eq:residual_oil`
+OK 252: `F_gas[j]` | eq. 15 → `eq:residual_gas`
+OK 266: `F_eq[j]` | eq. 16 (режим 1), eq. 17 (режим 2) → `eq:residual_eq_r1` (режим 1), `eq:residual_eq_r2`
+OK 277: «В балансах масс (eq. 14, 15)» | eq. 14, 15 → `eq:residual_oil`, `eq:residual_gas`
+OK 398: `pvt.Rs_eq(p)` | eq. 3 → — (своей метки нет: замыкание `eq:regime1`; сама з
+OK 399: `pvt.Bo(p, Rs)` | eq. 8 → — (своей метки нет)
+OK 404: `pvt.rho_o(p, Rs)` | eq. 51 → `eq:rho_oil`
+OK 419: `pvt.mu_JT_oil(p, T)` | eq. 42 → `eq:muJT_def`
+OK 420: `pvt.mu_JT_gas(p, T)` | eq. 42 → `eq:muJT_def`
+OK 421: `pvt.L_degas(p, T)` | eq. 52 → `eq:L_def`
+OK 441: `rp.kro(Sg)` | eq. 6 → `eq:corey`
+OK 442: `rp.krg(Sg)` | eq. 6 → `eq:corey`
+метки нового текста: 20 отсутствуют: []
+идентификаторы, которых нет в tridiag.py: []
+заменяемый блок словаря: строки 279–387
+номера/§ вне 5–6, не попавшие в таблицу 5.1: []

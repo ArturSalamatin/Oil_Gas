@@ -1,0 +1,11 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+[до замен] test_no_numeric_equation_or_line_references: FAILED — 42 строк в 14 файлах
+[до замен] test_label_references_exist_in_problem_statement: PASSED
+замен: 40 (таблицы 35, блоки 5)
+файлов изменено: 14  проблем «до»: 0
+длина 117 > 100: gpn_multiphase_solver/state.py:42
+AST: .py изменено 12, с другой логикой: 0
+[после замен] test_no_numeric_equation_or_line_references: PASSED
+[после замен] test_label_references_exist_in_problem_statement: PASSED
+[негатив] test_no_numeric_equation_or_line_references: FAILED — 1 строк в 1 файлах
+[негатив] test_label_references_exist_in_problem_statement: FAILED — 1 строк в 1 файлах

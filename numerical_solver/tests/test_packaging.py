@@ -117,3 +117,46 @@ class TestTestsUseThisTree:
         # Падение в worktree значит: тесты проверяют код основного каталога.
         mod = importlib.import_module(module)
         assert Path(mod.__file__).resolve().parent == home.resolve()
+
+
+def _is_path_insert(call: ast.Call) -> bool:
+    """Вызов sys.path.insert / sys.path.append или monkeypatch.syspath_prepend."""
+    f = call.func
+    if not isinstance(f, ast.Attribute):
+        return False
+    if f.attr == "syspath_prepend":
+        return True
+    return (f.attr in ("insert", "append") and isinstance(f.value, ast.Attribute)
+            and f.value.attr == "path" and isinstance(f.value.value, ast.Name)
+            and f.value.value.id == "sys")
+
+
+def _path_insertions(tree: ast.AST) -> list:
+    """Текст каждой вставки в sys.path; для вставки в цикле — вместе с тем, по чему идёт цикл."""
+    # Вставка в цикле — sys.path.insert(0, _p): путь виден только в for ... in (...)
+    loop_iter = {}
+    for loop in ast.walk(tree):
+        if isinstance(loop, ast.For):
+            for node in ast.walk(loop):
+                loop_iter[id(node)] = loop_iter.get(id(node), "") + " | " + ast.unparse(loop.iter)
+    return [ast.unparse(n) + loop_iter.get(id(n), "")
+            for n in ast.walk(tree) if isinstance(n, ast.Call) and _is_path_insert(n)]
+
+
+class TestNoPrototypePathInsertion:
+    def test_code_does_not_insert_prototype_path(self):
+        """Ни пакет, ни примеры, ни тесты не вставляют путь к прототипу в sys.path (DEBT-059)."""
+        # Вставка маскирует забытую установку: в репозитории работает, у
+        # пользователя установленного пакета — ModuleNotFoundError
+        found, hits = 0, []
+        for base in ("gpn_multiphase_solver", "examples", "tests"):
+            for path in sorted((SOLVER / base).rglob("*.py")):
+                for text in _path_insertions(ast.parse(path.read_text(encoding="utf-8"))):
+                    found += 1
+                    # «proto» ловит и литерал HydroSolverPrototype, и имена _PROTO, PROTO_ROOT
+                    if "proto" in text.lower():
+                        hits.append(f"{path.relative_to(SOLVER)}: {text}")
+        # На c0ec060 вставок 81, после шага 3 — 72 (5 циклов остаются вставками
+        # без пути к прототипу, 9 прямых уходят); ноль значит: разбор сломан
+        assert found > 10, "сторож не нашёл ни одной вставки в sys.path"
+        assert hits == []

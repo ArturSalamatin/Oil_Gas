@@ -6,8 +6,9 @@ date: 2026-10-10
 issue: DEBT-051
 github: 85
 branch: refactor/debt-051/config-numeric-fields-finite
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-051
+implemented: 2026-10-10 — d4138a0 (код и тесты), 7dac745 (P8, заметка DEBT-049), vault-коммит итога; база 1493 (после DEBT-053) → 1591, полный прогон 1591 passed
 audit:
   date: 2026-10-10
   round: 1

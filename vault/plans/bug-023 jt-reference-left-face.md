@@ -5,7 +5,8 @@ issue: BUG-023
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/86
 branch: fix/bug-023/jt-reference-left-face
 status: реализован
-worktree: .worktrees/bug-023
+worktree: .worktrees/bug-023; удалён после влития (регистрация снята, остаток каталога — занят процессом)
+merged: 1302c02 (2026-10-10)
 audit:
   date: 2026-10-10
   round: 1

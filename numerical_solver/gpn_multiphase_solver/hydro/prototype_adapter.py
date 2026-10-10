@@ -49,7 +49,7 @@ class PrototypeHydroAdapter(HydroSolver):
         """
         model       — RadialBlackOilModel, уже сконфигурированный
         grid        — наш Grid (LogRadialGrid)
-        pvt         — наш HydroPVT (PrototypePVTAdapter, обёртка того же BlackOilPVT)
+        pvt         — наш HydroPVT; фабрика передаёт тот же FullPVT, что решателю энергии (DEBT-006)
         """
         self._model = model
         self._grid = grid

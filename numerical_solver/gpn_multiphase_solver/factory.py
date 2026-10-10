@@ -449,9 +449,12 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     if isinstance(pvt, TableFullPVT):
         _warn_initial_table_range(model, ic)
 
-    # our_pvt: HydroPVT для PrototypeHydroAdapter (пересчёт потоков)
-    our_pvt = pvt._hydro if hasattr(pvt, '_hydro') else pvt
-    return PrototypeHydroAdapter(model, grid, our_pvt)
+    # Пересчёт потоков (Q, u, m) — тем же объектом FullPVT, что у решателя
+    # энергии и Simulator (DEBT-006). Прежде табличный путь разворачивал
+    # TableFullPVT до PrototypePVTAdapter проверкой поля _hydro через hasattr;
+    # числа те же побитово: TableFullPVT делегирует гидро-методы без
+    # арифметики, а rho_o, rho_g — общие методы HydroPVT.
+    return PrototypeHydroAdapter(model, grid, pvt)
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):

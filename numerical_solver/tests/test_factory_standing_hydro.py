@@ -50,6 +50,17 @@ class TestFactoryStandingHydro:
         simulator, _ = SimulatorFactory.from_config(config)
         assert isinstance(simulator._hydro, PrototypeHydroAdapter)
 
+    def test_standing_pvt_shared(self):
+        """Стендинг: прототипу — адаптер над тем же StandingFullPVT, что у энергии (DEBT-006)."""
+        simulator, _ = SimulatorFactory.from_config(load_config(BASELINE))
+        model_pvt = simulator._hydro._model.pvt
+        assert isinstance(model_pvt, HydroPVTtoBlackOilAdapter)
+        # Поле адаптера читает тест, а не фабрика: это проверка тождества,
+        # а не выбор ветки
+        assert model_pvt._hydro is simulator._pvt
+        assert simulator._hydro._pvt is simulator._pvt
+        assert simulator._energy._pvt is simulator._pvt
+
     def test_standing_pipeline_runs(self):
         """baseline.json → Factory → run → history содержит данные."""
         config = load_config(BASELINE)

@@ -231,27 +231,27 @@ class TestPVTConsistency:
     """Один BlackOilPVT в обёртке и в модели."""
 
     def test_pvt_objects_are_same(self):
-        """proto_pvt в PrototypePVTAdapter и в RadialBlackOilModel — один объект."""
+        """Один BlackOilPVT у прототипа и обёртки; один FullPVT у адаптера, энергии, Simulator."""
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
         hydro = simulator._hydro
         assert isinstance(hydro, PrototypeHydroAdapter)
 
-        # proto_pvt через модель
-        model_pvt = hydro._model.pvt
-        # proto_pvt через адаптер → pvt._pvt
-        adapter_pvt = hydro._pvt._pvt
-
-        assert model_pvt is adapter_pvt
+        # Прототип считает тем же BlackOilPVT, что лежит под TableFullPVT
+        assert hydro._model.pvt is simulator._pvt.hydro.proto_pvt
+        # Пересчёт потоков в адаптере, энергия и Simulator — один объект
+        # FullPVT (DEBT-006; прежде адаптер получал развёрнутый PrototypePVTAdapter)
+        assert hydro._pvt is simulator._pvt
+        assert simulator._energy._pvt is simulator._pvt
 
     def test_bo_consistency(self):
         """Bo через обёртку и через прототип совпадают."""
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
-        our_pvt = simulator._pvt._hydro  # PrototypePVTAdapter
-        proto_pvt = our_pvt._pvt          # BlackOilPVT
+        our_pvt = simulator._pvt.hydro   # PrototypePVTAdapter
+        proto_pvt = our_pvt.proto_pvt    # BlackOilPVT
 
         p_pa = 15e6
         Rs = 20.0

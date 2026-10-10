@@ -44,62 +44,8 @@
     "dt_integration": 86400.0,
     "history": [
       {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 2592000.0,
+        "duration": 31104000.0,
+        "dt_out": 2592000.0,
         "control": "pressure",
         "p_wf": 6000000.0
       }

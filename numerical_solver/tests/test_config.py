@@ -165,10 +165,11 @@ class TestBaselineTime:
         assert cfg.time.start_day == 0.0
 
     # Сценарий baseline: сутки при 15 МПа, затем трое суток при 10 МПа.
-    # После DEBT-013 он записан 96 интервалами по 3600 с (24 + 72), потому
-    # что частоту вывода задаёт только структура истории. Проверяем сам
-    # сценарий — длительность и режим каждого этапа, а не разбиение:
-    # число интервалов зависит от желаемого шага записи и может меняться.
+    # Частоту вывода задаёт только структура истории (DEBT-013): в конфиге
+    # два блока {duration, dt_out} (DEBT-014), после разворачивания —
+    # 96 интервалов по 3600 с (24 + 72). Проверяем сам сценарий —
+    # длительность и режим каждого этапа, а не разбиение: число интервалов
+    # зависит от желаемого шага записи и может меняться.
 
     def test_history_count(self, cfg):
         """24 часа при 15 МПа + 72 часа при 10 МПа."""
@@ -1068,21 +1069,22 @@ class TestHistoryBlocks:
         assert sum(x.dt for x in h) == 22200.0
 
     def test_baseline_as_blocks(self, tmp_path):
-        """Сценарий baseline.json краткой формой даёт тот же список интервалов.
+        """Краткая форма baseline.json даёт тот же список, что 96 явных объектов.
 
         baseline — сутки при 15 МПа и трое суток при 10 МПа с записью раз
-        в час, 96 явных объектов (DEBT-014). Сам конфиг не меняется
-        (решение пользователя): проверяется, что две строки краткой формы
-        заменяют 96 объектов без изменения расчёта.
+        в час. До DEBT-014 конфиг хранил 96 явных объектов, с DEBT-014 —
+        два блока {duration, dt_out}. Явная форма строится здесь: перевод
+        не изменил ни число интервалов, ни их длины, ни управление.
         """
         raw = json.loads(BASELINE.read_text(encoding="utf-8"))
-        raw["time"]["history"] = [
-            {"dt": 3600, "repeat": 24, "control": "pressure", "p_wf": 15e6},
-            {"duration": 259200, "dt_out": 3600,
-             "control": "pressure", "p_wf": 10e6},
-        ]
-        blocks = load_config(_write_json(tmp_path, raw)).time.history
-        assert blocks == load_config(BASELINE).time.history
+        # Конфиг — краткой формой; иначе сравнение ниже сверяло бы явную
+        # форму саму с собой
+        assert len(raw["time"]["history"]) == 2
+        raw["time"]["history"] = (
+            [{"dt": 3600.0, "control": "pressure", "p_wf": 15e6}] * 24
+            + [{"dt": 3600.0, "control": "pressure", "p_wf": 10e6}] * 72)
+        explicit = load_config(_write_json(tmp_path, raw)).time.history
+        assert load_config(BASELINE).time.history == explicit
 
     def test_rate_control_block(self, tmp_path):
         """Поля управления по дебиту переходят во все интервалы блока."""

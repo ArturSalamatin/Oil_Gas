@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-014
 github: 95
 branch: refactor/debt-014/compact-history-configs
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-014
 audit:
   date: 2026-10-10

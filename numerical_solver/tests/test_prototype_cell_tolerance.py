@@ -181,11 +181,15 @@ def shutin():
 
 class TestSwitching:
     def test_switching_meets_cell_tol(self, shutin):
-        """Шаг останова 168.75 с ступенью 4: без условия забой недорешён, с условием — нет.
+        """Шаг останова 168.75 с ступенью 4: условие по ячейке стоит в _newton_switching.
 
-        Замер плана: без условия — 20 итераций, мера 2.24e-8 > 1e-8; с условием — 21
-        итерация, мера 1.15e-11, |dp| 2.14e-9 бар. Модель фабрики: cell_tol выключается
-        на экземпляре и возвращается в finally (фикстура общая).
+        Недостижимый порог 1e-30 — отказ (40 итераций), без условия — сходится; с порогом
+        1e-8 мера решения <= 1e-8. До BUG-024 тест сравнивал решения без условия и с ним
+        (без условия мера 2.24e-8 > 1e-8, 20 итераций против 21). С ограничением шага R_s
+        (BUG-024) Ньютон и без условия сходится за 16 итераций с мерой 1.2e-11 —
+        сравнение перестало различать, недостижимый порог различает всегда. Замер плана
+        BUG-024: без условия и с 1e-8 — 16 итераций, мера 1.21e-11, |dp| = 0.
+        Модель фабрики: cell_tol меняется на экземпляре и возвращается в finally.
         Ловит: условие не стоит в _newton_switching.
         """
         model, ps = shutin
@@ -193,13 +197,14 @@ class TestSwitching:
         try:
             model.cell_tol = None
             a, ra = model._newton_switching(ps, DT_STAGE4)
-            assert ra.converged and _measure(model, ps, a, DT_STAGE4) > CELL_TOL
+            model.cell_tol = 1e-30
+            _, rc = model._newton_switching(ps, DT_STAGE4)
             model.cell_tol = CELL_TOL
             b, rb = model._newton_switching(ps, DT_STAGE4)
         finally:
             model.cell_tol = CELL_TOL
-        assert rb.converged and rb.iterations > ra.iterations
-        assert _measure(model, ps, b, DT_STAGE4) <= CELL_TOL
+        assert ra.converged and not rc.converged
+        assert rb.converged and _measure(model, ps, b, DT_STAGE4) <= CELL_TOL
         assert np.max(np.abs(b.pressure_bar - a.pressure_bar)) < 1e-7
 
 

@@ -10,8 +10,9 @@
 Ступень 4 (флаг phase_switching_stage, фабрика GPN включает): запасной путь
 BUG-014 с _newton_switching — переключение фаз после каждой итерации с
 сохранением отношения газ/нефть, поячеечное ограничение |dp| <= 0.3 p,
-|dSg| <= 0.2, без линейного поиска, замораживание ячейки выше по потоку на
-гранях после 2 смен направления, доводка без замораживания.
+|dSg| <= 0.2, у недонасыщенных |dR_s| <= 0.2 R_s^sat(p) (BUG-024), без
+линейного поиска, замораживание ячейки выше по потоку на гранях после 2 смен
+направления, доводка без замораживания.
 
 План: vault/plans/bug-020 shutin-phase-switching-newton.md; числа —
 vault/issues/bug-020/probes/plan_tests_check.out.txt.
@@ -88,8 +89,9 @@ class TestFourthStage:
         """Шаг 168.75 с при q_oil = 0: без ступени 4 отказ, с ней — сходится.
 
         До фикса: ни одна из трёх ступеней не сходится (М1: |dSg_0| = 132 на
-        первой итерации). Замер плана: 20 итераций, 127 переключений фаз,
-        p(r_w) = 174.4349 бар, двухфазных 250, max S_g = 0.3084.
+        первой итерации). Замер плана: p(r_w) = 174.4349 бар, двухфазных 250,
+        max S_g = 0.3084; 21 итерация и 127 переключений фаз, после BUG-024
+        (ограничение шага R_s) — 16 и 91, корень тот же.
         """
         model, ps, _ = shutin_start
         model.set_oil_rate_control(0.0, ATM_BAR)
@@ -459,3 +461,76 @@ def test_factory_enables_fourth_stage():
     sim, _ = SimulatorFactory.from_config(load_config(RS300))
     assert sim._hydro._model.phase_switching_stage is True
     assert _model(150.0).phase_switching_stage is False
+
+
+# ═══════════════════════════════════════════════════════════
+# E. BUG-024: шаг R_s недонасыщенных ячеек в ступени 4 ограничен
+# ═══════════════════════════════════════════════════════════
+
+def _first_update(model, ps, drs, monkeypatch):
+    """z до и после одного обновления _newton_switching при подменённом направлении Ньютона.
+
+    Направление: dp = 0, dS_g = 0, dR_s = drs у недонасыщенных ячеек (подмена
+    _linear_solve). Второй вызов якобиана получает обновлённое z; на нём расчёт
+    обрывается исключением _Stop. Двухфазные ячейки не меняются, давление тоже —
+    переключений фаз при dR_s < 0 нет (активация требует R_s > R_s^sat).
+    """
+    n = model.grid.n
+    mask = ps.gas_active.copy()
+    zs = []
+    orig_jac = model.finite_difference_jacobian
+
+    def jac(z, *a, **kw):
+        zs.append(z.copy())
+        if len(zs) == 2:
+            raise _Stop
+        return orig_jac(z, *a, **kw)
+
+    def lin(J, b):
+        dz = np.zeros(2 * n)
+        dz[n:][~mask] = drs
+        return dz
+
+    monkeypatch.setattr(model, "finite_difference_jacobian", jac)
+    monkeypatch.setattr(model, "_linear_solve", lin)
+    with pytest.raises(_Stop):
+        model._newton_switching(ps, DT_STAGE4)
+    return zs[0], zs[1], mask
+
+
+class TestRsStepLimit:
+    def test_large_rs_step_is_limited(self, shutin_start, monkeypatch):
+        """dR_s = -1e4 (замер BUG-024: до 1.7e4 за итерацию) обрезается до 0.2 R_s^sat(p).
+
+        Состояние после 10 сут добычи rs300: 61 недонасыщенная ячейка у контура,
+        R_s = 300 при R_s^sat ~ 300-330 — шаг -60...-66, R_s ~ 234-240 > 0.
+        До исправления R_s всех этих ячеек становился 0 (отсечка снизу) — так ступень 4
+        застревала на останове (ячейка у забоя на R_s = 0, ||F|| стоит 30 итераций).
+        Ловит: снятие ограничения шага R_s в _newton_switching.
+        """
+        model, ps, _ = shutin_start
+        model.set_oil_rate_control(0.0, ATM_BAR)
+        z0, z1, mask = _first_update(model, ps, -1e4, monkeypatch)
+        n = model.grid.n
+        und = ~mask
+        assert np.count_nonzero(und) > 0
+        rs0, rs1 = z0[n:][und], z1[n:][und]
+        lim = 0.2 * np.maximum(model.pvt.rs_sat(z0[:n][und]), 1.0)
+        assert np.array_equal(rs1, np.maximum(rs0 - lim, 0.0))
+        assert np.all(rs1 > 0.0)
+        _assert_restored(model)
+
+    def test_small_rs_step_unchanged(self, shutin_start, monkeypatch):
+        """dR_s = +1e-3 — ограничение не действует: R_s + 1e-3 побитово, как до BUG-024.
+
+        Берутся ячейки, далёкие от насыщения (R_s + 1 < R_s^sat): шаг не переводит их
+        в двухфазный набор. Ловит: ограничение, задевающее малые шаги (смену корня
+        или сходимости там, где ступень 4 сходилась и раньше).
+        """
+        model, ps, _ = shutin_start
+        model.set_oil_rate_control(0.0, ATM_BAR)
+        z0, z1, mask = _first_update(model, ps, 1e-3, monkeypatch)
+        n = model.grid.n
+        keep = ~mask & (z0[n:] + 1.0 < model.pvt.rs_sat(z0[:n]))
+        assert np.count_nonzero(keep) > 0
+        assert np.array_equal(z1[n:][keep], z0[n:][keep] + 1e-3)

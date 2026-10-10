@@ -7,6 +7,15 @@ metadata:
 
 # Архитектура библиотеки numerical_solver
 
+> **Проектный этап (2026-08); сверено с кодом в [[DEBT-052]] (2026-10-10).** Заметка начата как замысел до передачи гидродинамического прототипа и обновлялась выборочно (дерево пакета, абзац FEAT-020 в §4). Интерфейсы, псевдокод и образцы ниже — **не текущий код**:
+> - нет в коде: `NewtonHydroSolver` (гидродинамику решает прототип через `PrototypeHydroAdapter`), `StandingPVT` (есть `StandingFullPVT`), `HydroUnitDecorator`, `EnergyUnitDecorator` (единицы переводят адаптеры прототипа по константам `units.py`), `HydroSolver.velocities`, `SimulationResult`;
+> - ABC названы иначе: `PVTModel` → `HydroPVT`, `FullPVT`, `DifferentiableHydroPVT`; `RPModel` → `RelPermModel`; проводимости `Grid` — `trans_internal`, `trans_well`, `trans_ext`;
+> - сигнатуры: `HydroSolver.solve(state, dt, bc) → HydroResult`; `EnergySolver.solve(hydro_result, state_prev, dt, bc, collect=None) → T`; `Simulator(grid, hydro, energy, pvt, schedule, output_config=None, max_retries=9)`, `run(initial_state) → SimulationHistory`; `SimulatorFactory.from_config(config) → (Simulator, initial_state)`;
+> - дерево пакета неполное (нет `units.py`, `mass_balance.py`, `energy/balance.py`, `pvt/consistency.py`, `pvt/hydro_to_blackoil_adapter.py`), в `tests/` — 29 файлов, а не 5;
+> - образец JSON и раздел «Связь с внешним гидродинамическим модулем» — до прототипа.
+>
+> Текущее: контракты — `pvt/base.py`, `grid/base.py`, `hydro/base.py`, `energy/base.py` в `numerical_solver/gpn_multiphase_solver/`; цикл шага, `Simulator` и фабрика — [[модули-simulator-оркестратор]] (сверена с кодом в [[DEBT-050]]); результаты — [[контейнер-simulation-history]]; JSON — [[P8-формат-ввода-json]].
+
 ## Контекст
 
 Библиотека реализует постановку из `numerical_solver/doc/problem_statement.tex`: двухфазная фильтрация Black Oil с уравнением энергии в ПЗП. Язык: Python 3.10+, numpy/scipy.
@@ -173,6 +182,8 @@ numerical_solver/
 
 ### 6. Simulator — оркестратор
 
+> Псевдокод проектного этапа. Текущий цикл: `run(initial_state)` → `_advance` с локальным дроблением шага ([[DEBT-015]]), накопители балансов, запись на концах интервалов `time.history` — [[модули-simulator-оркестратор]], раздел «Цикл по времени».
+
 ```python
 class Simulator:
     def __init__(self, grid, pvt, relperm, hydro, energy, config):
@@ -311,5 +322,7 @@ class SimulationState:
 - [[модули-pvt-контракт]] — детальный контракт PVT
 - [[модули-hydro-newton]] — детали блочного Ньютона
 - [[модули-energy-tridiag]] — детали тепловой прогонки
+- [[модули-simulator-оркестратор]] — текущий цикл шага, `Simulator`, фабрика
+- [[контейнер-simulation-history]] — контейнер результатов
 - [[P8-формат-ввода-json]] — актуальная схема JSON
 - [[json-config-schema]] — предыдущая версия (superseded)

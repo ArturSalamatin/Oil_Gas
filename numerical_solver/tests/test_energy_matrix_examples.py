@@ -53,6 +53,7 @@ import pytest
 
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.factory import SimulatorFactory
+from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
 from gpn_multiphase_solver.io.config import load_config
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
@@ -256,16 +257,19 @@ def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N, ext):
 def _ref_conductive(grid, lambda_eff):
     """Кондуктивная проводимость граней. eq:heat_cond_disc.
 
-    ФОРМА ДОКУМЕНТА:
+    ФОРМА ДОКУМЕНТА (eq:heat_cond_disc со средним eq:face_interp):
         Q_T = 2πh · λ^{j+1/2} / ln(r_{j+1}/r_j),
-        λ^{j+1/2} = (w_L/λ_L + w_R/λ_R)^{-1} · (w_L + w_R)   [гармоническое
-        среднее с логарифмическими весами]
+        λ^{j+1/2} = (w_L + w_R) · (w_L/λ_L + w_R/λ_R)^{-1}   [гармоническое
+        среднее с нормированными логарифмическими весами]
 
     Ядро считает это иначе — как последовательные кольцевые сопротивления
     Q_T = 2πh / (w_L/λ_L + w_R/λ_R). Формы алгебраически тождественны, так
     как w_L + w_R = ln(r_{j+1}/r_j).
     Здесь намеренно записана форма документа: именно ошибка в этом месте
-    (двойной ln) была содержанием BUG-002.
+    (двойной ln) была содержанием BUG-002. До BUG-027 сам документ записывал
+    среднее без множителя (w_L + w_R); эталон буквально по такому документу
+    завысил бы проводимость в 1/ln(r_{j+1}/r_j) раз. Самопроверка —
+    test_ref_conductive_matches_annulus_solution.
 
     При λ = 0 сопротивление бесконечно, проводимость — ноль. Считаем по
     маске λ > 0: деления на нуль не происходит вовсе.
@@ -290,9 +294,10 @@ def _ref_conductive(grid, lambda_eff):
     lam_face[ok] = ((w_L[ok] + w_R[ok])
                     / (w_L[ok] / lam_L[ok] + w_R[ok] / lam_R[ok]))
 
-    # Форма документа: делим на ln(r_{j+1}/r_j) ещё раз. Этот ln тождественен
-    # числителю (w_L + w_R), но сокращать его НЕЛЬЗЯ — двойной ln здесь и был
-    # содержанием BUG-002, эталон воспроизводит запись документа буквально.
+    # Форма документа: делим на ln(r_{j+1}/r_j). Он сокращается с множителем
+    # (w_L + w_R) среднего, но сокращать его здесь НЕЛЬЗЯ — эталон
+    # воспроизводит запись документа буквально. Без множителя (w_L + w_R)
+    # ln остался бы в знаменателе дважды: BUG-002 в коде, BUG-027 в документе.
     Q_T_internal = (2.0 * np.pi * grid.h * lam_face
                     / np.log(r_c[1:] / r_c[:-1]))
 
@@ -300,6 +305,62 @@ def _ref_conductive(grid, lambda_eff):
                / np.log(grid.R_ext / grid.r_centers[-1]) * lambda_eff[-1])
 
     return Q_T_internal, Q_T_ext
+
+
+# ── Самопроверка _ref_conductive: точное решение в кольце ──
+
+def test_ref_conductive_matches_annulus_solution():
+    """Проводимость граней в форме документа против точного решения в кольце.
+
+    Зачем. Эталон следует форме документа: eq:heat_cond_disc со средним
+    eq:face_interp. До BUG-027 документ записывал среднее без нормировки
+    весов — при однородной λ оно равнялось λ/ln(r_{j+1}/r_j), и поток получал
+    ln² в знаменателе: дефект BUG-002, перенесённый в постановку. Эталон,
+    переписанный буквально по такому документу, завысил бы проводимость в
+    1/ln(r_{j+1}/r_j) раз (на сетке примера 14 — в 46 раз), а сверка
+    test_matrix_matches_reference увидела бы это только в медленном прогоне.
+
+    Ожидание — стационарная теплопроводность, а не код решателя:
+      однородная λ: Q_T = 2πhλ / ln(r_{j+1}/r_j)  (T = C1·ln r + C2);
+      λ_L в слое [r_j, r_{j+1/2}], λ_R в слое [r_{j+1/2}, r_{j+1}]:
+        сопротивления складываются,
+        Q_T = 2πh / (ln(r_{j+1/2}/r_j)/λ_L + ln(r_{j+1}/r_{j+1/2})/λ_R);
+      контур: Q_T_ext = 2πh·λ_{N-1} / ln(R_ext/r_{N-1})  (ssec:bc_disc).
+    Сетка — r_w, R_ext примера 14, но N = 20: ln(r_{j+1}/r_j) ≈ 0.38, двойной
+    ln дал бы расхождение в 2.6 раза. Чередование λ по ячейкам — на каждой
+    грани два слоя с разной λ. Решатель проверяется той же формулой.
+    """
+    grid = LogRadialGrid(0.1, 200.0, 10.0, 20, 1e-13)
+    N = grid.N
+    r_c = grid.r_centers
+    r_f = grid.r_faces[1:-1]          # внутренние грани [N-1]
+    two_pi_h = 2.0 * np.pi * grid.h
+
+    # Однородная λ: в знаменателе один ln
+    lam = 1.228
+    Q_int, Q_ext = _ref_conductive(grid, np.full(N, lam))
+    np.testing.assert_allclose(
+        Q_int, two_pi_h * lam / np.log(r_c[1:] / r_c[:-1]), rtol=1e-12,
+        err_msg="однородная λ: в знаменателе один ln (BUG-002, BUG-027)")
+    np.testing.assert_allclose(
+        Q_ext, two_pi_h * lam / np.log(grid.R_ext / r_c[-1]), rtol=1e-12,
+        err_msg="контур: ssec:bc_disc")
+
+    # Два слоя кольца с разной λ: сопротивления складываются
+    lam_cells = np.where(np.arange(N) % 2 == 0, 1.228, 0.3)
+    R_layers = (np.log(r_f / r_c[:-1]) / lam_cells[:-1]
+                + np.log(r_c[1:] / r_f) / lam_cells[1:])
+    Q_int, _ = _ref_conductive(grid, lam_cells)
+    np.testing.assert_allclose(
+        Q_int, two_pi_h / R_layers, rtol=1e-12,
+        err_msg="эталон: сопротивления двух слоёв кольца складываются")
+
+    # compute_conductive_transmissibility читает только сетку
+    Q_solver, _ = TridiagEnergySolver(grid, None, None) \
+        .compute_conductive_transmissibility(lam_cells, N)
+    np.testing.assert_allclose(
+        Q_solver, two_pi_h / R_layers, rtol=1e-12,
+        err_msg="решатель compute_conductive_transmissibility")
 
 
 def _ref_ext_properties(pvt, bc):

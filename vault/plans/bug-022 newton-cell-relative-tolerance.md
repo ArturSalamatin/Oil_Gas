@@ -5,7 +5,8 @@ issue: BUG-022
 github: https://github.com/ArturSalamatin/Oil_Gas/issues/82
 branch: fix/bug-022/newton-cell-relative-tolerance
 status: реализован
-worktree: .worktrees/bug-022
+worktree: .worktrees/bug-022; удалён после влития
+merged: 7b47ac8 (2026-10-10)
 audit:
   date: 2026-10-10
   round: 2

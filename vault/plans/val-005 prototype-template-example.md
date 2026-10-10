@@ -8,7 +8,8 @@ issue: VAL-005
 github: 79
 branch: val/val-005/prototype-template-example
 status: реализован
-worktree: .worktrees/val-005
+worktree: .worktrees/val-005; удалён после влития
+merged: b352091 (2026-10-10)
 audit:
   date: 2026-10-10
   round: 2

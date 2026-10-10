@@ -1,0 +1,169 @@
+VAL-004, шаг 3 плана: чувствительность tests/test_val004.py к инъекциям ошибок (правки временные, в worktree, откачены `git -C <W> checkout`).
+Сводка (2026-10-10, ветка val/val-004/shutin-timestep-convergence, коммит 07933ce):
+  И1  tridiag.py compute_adiabatic: dp_dt / (1.1·dt)       -> 1 failed: limit[T] (предел 397.9981066, эталон 398.0232431, −2.51e-2 > 5e-4); порядки q_T ~1 проходят, p — без изменений.
+  И2  simulator.py _advance: T_new + 1e-6 на каждом шаге    -> 3 failed: wellbore_first_order[T] (q = 0.7422), profile_first_order[T] (q = 0.7422), limit[T] (+1.01e-3 > 5e-4); тест дробления проходит.
+  И3  simulator.py _advance: energy.solve(..., dt, ...) вместо h -> 1 failed: local_subdivision_equals_finer_series (T: max|Δ| = 0.165 К); серии без дробления не меняются.
+  После отката: 9 passed; git diff по numerical_solver/ пуст.
+Ниже — полный вывод pytest -rf каждого прогона.
+=== И1: energy/tridiag.py compute_adiabatic — dp_dt = (p - p_old) / (1.1 * dt)
+.......F.                                                                [100%]
+================================== FAILURES ===================================
+_ TestShutinTimestepConvergence.test_limit_matches_uniform_refinement[T-1.0-398.0232431-0.0005] _
+
+self = <tests.test_val004.TestShutinTimestepConvergence object at 0x0000016AC01AD550>
+series = {4: {'prod': SimulationState(p=array([ 3077844.68451981,  3230121.37527235,  3379267.47338657,
+        3525552.3103266...  1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=867600.0), 't_end': 867600.0, 'n_records': 651, ...}}
+field = 'T', scale = 1.0, ref = 398.0232431, tol = 0.0005
+
+    @pytest.mark.parametrize("field, scale, ref, tol", [
+        ("p", BAR, P_LIM, P_LIM_TOL),
+        ("T", 1.0, T_LIM, T_LIM_TOL),
+    ])
+    def test_limit_matches_uniform_refinement(self, series, field, scale, ref, tol):
+        """Предел Ричардсона нарастающей серии = пределу равномерной (замер 2.5e-4 бар, 4.1e-5 К).
+    
+        Две разные расстановки шагов ведут к одному пределу Δt -> 0.
+        Порядок этого не гарантирует: схема, согласованная с другим
+        уравнением, тоже сходится с первым порядком, но к другому пределу
+        (инъекция И1 плана: адиабатический член ×1/1.1 — q прежний,
+        предел T сдвинут на −0.025 К).
+        """
+        u5 = getattr(series[5]["end"], field)[0] / scale
+        u6 = getattr(series[6]["end"], field)[0] / scale
+        lim = 2.0 * u6 - u5          # Ричардсон при q = 1
+>       assert abs(lim - ref) <= tol, (
+            f"{field}(r_w): предел {lim:.7f}, эталон {ref:.7f}, "
+            f"разница {lim - ref:+.2e} > {tol:.0e}")
+E       AssertionError: T(r_w): предел 397.9981066, эталон 398.0232431, разница -2.51e-02 > 5e-04
+E       assert np.float64(0.025136538739900516) <= 0.0005
+E        +  where np.float64(0.025136538739900516) = abs((np.float64(397.9981065612601) - 398.0232431))
+
+tests\test_val004.py:223: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_val004.py::TestShutinTimestepConvergence::test_limit_matches_uniform_refinement[T-1.0-398.0232431-0.0005]
+1 failed, 8 passed in 73.26s (0:01:13)
+=== И2: simulator.py _advance — T_new = T_new + 1e-6 после energy.solve
+..F.F..F.                                                                [100%]
+================================== FAILURES ===================================
+_______ TestShutinTimestepConvergence.test_wellbore_first_order[T-1.0] ________
+
+self = <tests.test_val004.TestShutinTimestepConvergence object at 0x000001BEEE144B00>
+series = {4: {'prod': SimulationState(p=array([ 3077844.68451981,  3230121.37527235,  3379267.47338657,
+        3525552.3103266...  1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=867600.0), 't_end': 867600.0, 'n_records': 651, ...}}
+field = 'T', scale = 1.0
+
+    @pytest.mark.parametrize("field, scale", [("p", BAR), ("T", 1.0)])
+    def test_wellbore_first_order(self, series, field, scale):
+        """p(r_w) и T(r_w) через 1 ч останова сходятся с первым порядком (замер 0.994 и 0.998).
+    
+        Ловит член, не исчезающий при Δt -> 0 (ошибка на каждом шаге):
+        разности перестают уменьшаться вдвое. Инъекция И2 плана: +1e-6 К на
+        шаг -> q_T = 0.74.
+        """
+        u = [getattr(series[k]["end"], field)[0] / scale for k in K_SERIES]
+        q = _order(*u)
+>       assert ORDER_BAND[0] <= q <= ORDER_BAND[1], (
+            f"{field}(r_w): q = {q:.4f}, значения {u}")
+E       AssertionError: T(r_w): q = 0.7422, значения [np.float64(398.01883293991557), np.float64(398.02130203028656), np.float64(398.02277808895354)]
+E       assert 0.9 <= 0.7422295779632806
+
+tests\test_val004.py:189: AssertionError
+__________ TestShutinTimestepConvergence.test_profile_first_order[T] __________
+
+self = <tests.test_val004.TestShutinTimestepConvergence object at 0x000001BEED052330>
+series = {4: {'prod': SimulationState(p=array([ 3077844.68451981,  3230121.37527235,  3379267.47338657,
+        3525552.3103266...  1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=867600.0), 't_end': 867600.0, 'n_records': 651, ...}}
+field = 'T'
+
+    @pytest.mark.parametrize("field", ["p", "T", "Sg"])
+    def test_profile_first_order(self, series, field):
+        """Профили p, T, S_g: порядок по max-норме разностей (замер 0.994, 0.998, 1.012).
+    
+        Сетка во всех прогонах одна — разности без интерполяции. R_s не
+        проверяется: у забоя его задаёт первый шаг останова, порядок 0.90
+        (предасимптотика, BUG-026).
+        """
+        a, b, c = (np.asarray(getattr(series[k]["end"], field)) for k in K_SERIES)
+        d1 = float(np.max(np.abs(b - a)))
+        d2 = float(np.max(np.abs(c - b)))
+        q = float(np.log2(d1 / d2))
+>       assert ORDER_BAND[0] <= q <= ORDER_BAND[1], (
+            f"{field}: max|Δ| {d1:.3e} -> {d2:.3e}, q = {q:.4f}")
+E       AssertionError: T: max|Δ| 2.469e-03 -> 1.476e-03, q = 0.7422
+E       assert 0.9 <= 0.7422295779632806
+
+tests\test_val004.py:204: AssertionError
+_ TestShutinTimestepConvergence.test_limit_matches_uniform_refinement[T-1.0-398.0232431-0.0005] _
+
+self = <tests.test_val004.TestShutinTimestepConvergence object at 0x000001BEED04D550>
+series = {4: {'prod': SimulationState(p=array([ 3077844.68451981,  3230121.37527235,  3379267.47338657,
+        3525552.3103266...  1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=867600.0), 't_end': 867600.0, 'n_records': 651, ...}}
+field = 'T', scale = 1.0, ref = 398.0232431, tol = 0.0005
+
+    @pytest.mark.parametrize("field, scale, ref, tol", [
+        ("p", BAR, P_LIM, P_LIM_TOL),
+        ("T", 1.0, T_LIM, T_LIM_TOL),
+    ])
+    def test_limit_matches_uniform_refinement(self, series, field, scale, ref, tol):
+        """Предел Ричардсона нарастающей серии = пределу равномерной (замер 2.5e-4 бар, 4.1e-5 К).
+    
+        Две разные расстановки шагов ведут к одному пределу Δt -> 0.
+        Порядок этого не гарантирует: схема, согласованная с другим
+        уравнением, тоже сходится с первым порядком, но к другому пределу
+        (инъекция И1 плана: адиабатический член ×1/1.1 — q прежний,
+        предел T сдвинут на −0.025 К).
+        """
+        u5 = getattr(series[5]["end"], field)[0] / scale
+        u6 = getattr(series[6]["end"], field)[0] / scale
+        lim = 2.0 * u6 - u5          # Ричардсон при q = 1
+>       assert abs(lim - ref) <= tol, (
+            f"{field}(r_w): предел {lim:.7f}, эталон {ref:.7f}, "
+            f"разница {lim - ref:+.2e} > {tol:.0e}")
+E       AssertionError: T(r_w): предел 398.0242541, эталон 398.0232431, разница +1.01e-03 > 5e-04
+E       assert np.float64(0.0010110476205227314) <= 0.0005
+E        +  where np.float64(0.0010110476205227314) = abs((np.float64(398.0242541476205) - 398.0232431))
+
+tests\test_val004.py:223: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_val004.py::TestShutinTimestepConvergence::test_wellbore_first_order[T-1.0]
+FAILED tests/test_val004.py::TestShutinTimestepConvergence::test_profile_first_order[T]
+FAILED tests/test_val004.py::TestShutinTimestepConvergence::test_limit_matches_uniform_refinement[T-1.0-398.0232431-0.0005]
+3 failed, 6 passed in 76.13s (0:01:16)
+=== И3: simulator.py _advance — energy.solve(hydro_result, state, dt, ...) вместо h
+........F                                                                [100%]
+================================== FAILURES ===================================
+__ TestShutinTimestepConvergence.test_local_subdivision_equals_finer_series ___
+
+self = <tests.test_val004.TestShutinTimestepConvergence object at 0x000002234B91DB50>
+series = {4: {'prod': SimulationState(p=array([ 3077844.68451981,  3230121.37527235,  3379267.47338657,
+        3525552.3103266...  1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=867600.0), 't_end': 867600.0, 'n_records': 651, ...}}
+
+    def test_local_subdivision_equals_finer_series(self, series):
+        """Локальное дробление: серия 4 с отказом первой попытки = серия 5 побитово.
+    
+        Отказ первой попытки каждого интервала заставляет Simulator._advance
+        (DEBT-015) решить интервал двумя подшагами H/2 — гидродинамика и
+        энергия на каждом. Серия 5 — те же подшаги отдельными интервалами
+        истории. Ловит: энергию не по подшагам гидродинамики (BUG-010),
+        неверную длину или время подшага, запись истории на подшаге. Замер
+        аудита: 160 отказов, p, S_g, R_s, T, режим — побитово
+        (vault/issues/val-004/probes/forced_split.out.txt).
+        """
+        r = _run_forced_split(4)
+        assert r["n_forced"] == 10 * 2 ** 4
+        # запись — на конце интервала истории, не подшага
+        assert r["n_records"] == 1 + N_PROD + 10 * 2 ** 4
+        ref = series[5]["end"]
+        for f in ("p", "Sg", "Rs", "T", "regime"):
+            a = np.asarray(getattr(r["end"], f), float)
+            b = np.asarray(getattr(ref, f), float)
+>           assert np.array_equal(a, b), f"{f}: max|Δ| = {np.max(np.abs(a - b)):.3e}"
+E           AssertionError: T: max|Δ| = 1.650e-01
+E           assert False
+E            +  where False = <function array_equal at 0x000002232D06FF70>(array([398.18598245, 398.18615144, 398.18649647, 398.18702485,\n       398.18774413, 398.18866204, 398.18978654, 398.19...45297, 399.99263278,\n       399.9938134 , 399.99499478, 399.99617688, 399.99735951,\n       399.998537  , 399.99955885]), array([398.02097203, 398.02127323, 398.02188796, 398.02282888,\n       398.02410881, 398.02574071, 398.02773758, 398.03...45014, 399.99263008,\n       399.99381081, 399.99499229, 399.9961745 , 399.99735724,\n       399.99853488, 399.99955786]))
+E            +    where <function array_equal at 0x000002232D06FF70> = np.array_equal
+
+tests\test_val004.py:246: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_val004.py::TestShutinTimestepConvergence::test_local_subdivision_equals_finer_series
+1 failed, 8 passed in 76.32s (0:01:16)

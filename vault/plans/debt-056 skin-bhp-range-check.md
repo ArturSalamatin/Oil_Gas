@@ -7,7 +7,8 @@ issue: DEBT-056
 github: 87
 branch: refactor/debt-056/skin-bhp-range-check
 status: реализован
-worktree: .worktrees/debt-056
+worktree: .worktrees/debt-056; удалён после влития
+merged: 8b0715a (2026-10-10)
 audit:
   date: 2026-10-10
   round: 1

@@ -247,7 +247,7 @@ xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+np.clip(dz[n:],-l
 **Что сделать:**
 1. `/implement` коммитит план и `vault/issues/bug-024/` в базу и создаёт worktree `.worktrees/bug-024` на ветке `fix/bug-024/daily-shutin-cell-tolerance` от `numerical_scheme/implementation` (проверка: `git ls-tree numerical_scheme/implementation --name-only | Select-String numerical_solver`).
 2. Из `numerical_solver` worktree, Python — `$PY` (абсолютный путь к venv основного каталога, «Как начать», п. 3). pytest в worktree берёт код worktree: `tests` — пакет, pytest ставит `numerical_solver` worktree первым в `sys.path`, `conftest.py` — его прототип (проверено аудитом 2 на копии дерева пробным тестом с `__file__` обоих пакетов).
-3. `pytest tests/ --collect-only -q` → 1679; `pytest tests/ -m "not slow" -q` → 1417 passed (на `b3ffaac`; если база ушла дальше — записать фактические числа и пересчитать ожидания шагов 1, 2, 5, 6: +2, +1, 0, итого +3).
+3. `pytest tests/ --collect-only -q` → 1679; `pytest tests/ -m "not slow" -q` → 1417 passed (на `b3ffaac`; **факт при реализации, `3f138d7`: 1688 — влит VAL-004, +9 медленных `test_val004.py`; быстрый 1417 passed, 96 с; ожидания шагов 5–6 — 1691**; если база ушла дальше — записать фактические числа и пересчитать ожидания шагов 1, 2, 5, 6: +2, +1, 0, итого +3).
 4. Прототип: из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3` worktree — `& $PY -m pytest tests -q` (97 passed на `b3ffaac`), `& $PY regression\run_regression.py --quick` → 11/11 PASS.
 5. Красное: `python ..\vault\issues\bug-024\probes\red_state.py code` → ✗ на 10.0781 сут. Вывод `red_state_code.out.txt` — проверить, что путь кода в worktree (проба печатает путь только неявно — запустить `python ..\vault\issues\bug-024\probes\stage4_failure.py 20 10 3 B 86400` с `$env:BUG024_DETAIL="0"`, первая строка — «код: <worktree>\numerical_solver\…»).
 
@@ -825,7 +825,7 @@ class TestDailyShutin:
 7. `vault/00-home/index.md`: в раздел заметок debugging (после строки BUG-022, ~54) — строка новой заметки с аннотацией; в раздел планов (после `debt-008 dead-config-fields`, ~133) — строка плана (её добавляет `/plan-fix`, проверить).
 
 **Проверка после шага:**
-- Регресс: `pytest tests/ --collect-only -q` — 1682 (1679 + 3); быстрый уровень — 1420 passed (правились только docstring, тест-сторож `test_eq_references.py` входит в быстрый уровень — новые тексты не должны содержать «ур. N», «.tex:N», «.tex, строки»).
+- Регресс: `pytest tests/ --collect-only -q` — 1691 (1688 + 3; до влития VAL-004 — 1682); быстрый уровень — 1420 passed (правились только docstring, тест-сторож `test_eq_references.py` входит в быстрый уровень — новые тексты не должны содержать «ур. N», «.tex:N», «.tex, строки»).
 **Зависимости:** Требует: шаги 1–4 (числа CHANGELOG — после шага 6).
 **Оценка:** ~60 строк текста, ~30 минут.
 
@@ -835,7 +835,7 @@ class TestDailyShutin:
 **Файлы:** нет правок (кроме поправки чисел шага 5 при расхождении).
 
 **Что сделать:**
-1. `pytest tests/ -q` — **1682 passed** (полный прогон, ~10 мин).
+1. `pytest tests/ -q` — **1691 passed** (полный прогон, ~10 мин; 1682 + 9 тестов VAL-004, влитого после аудита).
 2. Прототип: зафиксировать HEAD (`git rev-parse HEAD`), затем из `Prototype_1.0.3` — `run_regression.py` (полная, с T05, ~45 мин) → **17/17 PASS побитово**. Выходы `OUTPUT/REGRESSION_*` удалить после разбора.
 3. Примеры (~4 мин): `$env:BUG024_TAG = "_branch"; & $PY ..\vault\issues\bug-024\probes\examples_variant.py run code` (из `numerical_solver` worktree; первая строка — путь кода worktree; вывод — `examples_run_all_code_branch.out.txt`, замер базы `examples_run_all_code.out.txt` не перезаписывается) → отпечатки:
    - 20 примеров — как в `examples_run_all_code.out.txt` базы (`b988f64706e29193` … `0323e493a9d140b7`);
@@ -892,7 +892,7 @@ class TestDailyShutin:
 
 - [ ] `TestDailyShutin` зелёный; на коде до шага 1 — красный (проверено подменой при планировании)
 - [ ] Новые тесты зелёные (3 новых + переделанный)
-- [ ] Полный прогон — 1682 passed
+- [ ] Полный прогон — 1691 passed (с `test_val004.py`)
 - [ ] Тесты прототипа зелёные; полная регрессия `run_regression.py` — 17/17 PASS побитово; запись в `CHANGELOG_1.0.3.md`
 - [ ] Отпечатки примеров: 20 побитово, 16 и 17 — по плану
 - [ ] Сценарии `sweep.py branch` — 10/10 ✓

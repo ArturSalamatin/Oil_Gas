@@ -1,0 +1,44 @@
+=== 17: останов после сильного охлаждения забоя ===
+Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples_copy_branch\17_shut_in_strong_cooling\config.json
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples_copy_branch\17_shut_in_strong_cooling\output\energy_balance.png
+  dE финал          = +2.4787e+10 Дж
+  Адиабатика финал  = +3.8570e+09 Дж
+  Конвекция финал   = +1.6491e+11 Дж
+  Джоуль-Томсон     = +3.9027e+10 Дж
+  Скрытая теплота   = -1.8301e+11 Дж
+  Теплопроводность  = +6.8608e+06 Дж
+  Невязка финал     = +1.3924e-03 Дж  (3.35e-15)
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples_copy_branch\17_shut_in_strong_cooling\output\mass_balance.png
+Баланс массы компонентов, м3ст:
+  Нефть: dM = -3.3956e+02, добыча = +4.5226e+03, приток с контура = +4.1830e+03
+         невязка финал = -4.8073e-08 (5.31e-12), max по записям 1.84e-11
+  Газ  : dM = +6.0999e+04, добыча = +1.1939e+06, приток с контура = +1.2549e+06
+         невязка финал = -3.8924e-05 (1.55e-11), max по записям 6.47e-11
+EMF: 10 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples_copy_branch\17_shut_in_strong_cooling\output\emf (5.0 с)
+Шагов сохранено: 54
+Время расчёта:   61.42 с
+p(r_w) финал:    33.000 МПа
+T(r_w) финал:    377.308 К
+Sg макс:         0.06253
+Rs мин:          79.537 м³ст/м³ст
+q_o финал:       0.0000e+00 м³ст/с
+q_g финал:       0.0000e+00 м³ст/с
+Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples_copy_branch\17_shut_in_strong_cooling\output
+
+── Rs: равновесие Black Oil без кинетики ──
+  ячейки с газом (Sg > 1e-08) — 51: max|Rs_числ - Rs_eq(p)| = 0.000e+00 м³ст/м³ст (0.00e+00 % от Rs0)
+  ячейки без газа — 149: пересыщенных (Rs > Rs_eq(p) + 1e-05) — 0, ниже pb (нефть недонасыщена) — 0
+  Rs: 79.5369 … 332.4101 при Rs0 = 300.0, pb = 30.2921 МПа; ячеек с Rs > Rs0: 88
+
+── PVT: standing ──
+  рабочий диапазон: p = 5.1545 … 33.0000 МПа
+  Rs0 = 300 м³ст/м³ст,  p_b = 30.2921 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     5.1545    36.7245   1.17889   4.5159e-04    0.02587   1.3950e-05    710.19     39.19
+    19.0773   172.5631   1.60959   2.5445e-04    0.00699   1.9017e-05    605.73    145.05
+    33.0000   300.0000   2.05036   1.9994e-04    0.00404   2.8766e-05    538.54    250.91
+
+── Стационарная аналитика отключена (steady_state=False): замкнутое решение и асимптотика температуры не строятся ──

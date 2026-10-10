@@ -1,0 +1,7 @@
+=== консоль main.py: satrel против branch (без путей, «Сохранён» и времени счёта)
+--- 16_well_shut_in: строк отличается 1
+    -Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-024\probes\examples\16_well_shut_in\output
+    +Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples\16_well_shut_in\output
+--- 17_shut_in_strong_cooling: строк отличается 1
+    -Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-024\probes\examples\17_shut_in_strong_cooling\output
+    +Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-024\vault\issues\bug-024\probes\examples\17_shut_in_strong_cooling\output

@@ -1,0 +1,13 @@
+﻿OK   numerical_solver/examples/closed_form.py
+OK   numerical_solver/examples/two_phase_analytics.py
+OK   numerical_solver/gpn_multiphase_solver/energy/balance.py
+OK   numerical_solver/gpn_multiphase_solver/energy/base.py
+OK   numerical_solver/gpn_multiphase_solver/energy/tridiag.py
+OK   numerical_solver/gpn_multiphase_solver/fluxes.py
+OK   numerical_solver/gpn_multiphase_solver/grid/log_radial.py
+OK   numerical_solver/gpn_multiphase_solver/pvt/base.py
+OK   numerical_solver/gpn_multiphase_solver/state.py
+OK   numerical_solver/tests/test_energy.py
+OK   numerical_solver/tests/test_examples.py
+OK   numerical_solver/tests/test_prototype_adapter.py
+файлов: 12, с изменённой логикой: 0

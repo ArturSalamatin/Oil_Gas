@@ -1,4 +1,4 @@
-﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-010\numerical_solver
 [до замен] test_no_numeric_equation_or_line_references: FAILED — 42 строк в 14 файлах
 [до замен] test_label_references_exist_in_problem_statement: PASSED
 замен: 40 (таблицы 35, блоки 5)

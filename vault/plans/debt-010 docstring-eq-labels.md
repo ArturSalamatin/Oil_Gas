@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-010
 github: 92
 branch: refactor/debt-010/docstring-eq-labels
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-010
 audit:
   date: 2026-10-10

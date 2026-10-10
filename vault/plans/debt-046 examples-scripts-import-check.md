@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-046
 github: 77
 branch: refactor/debt-046/examples-scripts-import-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-046
 audit:
   date: 2026-10-10

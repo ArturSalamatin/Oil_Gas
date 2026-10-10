@@ -23,6 +23,11 @@ class TableFullPVT(FullPVT):
         self._mu_JT_g = float(mu_JT_gas)
         self._L = float(L_degas)
 
+    # Гидро-часть для фабрики и скриптов графиков (DEBT-006): BlackOilPVT
+    # прототипа — table_pvt.hydro.proto_pvt, без приватных полей. Без сеттера.
+    @property
+    def hydro(self) -> PrototypePVTAdapter: return self._hydro
+
     @property
     def rho_o_std(self): return self._hydro.rho_o_std
     @property

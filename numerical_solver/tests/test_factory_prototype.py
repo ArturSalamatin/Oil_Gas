@@ -249,6 +249,48 @@ class TestPVTConsistency:
         assert bo_our == pytest.approx(bo_proto)
 
 
+class TestWrapperAccess:
+    """Публичный доступ к объектам прототипа под обёртками (DEBT-006).
+
+    Фабрика и скрипты графиков берут BlackOilPVT и TabulatedRelPerm через
+    свойства, а не через приватные поля _hydro, _pvt, _rp. Свойства только
+    для чтения: подмена объекта разорвала бы «один источник» PVT/ОФП для
+    прототипа и наших модулей (vault/knowledge/decisions/согласованность-pvt-hydro.md).
+    """
+
+    def _wrappers(self):
+        """Три обёртки над объектами-метками: конструкторы лишь сохраняют ссылки."""
+        proto_pvt, proto_rp = object(), object()
+        adapter = PrototypePVTAdapter(proto_pvt, rho_o_std=850.0, rho_g_std=0.85)
+        table = TableFullPVT(adapter, c_p_oil=2000.0, c_p_gas=2200.0,
+                             mu_JT_oil=-4e-7, mu_JT_gas=3e-6, L_degas=0.0)
+        rp = PrototypeRPAdapter(proto_rp)
+        return proto_pvt, proto_rp, adapter, table, rp
+
+    def test_prototype_pvt_adapter_proto_pvt(self):
+        """PrototypePVTAdapter.proto_pvt — тот самый объект, что передан в конструктор."""
+        proto_pvt, _, adapter, _, _ = self._wrappers()
+        assert adapter.proto_pvt is proto_pvt
+
+    def test_table_full_pvt_hydro(self):
+        """TableFullPVT.hydro — тот самый адаптер, а через него — объект прототипа."""
+        proto_pvt, _, adapter, table, _ = self._wrappers()
+        assert table.hydro is adapter
+        assert table.hydro.proto_pvt is proto_pvt
+
+    def test_prototype_rp_adapter_proto_rp(self):
+        """PrototypeRPAdapter.proto_rp — тот самый объект, что передан в конструктор."""
+        _, proto_rp, _, _, rp = self._wrappers()
+        assert rp.proto_rp is proto_rp
+
+    def test_accessors_read_only(self):
+        """Присвоить свойству нельзя — AttributeError: общий объект не подменить."""
+        _, _, adapter, table, rp = self._wrappers()
+        for obj, name in ((adapter, "proto_pvt"), (table, "hydro"), (rp, "proto_rp")):
+            with pytest.raises(AttributeError):
+                setattr(obj, name, object())
+
+
 # ═══════════════════════════════════════════════════════════
 # E. Ошибки конфигурации
 # ═══════════════════════════════════════════════════════════

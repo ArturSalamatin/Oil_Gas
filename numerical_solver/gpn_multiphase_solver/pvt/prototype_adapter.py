@@ -28,6 +28,14 @@ class PrototypePVTAdapter(HydroPVT):
     def rho_g_std(self) -> float:
         return self._rho_g_std
 
+    @property
+    def proto_pvt(self):
+        """BlackOilPVT прототипа под адаптером — тот же объект, что у модели (DEBT-006)."""
+        # Публичный путь для фабрики и скриптов графиков вместо приватного
+        # _pvt. Без сеттера: подмена объекта разорвала бы «один источник PVT»
+        # (vault/knowledge/decisions/согласованность-pvt-hydro.md).
+        return self._pvt
+
     def Rs_eq(self, p):
         return self._pvt.rs_sat(self._to_bar(p))
 
@@ -52,6 +60,12 @@ class PrototypeRPAdapter(RelPermModel):
 
     def __init__(self, proto_rp):
         self._rp = proto_rp
+
+    @property
+    def proto_rp(self):
+        """TabulatedRelPerm прототипа под адаптером — тот же объект, что у модели (DEBT-006)."""
+        # Без сеттера — по той же причине, что proto_pvt
+        return self._rp
 
     def kro(self, Sg):
         return self._rp.kro(np.asarray(Sg, float))

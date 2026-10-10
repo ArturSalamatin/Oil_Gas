@@ -192,10 +192,11 @@ def _advance(self, state, dt, bc, balance, mass
 Аналог InjectorGPN: `t_minor_step` + `t_major_step`.
 
 **Данные** хранятся в `TimeConfig` (io/config.py): `dt_integration`, `start_day`, `history: list[HistoryInterval]`.
-`HistoryInterval` (config.py) содержит `dt`, `control`, `p_wf` — сырые данные из JSON.
+`HistoryInterval` (config.py) содержит `dt`, `control`, `p_wf`, `q_oil`, `min_bhp` (последние два — управление по дебиту нефти, FEAT-020) — сырые данные из JSON.
 
 **Runtime**: Factory (фаза 6) создаёт `TimeSchedule` из `TimeConfig`, преобразуя
-каждый `HistoryInterval.control + p_wf` → `WellControl` (см. [[модули-bc-граничные-условия]]).
+каждый `HistoryInterval` → `WellControl` (`_create_well_control`: `control = "pressure"` →
+`PressureControl(p_wf)`, `"rate"` → `RateControl(q_oil, min_bhp)`; см. [[модули-bc-граничные-условия]]).
 
 ```python
 @dataclass
@@ -209,17 +210,19 @@ class TimeSchedule:
                  intervals: list[ScheduleInterval]):
         ...
 
-    def substeps(self, k: int) -> tuple[int, float]:
+    def substeps(self, interval_idx: int) -> tuple[int, float]:
         """n_sub = ceil(dt/dt_int), dt_actual = dt/n_sub."""
         ...
 
     def total_time(self) -> float: ...
+
+    @property
     def n_intervals(self) -> int: ...
 ```
 
 Ключевое свойство: `n_sub · dt_actual = dt_hist` **точно**.
 
-Factory создаёт TimeSchedule из TimeConfig, преобразуя `HistoryInterval` (данные: control, p_wf) → `ScheduleInterval` (runtime: BoundaryConditions с WellControl).
+Factory создаёт TimeSchedule из TimeConfig, преобразуя `HistoryInterval` (данные: control, p_wf, q_oil, min_bhp) → `ScheduleInterval` (runtime: BoundaryConditions с WellControl).
 
 ## SimulationHistory — контейнер результатов (реализовано: state.py)
 
@@ -230,8 +233,13 @@ class SimulationHistory:
     states: list[SimulationState]
     hydro_results: list[HydroResult]
     well_data: list[WellData]
+    balance: list[dict]              # DEBT-013: члены баланса энергии
+    mass_balance: list[dict | None]  # DEBT-039: None — решатель массу не сохраняет
 
-    def append(self, t, state, hydro, well): ...
+    def append(self, t, state, hydro, well,
+               balance=None, mass_balance=None): ...  # balance=None → нулевой снимок
+
+    @property
     def n_saved(self) -> int: ...
 ```
 
@@ -246,17 +254,18 @@ class SimulatorFactory:
         grid = LogRadialGrid(...)
         pvt = _create_pvt(config)         # "standing" → StandingFullPVT
         relperm = _create_relperm(config)  # "corey" → CoreyRP
-        hydro = PrototypeHydroAdapter(...)   # было AnalyticalHydroSolver до FEAT-014
+        hydro = _create_prototype_hydro(config, grid, pvt, relperm)  # PrototypeHydroAdapter; до FEAT-014 — AnalyticalHydroSolver
         energy = TridiagEnergySolver(grid, pvt, config.rock)
         schedule = _create_schedule(config)
-        simulator = Simulator(grid, hydro, energy, pvt, schedule, config.output)
+        simulator = Simulator(grid, hydro, energy, pvt, schedule, config.output,
+                              max_retries=config.numerics.max_retries)
         initial_state = SimulationState(p=p0, Sg=0, Rs=Rs0, T=T0, regime=2, t=0)
         return simulator, initial_state
 ```
 
 Фабрика — единственное место, где создаются конкретные классы. Остальной код работает с абстракциями.
 
-Помощники `_create_pvt`, `_create_relperm`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py.
+Помощники `_create_pvt`, `_create_relperm`, `_create_prototype_hydro`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py.
 
 Сейчас поддерживаются: PVT = "standing" / "table", RelPerm = "corey" / "table", HydroSolver = `PrototypeHydroAdapter` (с FEAT-014 — всегда он; заглушка `AnalyticalHydroSolver` удалена из пакета в DEBT-005 и живёт как тестовый двойник `LogProfileHydroStub` в `tests/_doubles.py`).
 
@@ -265,5 +274,9 @@ class SimulatorFactory:
 - [[architecture-numerical-solver]]
 - [[модули-hydro-newton]] — HydroResult, HydroSolver
 - [[модули-energy-tridiag]] — EnergySolver
+- [[P4-адаптивный-шаг]] — локальное дробление шага в `_advance` (DEBT-015)
+- [[локальное дробление шага проходит останов при суточном dt_integration — равномерное падает на одном подшаге из 512]] — замеры G1a
+- [[нефизичная температура доходила до истории молча — проверка T ловит грубые ошибки, остальное проверка ввода]] — `_check_temperature` (DEBT-047)
+- [[контейнер-simulation-history]] — поля и наполнение истории
 - [[P8-формат-ввода-json]] — структура JSON, секция time
 - [[модули-io-вывод]] — сохранение и визуализация SimulationHistory

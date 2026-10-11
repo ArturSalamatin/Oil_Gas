@@ -589,6 +589,8 @@ class RadialBlackOilModel:
         # BUG-022: dt/PV_i of the per-cell test, None when it is off
         w=self._cell_weights(state_old,dt_s)
         switched=total=0; flips=np.zeros(nf,int); prev=None; polish=False
+        # DEBT-054, DEBT-061: why the loop stopped; a pass with it > max_iter breaks on the limit
+        reason='max_iter'
         self._upwind_frozen=np.zeros(nf,bool); self._upwind_left=np.zeros(nf,bool)
         try:
             # one pass more than max_iter: the residual after the last update is checked too
@@ -609,14 +611,15 @@ class RadialBlackOilModel:
                             new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
                             # same bound as _trial_is_reasonable: no root with Sg > 0.98
                             ok=not np.any(new.sg[mask]>0.98)
-                            return new,BlackOilNewtonReport(ok,it-1,float(nrm),1,total)
+                            return new,self._newton_report(ok,it-1,nrm,tol,f,w,'converged' if ok else 'sg_bound',
+                                                           active_set_iterations=1,phase_switches=total)
                     else:
                         # converged with a held upstream cell the solution contradicts: polish
                         # without holding, so the result solves the original upwind scheme
                         self._upwind_frozen=None; polish=True; continue
                 if it>max_iter: break
                 try: dz=self._linear_solve(J,-f)
-                except Exception: break
+                except Exception: reason='linear_solver'; break
                 # per-cell limits; Rs of undersaturated cells >= 0, pressure >= 1 bar
                 x=z[n:]; lim=dp_rel*np.maximum(p,1.0)
                 pn=np.maximum(p+np.clip(dz[:n],-lim,lim),1.0+1e-6)
@@ -631,11 +634,16 @@ class RadialBlackOilModel:
                 # limit are bitwise the former ones (np.clip returns them unchanged).
                 lim_rs=dr_rel*np.maximum(self.pvt.rs_sat(p),1.0)
                 xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+np.clip(dz[n:],-lim_rs,lim_rs),0.0))
-                if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): break
+                if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): reason='nonfinite'; break
                 xn,mask,switched=self._switch_phases(pn,xn,mask); total+=switched
                 z=np.concatenate([pn,xn])
+            # DEBT-061: the passes it ran minus one, as the converged report above -- not max_iter,
+            # which a break after a linear-solver failure or a non-finite update reported too.
+            # f is evaluated here, before finally drops the held upstream cells: residual_inf and
+            # the per-cell measure are of the scheme the Newton was solving (DEBT-054)
             f=self.residual(z,state_old,dt_s,mask)
-            return self.unpack(z,mask),BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)),1,total)
+            return self.unpack(z,mask),self._newton_report(False,it-1,np.linalg.norm(f,np.inf),tol,f,w,reason,
+                                                           active_set_iterations=1,phase_switches=total)
         finally:
             self._upwind_frozen=None; self._upwind_left=None
     def well_rates(self,state):

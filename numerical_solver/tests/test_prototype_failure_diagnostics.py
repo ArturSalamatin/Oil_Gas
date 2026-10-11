@@ -128,3 +128,74 @@ def test_active_set_exit():
     assert (rep.active_set_iterations, rep.phase_switches) == (1, 5)
     assert rep.residual_tol is None
     assert rep.cell_measure is not None and rep.cell_measure > 0.0
+
+
+# ═══════════════════════════════════════════════════════════
+# C. Ступень 4: _newton_switching
+# ═══════════════════════════════════════════════════════════
+
+class TestSwitching:
+    """Ступень 4: _newton_switching на шаге останова 168.75 с (rs300 после 10 сут добычи, q_oil = 0)."""
+
+    def test_converged_report(self, shutin):
+        """Замер (п. 5): 16 итераций, невязка 6.9e-15 при допуске 4.38e-11, мера 1.21e-11."""
+        model, ps = shutin
+        z0 = model.pack(ps, ps.gas_active)
+        _, rep = model._newton_switching(ps, DT_STAGE4)
+        assert rep.converged and rep.exit_reason == "converged"
+        assert rep.residual_tol == _tol(model, z0, ps, DT_STAGE4, ps.gas_active)
+        assert rep.residual_inf <= rep.residual_tol and rep.cell_measure <= CELL_TOL
+
+    def test_limit_only_cell_test(self, shutin):
+        """Недостижимый порог 1e-30: 40 итераций, выход по лимиту, абсолютное условие выполнено.
+
+        Тот же класс, что у отказов ступени 4 по памяти на суточном останове
+        (failure_census_shutin.out.txt: невязка 7.6e-16, мера 1.29e-8 > 1e-8).
+        Замер (п. 5): невязка 8.1e-15 при допуске 4.38e-11. Порог возвращается в finally:
+        фикстура модульная.
+        """
+        model, ps = shutin
+        try:
+            model.cell_tol = 1e-30
+            _, rep = model._newton_switching(ps, DT_STAGE4)
+        finally:
+            model.cell_tol = CELL_TOL
+        assert not rep.converged and rep.iterations == 40 and rep.exit_reason == "max_iter"
+        assert rep.residual_inf <= rep.residual_tol and rep.cell_measure > 1e-30
+
+    def test_linear_solver_break_reports_iterations_run(self, shutin, monkeypatch):
+        """DEBT-061: исключение решателя на 3-м вызове — 2 итерации и 'linear_solver', а не 40.
+
+        До правки отчёт после break писал max_iter = 40 (замер п. 6).
+        """
+        model, ps = shutin
+        orig, calls = model._linear_solve, []
+
+        def third_fails(*args, **kwargs):
+            calls.append(1)
+            if len(calls) == 3:
+                raise np.linalg.LinAlgError("вырожденная матрица (тест)")
+            return orig(*args, **kwargs)
+
+        monkeypatch.setattr(model, "_linear_solve", third_fails)
+        _, rep = model._newton_switching(ps, DT_STAGE4)
+        assert not rep.converged
+        assert (rep.iterations, rep.exit_reason) == (2, "linear_solver")
+
+    def test_nonfinite_break_reports_iterations_run(self, shutin, monkeypatch):
+        """DEBT-061: NaN в направлении 2-го вызова — 1 итерация и 'nonfinite', а не 40 (замер п. 7)."""
+        model, ps = shutin
+        orig, calls = model._linear_solve, []
+
+        def nan_on_second(*args, **kwargs):
+            calls.append(1)
+            dz = orig(*args, **kwargs)
+            if len(calls) == 2:
+                dz = dz.copy()
+                dz[0] = np.nan
+            return dz
+
+        monkeypatch.setattr(model, "_linear_solve", nan_on_second)
+        _, rep = model._newton_switching(ps, DT_STAGE4)
+        assert not rep.converged
+        assert (rep.iterations, rep.exit_reason) == (1, "nonfinite")

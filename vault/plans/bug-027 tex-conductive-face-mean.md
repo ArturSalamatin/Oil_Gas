@@ -7,7 +7,8 @@ issue: BUG-027
 github: 97
 branch: fix/bug-027/tex-conductive-face-mean
 status: реализован
-worktree: .worktrees/bug-027
+worktree: .worktrees/bug-027; удалён после влития
+merged: 6aaf9e9 (2026-10-11)
 audit:
   date: 2026-10-10
   found: 11

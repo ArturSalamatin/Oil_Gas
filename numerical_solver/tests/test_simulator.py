@@ -565,6 +565,20 @@ class TestEnergySubstepsUnderRetry:
         assert hydro.dt_calls == [3600.0, 1800.0, 900.0]
         assert energy.dt_calls == []
 
+    def test_exhausted_subdivision_reports_last_failure(self):
+        """Конец текста отказа — текст HydroConvergenceError последнего подшага (DEBT-054).
+
+        Двойник отказывает на всех подшагах, max_retries = 2: последний — 900 с при t = 0.
+        Начало текста прежнее: его цитируют README примеров 03, 05, 06, 07, 10.
+        """
+        sim, _, _ = _retry_run(lambda s, dt: True, max_retries=2)
+        with pytest.raises(RuntimeError) as exc:
+            sim.run(_initial_state())
+        msg = str(exc.value)
+        assert msg.startswith("HydroSolver не сошёлся при дроблении шага до dt/4 = ")
+        assert msg.endswith(
+            "Последний отказ гидродинамики: двойник: отказ при dt = 900 с, t = 0 с")
+
     def test_other_errors_not_subdivided(self):
         """Ошибка кода в гидро (не HydroConvergenceError) не маскируется дроблением.
 

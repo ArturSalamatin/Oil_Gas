@@ -347,3 +347,23 @@ _THRESHOLD = " (порог numerics.newton_cell_tol = 1e-08)"
 def test_failure_details(report, cell_tol, stage, expected):
     """Хвост текста отказа по классам: какое условие не выполнено — те же сравнения, что в Ньютоне."""
     assert _failure_details(report, cell_tol, stage) == expected
+
+
+# ═══════════════════════════════════════════════════════════
+# G. Текст отказа Simulator
+# ═══════════════════════════════════════════════════════════
+
+def test_simulator_message_ends_with_adapter_text():
+    """max_retries = 0: первый же отказ — RuntimeError Simulator; конец текста — текст адаптера.
+
+    До DEBT-054 класс отказа был виден только в цепочке traceback (__cause__).
+    """
+    sim, init, _ = _sim(N=350, retries=0)
+    with pytest.raises(RuntimeError) as exc:
+        sim.run(init)
+    msg = str(exc.value)
+    assert msg.startswith("HydroSolver не сошёлся при дроблении шага до dt/1 = 8.64e+04 с")
+    tail = msg.split("Последний отказ гидродинамики: ", 1)[1]
+    assert tail == str(exc.value.__cause__)
+    assert tail.startswith("advance не сошёлся: dt = 8.640e+04 с")
+    assert "не выполнено только условие по ячейке" in tail

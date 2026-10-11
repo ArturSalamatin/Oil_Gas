@@ -54,14 +54,14 @@ class SimulatorFactory:
         )
 
         # 2. PVT (FullPVT — гидро + тепловые)
-        pvt = _create_pvt(config)
+        pvt = create_pvt(config)
         _check_undersaturated_start(config.initial_conditions, pvt,
                                     config.numerics.rs_switch_tol)
         # BUG-019: отрицательная сжимаемость нефти или газа — предупреждение
         _warn_negative_compressibility(config, pvt)
 
         # 3. RelPerm
-        relperm = _create_relperm(config)
+        relperm = create_relperm(config)
 
         # 4. HydroSolver — всегда PrototypeHydroAdapter (Newton-солвер прототипа)
         hydro = _create_prototype_hydro(config, grid, pvt, relperm)
@@ -73,9 +73,12 @@ class SimulatorFactory:
         schedule = _create_schedule(config)
 
         # 7. Simulator
+        # relperm — тот же объект, что ушёл гидродинамике: Simulator отдаёт
+        # его диагностике (DEBT-011)
         simulator = Simulator(
             grid=grid, hydro=hydro, energy=energy, pvt=pvt,
-            schedule=schedule, max_retries=config.numerics.max_retries)
+            schedule=schedule, max_retries=config.numerics.max_retries,
+            relperm=relperm)
 
         # 8. Начальное состояние
         ic = config.initial_conditions
@@ -91,10 +94,12 @@ class SimulatorFactory:
         return simulator, initial_state
 
 
-# ── Помощники (внутренние функции модуля) ────────────────────
+# ── Сборка моделей по конфигу и помощники ────────────────────
+# create_pvt, create_relperm — публичные (DEBT-011): по ним диагностика и
+# примеры получают PVT и ОФП без решателя. Остальное — внутреннее.
 
-def _create_pvt(config: SimulationConfig):
-    """Создать FullPVT по config.pvt.model."""
+def create_pvt(config: SimulationConfig):
+    """FullPVT по config.pvt.model; публичная — для диагностики без решателя (DEBT-011)."""
     pc = config.pvt
     tc = config.thermal
     ic = config.initial_conditions
@@ -353,8 +358,8 @@ def _warn_initial_table_range(model, ic) -> None:
         user_log.warning(f"Начальное состояние вне таблиц: {warning}")
 
 
-def _create_relperm(config: SimulationConfig):
-    """Создать RelPermModel по config.relperm.model."""
+def create_relperm(config: SimulationConfig):
+    """RelPermModel по config.relperm.model; публичная — для диагностики без решателя (DEBT-011)."""
     rc = config.relperm
 
     if rc.model == "corey":

@@ -23,7 +23,7 @@ from gpn_multiphase_solver.io.config import load_config, SimulationConfig
 from gpn_multiphase_solver.factory import (
     SimulatorFactory,
     _read_oil_pvt_csv, _read_gas_pvt_csv, _read_relperm_csv,
-    _create_pvt, _create_relperm, _get_or_create_proto_pvt, _get_or_create_proto_rp,
+    create_pvt, create_relperm, _get_or_create_proto_pvt, _get_or_create_proto_rp,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.pvt.table_full import TableFullPVT
@@ -198,7 +198,7 @@ class TestFactoryTablePVT:
         тесты её не видят, видит только этот.
         """
         config = load_config(TABLE_CONFIG)
-        assert isinstance(_create_relperm(config), PrototypeRPAdapter)
+        assert isinstance(create_relperm(config), PrototypeRPAdapter)
         simulator, _ = SimulatorFactory.from_config(config)
         model = simulator._hydro._model
         Sg, _, _ = _read_relperm_csv(config.config_dir / config.relperm.file)
@@ -289,13 +289,13 @@ class TestPVTConsistency:
     def test_proto_pvt_shared_for_table(self):
         """Табличная PVT: прототипу — тот же BlackOilPVT, что под обёрткой (DEBT-006)."""
         config = load_config(TABLE_CONFIG)
-        pvt = _create_pvt(config)
+        pvt = create_pvt(config)
         proto = _get_or_create_proto_pvt(pvt, config.initial_conditions.p0)
         assert proto is pvt.hydro.proto_pvt
 
     def test_proto_rp_shared_for_table(self):
         """Табличная ОФП: прототипу — тот же TabulatedRelPerm, а не 101 узел (DEBT-006)."""
-        relperm = _create_relperm(load_config(TABLE_CONFIG))
+        relperm = create_relperm(load_config(TABLE_CONFIG))
         assert _get_or_create_proto_rp(relperm) is relperm.proto_rp
 
 

@@ -52,7 +52,7 @@ sys.path.insert(0, str(HERE.parents[0]))
 
 import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
 
-from gpn_multiphase_solver.factory import SimulatorFactory, _create_relperm  # noqa: E402
+from gpn_multiphase_solver.factory import SimulatorFactory, create_relperm  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 
 from closed_form import solve_closed  # noqa: E402
@@ -90,7 +90,7 @@ def main():
         grid = sim._grid
         pvt = sim._energy._pvt
         # Замкнутое решение на ЭТОЙ сетке: из расчёта не берётся ничего.
-        cl = solve_closed(config, pvt, _create_relperm(config), grid.r_centers)
+        cl = solve_closed(config, pvt, create_relperm(config), grid.r_centers)
 
         last = history.states[-1]
         q_num = history.well_data[-1].q_o_std

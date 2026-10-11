@@ -87,8 +87,8 @@ def _get_pvt(config, simulator):
     """
     if simulator is not None:
         return _pvt_of(simulator)
-    from gpn_multiphase_solver.factory import _create_pvt
-    return _create_pvt(config)
+    from gpn_multiphase_solver.factory import create_pvt
+    return create_pvt(config)
 
 
 def _physical_rs(pvt, p: np.ndarray, Rs0: float) -> np.ndarray:

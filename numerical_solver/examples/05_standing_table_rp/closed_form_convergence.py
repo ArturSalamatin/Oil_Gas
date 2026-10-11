@@ -40,7 +40,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from gpn_multiphase_solver.factory import SimulatorFactory, _create_relperm  # noqa: E402
+from gpn_multiphase_solver.factory import SimulatorFactory, create_relperm  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 
@@ -82,7 +82,7 @@ def run_one(N: int, dt: float, max_retries: int = 9) -> dict:
     history = sim.run(initial_state)
     grid = sim._grid
     pvt = sim._energy._pvt
-    relperm = _create_relperm(config)
+    relperm = create_relperm(config)
 
     # Кэш solve_closed завязан на (r[0], r[-1], len(r)) — для разных N
     # ключи различаются, коллизии нет.

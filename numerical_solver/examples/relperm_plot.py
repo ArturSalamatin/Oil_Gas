@@ -8,7 +8,7 @@
 
 Модуль работает с ЛЮБОЙ моделью ОФП — и с аналитической (Corey), и с
 табличной. Кривые берутся у того же объекта `RelPermModel`, который считал
-задачу (через `factory._create_relperm`), поэтому график показывает ровно то,
+задачу (через `factory.create_relperm`), поэтому график показывает ровно то,
 что видел решатель, а не повторную реализацию формул или CSV.
 
 Что на графике:
@@ -47,7 +47,7 @@ def _table_nodes(relperm):
     (radial_blackoil/relperm.py). У аналитических моделей (CoreyRP)
     выделенных точек нет — возвращаем None.
     """
-    # Импорт локальный — как _create_relperm в plot_relperm
+    # Импорт локальный — как create_relperm в plot_relperm
     from gpn_multiphase_solver.pvt.prototype_adapter import PrototypeRPAdapter
     # По классу, а не по приватному полю _rp через getattr (DEBT-006):
     # переименование поля молча убирало бы узлы с графика
@@ -92,8 +92,8 @@ def plot_relperm(config, history, output_dir: Path, title: str,
     Возвращает путь к сохранённому PNG.
     """
     if relperm is None:
-        from gpn_multiphase_solver.factory import _create_relperm
-        relperm = _create_relperm(config)
+        from gpn_multiphase_solver.factory import create_relperm
+        relperm = create_relperm(config)
 
     Sg_lo, Sg_hi = _sg_range(history)
     # Однофазный сценарий: газ не выделялся вовсе, увеличивать нечего.
@@ -212,8 +212,8 @@ def report_relperm(config, history, relperm=None) -> None:
     входит в замыкание GOR = Rs0 и определяет насыщенность в стационаре.
     """
     if relperm is None:
-        from gpn_multiphase_solver.factory import _create_relperm
-        relperm = _create_relperm(config)
+        from gpn_multiphase_solver.factory import create_relperm
+        relperm = create_relperm(config)
 
     Sg_lo, Sg_hi = _sg_range(history)
 

@@ -939,8 +939,8 @@ def _pvt_module():
 
 def _pvt_of_config(cfg):
     """PVT, собранный фабрикой по конфигу (эталон для сверки)."""
-    from gpn_multiphase_solver.factory import _create_pvt
-    return _create_pvt(cfg)
+    from gpn_multiphase_solver.factory import create_pvt
+    return create_pvt(cfg)
 
 
 def _pvto_lines(ax, gid):
@@ -990,7 +990,7 @@ class TestPvtPlot:
 
         Эталон — вызов pvt.pb(Rs0). Допуск 1e-6 Па: обе стороны обязаны
         считать ОДНИМ вызовом, а не своей формулой. Заодно покрывается
-        ветка simulator=None (fallback на factory._create_pvt): fixture
+        ветка simulator=None (fallback на factory.create_pvt): fixture
         results симулятор не хранит.
         """
         pvt_plot = _pvt_module()
@@ -1418,10 +1418,10 @@ class TestWorkingRange:
         Таблица ОФП примера 12; ожидается строка «рабочий диапазон: S_g =
         0.000000 … 0.050000» вместо «расчёт однофазный».
         """
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         cfg = load_config(self.CFG)
         _relperm_module().report_relperm(cfg, _shut_in_like_history(),
-                                         _create_relperm(cfg))
+                                         create_relperm(cfg))
         out = capsys.readouterr().out
         assert "расчёт однофазный" not in out
         assert "рабочий диапазон: S_g = 0.000000 … 0.050000" in out
@@ -1433,7 +1433,7 @@ class TestWorkingRange:
         расчёта, 1 у однофазного. Перехват вызова — тот же приём, что в
         test_plot_pvt_layout_2x3.
         """
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         rp_mod = _relperm_module()
         calls = []
         orig = rp_mod.plt.subplots
@@ -1445,7 +1445,7 @@ class TestWorkingRange:
         monkeypatch.setattr(rp_mod.plt, "subplots", spy)
         cfg = load_config(self.CFG)
         rp_mod.plot_relperm(cfg, _shut_in_like_history(), tmp_path, "16-синт",
-                            _create_relperm(cfg))
+                            create_relperm(cfg))
         assert calls[0][:2] == (1, 2), f"панелей: {calls[0][:2]}"
 
 
@@ -1463,9 +1463,9 @@ class TestTableNodesByClass:
 
     def test_relperm_nodes_from_csv(self):
         """Табличная ОФП примера 04: узлы — ровно строки relperm.csv."""
-        from gpn_multiphase_solver.factory import _create_relperm, _read_relperm_csv
+        from gpn_multiphase_solver.factory import create_relperm, _read_relperm_csv
         cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
-        nodes = _relperm_module()._table_nodes(_create_relperm(cfg))
+        nodes = _relperm_module()._table_nodes(create_relperm(cfg))
         expected = _read_relperm_csv(cfg.config_dir / cfg.relperm.file)
         assert nodes is not None, "у табличной ОФП узлы обязаны быть"
         for got, exp in zip(nodes, expected):
@@ -1473,9 +1473,9 @@ class TestTableNodesByClass:
 
     def test_relperm_nodes_none_for_corey(self):
         """Кори примера 03: выделенных точек нет — None."""
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
-        assert _relperm_module()._table_nodes(_create_relperm(cfg)) is None
+        assert _relperm_module()._table_nodes(create_relperm(cfg)) is None
 
     def test_pvt_nodes_none_for_standing(self):
         """Стендинг примера 03: узлов PVT нет — None (без фикстуры results, DEBT-006)."""
@@ -1576,12 +1576,12 @@ class TestHighGasSaturation:
         sys.path.insert(0, str(EXAMPLES_DIR))
         from closed_form import Closure
         from gpn_multiphase_solver.factory import (
-            SimulatorFactory, _create_relperm)
+            SimulatorFactory, create_relperm)
 
         cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
         sim, _ = SimulatorFactory.from_config(cfg)
         # Closure принимает объект ОФП напрямую — работает и с CoreyRP.
-        clo = Closure(sim._energy._pvt, _create_relperm(cfg),
+        clo = Closure(sim._energy._pvt, create_relperm(cfg),
                       cfg.initial_conditions.Rs0)
 
         p_well = float(results[HIGH_SG]["p"][0])
@@ -1774,11 +1774,11 @@ class TestPwfRampDown:
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
         from closed_form import solve_closed
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
 
         r = results[self.NAME]
         cfg = r["config"]
-        cl = solve_closed(cfg, _pvt_of_config(cfg), _create_relperm(cfg),
+        cl = solve_closed(cfg, _pvt_of_config(cfg), create_relperm(cfg),
                           r["grid"].r_centers)
         assert cl["q_o"] == pytest.approx(3.2827e-3, rel=1e-4)
 
@@ -1817,13 +1817,13 @@ def _closed_form():
 @pytest.fixture(scope="module")
 def stationary_base():
     """Конфиг примера 12, его PVT, ОФП и сетка (r центров ячеек)."""
-    from gpn_multiphase_solver.factory import _create_relperm
+    from gpn_multiphase_solver.factory import create_relperm
     from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
     cfg = load_config(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
     g = cfg.geometry
     grid = LogRadialGrid(r_well=g.r_well, R_ext=g.R_ext, h=g.h,
                          N=cfg.grid.N, k=cfg.rock.permeability)
-    return cfg, _pvt_of_config(cfg), _create_relperm(cfg), grid.r_centers
+    return cfg, _pvt_of_config(cfg), create_relperm(cfg), grid.r_centers
 
 
 class TestStationaryPwf:

@@ -4,7 +4,7 @@
 используют вид k_r(S_g) вообще, поэтому проверка применима к любой
 комбинации PVT × ОФП. Единственное место, где вид ОФП входит, — пункт B:
 там уравнение обращается численно, тем же объектом ОФП, которым считалась
-задача (`_create_relperm` из фабрики).
+задача (`create_relperm` из фабрики).
 
 ЧТО ПОКАЗЫВАЕТ СРАВНЕНИЕ ПРИМЕРОВ 03 И 05. Постановка у них одна (те же
 PVT Стендинга, Rs0 = 50, p_wf = 8 МПа < pb = 9.43 МПа), отличается ровно
@@ -113,9 +113,9 @@ def _build_relperm(config):
     а не её повторную реализацию по формулам или CSV. Фабрика собирает и
     Кори, и таблицу, поэтому проверка работает при любой модели ОФП.
     """
-    from gpn_multiphase_solver.factory import _create_relperm
+    from gpn_multiphase_solver.factory import create_relperm
 
-    return _create_relperm(config)
+    return create_relperm(config)
 
 
 def _kr_max_Sg(relperm, Sg_hi=0.999):

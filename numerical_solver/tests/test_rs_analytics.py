@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
-from gpn_multiphase_solver.factory import _create_pvt  # noqa: E402
+from gpn_multiphase_solver.factory import create_pvt  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.state import SimulationState  # noqa: E402
 
@@ -41,7 +41,7 @@ R = np.geomspace(0.1, 100.0, 6)        # центры ячеек, м (тольк
 def _case(name):
     """(config, pvt) примера без расчёта."""
     cfg = load_config(_EXAMPLES / name / "config.json")
-    return cfg, _create_pvt(cfg)
+    return cfg, create_pvt(cfg)
 
 
 def _history(p_mpa, Rs, regime, Sg=None):

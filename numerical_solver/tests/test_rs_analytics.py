@@ -2,7 +2,7 @@
 
 Проверка обязана быть верной при любой истории давления:
   ячейка со свободным газом (Sg > SG_GAS): Rs = Rs_eq(p);
-  ячейка без газа:                         Rs <= Rs_eq(p) + RS_TOL —
+  ячейка без газа:                         Rs <= Rs_eq(p) + rs_switch_tol —
                                            недонасыщенность допустима.
 Прежняя формула Rs = min(Rs_eq(p), Rs0) во всех ячейках верна только при
 монотонно падающем давлении и на примерах 12, 13b печатала «не совпадают».
@@ -168,26 +168,39 @@ def test_tolerance_on_flat_branch(capsys):
 
 
 def test_supersaturation_within_solver_tolerance_is_accepted(capsys):
-    """Пересыщение до RS_TOL — состояние, принятое решателем; сверх — нарушение.
+    """Пересыщение до rs_switch_tol — состояние, принятое решателем; сверх — нарушение.
 
     Прототип включает газ в ячейке только при Rs > Rs_eq(p) + rs_switch_tol
     (blackoil.py, _advance_phases): ячейка с меньшим пересыщением остаётся
-    однофазной законно. RS_TOL обязан совпадать с этим допуском — сверка с
-    умолчанием RadialBlackOilModel (фабрика его не задаёт).
+    однофазной законно. Допуск проверки — numerics.rs_switch_tol конфига, тот
+    же, что фабрика передаёт прототипу (DEBT-008); равенство умолчания конфига
+    умолчанию прототипа — test_config.py::test_defaults_match_prototype.
     """
-    import inspect
-    from radial_blackoil.blackoil import RadialBlackOilModel
-    params = inspect.signature(RadialBlackOilModel.__init__).parameters
-    assert rs_analytics.RS_TOL == params["rs_switch_tol"].default
+    cfg, pvt = _case("04_table_table")
+    tol = cfg.numerics.rs_switch_tol
+    p = [10, 12, 13]
+    regime = [1, 2, 2]
+    Rs = pvt.Rs_eq(np.array(p, float) * MPA)
+    Rs[1] += 0.5 * tol     # в пределах допуска решателя
+    Rs[2] += 2.0 * tol     # сверх допуска: решатель включил бы газ
+    rep = _report(cfg, _history(p, Rs, regime), pvt, capsys)
+    assert rep["n_supersaturated"] == 1
 
+
+def test_supersaturation_tolerance_from_config(capsys):
+    """Допуск пересыщения — numerics.rs_switch_tol конфига, а не константа модуля (DEBT-008).
+
+    С допуском решателя 1e-4 однофазная ячейка с пересыщением 2e-5 —
+    законное состояние; с константой 1e-5 проверка печатала бы нарушение.
+    """
     cfg, pvt = _case("04_table_table")
     p = [10, 12, 13]
     regime = [1, 2, 2]
     Rs = pvt.Rs_eq(np.array(p, float) * MPA)
-    Rs[1] += 0.5 * rs_analytics.RS_TOL     # в пределах допуска решателя
-    Rs[2] += 2.0 * rs_analytics.RS_TOL     # сверх допуска: решатель включил бы газ
-    rep = _report(cfg, _history(p, Rs, regime), pvt, capsys)
-    assert rep["n_supersaturated"] == 1
+    Rs[2] += 2e-5                          # сверх умолчания 1e-5
+    assert _report(cfg, _history(p, Rs, regime), pvt, capsys)["n_supersaturated"] == 1
+    cfg.numerics.rs_switch_tol = 1e-4      # решатель с таким допуском газ не включил бы
+    assert _report(cfg, _history(p, Rs, regime), pvt, capsys)["n_supersaturated"] == 0
 
 
 def test_rs_above_rs0_is_observation_not_violation(capsys):

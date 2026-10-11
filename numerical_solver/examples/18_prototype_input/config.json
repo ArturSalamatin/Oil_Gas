@@ -41,7 +41,6 @@
     "Rs0": 50.0
   },
   "time": {
-    "start_day": 0.0,
     "dt_integration": 3600.0,
     "history": [
       {

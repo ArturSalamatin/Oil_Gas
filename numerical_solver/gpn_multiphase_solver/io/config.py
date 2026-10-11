@@ -32,7 +32,7 @@ class GeometryConfig:
 class GridConfig:
     """Параметры сетки."""
     N: int                       # число ячеек
-    type: str = "log_radial"     # тип сетки (пока только log_radial)
+    type: str = "log_radial"     # тип сетки: только "log_radial" (проверка — _validate, DEBT-008)
 
 
 # ── Секция rock ──────────────────────────────────────────────
@@ -47,8 +47,11 @@ class RockConfig:
     lambda_solid: float = 1.5       # λ_s, Вт/(м·К)
     lambda_oil: float = 0.14        # λ_o (фазы), Вт/(м·К)
     lambda_gas: float = 0.04        # λ_g (фазы), Вт/(м·К)
-    # Компрессия породы (пока не используется)
-    p_ref: float = 1e7              # опорное давление, Па
+    # Сжимаемость породы: прототип считает φ(p) = porosity·exp(c_r·(p − p0)),
+    # porosity задана при начальном давлении initial_conditions.p0 (factory.py,
+    # CompressibleRock). Опорного давления в конфиге нет (DEBT-008): пара
+    # (φ_ref, p_ref) пересчитывается точно — porosity = φ_ref·exp(c_r·(p0 − p_ref)).
+    # Энергия берёт постоянную porosity (energy/tridiag.py) — при c_r ≠ 0 см. DEBT-057.
     compressibility: float = 0.0    # c_r, 1/Па
 
 
@@ -131,26 +134,28 @@ class TimeConfig:
     """Временна́я сетка и история."""
     dt_integration: float                  # шаг интегрирования, с
     history: list[HistoryInterval]         # список интервалов
-    start_day: float = 0.0                 # начало истории, сут
 
 
 # ── Секция numerics ──────────────────────────────────────────
 
 @dataclass
 class NumericsConfig:
-    """Параметры численного метода; часть полей никто не читает (DEBT-008)."""
-    # Читаются: skin, jacobian_mode, linear_solver, newton_cell_tol — фабрика (прототипу),
-    # max_retries — Simulator. Не читаются: dt_min, dt_max; newton_max_iter, newton_rtol,
-    # newton_atol, max_active_set_iter, rs_switch_tol, sg_switch_tol (прототип — свои умолчания).
-    dt_min: float = 1.0                    # минимальный шаг, с
-    dt_max: float = 86400.0                # максимальный шаг, с
+    """Параметры численного метода — фабрике, адаптеру прототипа и Simulator (DEBT-008)."""
     skin: float = 0.0                      # скин-фактор: ≥ 0, > 50 — предупреждение (DEBT-056)
-    newton_max_iter: int = 15
-    newton_rtol: float = 1e-8
-    newton_atol: float = 1e-11
-    max_active_set_iter: int = 12
+    # Лимиты Ньютона прототипа: адаптер передаёт их в каждый advance (DEBT-008).
+    # Умолчания — умолчания RadialBlackOilModel.advance (тест test_defaults_match_prototype).
+    # Ступень 4 advance (BUG-020, _newton_switching) их не читает: у неё свой предел
+    # 40 итераций и один проход набора фаз.
+    newton_max_iter: int = 15              # итераций Ньютона при фиксированном наборе фаз
+    max_active_set_iter: int = 12          # проходов уточнения набора фаз (газ есть / нет)
+    # Допуски переключения фаз прототипа: фабрика передаёт их в конструктор модели
+    # (DEBT-008). Газ включается в ячейке при R_s > R_s,eq(p) + rs_switch_tol
+    # (м³ст/м³ст), выключается при S_g < −sg_switch_tol. rs_switch_tol — ещё и допуск
+    # проверки пересыщения старта (factory._check_undersaturated_start, BUG-017) и
+    # проверки R_s примеров (examples/rs_analytics.py, DEBT-026).
     rs_switch_tol: float = 1e-5
     sg_switch_tol: float = 1e-9
+    # Якобиан и решатель СЛАУ прототипа (допустимые значения проверяет его конструктор)
     jacobian_mode: str = "grouped"
     linear_solver: str = "sparse"
     # Глубина дробления шага (Simulator, локальное дробление DEBT-015):
@@ -176,7 +181,8 @@ class NumericsConfig:
     # Порог на порядок ниже ~2.2e-16·(R_ext/r_w)^2 не выполняется, шаги дробятся: при
     # 1e-10 у 17 отказов шагов 214 против 47, якобианов ×2.9 (оценка для 17 — 8e-10;
     # при R_ext/r_w = 1e4 и 1e-8 — вдвое ниже оценки — лишь +8 отказов из 38). null — выкл.
-    # Передаётся прототипу (cell_tol), в отличие от newton_atol и newton_rtol (DEBT-008).
+    # Передаётся прототипу (cell_tol). Допуски абсолютного критерия (atol, rtol) —
+    # умолчания прототипа, в конфиге их нет (DEBT-008).
     newton_cell_tol: Optional[float] = 1e-8
 
 
@@ -185,8 +191,10 @@ class NumericsConfig:
 @dataclass
 class OutputConfig:
     """Параметры вывода."""
+    # Уровень журнала: DEBUG, INFO, WARNING, ERROR, CRITICAL без учёта регистра (иное
+    # значение отвергает _validate, DEBT-008). Формата записи в конфиге нет: файл
+    # выбирает вызывающий код (io/output.py: save_npz, save_csv).
     log_level: str = "INFO"
-    format: str = "npz"       # формат записи: "npz" или "csv"
     # save_every удалён (DEBT-013): частоту вывода задаёт структура
     # time.history — второго механизма отбора записей больше нет.
 
@@ -295,6 +303,47 @@ def _expand_history(raw_history: list[dict]
     return intervals, blocks
 
 
+# Поля, удалённые из схемы конфига (DEBT-008): объявлялись, но решатель их не
+# читал. Старый конфиг с ними загружается — ключ пропускается с предупреждением:
+# результат расчёта от этого не меняется, поле игнорировалось и раньше. Иначе
+# с save_every (DEBT-013): его пропуск менял бы состав вывода, поэтому — отказ.
+# Неизвестный ключ вне этого списка — по-прежнему ошибка распаковки dataclass.
+_NEWTON_TOL_REMOVED = ("допуски абсолютного критерия Ньютона — умолчания прототипа "
+                       "(rtol = 1e-8, atol = 1e-11 м³ст/с); условие по ячейке — "
+                       "numerics.newton_cell_tol")
+_STEP_REMOVED = ("шаг задаёт time.dt_integration, глубину дробления шага — "
+                 "numerics.max_retries")
+_REMOVED_KEYS = {
+    "rock": {"p_ref": "пористость rock.porosity задаётся при начальном давлении p0; "
+                      "пару (φ_ref, p_ref) пересчитайте: "
+                      "porosity = φ_ref·exp(c_r·(p0 − p_ref))"},
+    "time": {"start_day": "время расчёта отсчитывается от начала истории, t = 0"},
+    "numerics": {"dt_min": _STEP_REMOVED, "dt_max": _STEP_REMOVED,
+                 "newton_rtol": _NEWTON_TOL_REMOVED, "newton_atol": _NEWTON_TOL_REMOVED},
+    "output": {"format": "формат записи выбирает вызывающий код "
+                         "(io/output.py: save_npz, save_csv)"},
+}
+
+# Уровни журнала, которые принимает output.log_level (без учёта регистра)
+_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+
+def _drop_removed_keys(raw: dict) -> list[str]:
+    """Удалённые из схемы ключи (DEBT-008): убрать из raw, вернуть тексты предупреждений."""
+    messages = []
+    for section, keys in _REMOVED_KEYS.items():
+        sec = raw.get(section)
+        if not isinstance(sec, dict):
+            continue
+        for key, why in keys.items():
+            if key in sec:
+                del sec[key]
+                messages.append(
+                    f"{section}.{key} удалён из конфига (DEBT-008) и пропущен — "
+                    f"решатель его не читал, результат не меняется: {why}.")
+    return messages
+
+
 # ── Загрузка ─────────────────────────────────────────────────
 
 def load_config(path: str | Path) -> SimulationConfig:
@@ -312,6 +361,11 @@ def load_config(path: str | Path) -> SimulationConfig:
                 "thermal", "initial_conditions", "time"):
         if key not in raw:
             raise ValueError(f"Отсутствует обязательная секция '{key}' в {path}")
+
+    # Ключи, удалённые из схемы (DEBT-008), — до распаковки секций: иначе
+    # строгая распаковка dataclass дала бы TypeError про лишний аргумент.
+    # Предупреждения о них — после _validate (порядок DEBT-056, ниже).
+    removed = _drop_removed_keys(raw)
 
     geometry = GeometryConfig(**raw["geometry"])
     grid = GridConfig(**raw["grid"])
@@ -359,6 +413,8 @@ def load_config(path: str | Path) -> SimulationConfig:
     _validate(config)
     # Предупреждения — после всех проверок _validate: конфиг с ошибкой в любом
     # поле не выдаёт предупреждение перед отказом (DEBT-056)
+    for message in removed:
+        user_log.warning(message)
     _warn_large_skin(config)
     # p0 к этому моменту проверен в _validate: число, конечное, > 0
     _warn_well_shut(history_blocks, config.initial_conditions.p0)
@@ -424,6 +480,13 @@ def _validate(cfg: SimulationConfig) -> None:
 
     if cfg.grid.N < 1:
         raise ValueError(f"N должен быть ≥ 1, получено {cfg.grid.N}")
+
+    # grid.type (DEBT-008): фабрика строит только логарифмическую радиальную сетку
+    # (LogRadialGrid). До DEBT-008 любое значение проходило молча — расчёт шёл на
+    # той же сетке (vault/issues/debt-008/probes/red_state.out.txt).
+    if cfg.grid.type != "log_radial":
+        raise ValueError(
+            f"grid.type: поддерживается только \"log_radial\", получено {cfg.grid.type!r}")
 
     r = cfg.rock
     if r.porosity <= 0 or r.porosity > 1:
@@ -550,6 +613,30 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(
             f"numerics.newton_cell_tol должен быть положительным конечным числом или null, "
             f"получено {ct!r}")
+
+    # Лимиты Ньютона прототипа (DEBT-008; адаптер передаёт их в advance) — целые ≥ 1.
+    # bool исключается явно, как у max_retries; NaN отсёк _check_numeric_fields.
+    nc = cfg.numerics
+    for name in ("newton_max_iter", "max_active_set_iter"):
+        v = getattr(nc, name)
+        if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+            raise ValueError(f"numerics.{name} должен быть целым ≥ 1, получено {v!r}")
+    # Допуски переключения фаз (DEBT-008; фабрика — в конструктор модели) — > 0.
+    # Ноль снял бы запас на шум ~1e-13 горизонтальной ветви PVT-таблицы: газ
+    # включался бы в недонасыщенных ячейках, а проверка старта отвергала бы p0
+    # на 1 Па ниже p_b. Тип и конечность проверил _check_numeric_fields.
+    for name in ("rs_switch_tol", "sg_switch_tol"):
+        v = getattr(nc, name)
+        if not v > 0:
+            raise ValueError(f"numerics.{name} должен быть > 0, получено {v}")
+
+    # output.log_level (DEBT-008): setup_logging (log.py) неизвестное имя молча
+    # заменял на INFO — опечатка «DEBG» прятала отладочный вывод.
+    lvl = cfg.output.log_level
+    if not isinstance(lvl, str) or lvl.upper() not in _LOG_LEVELS:
+        raise ValueError(
+            f"output.log_level должен быть одним из {', '.join(_LOG_LEVELS)} "
+            f"(регистр не важен), получено {lvl!r}")
 
 
 def _validate_interval(h: HistoryInterval, where: str) -> None:

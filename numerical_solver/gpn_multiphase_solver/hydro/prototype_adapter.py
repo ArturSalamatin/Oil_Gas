@@ -58,13 +58,17 @@ class PrototypeHydroAdapter(HydroSolver):
     """Adapter: RadialBlackOilModel (бар) → HydroSolver (Па)."""
 
     def __init__(self, model, grid: Grid, pvt: HydroPVT,
-                 stage4_memory: int | None = STAGE4_MEMORY):
+                 stage4_memory: int | None = STAGE4_MEMORY,
+                 max_newton: int = 15, max_active_iter: int = 12):
         """
         model         — RadialBlackOilModel, уже сконфигурированный
         grid          — наш Grid (LogRadialGrid)
         pvt           — наш HydroPVT; фабрика передаёт тот же FullPVT, что решателю энергии (DEBT-006)
         stage4_memory — после стольких принятых подряд шагов ступени 4 шаг решается
                         сразу ею (DEBT-048); None — память выключена
+        max_newton      — итераций Ньютона на одно решение при фиксированном наборе
+                          фаз (numerics.newton_max_iter, DEBT-008)
+        max_active_iter — проходов уточнения набора фаз (numerics.max_active_set_iter)
         """
         self._model = model
         self._grid = grid
@@ -76,6 +80,13 @@ class PrototypeHydroAdapter(HydroSolver):
         self._stage4_run = 0
         self._stage4_failures = 0
         self._stage4_key = None
+        # Лимиты Ньютона прототипа (DEBT-008): передаются в каждый вызов advance и
+        # advance_fourth_stage. Умолчания — умолчания advance (blackoil.py): адаптер,
+        # созданный без них (тесты), считает как прежде. Ступень 4 (_newton_switching)
+        # их не читает — у неё свой предел 40 итераций; передаются и ей, чтобы шаг по
+        # памяти (DEBT-048) оставался побитово шагом advance после трёх отказов.
+        self._max_newton = max_newton
+        self._max_active_iter = max_active_iter
 
     def component_inventories(self, state: SimulationState) -> tuple[float, float]:
         """Запас компонентов функцией прототипа, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
@@ -143,10 +154,11 @@ class PrototypeHydroAdapter(HydroSolver):
             self._stage4_run = self._stage4_failures = 0
         by_memory = (self._stage4_memory is not None
                      and self._stage4_run >= self._stage4_memory)
+        limits = dict(max_active_iter=self._max_active_iter, max_newton=self._max_newton)
         if by_memory:
-            new_proto, report = m.advance_fourth_stage(proto_state, dt)
+            new_proto, report = m.advance_fourth_stage(proto_state, dt, **limits)
         else:
-            new_proto, report = m.advance(proto_state, dt)
+            new_proto, report = m.advance(proto_state, dt, **limits)
         if not report.converged:
             # Отказ полного перебора серию не обнуляет: повтор того же подшага
             # меньшим шагом остаётся на той же траектории.

@@ -12,6 +12,8 @@
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
   и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056).
 - Минимальный конфиг: только обязательные секции.
+- Мёртвые поля (DEBT-008): удалённые ключи — предупреждение и пропуск; grid.type,
+  output.log_level, лимиты и допуски Ньютона — проверка; умолчания = умолчаниям прототипа.
 """
 
 import json
@@ -161,9 +163,6 @@ class TestBaselineTime:
     def test_dt_integration(self, cfg):
         assert cfg.time.dt_integration == 3600
 
-    def test_start_day(self, cfg):
-        assert cfg.time.start_day == 0.0
-
     # Сценарий baseline: сутки при 15 МПа, затем трое суток при 10 МПа.
     # Частоту вывода задаёт только структура истории (DEBT-013): в конфиге
     # два блока {duration, dt_out} (DEBT-014), после разворачивания —
@@ -194,13 +193,6 @@ class TestBaselineTime:
 
 
 class TestBaselineNumerics:
-    def test_dt_min(self, cfg):
-        assert cfg.numerics.dt_min == 1.0
-
-    def test_dt_max_default(self, cfg):
-        """dt_max не задан в baseline → default = 86400."""
-        assert cfg.numerics.dt_max == 86400.0
-
     def test_skin(self, cfg):
         assert cfg.numerics.skin == 0.0
 
@@ -216,9 +208,6 @@ class TestBaselineNumerics:
 class TestBaselineOutput:
     def test_log_level(self, cfg):
         assert cfg.output.log_level == "INFO"
-
-    def test_format(self, cfg):
-        assert cfg.output.format == "npz"
 
     def test_save_every_rejected(self, tmp_path):
         """Старый конфиг с save_every отвергается с объяснением (DEBT-013).
@@ -283,14 +272,13 @@ class TestOptionalSections:
         # numerics и output не заданы
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.numerics.newton_max_iter == 15
-        assert cfg.numerics.dt_min == 1.0
+        assert cfg.numerics.max_active_set_iter == 12
         assert cfg.numerics.max_retries == 9
 
     def test_no_output_uses_defaults(self, tmp_path):
         raw = _minimal_raw()
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.output.log_level == "INFO"
-        assert cfg.output.format == "npz"
 
 
 class TestMinimalConfig:
@@ -711,14 +699,15 @@ class TestValidationNumbers:
     """Числовые поля конфига: число (не строка, null, bool) и конечное (DEBT-051)."""
 
     def test_field_list_covers_known_fields(self):
-        """Список float-полей из аннотаций содержит известные поля, их не меньше 37."""
+        """Список float-полей из аннотаций содержит известные поля, их не меньше 31."""
         # Страж способа отбора: если аннотации сменят вид («float | None»),
         # список опустеет вместе с проверкой в _check_numeric_fields
         known = {("geometry", "r_well"), ("rock", "porosity"), ("pvt", "rho_o_std"),
                  ("relperm", "n_o"), ("thermal", "L_degas"), ("initial_conditions", "p0"),
                  ("time", "dt_integration"), ("numerics", "skin")}
         assert known <= set(_FLOAT_FIELDS)
-        assert len(_FLOAT_FIELDS) >= 37
+        # 37 до DEBT-008: удалены p_ref, start_day, dt_min, dt_max, newton_rtol, newton_atol
+        assert len(_FLOAT_FIELDS) >= 31
 
     @pytest.mark.parametrize("value", [float("nan"), float("inf")], ids=["nan", "inf"])
     @pytest.mark.parametrize("section, key", _FLOAT_FIELDS,
@@ -957,6 +946,152 @@ class TestValidationWell:
             with pytest.raises(ValueError, match=error):
                 load_config(_write_json(tmp_path, raw))
         assert _warning_messages(caplog) == []
+
+
+# ═════════════════════════════════════════════════════════════
+# D2. Мёртвые поля (DEBT-008): удалены, проверены или переданы решателю
+# ═════════════════════════════════════════════════════════════
+
+# Удалённые из схемы ключи (секция, ключ). Решатель их не читал: абсурдные
+# значения 12 полей проходили _validate и фабрику, прототип считал со своими
+# умолчаниями (vault/issues/debt-008/probes/red_state.out.txt). Поэтому старый
+# конфиг загружается — ключ пропускается с предупреждением, результат тот же.
+_REMOVED = [("rock", "p_ref"), ("time", "start_day"),
+            ("numerics", "dt_min"), ("numerics", "dt_max"),
+            ("numerics", "newton_rtol"), ("numerics", "newton_atol"),
+            ("output", "format")]
+
+_SECTION_CLASSES = {"rock": RockConfig, "time": TimeConfig,
+                    "numerics": NumericsConfig, "output": OutputConfig}
+
+
+class TestRemovedKeys:
+    """Удалённые из схемы ключи: предупреждение и пропуск (DEBT-008)."""
+
+    @pytest.mark.parametrize("section, key", _REMOVED,
+                             ids=[f"{s}.{k}" for s, k in _REMOVED])
+    def test_warns_and_loads(self, tmp_path, caplog, section, key):
+        """Старый конфиг с удалённым ключом загружается; в журнале — имя ключа и DEBT-008."""
+        raw = _minimal_raw()
+        raw.setdefault(section, {})[key] = "npz" if key == "format" else 1.0
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        # Поля в объекте нет: значение не могло никуда попасть
+        assert not hasattr(getattr(cfg, section), key)
+        text = "\n".join(r.getMessage() for r in caplog.records
+                         if r.levelno >= logging.WARNING)
+        assert f"{section}.{key}" in text and "DEBT-008" in text
+
+    def test_removed_keys_are_not_fields(self):
+        """Удалённый ключ не совпадает с живым полем: пропуск не прячет настоящий параметр."""
+        for section, key in _REMOVED:
+            names = {f.name for f in fields(_SECTION_CLASSES[section])}
+            assert key not in names, f"{section}.{key} — поле dataclass"
+
+    def test_unknown_key_still_rejected(self, tmp_path):
+        """Опечатка вне списка удалённых — по-прежнему отказ, а не молчаливый пропуск."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"newton_max_itr": 15}
+        with pytest.raises(TypeError, match="newton_max_itr"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_no_warning_before_error(self, tmp_path, caplog):
+        """Удалённый ключ и ошибка в другом поле → ValueError без предупреждений.
+
+        Порядок DEBT-056 (load_config): предупреждения — только после всех
+        проверок _validate, конфиг с ошибкой их не выдаёт. Ловит журнал
+        удалённых ключей в _drop_removed_keys, до разбора секций.
+        """
+        raw = _minimal_raw()
+        raw["time"]["start_day"] = 0.0
+        raw["rock"]["porosity"] = 1.5
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            with pytest.raises(ValueError, match="porosity"):
+                load_config(_write_json(tmp_path, raw))
+        assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+    def test_project_configs_have_no_removed_keys(self):
+        """В configs/ и tests/data/ удалённых ключей нет — загрузка без предупреждений.
+
+        Конфиги примеров — test_examples.py::TestConfigs::test_no_removed_keys.
+        Без этой чистки test_in_range_no_warnings (configs/table_pvt) и
+        test_no_range_warnings (configs/baseline.json) ловили бы предупреждение.
+        """
+        root = Path(__file__).parent.parent
+        paths = (sorted((root / "configs").rglob("*.json"))
+                 + sorted((root / "tests" / "data").glob("*/config.json")))
+        assert len(paths) >= 8
+        for path in paths:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            for section, key in _REMOVED:
+                assert key not in raw.get(section, {}), \
+                    f"{path.relative_to(root)}: {section}.{key}"
+
+
+class TestLiteralValidation:
+    """Строковые литералы grid.type и output.log_level (DEBT-008)."""
+
+    @pytest.mark.parametrize("value", ["cartesian", 1], ids=["cartesian", "int"])
+    def test_grid_type_rejected(self, tmp_path, value):
+        """Сетки, которой нет, — отказ; до DEBT-008 расчёт молча шёл на логарифмической."""
+        raw = _minimal_raw()
+        raw["grid"]["type"] = value
+        with pytest.raises(ValueError, match=r"grid\.type"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("value", ["DEBG", "", 5], ids=["typo", "empty", "int"])
+    def test_log_level_rejected(self, tmp_path, value):
+        """Опечатка в уровне журнала — отказ; до DEBT-008 setup_logging молча ставил INFO."""
+        raw = _minimal_raw()
+        raw["output"] = {"log_level": value}
+        with pytest.raises(ValueError, match=r"output\.log_level"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_log_level_case_insensitive(self, tmp_path):
+        """«debug» допустим: setup_logging приводит имя к верхнему регистру (log.py)."""
+        raw = _minimal_raw()
+        raw["output"] = {"log_level": "debug"}
+        assert load_config(_write_json(tmp_path, raw)).output.log_level == "debug"
+
+
+class TestNumericsWiredFields:
+    """Поля Ньютона, которые фабрика и адаптер передают прототипу (DEBT-008)."""
+
+    @pytest.mark.parametrize("key", ["newton_max_iter", "max_active_set_iter"])
+    @pytest.mark.parametrize("value", [0, 2.5, True], ids=["zero", "fraction", "bool"])
+    def test_int_field_rejected(self, tmp_path, key, value):
+        """Лимит итераций — целое ≥ 1: при 0 Ньютон не делает ни одной итерации, bool — опечатка."""
+        raw = _minimal_raw()
+        raw["numerics"] = {key: value}
+        with pytest.raises(ValueError, match=rf"numerics\.{key} должен быть целым"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("key", ["rs_switch_tol", "sg_switch_tol"])
+    @pytest.mark.parametrize("value", [0.0, -1e-5], ids=["zero", "negative"])
+    def test_switch_tol_rejected(self, tmp_path, key, value):
+        """Допуск переключения фаз > 0: при −1e-5 газ включался бы в недонасыщенной нефти."""
+        raw = _minimal_raw()
+        raw["numerics"] = {key: value}
+        with pytest.raises(ValueError, match=rf"numerics\.{key} должен быть > 0"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_defaults_match_prototype(self):
+        """Умолчания конфига = умолчаниям прототипа и адаптера: без numerics счёт прежний."""
+        # Фабрика и адаптер передают эти поля всегда; разойдись умолчания —
+        # сменились бы истории всех примеров. Сверка с сигнатурами, а не с
+        # числами: смена умолчания в прототипе тоже ловится.
+        import inspect
+        from radial_blackoil.blackoil import RadialBlackOilModel
+        from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
+        init = inspect.signature(RadialBlackOilModel.__init__).parameters
+        adv = inspect.signature(RadialBlackOilModel.advance).parameters
+        ada = inspect.signature(PrototypeHydroAdapter.__init__).parameters
+        nc = NumericsConfig()
+        assert nc.rs_switch_tol == init["rs_switch_tol"].default
+        assert nc.sg_switch_tol == init["sg_switch_tol"].default
+        assert nc.newton_max_iter == adv["max_newton"].default == ada["max_newton"].default
+        assert (nc.max_active_set_iter == adv["max_active_iter"].default
+                == ada["max_active_iter"].default)
 
 
 # ═════════════════════════════════════════════════════════════

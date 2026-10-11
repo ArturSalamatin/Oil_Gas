@@ -40,7 +40,6 @@
     "Rs0": 150.0
   },
   "time": {
-    "start_day": 0.0,
     "dt_integration": 86400.0,
     "history": [
       {
@@ -52,8 +51,6 @@
     ]
   },
   "numerics": {
-    "dt_min": 1.0,
-    "dt_max": 86400,
     "skin": 0.0,
     "max_retries": 12
   },

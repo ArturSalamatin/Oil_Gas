@@ -200,15 +200,20 @@ class TestConfigs:
             assert (folder / cfg.relperm.file).is_file()
 
     @pytest.mark.parametrize("name", ALL_EXAMPLES)
-    def test_no_dead_output_format(self, name):
-        """Поле output.format объявлено в io/config.py, но нигде не читается.
+    def test_no_removed_keys(self, name):
+        """В конфигах примеров нет ключей, удалённых из схемы (DEBT-008).
 
-        В конфигах примеров его быть не должно — иначе пользователь решит,
-        что оно переключает формат вывода (DEBT-008).
+        Загрузчик пропускает их с предупреждением; в примере такой ключ
+        внушал бы, что поле на что-то влияет (до DEBT-008 — output.format,
+        numerics.dt_min, dt_max, time.start_day: объявлены, но не читались).
         """
         raw = json.loads((EXAMPLES_DIR / name / "config.json").read_text(encoding="utf-8"))
-        assert "format" not in raw.get("output", {}), \
-            f"{name}: мёртвое поле output.format в конфиге"
+        removed = {"rock": ("p_ref",), "time": ("start_day",),
+                   "numerics": ("dt_min", "dt_max", "newton_rtol", "newton_atol"),
+                   "output": ("format",)}
+        for section, keys in removed.items():
+            for key in keys:
+                assert key not in raw.get(section, {}), f"{name}: {section}.{key}"
 
 
 # ═══════════════════════════════════════════════════════════

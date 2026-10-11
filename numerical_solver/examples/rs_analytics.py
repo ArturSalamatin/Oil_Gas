@@ -7,7 +7,7 @@
     газ есть (Sg > SG_GAS):  Rs = Rs_eq(p)   — нефть насыщена;
     газа нет:                Rs <= Rs_eq(p)  — недонасыщенность допустима,
                                                пересыщение — нет (с точностью
-                                               до допуска решателя RS_TOL).
+                                               до допуска решателя rs_switch_tol).
 
 Rs_eq — равновесное газосодержание насыщенной нефти (корреляция Стендинга
 или интерполяция ветвей PVTO-таблицы — по модели PVT). В ячейке без газа
@@ -25,7 +25,7 @@ Rs > Rs0, если PVT это допускает (у Стендинга Rs_eq(p)
 
 Двухфазной считается ячейка со свободным газом, а не с флагом решателя
 regime == 1. Флаг переключается с гистерезисом: газ включается при
-Rs > Rs_eq(p) + RS_TOL, а выключается, только когда Sg уходит ниже -1e-9;
+Rs > Rs_eq(p) + rs_switch_tol, а выключается, только когда Sg уходит ниже -1e-9;
 меньшую отрицательную Sg прототип обнуляет, оставляя ячейку двухфазной
 (blackoil.py, _advance_phases). На таблицах без ветвей выше Rs0 ячейки,
 ставшие двухфазными на первых шагах, после растворения газа так и остаются
@@ -66,17 +66,6 @@ import numpy as np
 # изобарой 1.8e-3…1.4e-2).
 SG_GAS = 1e-8
 
-# Допуск пересыщения ячейки без газа, м³ст/м³ст, — допуск переключения фаз
-# решателя rs_switch_tol. Прототип включает газ в ячейке только при
-# Rs > Rs_eq(p) + rs_switch_tol (blackoil.py, _advance_phases; по умолчанию
-# 1e-5, фабрика его не задаёт — поле NumericsConfig.rs_switch_tol прототипу
-# не передаётся, брать допуск из конфига нельзя). Однофазная ячейка с
-# пересыщением до 1e-5 — принятое решателем состояние, а не дефект; проверка
-# строже решателя давала бы ложные нарушения. Тот же порог у проверки
-# начального состояния (factory._RS0_SUPERSAT_TOL, BUG-017). Шум ~1e-13 на
-# горизонтальной ветви таблицы (Rs_eq = Rs0 при p >= pb) он покрывает тоже.
-RS_TOL = 1e-5
-
 
 def rs_expected(config, pvt, p):
     """Rs при монотонно падающем давлении: min(Rs_eq(p), Rs0), [N].
@@ -104,8 +93,15 @@ def rs_error(config, history, pvt):
     return float(d.max()), float(d.max() / Rs0) if Rs0 > 0 else 0.0
 
 
-def rs_supersaturation(history, pvt):
-    """Пересыщение ячеек без свободного газа: Rs > Rs_eq(p) + RS_TOL.
+# Допуск пересыщения tol — numerics.rs_switch_tol конфига, м³ст/м³ст (DEBT-008): тот же,
+# что фабрика передаёт решателю. Прототип включает газ в ячейке только при
+# Rs > Rs_eq(p) + rs_switch_tol (blackoil.py, _advance_phases): однофазная ячейка с
+# меньшим пересыщением — принятое решателем состояние, а не дефект; проверка строже
+# решателя давала бы ложные нарушения. Тот же допуск у проверки начального состояния
+# (factory._check_undersaturated_start, BUG-017). Шум ~1e-13 на горизонтальной ветви
+# таблицы (Rs_eq = Rs0 при p >= pb) он покрывает тоже.
+def rs_supersaturation(history, pvt, tol):
+    """Пересыщение ячеек без свободного газа: Rs > Rs_eq(p) + tol (tol — numerics.rs_switch_tol).
 
     Возвращает (max_excess, n_bad): наибольшее Rs - Rs_eq(p) по ячейкам без
     газа (отрицательное — запас до насыщения; nan, если таких ячеек нет) и
@@ -116,7 +112,7 @@ def rs_supersaturation(history, pvt):
     if not np.any(one):
         return float("nan"), 0
     excess = st.Rs[one] - pvt.Rs_eq(st.p[one])
-    return float(excess.max()), int(np.count_nonzero(excess > RS_TOL))
+    return float(excess.max()), int(np.count_nonzero(excess > tol))
 
 
 def _degassed_cells(config, history, pvt):
@@ -211,8 +207,9 @@ def report_rs(config, history, pvt) -> dict:
         return dict(max_abs=0.0, max_rel=0.0)
 
     st = history.states[-1]
+    tol = config.numerics.rs_switch_tol      # допуск пересыщения решателя (DEBT-008)
     d_abs, d_rel = rs_error(config, history, pvt)
-    excess, n_bad = rs_supersaturation(history, pvt)
+    excess, n_bad = rs_supersaturation(history, pvt, tol)
     below, pb = _degassed_cells(config, history, pvt)
     gas = st.Sg > SG_GAS
     one = ~gas
@@ -222,14 +219,14 @@ def report_rs(config, history, pvt) -> dict:
     n_under = int(np.count_nonzero(one & below))
     # Rs > Rs0 — не нарушение: скопившийся у забоя газ при росте давления
     # выше pb(Rs0) растворяется сверх Rs0, если PVT это допускает.
-    n_above = int(np.count_nonzero(st.Rs > Rs0 + RS_TOL))
+    n_above = int(np.count_nonzero(st.Rs > Rs0 + tol))
 
     print("── Rs: равновесие Black Oil без кинетики ──")
     print(f"  ячейки с газом (Sg > {SG_GAS:g}) — {int(gas.sum())}: "
           f"max|Rs_числ - Rs_eq(p)| = {d_abs:.3e} м³ст/м³ст "
           f"({d_rel * 100:.2e} % от Rs0)")
     print(f"  ячейки без газа — {int(one.sum())}: пересыщенных "
-          f"(Rs > Rs_eq(p) + {RS_TOL:g}) — {n_bad}, "
+          f"(Rs > Rs_eq(p) + {tol:g}) — {n_bad}, "
           f"ниже pb (нефть недонасыщена) — {n_under}")
     if n_bad:
         print(f"    наибольшее Rs - Rs_eq(p) = {excess:.3e} м³ст/м³ст")

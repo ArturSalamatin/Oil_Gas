@@ -29,6 +29,11 @@ HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адапти�
 решается сразу ступенью 4 (advance_fourth_stage). Её отказ — отказ шага без
 ступеней 1-3; после STAGE4_MAX_FAILURES отказов подряд память сбрасывается.
 
+Текст отказа (DEBT-054): прежний текст (dt, t, итерации, невязка) и хвост из отчёта
+Ньютона — абсолютный допуск, мера условия по ячейке с порогом numerics.newton_cell_tol,
+причина выхода, какое условие сходимости не выполнено и чья это статистика (ступень 1
+после подмены DEBT-030 или ступень 4 по памяти).
+
 Баланс массы (DEBT-039): component_inventories — запас компонентов
 функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
 и контур за шаг (подшаг один — dt·G того же состояния).
@@ -52,6 +57,61 @@ from ..fluxes import phase_fluxes_from_components
 # 22 примера из 23 побитово.
 STAGE4_MEMORY = 2         # принятых подряд шагов ступени 4, после которых шаг — сразу ею
 STAGE4_MAX_FAILURES = 2   # отказов подряд ступени 4 по памяти, после которых память сброшена
+
+
+# Причина выхода из Ньютона прототипа — поле exit_reason отчёта (DEBT-054). Неизвестный
+# код печатается как есть: прототип может добавить причину раньше, чем адаптер — перевод.
+_EXIT_REASONS = {
+    "line_search": "линейный поиск не принял ни одной точки",
+    "linear_solver": "отказ линейного решателя",
+    "max_iter": "исчерпан лимит итераций",
+    "nonfinite": "нечисловое приближение",
+    "active_set": "набор фаз не установился",
+    "sg_bound": "корень с S_g > 0.98",
+    "branch": "ветвь скважины несогласована",
+}
+
+
+def _failure_details(report, cell_tol: float | None, stage: int) -> str:
+    """Хвост текста отказа: допуск, мера ячеек, причина выхода, невыполненное условие (DEBT-054)."""
+    # Поля residual_tol, cell_measure, exit_reason несёт BlackOilNewtonReport с DEBT-054.
+    # Подставные отчёты тестов (SimpleNamespace, отчёт без этих полей) их не имеют —
+    # хвоста нет, текст прежний.
+    tol = getattr(report, "residual_tol", None)
+    measure = getattr(report, "cell_measure", None)
+    reason = getattr(report, "exit_reason", "")
+    if tol is None and measure is None and not reason:
+        return ""
+    text = ""
+    if tol is not None:
+        text += f" (допуск {tol:.2e})"
+    if measure is not None:
+        text += f", мера ячеек {measure:.2e}"
+        if cell_tol is not None:
+            text += f" (порог numerics.newton_cell_tol = {cell_tol:g})"
+    if reason:
+        text += f", выход: {_EXIT_REASONS.get(reason, reason)}"
+    # Какое условие не выполнено — те же сравнения, что в Ньютоне прототипа
+    # (||F||_inf <= residual_tol; мера <= cell_tol, BUG-022), поэтому это факт,
+    # а не догадка. Только для отчёта о приближении Ньютона (есть допуск): у выхода
+    # 'active_set' невязка — начального приближения нового набора фаз. «Оба
+    # выполнены» при отказе — отказ не по условиям: ветвь скважины, S_g > 0.98,
+    # у ступени 4 — переключения фаз или удержанные ячейки выше по потоку не
+    # устоялись к лимиту итераций (причина выхода — рядом в тексте).
+    if tol is not None:
+        abs_ok = report.residual_inf <= tol
+        if measure is None or cell_tol is None:
+            text += " — абсолютное условие " + ("выполнено" if abs_ok else "не выполнено")
+        else:
+            text += " — " + {
+                (True, False): "не выполнено только условие по ячейке",
+                (False, True): "не выполнено только абсолютное условие",
+                (False, False): "не выполнены оба условия сходимости",
+                (True, True): "оба условия сходимости выполнены",
+            }[(abs_ok, measure <= cell_tol)]
+    # Чьи числа: при отказе advance — исходного алгоритма (подмена DEBT-030), у ступени 4
+    # по памяти (DEBT-048) — её собственные
+    return text + f"; числа — Ньютона ступени {stage}"
 
 
 class PrototypeHydroAdapter(HydroSolver):
@@ -168,12 +228,15 @@ class PrototypeHydroAdapter(HydroSolver):
                     self._stage4_run = self._stage4_failures = 0
             # Дробит шаг Simulator (DEBT-015): делит пополам только этот
             # подшаг и повторяет его из того же состояния. Здесь — факты
-            # отказа для журнала; текст для пользователя — в Simulator.
+            # отказа для журнала; текст для пользователя — в Simulator, он
+            # дописывает этот текст в конец своего (DEBT-054). Хвост
+            # _failure_details — после прежнего текста: тот остаётся началом.
             raise HydroConvergenceError(
                 f"advance не сошёлся{' (ступень 4 по памяти)' if by_memory else ''}: "
                 f"dt = {dt:.3e} с, "
                 f"t = {state.t / DAY_TO_S:.4f} сут, итераций {report.iterations}, "
-                f"невязка {report.residual_inf:.2e}")
+                f"невязка {report.residual_inf:.2e}"
+                f"{_failure_details(report, m.cell_tol, 4 if by_memory else 1)}")
         self._stage4_run = self._stage4_run + 1 if report.phase_switching else 0
         self._stage4_failures = 0
         self._stage4_key = (control, state.t + dt)

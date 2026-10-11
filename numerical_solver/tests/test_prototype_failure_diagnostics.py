@@ -14,10 +14,13 @@ residual_inf) и exit_reason; адаптер печатает их и какое
 vault/issues/debt-054/probes/failure_census.out.txt, test_scenarios.out.txt.
 """
 
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 
 from gpn_multiphase_solver.hydro.base import HydroConvergenceError
+from gpn_multiphase_solver.hydro.prototype_adapter import _failure_details
 from gpn_multiphase_solver.units import BAR_TO_PA
 from radial_blackoil.blackoil import BlackOilNewtonReport
 from radial_blackoil.state import BlackOilState
@@ -270,3 +273,77 @@ def test_real_total_failure_only_cell_test():
     assert not rep.converged and rep.iterations == 4 and rep.exit_reason == "line_search"
     assert rep.residual_inf <= rep.residual_tol       # абсолютное условие выполнено
     assert rep.cell_measure > CELL_TOL                 # условие по ячейке — нет
+
+
+# ═══════════════════════════════════════════════════════════
+# F. Текст отказа адаптера
+# ═══════════════════════════════════════════════════════════
+
+def test_adapter_message_cell_test_only():
+    """Тот же шаг через адаптер: прежний текст и хвост — допуск, мера, выход, невыполненное условие.
+
+    Прежний текст (до DEBT-054) — начало нового: тесты и журналы, искавшие его, совпадают.
+    """
+    sim, init, dt = _sim(N=350)
+    with pytest.raises(HydroConvergenceError) as exc:
+        sim._hydro.solve(init, dt, sim._schedule.intervals[0].bc)
+    msg = str(exc.value)
+    assert msg.startswith("advance не сошёлся: dt = 8.640e+04 с, t = 0.0000 сут, "
+                          "итераций 4, невязка 6.51e-15 (допуск ")
+    for part in ("мера ячеек ", "(порог numerics.newton_cell_tol = 1e-08)",
+                 "выход: линейный поиск не принял ни одной точки",
+                 " — не выполнено только условие по ячейке"):
+        assert part in msg
+    assert msg.endswith("; числа — Ньютона ступени 1")
+
+
+def _rep(res, tol=None, meas=None, reason=""):
+    """Отчёт отказа с полями DEBT-054 для проверки текста."""
+    return BlackOilNewtonReport(False, 3, res, residual_tol=tol, cell_measure=meas, exit_reason=reason)
+
+
+_THRESHOLD = " (порог numerics.newton_cell_tol = 1e-08)"
+
+
+@pytest.mark.parametrize("report, cell_tol, stage, expected", [
+    # только ячейка: 1e-15 <= 1e-9, мера 3e-8 > 1e-8 (класс сценария воспроизведения)
+    (_rep(1e-15, 1e-9, 3e-8, "line_search"), 1e-8, 1,
+     " (допуск 1.00e-09), мера ячеек 3.00e-08" + _THRESHOLD + ", выход: линейный поиск не принял "
+     "ни одной точки — не выполнено только условие по ячейке; числа — Ньютона ступени 1"),
+    # только абсолютное
+    (_rep(1e-3, 1e-9, 1e-9, "max_iter"), 1e-8, 1,
+     " (допуск 1.00e-09), мера ячеек 1.00e-09" + _THRESHOLD + ", выход: исчерпан лимит итераций"
+     " — не выполнено только абсолютное условие; числа — Ньютона ступени 1"),
+    # оба не выполнены; ступень 4 по памяти
+    (_rep(1e-3, 1e-9, 1.0, "max_iter"), 1e-8, 4,
+     " (допуск 1.00e-09), мера ячеек 1.00e+00" + _THRESHOLD + ", выход: исчерпан лимит итераций"
+     " — не выполнены оба условия сходимости; числа — Ньютона ступени 4"),
+    # оба выполнены: отказ не по сходимости
+    (_rep(0.0, 1e-11, 0.0, "branch"), 1e-8, 1,
+     " (допуск 1.00e-11), мера ячеек 0.00e+00" + _THRESHOLD + ", выход: ветвь скважины несогласована"
+     " — оба условия сходимости выполнены; числа — Ньютона ступени 1"),
+    # условие по ячейке выключено: только абсолютное
+    (_rep(1e-3, 1e-9, None, "linear_solver"), None, 1,
+     " (допуск 1.00e-09), выход: отказ линейного решателя — абсолютное условие не выполнено;"
+     " числа — Ньютона ступени 1"),
+    # исчерпан набор фаз: допуска нет — вывода об условиях нет
+    (_rep(2.7e-4, None, 5e-3, "active_set"), 1e-8, 1,
+     ", мера ячеек 5.00e-03" + _THRESHOLD + ", выход: набор фаз не установился; числа — Ньютона ступени 1"),
+    # неизвестный код — как есть
+    (_rep(1e-3, None, None, "new_code"), None, 1, ", выход: new_code; числа — Ньютона ступени 1"),
+    # корень с S_g > 0.98 (ступень 4): условия выполнены, отказ — по границе S_g
+    (_rep(1e-15, 1e-11, 1e-12, "sg_bound"), 1e-8, 4,
+     " (допуск 1.00e-11), мера ячеек 1.00e-12" + _THRESHOLD + ", выход: корень с S_g > 0.98"
+     " — оба условия сходимости выполнены; числа — Ньютона ступени 4"),
+    # нечисловое обновление ступени 4
+    (_rep(9.2e-3, 4.4e-11, 2.0, "nonfinite"), 1e-8, 4,
+     " (допуск 4.40e-11), мера ячеек 2.00e+00" + _THRESHOLD + ", выход: нечисловое приближение"
+     " — не выполнены оба условия сходимости; числа — Ньютона ступени 4"),
+    # подставной объект тестов без полей DEBT-054 — хвоста нет, текст прежний
+    (SimpleNamespace(converged=False, iterations=0, residual_inf=1.0), 1e-8, 1, ""),
+    # отчёт, созданный без новых полей (как в старых тестах) — хвоста нет
+    (BlackOilNewtonReport(False, 0, 1.0), 1e-8, 1, ""),
+])
+def test_failure_details(report, cell_tol, stage, expected):
+    """Хвост текста отказа по классам: какое условие не выполнено — те же сравнения, что в Ньютоне."""
+    assert _failure_details(report, cell_tol, stage) == expected

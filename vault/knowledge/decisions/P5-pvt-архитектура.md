@@ -386,4 +386,4 @@ numerical_solver/gpn_multiphase_solver/pvt/
 - [[модули-pvt-контракт]] — предыдущая версия ABC (обновить)
 - [[P1-адаптер-единицы]] — PrototypeHydroAdapter использует model.pvt
 - [[hydro-prototype-анализ]] — интерфейс BlackOilPVT
-- [[architecture-numerical-solver]] — общая архитектура
+- [[архитектура библиотеки numerical_solver]] — общая архитектура

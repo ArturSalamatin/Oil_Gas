@@ -116,5 +116,5 @@ rp_adapter = PrototypeRPAdapter(proto_rp)
 
 - [[P5-pvt-архитектура]] — HydroPVT → FullPVT, стратегии
 - [[P8-формат-ввода-json]] — Factory, JSON
-- [[architecture-numerical-solver]] — паттерны (Strategy, DI)
+- [[архитектура библиотеки numerical_solver]] — паттерны (Strategy, DI)
 - [[модули-grid-сетка]] — единая Grid, immutable

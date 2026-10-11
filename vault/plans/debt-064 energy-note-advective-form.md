@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: DEBT-064
 github: 101
 branch: refactor/debt-064/energy-note-advective-form
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-064
 audit:
   date: 2026-10-11
@@ -480,13 +480,13 @@ class EnergySolver(ABC):
 
 1. Запрещённые идентификаторы в заметке — 0 совпадений:
    ```powershell
-   Select-String -Path 'vault/knowledge/decisions/модули-energy-tridiag.md' -Encoding UTF8 -Pattern 'J_cell|R_face|Phi_well_plus|Phi_ext_plus|Q_T_well|T_ext: float|eq\. ?\d|architecture-numerical-solver'
+   Select-String -CaseSensitive -Path 'vault/knowledge/decisions/модули-energy-tridiag.md' -Encoding UTF8 -Pattern 'J_cell|R_face|Phi_well_plus|Phi_ext_plus|Q_T_well|T_ext: float|eq\. ?\d|architecture-numerical-solver'
    ```
 2. Каждая метка `eq:…` заметки существует в `.tex` ровно один раз — вывод пуст:
    ```powershell
    $tex = Get-Content numerical_solver/doc/problem_statement.tex -Encoding UTF8 -Raw
    $note = Get-Content 'vault/knowledge/decisions/модули-energy-tridiag.md' -Encoding UTF8 -Raw
-   [regex]::Matches($note, 'eq:([A-Za-z_]+)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique | Where-Object { ([regex]::Matches($tex, '\\label\{eq:' + $_ + '\}')).Count -ne 1 }
+   [regex]::Matches($note, 'eq:([A-Za-z0-9_]+)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique | Where-Object { ([regex]::Matches($tex, '\\label\{eq:' + $_ + '\}')).Count -ne 1 }
    ```
 3. Каждая `[[…]]` заметки — имя файла vault или заголовок реестра — вывод пуст:
    ```powershell
@@ -495,7 +495,7 @@ class EnergySolver(ABC):
    [regex]::Matches($note, '\[\[([^\]|#]+)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique | Where-Object { $_ -notin $names -and $_ -notin $reg }
    ```
    (`$note` — из п. 2; перечитать после шага 2, если п. 2 выполнялся раньше.)
-4. Правленые строки шагов 3–6: Grep `\[\[architecture-numerical-solver|\[\[открытые-вопросы-проектирования|JT-поток|eq\. 31|J_face|J_cell|R_face|Phi_well_plus` по `vault/knowledge/` — 0 совпадений (дивергентной формы JT и дегазации в vault не осталось); каждая новая ссылка `[[…]]` и метка `eq:…` в `конвенции-знаков.md` разрешается — те же скрипты п. 2–3 с `$note` = этот файл.
+4. Правленые строки шагов 3–6: Grep `\[\[architecture-numerical-solver|\[\[открытые-вопросы-проектирования|JT-поток|eq\. 31|J_face|J_cell|R_face|Phi_well_plus` по `vault/knowledge/` **с учётом регистра** (`Get-ChildItem vault/knowledge -Recurse -Filter *.md | Select-String -CaseSensitive …`; без ключа `R_face` совпадает с `r_faces` сетки — 25 ложных строк, замечено при реализации) — 0 совпадений (дивергентной формы JT и дегазации в vault не осталось); каждая новая ссылка `[[…]]` и метка `eq:…` в `конвенции-знаков.md` разрешается — те же скрипты п. 2–3 с `$note` = этот файл.
 5. Поле `name:` ≠ имени файла — только `vault\ref_moments_method.md`, `vault\ref_spe202436.md`:
    ```powershell
    Get-ChildItem vault -Recurse -Filter *.md | ForEach-Object { $nl = Get-Content $_.FullName -Encoding UTF8 -TotalCount 5 | Where-Object { $_ -match '^name:\s*(.+)$' } | Select-Object -First 1; if ($nl) { $n = ($nl -replace '^name:\s*','').Trim(); if ($n -ne $_.BaseName) { $_.Name } } }

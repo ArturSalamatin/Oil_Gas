@@ -199,4 +199,4 @@ def plot_2d_map(history, r, field='T'):
 
 - [[json-config-schema]] — структура JSON
 - [[модули-simulator-оркестратор]] — SimulationHistory
-- [[architecture-numerical-solver]] — общая архитектура
+- [[архитектура библиотеки numerical_solver]] — общая архитектура

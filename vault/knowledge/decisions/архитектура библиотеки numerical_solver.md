@@ -1,5 +1,5 @@
 ---
-name: architecture-numerical-solver
+name: архитектура библиотеки numerical_solver
 description: Архитектура Python-библиотеки numerical_solver — модули, абстракции, паттерны, связь с InjectorGPN
 metadata:
   type: project

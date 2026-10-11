@@ -250,20 +250,23 @@ class SimulatorFactory:
     @staticmethod
     def from_config(config: SimulationConfig) -> tuple[Simulator, SimulationState]:
         grid = LogRadialGrid(...)
-        pvt = _create_pvt(config)         # "standing" → StandingFullPVT
-        relperm = _create_relperm(config)  # "corey" → CoreyRP
+        pvt = create_pvt(config)          # "standing" → StandingFullPVT
+        relperm = create_relperm(config)  # "corey" → CoreyRP
         hydro = _create_prototype_hydro(config, grid, pvt, relperm)  # PrototypeHydroAdapter; до FEAT-014 — AnalyticalHydroSolver
         energy = TridiagEnergySolver(grid, pvt, config.rock)
         schedule = _create_schedule(config)
-        simulator = Simulator(grid, hydro, energy, pvt, schedule, config.output,
-                              max_retries=config.numerics.max_retries)
+        simulator = Simulator(grid, hydro, energy, pvt, schedule,
+                              max_retries=config.numerics.max_retries,
+                              relperm=relperm)
         initial_state = SimulationState(p=p0, Sg=0, Rs=Rs0, T=T0, regime=2, t=0)
         return simulator, initial_state
 ```
 
 Фабрика — единственное место, где создаются конкретные классы. Остальной код работает с абстракциями.
 
-Помощники `_create_pvt`, `_create_relperm`, `_create_prototype_hydro`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py.
+Помощники `_create_prototype_hydro`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py. `create_pvt`, `create_relperm` — публичные (DEBT-011, до него `_create_*`): по ним диагностика и примеры собирают PVT и ОФП без решателя.
+
+**Объекты задачи у `Simulator` (DEBT-011).** Свойства только для чтения `grid`, `pvt`, `relperm` — те же объекты, которыми считалась задача: `pvt` — общий у решателя энергии и гидродинамики, `relperm` — тот, что фабрика отдала гидродинамике (аргумент конструктора, необязательный: тестовые двойники его не передают, тогда `None`). Для Кори прототип получает ОФП таблицей на 101 узле, а `relperm` — формула `CoreyRP`. Примеры и диагностика обращаются к ним вместо `sim._grid`, `sim._energy._pvt`; страж — `tests/test_example_scripts.py::test_no_private_solver_access`.
 
 Сейчас поддерживаются: PVT = "standing" / "table", RelPerm = "corey" / "table", HydroSolver = `PrototypeHydroAdapter` (с FEAT-014 — всегда он; заглушка `AnalyticalHydroSolver` удалена из пакета в DEBT-005 и живёт как тестовый двойник `LogProfileHydroStub` в `tests/_doubles.py`).
 

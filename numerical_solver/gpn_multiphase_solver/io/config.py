@@ -541,7 +541,7 @@ def _validate(cfg: SimulationConfig) -> None:
                         ("thermal.c_p_gas", th.c_p_gas)):
         if not (0 < value < inf):
             raise ValueError(f"{name} должна быть конечной и > 0, получено {value}")
-    # λ = 0 допустимо: так отключают теплопроводность (примеры 01–09, 04a)
+    # λ = 0 допустимо: так отключают теплопроводность (примеры 01, 02)
     for name, value in (("rock.lambda_solid", r.lambda_solid),
                         ("rock.lambda_oil", r.lambda_oil),
                         ("rock.lambda_gas", r.lambda_gas)):

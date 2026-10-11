@@ -1,0 +1,8 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+1. 12 абсурдных значений: _validate и фабрика — OK; сетка LogRadialGrid
+   прототип: rs_switch_tol = 1e-05, sg_switch_tol = 1e-09, p_ref_bar = 200 (p0 = 200 бар)
+2. dt_min = NaN: отказ — numerics.dt_min должно быть конечным числом, получено nan
+3. log_level = 'DEBG': setup_logging ставит INFO; _validate — проходит
+4. rs_switch_tol = 1e-6, избыток ~3e-6: старт принят
+5. конфиг 7/5/2e-5/3e-9: адаптер max_newton = нет поля, max_active_iter = нет поля; модель rs_switch_tol = 1e-05, sg_switch_tol = 1e-09
+6. frozen/config.json: загружен, предупреждений 0

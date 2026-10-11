@@ -164,7 +164,7 @@ Grid при создании получает:
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]]
+- [[архитектура библиотеки numerical_solver]]
 - [[модули-hydro-newton]] — использование Grid
 - [[модули-energy-tridiag]] — использование Grid
 - [[P8-формат-ввода-json]] — единая Grid, задачи по прототипу

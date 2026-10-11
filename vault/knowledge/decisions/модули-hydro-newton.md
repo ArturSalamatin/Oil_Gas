@@ -302,7 +302,7 @@ u_o[j] = Q_o[j] / (2*pi*h*r_face[j])                # скорость = рас�
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]]
+- [[архитектура библиотеки numerical_solver]]
 - [[модули-pvt-контракт]] — PVT-интерфейс
 - [[модули-grid-сетка]] — проводимости, объёмы
 - [[модули-energy-tridiag]] — использование HydroResult: Q_o, Q_g, G_o, p_wf

@@ -194,7 +194,7 @@ if interval.control == "pressure":
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]]
+- [[архитектура библиотеки numerical_solver]]
 - [[модули-simulator-оркестратор]]
 - [[временная-сетка-и-история]]
 - [[P8-формат-ввода-json]] — структура JSON, секция time

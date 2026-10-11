@@ -268,6 +268,6 @@ class CoreyRP(RelPermModel):
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]] — общая архитектура
+- [[архитектура библиотеки numerical_solver]] — общая архитектура
 - [[json-config-schema]] — структура JSON-конфига
 - [[модули-hydro-newton]] — использование PVT в якобиане

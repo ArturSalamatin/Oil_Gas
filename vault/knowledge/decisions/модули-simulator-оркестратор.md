@@ -269,7 +269,7 @@ class SimulatorFactory:
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]]
+- [[архитектура библиотеки numerical_solver]]
 - [[модули-hydro-newton]] — HydroResult, HydroSolver
 - [[модули-energy-tridiag]] — EnergySolver
 - [[P4-адаптивный-шаг]] — локальное дробление шага в `_advance` (DEBT-015)

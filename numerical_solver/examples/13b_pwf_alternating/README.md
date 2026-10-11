@@ -57,6 +57,10 @@ $p_0 = 15.5$ МПа — оно же давление на контуре — н�
 
 ## Расписание
 
+В `config.json` сутки $d$ — один объект `history[d-1]`:
+`{"duration": 86400.0, "dt_out": 43200.0, "control": "pressure", "p_wf": …}`.
+Номера интервалов в таблице — после разворачивания, они же номера записей.
+
 | сутки $d$ | интервалы `time.history` | записи (середина, конец суток) | $p_{wf}$, МПа | депрессия $p_0 - p_{wf}$, МПа |
 |---|---|---|---|---|
 | 1 | 1, 2 | 1, 2 | 6 | 9.5 |
@@ -230,11 +234,11 @@ Black Oil: в ячейках со свободным газом $R_s = R_s^{eq}(
 
   path = Path("config.json")
   cfg = json.loads(path.read_text(encoding="utf-8"))
-  # Сутки d = 1..30, по два интервала 0.5 сут: нечётные 6 МПа, чётные 10.75 МПа
+  # Сутки d = 1..30, запись раз в 0.5 сут: нечётные 6 МПа, чётные 10.75 МПа
   cfg["time"]["history"] = [
-      {"dt": 43200.0, "control": "pressure",
+      {"duration": 86400.0, "dt_out": 43200.0, "control": "pressure",
        "p_wf": 6.0e6 if d % 2 == 1 else 10.75e6}
-      for d in range(1, 31) for _ in range(2)]
+      for d in range(1, 31)]
   path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n",
                   encoding="utf-8")
   ```

@@ -31,7 +31,7 @@ if str(_EXAMPLES) not in sys.path:
 
 from energy_balance import compute_balance  # noqa: E402
 
-from gpn_multiphase_solver.io.config import load_config  # noqa: E402
+from gpn_multiphase_solver.io.config import _HISTORY_TIME_KEYS, load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 
 
@@ -178,9 +178,14 @@ def _run_schedule(example: str, tmp_path: Path, name: str, blocks: list[dict]):
     """
     src = _EXAMPLES / example / "config.json"
     raw = json.loads(src.read_text(encoding="utf-8"))
-    # Управление скважиной — из первого интервала примера (у 03 и 04
+    # Управление скважиной — из первого объекта истории примера (у 03 и 04
     # забойное давление постоянно на всей истории), время — из блоков теста.
-    control = {k: v for k, v in raw["time"]["history"][0].items() if k != "dt"}
+    # Отбрасываются все ключи времени, а не только dt: история примеров
+    # записана краткой формой {duration, dt_out} (DEBT-014), и её ключи
+    # перекрыли бы блоки теста — равномерное расписание дало бы ValueError,
+    # ступенчатое молча стало бы 144 интервалами по 3600 с
+    control = {k: v for k, v in raw["time"]["history"][0].items()
+               if k not in _HISTORY_TIME_KEYS}
     raw["time"]["history"] = [{**block, **control} for block in blocks]
     raw["time"]["dt_integration"] = _DT_INT_SCHEDULE
     path = tmp_path / f"{name}.json"

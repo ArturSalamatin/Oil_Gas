@@ -44,152 +44,92 @@
     "dt_integration": 3600,
     "history": [
       {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 14400000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 14400000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 13800000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 13800000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 13200000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 13200000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 12600000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 12600000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 12000000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 12000000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 11400000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 11400000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 10800000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 10800000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 10200000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 10200000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 9600000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 9600000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 9000000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 9000000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 8400000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 8400000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 7800000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 7800000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 7200000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 7200000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 6600000.0
       },
       {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 6600000.0
-      },
-      {
-        "dt": 43200.0,
-        "control": "pressure",
-        "p_wf": 6000000.0
-      },
-      {
-        "dt": 43200.0,
+        "duration": 86400.0,
+        "dt_out": 43200.0,
         "control": "pressure",
         "p_wf": 6000000.0
       }

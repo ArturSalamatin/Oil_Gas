@@ -7,7 +7,8 @@ issue: DEBT-054
 github: 102
 branch: refactor/debt-054/cell-test-failure-report
 status: реализован
-worktree: .worktrees/debt-054
+worktree: .worktrees/debt-054; удалён после влития
+merged: 288a65d (2026-10-11)
 audit:
   date: 2026-10-11
   found: 8

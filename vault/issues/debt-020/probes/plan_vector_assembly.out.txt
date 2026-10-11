@@ -1,0 +1,30 @@
+﻿# plan_vector_assembly.py examples <все 23>, код d7528d4, 2026-10-11
+# synth: 800 случаев, N = 1, 2, 3, 10 — побитово OK
+01_single_phase_no_jt 02_single_phase_jt 03_standing_corey 04a_high_gas_saturation 04_table_table 05_standing_table_rp 06_table_corey_rp 07_degassing_adiabatic_only 08_degassing_jt 09_degassing_latent_heat 10_deep_degassing 11_degassing_at_boundary 12_large_drainage_radius 13a_pwf_ramp_down 13b_pwf_alternating 14_high_gor_cooling 15_oil_rate_ramp_up 16_well_shut_in 17_shut_in_strong_cooling 18_prototype_input 19_rs150_cooling 20_rs300_cooling 21_rs100_cooling
+Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+  01_single_phase_no_jt: N = 150, вызовов сборки 72, побитово OK, 0.4 с
+  02_single_phase_jt: N = 150, вызовов сборки 72, побитово OK, 0.2 с
+  03_standing_corey: N = 150, вызовов сборки 72, побитово OK, 0.4 с
+  04a_high_gas_saturation: N = 150, вызовов сборки 864, побитово OK, 15.5 с
+  04_table_table: N = 50, вызовов сборки 72, побитово OK, 0.6 с
+  05_standing_table_rp: N = 50, вызовов сборки 72, побитово OK, 0.2 с
+  06_table_corey_rp: N = 50, вызовов сборки 72, побитово OK, 0.7 с
+  07_degassing_adiabatic_only: N = 50, вызовов сборки 72, побитово OK, 0.6 с
+  08_degassing_jt: N = 50, вызовов сборки 72, побитово OK, 0.6 с
+  09_degassing_latent_heat: N = 50, вызовов сборки 72, побитово OK, 0.6 с
+  10_deep_degassing: N = 50, вызовов сборки 73, побитово OK, 1.3 с
+  11_degassing_at_boundary: N = 50, вызовов сборки 72, побитово OK, 1.6 с
+  12_large_drainage_radius: N = 50, вызовов сборки 360, побитово OK, 6.9 с
+  13a_pwf_ramp_down: N = 50, вызовов сборки 360, побитово OK, 6.9 с
+  13b_pwf_alternating: N = 50, вызовов сборки 720, побитово OK, 28.7 с
+  14_high_gor_cooling: N = 350, вызовов сборки 361, побитово OK, 12.3 с
+  15_oil_rate_ramp_up: N = 50, вызовов сборки 360, побитово OK, 7.7 с
+  16_well_shut_in: N = 50, вызовов сборки 720, побитово OK, 16.7 с
+  17_shut_in_strong_cooling: N = 200, вызовов сборки 720, побитово OK, 67.0 с
+  18_prototype_input: N = 100, вызовов сборки 733, побитово OK, 15.8 с
+  19_rs150_cooling: N = 350, вызовов сборки 30, побитово OK, 1.3 с
+  20_rs300_cooling: N = 350, вызовов сборки 76, побитово OK, 4.3 с
+  21_rs100_cooling: N = 350, вызовов сборки 30, побитово OK, 1.3 с
+
+[exited with code 0]
+

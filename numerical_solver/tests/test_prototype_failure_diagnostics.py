@@ -199,3 +199,74 @@ class TestSwitching:
         _, rep = model._newton_switching(ps, DT_STAGE4)
         assert not rep.converged
         assert (rep.iterations, rep.exit_reason) == (1, "nonfinite")
+
+
+# ═══════════════════════════════════════════════════════════
+# D, E. Ветвь скважины и подмена DEBT-030
+# ═══════════════════════════════════════════════════════════
+
+class TestBranchAndTotalFailure:
+    """_fallback и advance на подменённом _advance_phases (Nabor_1b, p_wf = 150 бар, drawn_down: p[0] = 111.7)."""
+
+    def test_inconsistent_branch_exit(self, drawn_down):
+        """Ньютон сошёлся на обеих ветках, обе несогласованы — выход 'branch', а не 'converged'.
+
+        «Закрыта» с p[0] = 160 > p_wf, «открыта» с p[0] = 140 < p_wf (p_ext = 200 > 150 —
+        «открыта» пробуется, DEBT-040).
+        """
+        model = _model(150.0)
+        ok = BlackOilNewtonReport(True, 2, 1e-15, residual_tol=1e-11, exit_reason="converged")
+        calls = _install_fake_reports(model, {("shut", None, False): (160.0, ok),
+                                              ("open", None, False): (140.0, ok)})
+        _, rep = model._fallback(drawn_down, 3600.0, 12, 15)
+        assert calls == [("shut", None, False), ("open", None, False)]
+        assert not rep.converged and rep.exit_reason == "branch"
+        assert (rep.well_branch, rep.well_switches) == ("open", 1)
+
+    def test_failed_newton_keeps_its_exit(self, drawn_down):
+        """Последняя ветка — отказ Ньютона: выход его ('line_search'), не 'branch'."""
+        model = _model(150.0)
+        ok = BlackOilNewtonReport(True, 2, 1e-15, residual_tol=1e-11, exit_reason="converged")
+        bad = BlackOilNewtonReport(False, 7, 1e-3, residual_tol=1e-11, exit_reason="line_search")
+        _install_fake_reports(model, {("shut", None, False): (160.0, ok),
+                                      ("open", None, False): (0.0, bad)})
+        _, rep = model._fallback(drawn_down, 3600.0, 12, 15)
+        assert not rep.converged and rep.exit_reason == "line_search"
+
+    def test_total_failure_carries_original_diagnostics(self, drawn_down):
+        """Отказ всех ступеней: допуск, мера и выход — исходного алгоритма, как итерации и невязка (DEBT-030).
+
+        У попыток запасного пути и третьей ступени поля другие: видно, чей отчёт вернул advance.
+        Ловит: подмена DEBT-030 без новых полей (допуск и мера последней попытки при невязке ступени 1).
+        """
+        model = _model(150.0)
+        orig = BlackOilNewtonReport(False, 4, 6.5e-15, 2, 21, residual_tol=5.4e-7,
+                                    cell_measure=2.6e-8, exit_reason="line_search")
+        other = BlackOilNewtonReport(False, 40, 18.2, residual_tol=5.4e-7,
+                                     cell_measure=3.6e7, exit_reason="max_iter")
+        branch = BlackOilNewtonReport(True, 0, 0.0, residual_tol=1e-11, cell_measure=0.0,
+                                      exit_reason="converged")
+        _install_fake_reports(model, {
+            ORIG3: (0.0, orig),
+            ("shut", None, False): (0.0, other), ("open", None, False): (140.0, branch),
+            ("shut", None, True): (0.0, other), ("open", None, True): (140.0, branch)})
+        _, rep = model.advance(drawn_down, 3600.0)
+        assert not rep.converged
+        assert (rep.iterations, rep.residual_inf) == (4, 6.5e-15)
+        assert (rep.residual_tol, rep.cell_measure, rep.exit_reason) == (5.4e-7, 2.6e-8, "line_search")
+
+
+def test_real_total_failure_only_cell_test():
+    """BUG-018 при N = 350, шаг 86400 с: все ступени отказали, отчёт — ступени 1, «только по ячейке».
+
+    Замер (failure_census.out.txt, раздел 1): ступень 1 — линейный поиск после 4 итераций,
+    невязка 6.51e-15 при допуске 5.36e-7, мера 2.60e-8 > 1e-8. Ступень 4 отказала иначе
+    (лимит 40, мера 3.6e7) — в отчёт не попадает (DEBT-030).
+    Ловит: класс отказа сценария воспроизведения DEBT-054 не виден из отчёта.
+    """
+    model, ps, dt = _bug018_model()
+    assert model.cell_tol == CELL_TOL                  # фабрика включила условие по ячейке
+    _, rep = model.advance(ps, dt)
+    assert not rep.converged and rep.iterations == 4 and rep.exit_reason == "line_search"
+    assert rep.residual_inf <= rep.residual_tol       # абсолютное условие выполнено
+    assert rep.cell_measure > CELL_TOL                 # условие по ячейке — нет

@@ -414,7 +414,8 @@ class RadialBlackOilModel:
         if that fails too, the fallback again with a globalized Newton (BUG-016);
         if that fails too and phase_switching_stage is on, the fallback with phase
         switches inside Newton (BUG-020) -- advance_fourth_stage.
-        If all stages fail, the report carries the original algorithm's Newton (DEBT-030)."""
+        If all stages fail, the report carries the original algorithm's Newton (DEBT-030),
+        with its tolerance, per-cell measure and exit reason (DEBT-054)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -457,9 +458,13 @@ class RadialBlackOilModel:
             # algorithm's Newton instead (as before BUG-014); the branch fields
             # (well_branch, well_switches, fallback, globalized) stay the last
             # attempt's.  Accepted steps are untouched (_grow_dt reads them).
+            # DEBT-054: the absolute tolerance, the per-cell measure and the exit reason are
+            # Newton fields too -- the original algorithm's, consistent with its residual.
             rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
                         active_set_iterations=orig.active_set_iterations,
-                        phase_switches=orig.phase_switches)
+                        phase_switches=orig.phase_switches,
+                        residual_tol=orig.residual_tol,cell_measure=orig.cell_measure,
+                        exit_reason=orig.exit_reason)
         return new,rep
     def advance_fourth_stage(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """The fourth stage of advance alone (BUG-020, DEBT-048): the BUG-014 fallback with
@@ -513,6 +518,9 @@ class RadialBlackOilModel:
                 # Newton failed or the branch is inconsistent: the other branch, once
                 other='open' if branch=='shut' else 'shut'
                 if other in tried or (other=='open' and open_hopeless):
+                    # DEBT-054: a Newton that converged on an inconsistent branch failed by the
+                    # branch, not by the Newton; a failed Newton keeps its own exit reason
+                    if rep.converged: rep.exit_reason='branch'
                     rep.converged=False; return new,rep
                 branch=other
         finally:

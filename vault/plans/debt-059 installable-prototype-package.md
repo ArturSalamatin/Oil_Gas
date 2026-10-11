@@ -7,7 +7,8 @@ issue: DEBT-059
 github: 94
 branch: refactor/debt-059/installable-prototype-package
 status: реализован
-worktree: .worktrees/debt-059
+worktree: .worktrees/debt-059; удалён после влития
+merged: 29a1ffa (2026-10-11)
 audit:
   date: 2026-10-10
   found: 8

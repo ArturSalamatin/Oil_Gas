@@ -189,7 +189,7 @@ def _advance(self, state, dt, bc, balance, mass
 
 Аналог InjectorGPN: `t_minor_step` + `t_major_step`.
 
-**Данные** хранятся в `TimeConfig` (io/config.py): `dt_integration`, `start_day`, `history: list[HistoryInterval]`.
+**Данные** хранятся в `TimeConfig` (io/config.py): `dt_integration`, `history: list[HistoryInterval]` (`start_day` удалён, [[DEBT-008]]).
 `HistoryInterval` (config.py) содержит `dt`, `control`, `p_wf`, `q_oil`, `min_bhp` (последние два — управление по дебиту нефти, FEAT-020) — сырые данные из JSON.
 
 **Runtime**: Factory (фаза 6) создаёт `TimeSchedule` из `TimeConfig`, преобразуя

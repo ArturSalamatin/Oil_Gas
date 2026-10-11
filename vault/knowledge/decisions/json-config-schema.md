@@ -33,7 +33,7 @@ metadata:
 | Поле | Тип | Описание |
 |---|---|---|
 | `N` | int | Число ячеек |
-| `type` | str | `"log_radial"` — единственный пока |
+| `type` | str | `"log_radial"` — единственный; иное значение отвергает `_validate` (DEBT-008) |
 
 Ограничения: `N >= 1` (обновлено, см. P8).
 
@@ -47,6 +47,7 @@ metadata:
 | `lambda_solid` | float | Вт/(м·К) | Теплопроводность скелета |
 | `lambda_oil` | float | Вт/(м·К) | Теплопроводность нефтяной фазы |
 | `lambda_gas` | float | Вт/(м·К) | Теплопроводность газовой фазы |
+| `compressibility` | float | 1/Па | Сжимаемость породы $c_r$: $\varphi(p) = \varphi\,e^{c_r(p - p_0)}$, `porosity` — при $p_0$; опорного давления нет (DEBT-008) |
 
 Ограничения: `0 < porosity < 1`, `permeability > 0`, все λ > 0.
 
@@ -172,14 +173,17 @@ metadata:
 | `newton_cell_tol` | float или null | Порог условия сходимости Ньютона по ячейке, $\max_c |F_c|\Delta t/V_p$ (BUG-022), по умолчанию 1e-8; null — выключено |
 | `max_retries` | int | Глубина дробления шага в `Simulator`, 0…20 (DEBT-007, DEBT-015) |
 | `skin`, `jacobian_mode`, `linear_solver` | float, str, str | Передаются прототипу |
-| `newton_atol`, `newton_rtol`, `newton_max_iter`, `max_active_set_iter`, `rs_switch_tol`, `sg_switch_tol`, `dt_min`, `dt_max` | — | ⚠️ объявлены, но никем не читаются ([[DEBT-008]]) |
+| `newton_max_iter`, `max_active_set_iter` | int, int | Лимиты Ньютона ступеней 1–3 `advance`, целые ≥ 1; адаптер передаёт в каждый вызов (DEBT-008) |
+| `rs_switch_tol`, `sg_switch_tol` | float, float | Допуски переключения фаз, > 0; фабрика передаёт в конструктор модели; `rs_switch_tol` — и допуск проверки старта (DEBT-008) |
+| `dt_min`, `dt_max`, `newton_atol`, `newton_rtol` | — | Удалены (DEBT-008): в старом конфиге — предупреждение и пропуск |
 
 ### output
 
 | Поле | Тип | Описание |
 |---|---|---|
-| `fields` | list[str] | `["p", "T", "Sg", "Rs", "u_o", "u_g"]` |
-| `format` | str | `"npz"` (по умолчанию) или `"csv"` |
+| `log_level` | str | `DEBUG`, `INFO` (по умолчанию), `WARNING`, `ERROR`, `CRITICAL` без учёта регистра; иное — отказ (DEBT-008) |
+
+Поля `format` (удалено DEBT-008: формат записи выбирает вызывающий код, `save_npz`/`save_csv`; в старом конфиге — предупреждение и пропуск) и `fields` (проектного этапа, в коде не было) в секции нет.
 
 ⚠️ Поле `save_every` **удалено** (DEBT-013). Частоту записи задаёт только
 структура `time.history`: число интервалов = число записей. Конфиг с этим

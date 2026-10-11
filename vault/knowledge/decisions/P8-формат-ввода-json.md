@@ -125,7 +125,6 @@ Sg,kro,krg
 
 ```json
 "time": {
-    "start_day": 0.0,
     "dt_integration": 3600,
     "history": [
         {"dt": 86400, "control": "pressure", "p_wf": 15000000},
@@ -135,7 +134,9 @@ Sg,kro,krg
 }
 ```
 
-`start_day` — дата начала истории (по умолчанию 0). Единицы: сутки.
+Время расчёта отсчитывается от начала истории ($t = 0$). Поле `start_day` удалено ([[DEBT-008]]): решатель его не читал; в старом конфиге — предупреждение и пропуск (§5).
+
+⚠️ Проектный этап: функции `_build_prototype_schedule` в коде нет — управление скважиной по интервалам задаёт `Simulator` (`WellControl` интервала, [[временная-сетка-и-история]]). `start_day` в псевдокоде ниже — поле, удалённое [[DEBT-008]].
 
 ### Конвертация TimeSchedule → Schedule
 
@@ -180,12 +181,8 @@ Schedule прототипа — более общий формат (абсолю
 
 ```json
 "numerics": {
-    "dt_integration": 3600,
-    "dt_min": 1.0,
-    "dt_max": 86400,
+    "skin": 0.0,
     "newton_max_iter": 15,
-    "newton_rtol": 1e-8,
-    "newton_atol": 1e-11,
     "max_active_set_iter": 12,
     "rs_switch_tol": 1e-5,
     "sg_switch_tol": 1e-9,
@@ -196,13 +193,15 @@ Schedule прототипа — более общий формат (абсолю
 }
 ```
 
-- `dt_integration` — шаг интегрирования (= dt_initial для прототипа). Дублируется из секции time.
-- `dt_min`, `dt_max` — ⚠️ объявлены в `NumericsConfig`, но **никакой модуль их не читает** (проверено grep при DEBT-007). Дробление шага в `Simulator._advance` (локальное, DEBT-015) их не использует: глубина дробления задаётся `max_retries`, а не нижней границей подшага. Учтено в DEBT-008
 - `max_retries` — глубина дробления шага в `Simulator` (локальное, DEBT-015): подшаг, на котором Newton не сошёлся, делится пополам, наименьший подшаг `dt_integration`/2**max_retries. Допустимо 0…20, по умолчанию 9 (dt/512). Значение — измеренный порог DEBT-007; порог немонотонен по сетке, для отдельных конфигураций нужно 10–11
   - Уточнение (DEBT-041, 2026-10-07): порог DEBT-007 снят BUG-014, порог BUG-003 (04a, $N = 80$) — BUG-016; 9 теперь запас, а не порог. Обоснование — комментарий `NumericsConfig.max_retries` (`io/config.py`); пример 03 требует не больше 4 удвоений (README 03).
 - `newton_cell_tol` — порог условия сходимости Ньютона по ячейке (BUG-022): решение принимается, если кроме абсолютного критерия прототипа в каждой ячейке $\max_c |F_c|\,\Delta t/V_p \le$ порога. Положительное конечное число или `null` (выключено), по умолчанию 1e-8; передаётся прототипу (`cell_tol`). Порог заметно ниже $\sim 2.2\cdot10^{-16}(R_{ext}/r_w)^2$ не достигается из-за округлений — шаги дробятся (пример 17 при 1e-10: отказов шагов 214 против 47; [[DEBT-055]])
-- `jacobian_mode`, `linear_solver`, `newton_cell_tol` — передаются в `RadialBlackOilModel`; `newton_max_iter`, `newton_rtol`, `newton_atol`, `max_active_set_iter`, `*_switch_tol` — ⚠️ не передаются никуда, прототип берёт свои умолчания ([[DEBT-008]])
-- Если параметр не задан в JSON — берётся default из прототипа
+- `skin`, `jacobian_mode`, `linear_solver`, `newton_cell_tol`, `rs_switch_tol`, `sg_switch_tol` — фабрика передаёт в конструктор `RadialBlackOilModel`
+- `newton_max_iter`, `max_active_set_iter` — лимиты Ньютона ступеней 1–3 `advance`: итераций на одно решение при фиксированном наборе фаз, проходов уточнения набора фаз. Адаптер передаёт их в каждый вызов `advance` и `advance_fourth_stage` ([[DEBT-008]]). Ступень 4 (BUG-020, `_newton_switching`) их не читает: свой предел 40 итераций
+- `rs_switch_tol`, `sg_switch_tol` — допуски переключения фаз: газ включается в ячейке при $R_s > R_s^{eq}(p) +$ `rs_switch_tol` (м³ст/м³ст), выключается при $S_g < -$`sg_switch_tol`. `rs_switch_tol` — ещё и допуск проверки недонасыщенного старта (BUG-017) и проверки $R_s$ примеров (`examples/rs_analytics.py`, DEBT-026)
+- Допуски абсолютного критерия Ньютона ($\|F\|_\infty \le$ atol + rtol·$\max(\|F_0\|_\infty, 10^{-9})$, atol = 1e-11 м³ст/с, rtol = 1e-8) — умолчания прототипа; полей `newton_atol`, `newton_rtol` в конфиге нет ([[DEBT-008]]): прототип не принимает их ни в конструкторе, ни в `advance`
+- Не заданный в JSON параметр берёт умолчание `NumericsConfig` (`io/config.py`); умолчания полей, передаваемых прототипу, равны его умолчаниям (тест `test_defaults_match_prototype`)
+- Удалены ([[DEBT-008]]): `dt_min`, `dt_max` (шаг — `time.dt_integration`, дробление — `max_retries`), `newton_atol`, `newton_rtol`; в старом конфиге — предупреждение и пропуск (§5)
 
 Примечание: dt_integration из секции `time` и из `numerics` — одна и та же величина. Хранить в одном месте (в `time`), в `numerics` не дублировать.
 
@@ -212,10 +211,11 @@ Schedule прототипа — более общий формат (абсолю
 
 | Этап | Где | Что |
 |---|---|---|
-| `load_config` | `io/config.py`: `_check_numeric_fields`, `_require_finite_number` | тип и конечность всех чисел ([[DEBT-051]]) |
+| `load_config` | `io/config.py`: `_drop_removed_keys` (до разбора секций) | удалённые поля ([[DEBT-008]]): ключ убирается, предупреждение — после `_validate` |
+| | `_check_numeric_fields`, `_require_finite_number` | тип и конечность всех чисел ([[DEBT-051]]) |
 | | `_expand_history`, `_validate_interval` | формы `time.history` (FEAT-018); `control`, `p_wf > 0`, `q_oil ≥ 0`, `min_bhp > 0`, неиспользуемые поля (DEBT-008) |
-| | `_validate` | геометрия, сетка, порода, тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin` |
-| | `_warn_large_skin`, `_warn_well_shut` (после `_validate`) | предупреждения: `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
+| | `_validate` | геометрия, сетка, порода, тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin`, `grid.type`, `output.log_level`, лимиты и допуски Ньютона (DEBT-008) |
+| | предупреждения об удалённых полях, `_warn_large_skin`, `_warn_well_shut` (после `_validate`) | предупреждения: удалённые поля (DEBT-008); `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
 | `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO (DEBT-042, DEBT-044, DEBT-038) |
 | | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход за таблицы (BUG-017) |
 | сетка GPN | `grid/log_radial.py` (`LogRadialGrid`) | повтор проверок геометрии |
@@ -234,8 +234,7 @@ Schedule прототипа — более общий формат (абсолю
 - каждое поле с аннотацией `float` в секциях `geometry`, `grid`, `rock`, `pvt`, `relperm`, `thermal`, `initial_conditions`, `time`, `numerics` и в интервалах истории (`dt`; `p_wf`, `q_oil`, `min_bhp` — `Optional[float]`, `null` допустим) — число, не строка, `null`, `true`/`false`, и конечное; поля выбираются по аннотациям dataclass — новое поле проверяется без правки кода;
 - `duration`, `dt_out` краткой формы истории — так же, до разворачивания блока;
 - значение `float` в поле другого типа (NaN в `grid.N`) — на конечность;
-- литералы JSON `NaN`, `Infinity`, `-Infinity` (и `1e999`, который `json` читает как inf) отвергаются при загрузке: `<секция>.<поле> должно быть конечным числом`, `history[i].<поле> …`; строка, `null`, bool — `… должно быть числом`;
-- мёртвые поля (DEBT-008) проверяются так же.
+- литералы JSON `NaN`, `Infinity`, `-Infinity` (и `1e999`, который `json` читает как inf) отвергаются при загрузке: `<секция>.<поле> должно быть конечным числом`, `history[i].<поле> …`; строка, `null`, bool — `… должно быть числом`.
 
 Замер до DEBT-051 (`vault/issues/debt-051/probes/red_state.out.txt`): `skin` = ±inf и `p_wf` = +inf давали расчёт без добычи, `min_bhp` = NaN снимал ограничение по забою молча (7.12 МПа при 15 МПа), NaN в 13 полях — отказ после дробления до dt/512 с советом увеличить `max_retries`.
 
@@ -254,12 +253,18 @@ Schedule прототипа — более общий формат (абсолю
 
 Начальное состояние против PVT — наш Factory (`from_config`, BUG-017):
 - табличная PVT: `Rs0` в диапазоне веток `oil_pvt.csv` — иначе `ValueError`
-- обе модели PVT: недонасыщенный старт `Rs0 <= Rs_eq(p0)` (допуск 1e-5 м³ст/м³ст) — иначе `ValueError`
+- обе модели PVT: недонасыщенный старт `Rs0 <= Rs_eq(p0)` (допуск `numerics.rs_switch_tol`, по умолчанию 1e-5 м³ст/м³ст; DEBT-008) — иначе `ValueError`
 - табличная PVT: выход начального состояния за PVT- и ОФП-таблицы прототипа — предупреждение в журнале
 
 Численные параметры — наш config (`_validate`):
 - `numerics.max_retries` — целое в [0, 20] (DEBT-007)
 - `numerics.newton_cell_tol` — положительное конечное число или `null` (BUG-022)
+- `numerics.newton_max_iter`, `numerics.max_active_set_iter` — целые ≥ 1, bool отвергается (DEBT-008)
+- `numerics.rs_switch_tol`, `numerics.sg_switch_tol` — > 0 (DEBT-008)
+
+Литералы — наш config (`_validate`, [[DEBT-008]]): `grid.type` — только `"log_radial"` (до DEBT-008 любое значение проходило, расчёт шёл на логарифмической сетке); `output.log_level` — `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` без учёта регистра (до DEBT-008 опечатка молча давала `INFO`).
+
+Удалённые поля ([[DEBT-008]]): `rock.p_ref`, `time.start_day`, `numerics.dt_min`, `numerics.dt_max`, `numerics.newton_rtol`, `numerics.newton_atol`, `output.format`. Решатель их не читал, поэтому старый конфиг загружается: ключ убирается до разбора секций, предупреждение с причиной — после `_validate`, как у DEBT-056 (конфиг с ошибкой в другом поле предупреждений не выдаёт). Неизвестный ключ вне этого списка — ошибка распаковки dataclass (`TypeError`). `output.save_every` ([[DEBT-013]]) — отказ: его пропуск изменил бы состав вывода.
 
 ## 6. Единая Grid
 
@@ -326,7 +331,6 @@ Grid не изменяется после создания. Модули тол�
     "rock": {
         "porosity": 0.2,
         "permeability": 1e-13,
-        "p_ref": 1e7,
         "compressibility": 0.0,
         "rho_cp_solid": 1.25e6,
         "lambda_solid": 1.5,
@@ -357,15 +361,12 @@ Grid не изменяется после создания. Модули тол�
         "Rs0": 50.0
     },
     "time": {
-        "start_day": 0.0,
         "dt_integration": 3600,
         "history": [
             {"dt": 86400, "control": "pressure", "p_wf": 7e6}
         ]
     },
     "numerics": {
-        "dt_min": 1.0,
-        "dt_max": 86400,
         "skin": 0.0,
         "jacobian_mode": "grouped",
         "linear_solver": "sparse",
@@ -373,8 +374,7 @@ Grid не изменяется после создания. Модули тол�
         "newton_cell_tol": 1e-8
     },
     "output": {
-        "log_level": "INFO",
-        "format": "npz"
+        "log_level": "INFO"
     }
 }
 ```

@@ -11,6 +11,11 @@
   plot_well_rate       — q_o(t), q_g(t) из WellData
   plot_2d_map          — pcolormesh(r, t, field)
   plot_pvt_properties  — mu_o, Rs, Bo, mu_g, Bg, плотности как функции p
+  plot_energy_balance_series — баланс энергии во времени: члены и невязка
+  plot_mass_balance_series   — баланс массы нефти и газа во времени
+  plot_relperm_curves  — кривые ОФП и рабочий диапазон S_g расчёта
+  relperm_table_nodes  — узлы табличной ОФП для маркеров
+  pvt_table_nodes      — узлы табличного PVT для маркеров plot_pvt_properties
 """
 
 from pathlib import Path
@@ -19,7 +24,9 @@ import numpy as np
 
 from ..state import SimulationHistory
 from ..grid.base import Grid
-from ..units import S_TO_DAY
+from ..units import BAR_TO_PA, S_TO_DAY
+from ..pvt.prototype_adapter import PrototypeRPAdapter
+from ..pvt.table_full import TableFullPVT
 
 
 # ═══════════════════════════════════════════════════════════
@@ -242,6 +249,250 @@ def plot_2d_map(history: SimulationHistory, grid: Grid,
 
 
 # ═══════════════════════════════════════════════════════════
+# Визуализация: балансы энергии и массы (DEBT-011)
+# ═══════════════════════════════════════════════════════════
+
+def plot_energy_balance_series(bal: dict, axes=None, title: str = "Баланс энергии"):
+    """Баланс энергии во времени: члены и относительная невязка (DEBT-013, DEBT-011).
+
+    bal   — ряды compute_energy_balance (energy/balance.py)
+    axes  — пара осей (члены, невязка); None — создаются: 9×8 дюймов,
+            общая ось t, высоты 3:1
+    title — заголовок верхней панели
+
+    Возвращает axes. Файл не пишет и не печатает — как остальные plot_*.
+    """
+    import matplotlib.pyplot as plt
+
+    if axes is None:
+        _, axes = plt.subplots(2, 1, figsize=(9, 8), sharex=True,
+                               gridspec_kw={"height_ratios": [3, 1]})
+    ax1, ax2 = axes
+    t_days = bal["t"] * S_TO_DAY    # время на графиках — в сутках (FEAT-022)
+
+    ax1.plot(t_days, bal["delta_E"], 'k-', linewidth=2,
+             label=r"$\Delta E$ (накопление)")
+    ax1.plot(t_days, bal["cum_adiab"], 'b--', linewidth=1.5,
+             label="адиабатика (кумул.)")
+    ax1.plot(t_days, bal["cum_conv"], 'r--', linewidth=1.5,
+             label="чистая конвекция (кумул.)")
+    ax1.plot(t_days, bal["cum_jt"], 'm--', linewidth=1.5,
+             label="Джоуль–Томсон (кумул.)")
+    ax1.plot(t_days, bal["cum_deg"], 'c--', linewidth=1.5,
+             label="скрытая теплота (кумул.)")
+    # Кондукция рисуется всегда: при λ = 0 кривая лежит на нуле, и это
+    # наглядно показывает, что член учтён, а не забыт.
+    ax1.plot(t_days, bal["cum_cond"], color='olive', linestyle='--',
+             linewidth=1.5, label="теплопроводность (кумул.)")
+    ax1.plot(t_days, bal["total"], 'g:', linewidth=1.5,
+             label="сумма источников")
+    ax1.set_ylabel("Энергия, Дж")
+    ax1.legend(fontsize=9)
+    ax1.set_title(title)
+    ax1.grid(True, alpha=0.3)
+    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+
+    ax2.plot(t_days, bal["rel_residual"], 'k-', linewidth=1)
+    ax2.set_xlabel("Время, сут")
+    ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
+    ax2.set_title("Относительная невязка баланса")
+    ax2.grid(True, alpha=0.3)
+    ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+
+    return axes
+
+
+def plot_mass_balance_series(bal: dict, axes=None):
+    """Баланс массы нефти и газа во времени: члены и невязка. Ур. (eq:residual_oil), (eq:residual_gas).
+
+    bal  — ряды compute_mass_balance (mass_balance.py)
+    axes — сетка 2×2 (столбцы — нефть, газ; строки — члены, невязка);
+           None — создаётся: 13×8 дюймов, общая ось t, высоты 3:1
+
+    Возвращает axes. Файл не пишет и не печатает.
+    """
+    import matplotlib.pyplot as plt
+
+    # Две колонки, а не одни оси: запасы нефти и газа различаются на два
+    # порядка (у 16: 10³ и 10⁵ м³ст), общая шкала спрятала бы нефть.
+    if axes is None:
+        _, axes = plt.subplots(2, 2, figsize=(13, 8), sharex=True,
+                               gridspec_kw={"height_ratios": [3, 1]})
+    axes = np.asarray(axes)
+    t_days = bal["t"] * S_TO_DAY    # время на графиках — в сутках (FEAT-022)
+
+    for col, (a, name) in enumerate((("o", "Нефтяной компонент"),
+                                     ("g", "Газовый компонент"))):
+        ax1, ax2 = axes[0, col], axes[1, col]
+        ax1.plot(t_days, bal[f"dM_{a}"], 'k-', linewidth=2,
+                 label=r"$\Delta M$ (изменение запаса)")
+        # Добыча — широкой полупрозрачной линией под штриховой притока: в
+        # стационаре (01, 02) кривые совпадают, и узкая скрылась бы.
+        ax1.plot(t_days, bal[f"prod_{a}"], 'r-', linewidth=3, alpha=0.5,
+                 label="добыча через забой (кумул.)")
+        ax1.plot(t_days, bal[f"inflow_{a}"], 'b--', linewidth=1.5,
+                 label="приток через контур (кумул.)")
+        ax1.plot(t_days, bal[f"inflow_{a}"] - bal[f"prod_{a}"], 'g:',
+                 linewidth=1.5, label="приток − добыча")
+        ax1.set_ylabel("Объём, м³ст")
+        ax1.set_title(name)
+        ax1.legend(fontsize=9)
+        ax1.grid(True, alpha=0.3)
+        ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+
+        ax2.plot(t_days, bal[f"rel_residual_{a}"], 'k-', linewidth=1)
+        ax2.set_xlabel("Время, сут")
+        ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
+        ax2.grid(True, alpha=0.3)
+        ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+
+    return axes
+
+
+# ═══════════════════════════════════════════════════════════
+# Визуализация: ОФП (DEBT-011)
+# ═══════════════════════════════════════════════════════════
+
+def relperm_table_nodes(relperm):
+    """Узлы табличной ОФП (Sg, kro, krg); у аналитической модели — None (DEBT-006, DEBT-011).
+
+    PrototypeRPAdapter оборачивает TabulatedRelPerm прототипа (свойство
+    proto_rp); там узлы лежат в полях sg / kro_tab / krg_tab
+    (radial_blackoil/relperm.py). У аналитических моделей (CoreyRP)
+    выделенных точек нет — возвращаем None.
+    """
+    # По классу, а не по приватному полю _rp через getattr (DEBT-006):
+    # переименование поля молча убирало бы узлы с графика
+    if not isinstance(relperm, PrototypeRPAdapter):
+        return None
+    proto = relperm.proto_rp
+    return (np.asarray(proto.sg, float),
+            np.asarray(proto.kro_tab, float),
+            np.asarray(proto.krg_tab, float))
+
+
+def plot_relperm_curves(relperm, sg_range, axes=None, title: str = ""):
+    """Кривые ОФП и рабочий диапазон S_g расчёта: панель целиком и увеличение (DEBT-011).
+
+    relperm  — RelPermModel: нужны kro, krg
+    sg_range — (S_g,min, S_g,max) расчёта; S_g,max ≤ 1e-12 — расчёт
+               однофазный, рисуется одна панель
+    axes     — оси формы (1, n) как у plt.subplots(1, n, squeeze=False):
+               n = 2 у двухфазного расчёта, 1 у однофазного; None — создаются
+               (6.5·n × 5 дюймов)
+    title    — заголовок первой панели
+
+    Возвращает axes. Файл не пишет и не печатает.
+    """
+    import matplotlib.pyplot as plt
+
+    Sg_lo, Sg_hi = float(sg_range[0]), float(sg_range[1])
+    # Однофазный сценарий: газ не выделялся вовсе, увеличивать нечего.
+    two_phase = Sg_hi > 1e-12
+
+    nodes = relperm_table_nodes(relperm)
+    S = np.linspace(0.0, 1.0, 1000)
+    kro, krg = relperm.kro(S), relperm.krg(S)
+
+    n_panels = 2 if two_phase else 1
+    if axes is None:
+        _, axes = plt.subplots(1, n_panels, figsize=(6.5 * n_panels, 5),
+                               squeeze=False)
+    axes = np.asarray(axes)
+    ax1 = axes[0, 0]
+
+    # ── Панель 1: кривые целиком ─────────────────────────────────
+    ax1.plot(S, kro, "-", color="C3", lw=2, label=r"$k_{ro}$ (нефть)")
+    ax1.plot(S, krg, "-", color="C0", lw=2, label=r"$k_{rg}$ (газ)")
+
+    if nodes is not None:
+        # Узлы показываем только для табличной модели: у аналитической
+        # никаких выделенных точек нет, и маркеры вводили бы в заблуждение.
+        Sn, kron, krgn = nodes
+        ax1.plot(Sn, kron, "o", color="C3", ms=6, zorder=5)
+        ax1.plot(Sn, krgn, "o", color="C0", ms=6, zorder=5,
+                 label="узлы таблицы")
+
+    if two_phase:
+        ax1.axvspan(Sg_lo, Sg_hi, color="C2", alpha=0.18,
+                    label=rf"рабочий диапазон: $S_g \leq {Sg_hi:.4f}$")
+    else:
+        ax1.axvline(0.0, color="C2", lw=2,
+                    label="однофазный расчёт: $S_g \\equiv 0$")
+
+    ax1.set_xlabel("$S_g$")
+    ax1.set_ylabel("относительная проницаемость")
+    ax1.set_title(title, fontsize=9)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=8)
+
+    # ── Панель 2: увеличение на рабочем диапазоне ────────────────
+    if two_phase:
+        ax2 = axes[0, 1]
+        # Показываем немного шире достигнутого максимума, чтобы видеть,
+        # куда кривая идёт дальше; но не больше, чем до 0.15 — иначе
+        # рабочая зона снова станет неразличимой.
+        #
+        # Кламп 0.15 нужен примерам с S_g ~ 0.01: без него рабочая зона
+        # сжимается в неразличимую полоску. Но при высокой насыщенности
+        # (S_g ~ 0.7) он, наоборот, обрезает рабочий диапазон и выносит
+        # маркер S_g^max за границы осей — поэтому потолок не ниже самого
+        # S_g^max с запасом 15 %. Порог переключения S_g^max = 0.1304:
+        # ниже него действует кламп 0.15.
+        S_hi_plot = min(max(Sg_hi * 3.0, 0.02), max(0.15, min(1.0, Sg_hi * 1.15)))
+        Sz = np.linspace(0.0, S_hi_plot, 500)
+
+        # Две оси: в рабочем диапазоне k_ro ~ 1, а k_rg ~ 1e-3, и на одной
+        # шкале газовая кривая ложится на ноль неотличимо от прямой.
+        # Правая ось (k_rg) — та величина, ради которой график и строится:
+        # именно её поведение у малых S_g различает модели ОФП.
+        ax2b = ax2.twinx()
+        ax2.plot(Sz, relperm.kro(Sz), "-", color="C3", lw=2,
+                 label=r"$k_{ro}$ (левая ось)")
+        ax2b.plot(Sz, relperm.krg(Sz), "-", color="C0", lw=2,
+                  label=r"$k_{rg}$ (правая ось)")
+
+        if nodes is not None:
+            Sn, kron, krgn = nodes
+            inside = Sn <= S_hi_plot
+            ax2.plot(Sn[inside], kron[inside], "o", color="C3", ms=6, zorder=5)
+            ax2b.plot(Sn[inside], krgn[inside], "o", color="C0", ms=6, zorder=5)
+
+        ax2.axvspan(Sg_lo, Sg_hi, color="C2", alpha=0.18)
+        ax2.axvline(Sg_hi, color="C2", lw=1.2, ls="--",
+                    label=rf"$S_g^{{max}}$ = {Sg_hi:.5f}")
+
+        # Значения на рабочем максимуме: именно они определяют подвижности,
+        # а через них — дебит и распределение потоков между фазами.
+        kro_w = float(relperm.kro(np.array([Sg_hi]))[0])
+        krg_w = float(relperm.krg(np.array([Sg_hi]))[0])
+        ax2.plot([Sg_hi], [kro_w], "s", color="C3", ms=7, zorder=6)
+        ax2b.plot([Sg_hi], [krg_w], "s", color="C0", ms=7, zorder=6)
+        ax2.set_title(f"Рабочий диапазон расчёта\n"
+                      f"$k_{{ro}}$({Sg_hi:.4f}) = {kro_w:.4f},   "
+                      f"$k_{{rg}}$({Sg_hi:.4f}) = {krg_w:.3e}", fontsize=9)
+
+        ax2.set_xlim(0.0, S_hi_plot)
+        ax2.set_xlabel("$S_g$")
+        ax2.set_ylabel(r"$k_{ro}$ (нефть)", color="C3")
+        ax2b.set_ylabel(r"$k_{rg}$ (газ)", color="C0")
+        ax2.tick_params(axis="y", labelcolor="C3")
+        ax2b.tick_params(axis="y", labelcolor="C0")
+        # Обе шкалы от нуля: иначе автомасштаб скрывает, насколько k_rg мала
+        # в абсолютном выражении.
+        ax2.set_ylim(bottom=0.0)
+        ax2b.set_ylim(bottom=0.0)
+        ax2.grid(True, alpha=0.3)
+
+        # Легенды двух осей объединяем — иначе получаются две коробки.
+        h1, l1 = ax2.get_legend_handles_labels()
+        h2, l2 = ax2b.get_legend_handles_labels()
+        ax2.legend(h1 + h2, l1 + l2, fontsize=8, loc="center right")
+
+    return axes
+
+
+# ═══════════════════════════════════════════════════════════
 # Визуализация: свойства PVT
 # ═══════════════════════════════════════════════════════════
 
@@ -295,6 +546,50 @@ def _table_pb_span(pvt, table_nodes):
     return float(pb[0]), float(pb[1])
 
 
+def pvt_table_nodes(pvt, Rs0: float):
+    """Узлы табличного PVT в Па для plot_pvt_properties; у аналитического PVT — None (DEBT-011).
+
+    Цепочка обёрток: TableFullPVT.hydro -> PrototypePVTAdapter.proto_pvt ->
+    BlackOilPVT прототипа, где всё лежит в БАРАХ (поля gp, pb, branches).
+    У аналитического PVT (Standing) выделенных точек нет — возвращаем None,
+    маркеры на гладкой корреляции вводили бы в заблуждение.
+
+    Ключи раздельные, потому что наборы разные по природе и идут на разные
+    панели: газовая таблица — на mu_g/Bg, строки PVTO и узлы строки Rs0 —
+    на mu_o/Bo/Rs.
+
+    Ординаты узлов здесь НЕ возвращаются: недонасыщенная ветка
+    интерполируется по dp = p - pb(Rs), а не по p, поэтому значения
+    считаются вызовом PVT в точке узла (это делает ядро).
+    """
+    # Табличный ли PVT — по классу, BlackOilPVT — через публичные свойства
+    # (DEBT-006). Прежде getattr по приватным _hydro, _pvt: их переименование
+    # молча убирало бы маркеры узлов с графика.
+    if not isinstance(pvt, TableFullPVT):
+        return None
+    proto = pvt.hydro.proto_pvt
+
+    p_gas = np.asarray(proto.gp, float) * BAR_TO_PA        # газовая таблица
+    p_sat = np.asarray(proto.pb, float) * BAR_TO_PA        # точки насыщения
+    # Узлы той ветки, что рисуется недонасыщенной (Rs = Rs0); в branches
+    # они лежат в АБСОЛЮТНЫХ давлениях, а не в dp.
+    rs_values = np.asarray(proto.rs_values, float)
+    rs_near = min(proto.rs_values, key=lambda r: abs(r - Rs0))
+    p_branch = np.array([x[0] for x in proto.branches[rs_near]],
+                        float) * BAR_TO_PA
+
+    return {
+        "p_gas": p_gas,
+        # Для сводки report_pvt (_nodes_in_range); ядро этот ключ не читает.
+        "p_oil": np.unique(np.concatenate([p_sat, p_branch])),
+        "rs_values": rs_values,
+        # Узлы строки Rs0 — на жирной ветви рисунка. Если Rs0 не совпадает
+        # со строкой, ветвь интерполирована между строками и собственных
+        # узлов не имеет.
+        "p_branch": p_branch if np.isclose(rs_near, Rs0) else np.empty(0),
+    }
+
+
 def plot_pvt_properties(pvt, Rs0: float, p_range, axes=None,
                         table_nodes=None, label: str = ""):
     """Свойства PVT по давлению в стиле таблицы PVTO: насыщенная кривая и веер ветвей R_s = const.
@@ -310,7 +605,7 @@ def plot_pvt_properties(pvt, Rs0: float, p_range, axes=None,
     Rs0         — начальное газосодержание, м³ст/м³ст: выделенная ветвь
     p_range     — (p_lo, p_hi), Па: диапазон, который подсветить как рабочий
     axes        — сетка 2x3; создаётся, если None
-    table_nodes — узлы табличного PVT, или None для аналитического PVT:
+    table_nodes — узлы табличного PVT (см. pvt_table_nodes), или None для аналитического PVT:
                   'p_gas' — давления газовой таблицы, Па;
                   'rs_values' — строки PVTO, м³ст/м³ст (они же ветви);
                   'p_branch' — давления узлов строки R_s,0, Па (пусто,

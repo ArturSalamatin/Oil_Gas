@@ -46,8 +46,8 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from gpn_multiphase_solver.io.output import plot_mass_balance_series  # noqa: E402
 from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
-from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 # Одна копия правила разбора имени примера («16» → 16_well_shut_in)
 from energy_balance import _resolve_example  # noqa: E402
@@ -62,37 +62,8 @@ def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
     if bal is None:
         print("Баланс массы не считается: решатель не отдаёт запас компонентов")
         return None
-    t_days = bal["t"] * S_TO_DAY    # время на графиках — в сутках (FEAT-022)
-
-    # Две колонки, а не одни оси: запасы нефти и газа различаются на два
-    # порядка (у 16: 10³ и 10⁵ м³ст), общая шкала спрятала бы нефть.
-    fig, axes = plt.subplots(2, 2, figsize=(13, 8), sharex=True,
-                             gridspec_kw={"height_ratios": [3, 1]})
-    for col, (a, name) in enumerate((("o", "Нефтяной компонент"),
-                                     ("g", "Газовый компонент"))):
-        ax1, ax2 = axes[0, col], axes[1, col]
-        ax1.plot(t_days, bal[f"dM_{a}"], 'k-', linewidth=2,
-                 label=r"$\Delta M$ (изменение запаса)")
-        # Добыча — широкой полупрозрачной линией под штриховой притока: в
-        # стационаре (01, 02) кривые совпадают, и узкая скрылась бы.
-        ax1.plot(t_days, bal[f"prod_{a}"], 'r-', linewidth=3, alpha=0.5,
-                 label="добыча через забой (кумул.)")
-        ax1.plot(t_days, bal[f"inflow_{a}"], 'b--', linewidth=1.5,
-                 label="приток через контур (кумул.)")
-        ax1.plot(t_days, bal[f"inflow_{a}"] - bal[f"prod_{a}"], 'g:',
-                 linewidth=1.5, label="приток − добыча")
-        ax1.set_ylabel("Объём, м³ст")
-        ax1.set_title(name)
-        ax1.legend(fontsize=9)
-        ax1.grid(True, alpha=0.3)
-        ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-
-        ax2.plot(t_days, bal[f"rel_residual_{a}"], 'k-', linewidth=1)
-        ax2.set_xlabel("Время, сут")
-        ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
-        ax2.grid(True, alpha=0.3)
-        ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-
+    axes = plot_mass_balance_series(bal)
+    fig = axes[0, 0].figure
     # Имя примера — из пути к конфигу: модуль общий для всех примеров.
     fig.suptitle(f"Баланс массы компонентов — {Path(config.config_dir).name}")
     fig.tight_layout()

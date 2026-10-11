@@ -12,9 +12,10 @@ PVT-свойства замыкают систему уравнений филь
 Модуль — оформитель: само построение кривых делегируется ядру библиотеки
 (`gpn_multiphase_solver.io.output.plot_pvt_properties`), чтобы та же функция
 была доступна пользователю установленного пакета, а не только тому, кто
-выгрузил репозиторий целиком (examples/ в дистрибутив не входит). Здесь
-остаётся всё, что знает про config: извлечение Rs0, подпись модели, рабочий
-диапазон из history, компоновка фигуры, запись PNG и печать сводки.
+выгрузил репозиторий целиком (examples/ в дистрибутив не входит); узлы
+таблиц — там же, pvt_table_nodes (DEBT-011). Здесь остаётся всё, что знает
+про config: извлечение Rs0, подпись модели, рабочий диапазон из history,
+компоновка фигуры, запись PNG и печать сводки.
 
 Что на графике (сетка 2x3) — как таблица PVTO коммерческих симуляторов
 (FEAT-028):
@@ -68,9 +69,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from gpn_multiphase_solver.io.output import plot_pvt_properties  # noqa: E402
-from gpn_multiphase_solver.units import BAR_TO_PA  # noqa: E402
-from gpn_multiphase_solver.pvt.table_full import TableFullPVT  # noqa: E402
+from gpn_multiphase_solver.io.output import plot_pvt_properties, pvt_table_nodes  # noqa: E402
 
 # PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
 from figure_io import save_figure  # noqa: E402
@@ -128,50 +127,6 @@ def _describe(config) -> str:
     return f"модель: {pc.model}"
 
 
-def _pvt_table_nodes(pvt, Rs0: float):
-    """Узлы табличного PVT в Па, раздельно по фазам, иначе None.
-
-    Цепочка обёрток: TableFullPVT.hydro -> PrototypePVTAdapter.proto_pvt ->
-    BlackOilPVT прототипа, где всё лежит в БАРАХ (поля gp, pb, branches).
-    У аналитического PVT (Standing) выделенных точек нет — возвращаем None,
-    маркеры на гладкой корреляции вводили бы в заблуждение.
-
-    Ключи раздельные, потому что наборы разные по природе и идут на разные
-    панели: газовая таблица — на mu_g/Bg, строки PVTO и узлы строки Rs0 —
-    на mu_o/Bo/Rs.
-
-    Ординаты узлов здесь НЕ возвращаются: недонасыщенная ветка
-    интерполируется по dp = p - pb(Rs), а не по p, поэтому значения
-    считаются вызовом PVT в точке узла (это делает ядро).
-    """
-    # Табличный ли PVT — по классу, BlackOilPVT — через публичные свойства
-    # (DEBT-006). Прежде getattr по приватным _hydro, _pvt: их переименование
-    # молча убирало бы маркеры узлов с графика.
-    if not isinstance(pvt, TableFullPVT):
-        return None
-    proto = pvt.hydro.proto_pvt
-
-    p_gas = np.asarray(proto.gp, float) * BAR_TO_PA        # газовая таблица
-    p_sat = np.asarray(proto.pb, float) * BAR_TO_PA        # точки насыщения
-    # Узлы той ветки, что рисуется недонасыщенной (Rs = Rs0); в branches
-    # они лежат в АБСОЛЮТНЫХ давлениях, а не в dp.
-    rs_values = np.asarray(proto.rs_values, float)
-    rs_near = min(proto.rs_values, key=lambda r: abs(r - Rs0))
-    p_branch = np.array([x[0] for x in proto.branches[rs_near]],
-                        float) * BAR_TO_PA
-
-    return {
-        "p_gas": p_gas,
-        # Для сводки report_pvt (_nodes_in_range); ядро этот ключ не читает.
-        "p_oil": np.unique(np.concatenate([p_sat, p_branch])),
-        "rs_values": rs_values,
-        # Узлы строки Rs0 — на жирной ветви рисунка. Если Rs0 не совпадает
-        # со строкой, ветвь интерполирована между строками и собственных
-        # узлов не имеет.
-        "p_branch": p_branch if np.isclose(rs_near, Rs0) else np.empty(0),
-    }
-
-
 def _nodes_in_range(nodes, p_lo: float, p_hi: float) -> int:
     """Сколько узлов таблицы попало в рабочий диапазон давлений.
 
@@ -221,7 +176,7 @@ def plot_pvt(config, history, output_dir: Path, title: str,
     # Ширина панели прежняя — 4.6 дюйма: на неё рассчитана подпись _describe.
     fig, axes = plt.subplots(2, 3, figsize=(4.6 * 3, 9))
     plot_pvt_properties(pvt, Rs0, (p_lo, p_hi), axes=axes,
-                        table_nodes=_pvt_table_nodes(pvt, Rs0),
+                        table_nodes=pvt_table_nodes(pvt, Rs0),
                         label=_describe(config))
 
     fig.suptitle(f"{title}\nPVT — {_describe(config)}", fontsize=10)
@@ -253,7 +208,7 @@ def report_pvt(config, history, simulator=None) -> dict:
     pb = float(pvt.pb(np.array([Rs0]))[0])
     two_phase = Rs0 > 0.0
 
-    nodes = _pvt_table_nodes(pvt, Rs0)
+    nodes = pvt_table_nodes(pvt, Rs0)
     n_in_range = _nodes_in_range(nodes, p_lo, p_hi)
 
     # Три опорные точки: края рабочего диапазона и середина.

@@ -17,8 +17,11 @@ import pytest  # noqa: E402,F401
 import gpn_multiphase_solver.factory as factory  # noqa: E402
 from gpn_multiphase_solver.energy.balance import (  # noqa: E402
     CUMULATIVE_KEYS, compute_energy_balance)
-from gpn_multiphase_solver.factory import SimulatorFactory, create_relperm  # noqa: E402
+from gpn_multiphase_solver.factory import (  # noqa: E402
+    SimulatorFactory, create_pvt, create_relperm)
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
+from gpn_multiphase_solver.io.output import (  # noqa: E402
+    plot_energy_balance_series, plot_relperm_curves, pvt_table_nodes)
 from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
 from gpn_multiphase_solver.pvt.prototype_adapter import PrototypeRPAdapter  # noqa: E402
 from gpn_multiphase_solver.pvt.relperm import CoreyRP  # noqa: E402
@@ -122,3 +125,33 @@ def test_compute_mass_balance_closes():
     assert bal["residual_o"][1] == 0.0 and bal["rel_residual_o"][1] == 0.0
     assert bal["prod_o"][1] == 12.0 and bal["inflow_o"][1] == 2.0
     assert bal["rel_residual_g"][1] == 0.0
+
+
+# ── Рисунки проверок ─────────────────────────────────────────
+
+def test_plot_energy_balance_series_draws_all_terms():
+    """Семь кривых членов (ΔE, пять источников, их сумма) и одна кривая невязки; заголовок — аргумент."""
+    axes = plot_energy_balance_series(compute_energy_balance(_energy_history()), title="T")
+    try:
+        assert len(axes[0].get_lines()) == 7
+        assert len(axes[1].get_lines()) == 1
+        assert axes[0].get_title() == "T"
+    finally:
+        plt.close(axes[0].figure)
+
+
+@pytest.mark.parametrize("sg_max, n_panels", [(0.05, 2), (0.0, 1)])
+def test_plot_relperm_curves_panels(sg_max, n_panels):
+    """Двухфазный расчёт — две панели (целиком и увеличение), однофазный — одна."""
+    rp = create_relperm(load_config(BASELINE))
+    axes = plot_relperm_curves(rp, (0.0, sg_max), title="T")
+    try:
+        assert axes.shape == (1, n_panels)
+        assert axes[0, 0].get_title() == "T"
+    finally:
+        plt.close(axes[0, 0].figure)
+
+
+def test_pvt_table_nodes_none_for_correlation():
+    """У корреляции Стендинга узлов нет — None: маркеры на гладкой кривой вводили бы в заблуждение."""
+    assert pvt_table_nodes(create_pvt(load_config(BASELINE)), 50.0) is None

@@ -22,6 +22,7 @@ import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import NumericsConfig, load_config
+from gpn_multiphase_solver.io.output import pvt_table_nodes, relperm_table_nodes
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -954,7 +955,7 @@ def _table_pvto_axes(name, p_range):
     Rs0 = float(cfg.initial_conditions.Rs0)
     fig, axes = plt.subplots(2, 3)
     plot_pvt_properties(pvt, Rs0, p_range, axes=axes,
-                        table_nodes=_pvt_module()._pvt_table_nodes(pvt, Rs0))
+                        table_nodes=pvt_table_nodes(pvt, Rs0))
     return fig, axes, pvt, Rs0
 
 
@@ -1077,7 +1078,7 @@ class TestPvtPlot:
         """
         pvt_plot = _pvt_module()
         r = results["04_table_table"]
-        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+        nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                           r["Rs0"])
         assert nodes is not None, "у табличного PVT узлы обязаны быть"
         assert np.allclose(nodes["p_gas"], [5e6, 15e6, 30e6])
@@ -1092,7 +1093,7 @@ class TestPvtPlot:
         pvt_plot = _pvt_module()
         for name in ANALYTIC_PVT:
             r = results[name]
-            nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+            nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                               r["Rs0"])
             assert nodes is None, f"{name}: у корреляции узлов быть не может"
 
@@ -1142,7 +1143,7 @@ class TestPvtPlot:
         """
         pvt_plot = _pvt_module()
         r = results["04_table_table"]
-        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+        nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                           r["Rs0"])
         assert set(nodes) >= {"p_gas", "p_oil"}, "ключи должны быть раздельны"
         assert "p_all" not in nodes, (
@@ -1214,10 +1215,10 @@ class TestPvtPlot:
         """
         cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
         pvt = _pvt_of_config(cfg)
-        nodes = _pvt_module()._pvt_table_nodes(pvt, 30.0)
+        nodes = pvt_table_nodes(pvt, 30.0)
         assert np.allclose(nodes["p_branch"], [15e6, 30e6])
         assert np.allclose(nodes["p_oil"], [5e6, 15e6, 30e6])
-        assert _pvt_module()._pvt_table_nodes(pvt, 20.0)["p_branch"].size == 0
+        assert pvt_table_nodes(pvt, 20.0)["p_branch"].size == 0
 
     def test_describe_mu_o_branch(self):
         """Подпись Стендинга перечисляет свойства, горизонтальные выше p_b (FEAT-027).
@@ -1453,8 +1454,9 @@ class TestWorkingRange:
 class TestTableNodesByClass:
     """Скрипты графиков находят узлы таблиц по классу модели, а не по приватным полям.
 
-    До DEBT-006 _table_nodes (relperm_plot.py) тестов не имел, а узлы PVT
-    проверяли в основном тесты на фикстуре results (метка slow). Здесь —
+    До DEBT-006 узлы ОФП (сейчас io/output.py::relperm_table_nodes, прежде
+    _table_nodes в relperm_plot.py) тестов не имели, а узлы PVT проверяли
+    в основном тесты на фикстуре results (метка slow). Здесь —
     быстрые проверки без расчёта.
     """
 
@@ -1462,7 +1464,7 @@ class TestTableNodesByClass:
         """Табличная ОФП примера 04: узлы — ровно строки relperm.csv."""
         from gpn_multiphase_solver.factory import create_relperm, _read_relperm_csv
         cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
-        nodes = _relperm_module()._table_nodes(create_relperm(cfg))
+        nodes = relperm_table_nodes(create_relperm(cfg))
         expected = _read_relperm_csv(cfg.config_dir / cfg.relperm.file)
         assert nodes is not None, "у табличной ОФП узлы обязаны быть"
         for got, exp in zip(nodes, expected):
@@ -1472,13 +1474,13 @@ class TestTableNodesByClass:
         """Кори примера 03: выделенных точек нет — None."""
         from gpn_multiphase_solver.factory import create_relperm
         cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
-        assert _relperm_module()._table_nodes(create_relperm(cfg)) is None
+        assert relperm_table_nodes(create_relperm(cfg)) is None
 
     def test_pvt_nodes_none_for_standing(self):
         """Стендинг примера 03: узлов PVT нет — None (без фикстуры results, DEBT-006)."""
         cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
         Rs0 = float(cfg.initial_conditions.Rs0)
-        assert _pvt_module()._pvt_table_nodes(_pvt_of_config(cfg), Rs0) is None
+        assert pvt_table_nodes(_pvt_of_config(cfg), Rs0) is None
 
 
 # ═══════════════════════════════════════════════════════════

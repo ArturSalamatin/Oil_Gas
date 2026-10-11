@@ -55,47 +55,17 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
         sys.path.insert(0, _p)
 
 from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
-from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
+from gpn_multiphase_solver.io.output import plot_energy_balance_series  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 
 
 def plot_energy_balance(history, grid, config, output_dir: Path):
     """Построить график баланса энергии и вернуть финальную отн. невязку."""
     bal = compute_energy_balance(history)
-    t_days = bal["t"] * S_TO_DAY    # время на графиках — в сутках (FEAT-022)
-
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 8), sharex=True,
-                                   gridspec_kw={"height_ratios": [3, 1]})
-
-    ax1.plot(t_days, bal["delta_E"], 'k-', linewidth=2,
-             label=r"$\Delta E$ (накопление)")
-    ax1.plot(t_days, bal["cum_adiab"], 'b--', linewidth=1.5,
-             label="адиабатика (кумул.)")
-    ax1.plot(t_days, bal["cum_conv"], 'r--', linewidth=1.5,
-             label="чистая конвекция (кумул.)")
-    ax1.plot(t_days, bal["cum_jt"], 'm--', linewidth=1.5,
-             label="Джоуль–Томсон (кумул.)")
-    ax1.plot(t_days, bal["cum_deg"], 'c--', linewidth=1.5,
-             label="скрытая теплота (кумул.)")
-    # Кондукция рисуется всегда: при λ = 0 кривая лежит на нуле, и это
-    # наглядно показывает, что член учтён, а не забыт.
-    ax1.plot(t_days, bal["cum_cond"], color='olive', linestyle='--',
-             linewidth=1.5, label="теплопроводность (кумул.)")
-    ax1.plot(t_days, bal["total"], 'g:', linewidth=1.5,
-             label="сумма источников")
-    ax1.set_ylabel("Энергия, Дж")
-    ax1.legend(fontsize=9)
     # Имя примера берём из пути к конфигу: модуль общий для всех примеров.
-    ax1.set_title(f"Баланс энергии — {Path(config.config_dir).name}")
-    ax1.grid(True, alpha=0.3)
-    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-
-    ax2.plot(t_days, bal["rel_residual"], 'k-', linewidth=1)
-    ax2.set_xlabel("Время, сут")
-    ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
-    ax2.set_title("Относительная невязка баланса")
-    ax2.grid(True, alpha=0.3)
-    ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+    axes = plot_energy_balance_series(
+        bal, title=f"Баланс энергии — {Path(config.config_dir).name}")
+    fig = axes[0].figure
 
     fig.tight_layout()
     output_dir = Path(output_dir)

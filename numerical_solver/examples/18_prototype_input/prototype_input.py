@@ -9,18 +9,16 @@ from __future__ import annotations
 
 import csv
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
+# Каталог прототипа в репозитории — ради данных: книга INPUT_TEMPLATE.xlsx и
+# книги регрессии (BOOK, IMEX_BOOK, IMEX_DIR ниже). Пакет radial_blackoil —
+# установленный дистрибутив radial-blackoil (DEBT-059).
 # examples/18_prototype_input/ → numerical_solver/
 PROTO_ROOT = HERE.parents[1] / "HydroSolverPrototype" / "Prototype_1.0.3"
-# radial_blackoil не установлен в venv. main.py получает путь от example_runner,
-# тесты — от tests/conftest.py; при запуске конвертации напрямую добавляем сами.
-if str(PROTO_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROTO_ROOT))
 
 from gpn_multiphase_solver.units import BAR_TO_PA, CP_TO_PA_S, MD_TO_M2  # noqa: E402
 

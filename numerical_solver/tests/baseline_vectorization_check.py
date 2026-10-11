@@ -1,8 +1,8 @@
 """Baseline для векторизации циклов в energy/tridiag.py (DEBT-017).
 
 Не тест в обычном смысле: одноразовая утилита сравнения «до/после».
-Запуск через pytest, потому что conftest настраивает путь к внешнему
-прототипу radial_blackoil (нужен табличному PVT примеров 07-11).
+Запуск через pytest, потому что pytest подключает прототип radial_blackoil
+(pythonpath в pyproject.toml, DEBT-059; нужен табличному PVT примеров 07-11).
 
 Порядок применения (переменная окружения, чтобы не править общий conftest):
   1. до правки:  BASELINE_WRITE=1 pytest tests/baseline_vectorization_check.py

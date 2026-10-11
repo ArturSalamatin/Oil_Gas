@@ -35,7 +35,6 @@ SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
 sys.path.insert(0, str(SOLVER_ROOT / "examples"))
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(SOLVER_ROOT / "HydroSolverPrototype" / "Prototype_1.0.3"))
 
 import matplotlib
 matplotlib.use("Agg")

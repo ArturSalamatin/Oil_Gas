@@ -129,3 +129,11 @@
 - The prototype's own runs do not use the fourth stage: tests 97 passed, regression 17/17 PASS bitwise, golden outputs unchanged. In GPN: daily shut-in runs of configs 19, 20, 21 pass at the default split depth; example 17 no longer splits its shut-in hours (41 -> 0 rejected steps), its history shifts by the time-step error; 20 of 22 examples bitwise.
 - Physics, residual equations, convergence tests and well semantics are unchanged. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
 - Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/93; plan: `vault/plans/bug-024 stage4-rs-step-limit.md` of the GPN project.
+
+## Local changes — GPN project (DEBT-059): installable distribution radial-blackoil 1.0.3+gpn.1
+- Problem: the package `radial_blackoil` could not be installed (no `pyproject.toml`); the GPN solver found it only through `sys.path` insertions in its tests and examples and did not work outside the repository.
+- New `pyproject.toml`: distribution `radial-blackoil` with the package `radial_blackoil` only (explicit `include`; `tests/`, `regression/`, `docs/` stay in the repository), dependencies numpy, scipy, matplotlib, XlsxWriter with the lower bounds of the GPN solver. `requirements.txt` (the validated 1.0.3 environment) is unchanged.
+- Distribution version `1.0.3+gpn.1` = `radial_blackoil.__version__`, a literal that setuptools reads without importing the package. `build_info.VERSION`, `BUILD_ID` and the `run_summary` fields are unchanged: the regression compares them with the golden outputs. The GPN solver requires `radial-blackoil==1.0.3+gpn.1`.
+- No numerical code changed: prototype tests 97 passed, quick regression 11/11 PASS; the GPN examples 03, 04, 05 reproduce their histories bitwise in a clean environment installed from wheels without PyPI.
+- `PACKAGE_MANIFEST_SHA256.txt` is kept as the record of the 2026-08-25 delivery and is not updated.
+- Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/94; plan: `vault/plans/debt-059 installable-prototype-package.md` of the GPN project.

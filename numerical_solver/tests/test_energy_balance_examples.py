@@ -20,9 +20,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-# Прототип radial_blackoil подключает tests/conftest.py. Здесь нужен только
-# путь до самого скрипта примеров — в conftest его не тащим, это код
-# примеров, а не пакета.
+# Прототип radial_blackoil pytest берёт по pythonpath в pyproject.toml (DEBT-059).
+# Здесь нужен только путь до самого скрипта примеров — в pyproject.toml его
+# не тащим, это код примеров, а не пакета.
 _EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 # Модуль общий для всех примеров (FEAT-016): до выноса он лежал в папке
 # 03_standing_corey, и путь указывал туда.

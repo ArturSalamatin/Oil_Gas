@@ -226,7 +226,8 @@ $S_g = 0.1$ и копится в пласте. Стационарная анал
 
 ```powershell
 cd numerical_solver
-.venv\Scripts\pip install -e .        # один раз
+# один раз: прототип гидродинамики и решатель, оба с правкой исходников
+.venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
 
 # Один пример
 .venv\Scripts\python examples\01_single_phase_no_jt\main.py
@@ -235,8 +236,11 @@ cd numerical_solver
 .venv\Scripts\python examples\run_all.py
 ```
 
-`PYTHONPATH` задавать не нужно: `example_runner.py` сам подключает прототип
-`radial_blackoil` через `sys.path`.
+Прототип гидродинамики `radial_blackoil` — отдельный дистрибутив `radial-blackoil`
+(каталог `HydroSolverPrototype/Prototype_1.0.3`), зависимость решателя (DEBT-059).
+Ставить оба одной командой, как выше: решатель требует ровно версию `1.0.3+gpn.1`,
+и `pip install -e .` без прототипа завершится ошибкой «No matching distribution
+found for radial-blackoil». `PYTHONPATH` задавать не нужно.
 
 `run_all.py` не останавливается на первой ошибке — прогоняет все примеры,
 печатает сводку и возвращает ненулевой код, если что-то упало.

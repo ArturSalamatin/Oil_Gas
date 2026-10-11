@@ -47,7 +47,7 @@ sys.path.insert(0, str(HERE.parents[1]))   # numerical_solver/
 sys.path.insert(0, str(HERE.parents[0]))   # examples/
 sys.path.insert(0, str(HERE))
 
-from example_runner import _PROTO_ROOT  # noqa: E402,F401  (подключает прототип)
+import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
 
 from closed_form import solve_closed  # noqa: E402
 from convergence import run_series  # noqa: E402

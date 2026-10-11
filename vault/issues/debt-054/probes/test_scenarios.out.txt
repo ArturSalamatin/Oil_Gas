@@ -1,0 +1,23 @@
+﻿SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+
+1. N=12 cell_tol: converged=True it=3 res=9.165e-16
+   pack(unpack(z)) == z побитово: True
+   мера по f кода 3.440676894137998e-12, мера теста 3.440676894137998e-12, равны: True
+   допуск 1.9367912994863684e-11
+
+2. max_iter=1: converged=False it=1 res=5.706e-05 z сдвинулся от старта: True
+
+3. линейный решатель: converged=False it=1 res=0.0009367912994863684 ||F0||=0.0009367912994863684
+
+4. N=12 max_active_iter=1: converged=False it=3 aset=1 switches=5 res=2.735e-04
+   штатно: converged=True aset=2 switches=5
+
+4. N=50 max_active_iter=1: converged=False it=4 aset=1 switches=21 res=8.824e-05
+   штатно: converged=True aset=2 switches=21
+
+5. ступень 4, cell_tol=1e-08: converged=True it=16 res=6.877e-15 допуск=4.384e-11 абс. выполнено=True мера=1.208e-11
+
+5. ступень 4, cell_tol=1e-30: converged=False it=40 res=8.068e-15 допуск=4.384e-11 абс. выполнено=True мера=9.772e-12
+
+6. ступень 4, отказ решателя на 3-м вызове: converged=False it=40 (после правки ожидается 2) res=1.853e-02
+7. ступень 4, NaN в направлении на 2-м вызове: converged=False it=40 (после правки ожидается 1) res=9.168e-03

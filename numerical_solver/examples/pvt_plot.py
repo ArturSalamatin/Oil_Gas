@@ -96,7 +96,7 @@ def _physical_rs(pvt, p: np.ndarray, Rs0: float) -> np.ndarray:
     p <  p_b — нефть насыщена, избыток выделился, Rs = Rs_eq(p).
     После восстановления давления в расчёте бывает и недонасыщенная нефть
     ниже p_b (примеры 12, 13b; DEBT-026) — этой кривой она не описывается.
-    Та же формула, что в rs_analytics.rs_expected; ядро считает её само,
+    Та же формула, что в gpn_multiphase_solver.diagnostics.rs.rs_expected; ядро считает её само,
     здесь она нужна для сводки и для ординат узлов таблицы.
     """
     return np.minimum(pvt.Rs_eq(p), Rs0)

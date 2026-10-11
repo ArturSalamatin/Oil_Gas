@@ -13,7 +13,7 @@
   (а) from M import name на верхнем уровне;
   (б) from M import name внутри функции или в блоке __main__ — импорт
       файла (runpy, как в DEBT-031) такие строки не исполняет;
-  (в) alias.name при import M as alias: tpa.report, ta.single_phase_asymptote;
+  (в) alias.name при import M as alias: tpa.report;
   (г) имя, нужное функции, но не связанное в модуле: потерянная строка
       импорта самого файла (deepcopy в run_series, DEBT-031);
   (д) именованные аргументы вызовов run_example(...) против её сигнатуры.
@@ -165,7 +165,7 @@ def _script_problems(path: Path) -> list:
                 if module is not None and (a.asname or "." not in a.name):
                     aliases[a.asname or a.name] = module
 
-    # ── (в): alias.name — tpa.report, ta.single_phase_asymptote ──
+    # ── (в): alias.name — tpa.report ──
     # Ни импорт файла, ни LOAD_GLOBAL этого не видят: LOAD_GLOBAL даёт tpa,
     # а .report берётся у модуля только при вызове.
     for node in ast.walk(tree):

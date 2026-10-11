@@ -49,7 +49,7 @@ sys.path.insert(0, str(HERE))
 
 import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
 
-from closed_form import solve_closed  # noqa: E402
+from gpn_multiphase_solver.diagnostics.closed_form import solve_closed  # noqa: E402
 from convergence import run_series  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 

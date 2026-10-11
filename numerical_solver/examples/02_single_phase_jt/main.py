@@ -22,7 +22,7 @@
    При μ_JT < 0 нефть греется уже на полуячейке между контуром и центром
    последней ячейки (compute_jt учитывает перепад p_0 - p[-1] на контурной
    грани), поэтому в последней ячейке асимптота выше T_ext на
-   |μ_JT|·(p_0 - p[-1]). Формула — в общем модуле temperature_asymptotics
+   |μ_JT|·(p_0 - p[-1]). Формула — в gpn_multiphase_solver.diagnostics.temperature
    (BUG-013).
 
 За 3 суток решение проходит лишь часть пути к этой асимптотике,
@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from example_runner import run_example  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
-import temperature_asymptotics as ta  # noqa: E402
+from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote  # noqa: E402
 
 # Папка примера — в sys.path для импорта соседних модулей.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -204,8 +204,8 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     # JT-асимптотика (стационарный предел ОДУ при t → ∞) — из общего модуля.
     # Давление стационарно с 1-го шага, модуль берёт финальный профиль p.
     # Опорная точка — контур (p = p0): нефть греется уже на полуячейке
-    # у контура, см. temperature_asymptotics.single_phase_asymptote (BUG-013).
-    T_asymp = ta.single_phase_asymptote(config, history)
+    # у контура, см. diagnostics.temperature.single_phase_asymptote (BUG-013).
+    T_asymp = single_phase_asymptote(config, history)
 
     # ── Наклоны двух линейных участков ──
     # В логарифмической шкале профиль состоит из двух линейных участков

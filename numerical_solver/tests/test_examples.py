@@ -379,11 +379,9 @@ def test_thermal_actually_differs(results):
 
 
 def _asymptotics_module():
-    """Общий модуль examples/temperature_asymptotics.py."""
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import temperature_asymptotics
-    return temperature_asymptotics
+    """Однофазная асимптотика — модуль пакета (DEBT-011)."""
+    from gpn_multiphase_solver.diagnostics import temperature
+    return temperature
 
 
 def test_02_relaxes_toward_jt_asymptote(results):
@@ -1022,7 +1020,7 @@ class TestPvtPlot:
                     f"{name}: у аналитического PVT узлов быть не может")
 
     def test_physical_branch_matches_rs_analytics(self, results):
-        """Физическое R_s сводки report_pvt совпадает с rs_analytics.rs_expected побитово.
+        """Физическое R_s сводки report_pvt совпадает с diagnostics.rs.rs_expected побитово.
 
         Обе стороны считают min(Rs_eq(p), Rs0). Расхождение двух
         реализаций одной формулы — тот самый класс дефектов, ради
@@ -1031,7 +1029,7 @@ class TestPvtPlot:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from rs_analytics import rs_expected
+        from gpn_multiphase_solver.diagnostics.rs import rs_expected
         pvt_plot = _pvt_module()
 
         p = np.linspace(5e6, 25e6, 50)
@@ -1573,7 +1571,7 @@ class TestHighGasSaturation:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from closed_form import Closure
+        from gpn_multiphase_solver.diagnostics.closed_form import Closure
         from gpn_multiphase_solver.factory import (
             SimulatorFactory, create_relperm)
 
@@ -1772,7 +1770,7 @@ class TestPwfRampDown:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from closed_form import solve_closed
+        from gpn_multiphase_solver.diagnostics.closed_form import solve_closed
         from gpn_multiphase_solver.factory import create_relperm
 
         r = results[self.NAME]
@@ -1806,10 +1804,16 @@ class TestPwfRampDown:
 # ═══════════════════════════════════════════════════════════
 
 def _closed_form():
-    """Общий модуль examples/closed_form.py."""
+    """Наложения и сверка — examples/closed_form.py."""
     import sys
     sys.path.insert(0, str(EXAMPLES_DIR))
     import closed_form
+    return closed_form
+
+
+def _closed_form_core():
+    """Замкнутое решение — модуль пакета (DEBT-011)."""
+    from gpn_multiphase_solver.diagnostics import closed_form
     return closed_form
 
 
@@ -1849,7 +1853,7 @@ class TestStationaryPwf:
     def test_pressure_control_uses_last_interval(self):
         """Управление по давлению: уставка последнего интервала (13a — 6 МПа)."""
         cfg = load_config(EXAMPLES_DIR / "13a_pwf_ramp_down" / "config.json")
-        assert _closed_form().stationary_pwf(cfg, None, None) == 6.0e6
+        assert _closed_form_core().stationary_pwf(cfg, None, None) == 6.0e6
 
     def test_rate_control_inverts_last_rate(self, stationary_base):
         """Дебит 270 м³ст/сут: p_wf* = 6.59493 МПа, q_o решения = заданному.
@@ -1860,7 +1864,7 @@ class TestStationaryPwf:
         аудита 1.96e-8. Ловит: неверное обращение, возврат к p_wf из конфига.
         """
         cfg, pvt, rp, r = stationary_base
-        cl = _closed_form().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
+        cl = _closed_form_core().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
         assert cl["p_wf"] == pytest.approx(6.59493e6, rel=1e-5)
         assert cl["q_o"] == pytest.approx(270.0 / 86400.0, rel=1e-6)
 
@@ -1868,13 +1872,13 @@ class TestStationaryPwf:
         """Дебит 1000 м³ст/сут выше стационарного максимума (412 при 1 атм):
         стационар при min_bhp — ограничение активно."""
         cfg, pvt, rp, _ = stationary_base
-        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
+        pw = _closed_form_core().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
         assert pw == 101325.0
 
     def test_zero_rate_gives_contour_pressure(self, stationary_base):
         """Нулевой дебит: депрессии нет, p_wf* = p_e."""
         cfg, pvt, rp, _ = stationary_base
-        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
+        pw = _closed_form_core().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
         assert pw == cfg.initial_conditions.p0
 
 

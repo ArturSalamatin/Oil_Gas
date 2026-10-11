@@ -44,7 +44,7 @@ from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 
-import two_phase_analytics as tpa  # noqa: E402
+from gpn_multiphase_solver.diagnostics.closed_form import solve_closed  # noqa: E402
 
 # (N, dt, max_retries): ОДУ по времени здесь не решается — нужен только
 # стационар гидродинамики. Шаг везде штатный; глубина дробления задана
@@ -86,7 +86,7 @@ def run_one(N: int, dt: float, max_retries: int = 9) -> dict:
 
     # Кэш solve_closed завязан на (r[0], r[-1], len(r)) — для разных N
     # ключи различаются, коллизии нет.
-    cl = tpa.solve_closed(config, pvt, relperm, grid.r_centers)
+    cl = solve_closed(config, pvt, relperm, grid.r_centers)
 
     p_num = history.states[-1].p
     q_num = abs(history.hydro_results[-1].G_o[0])

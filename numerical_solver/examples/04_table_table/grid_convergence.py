@@ -55,9 +55,9 @@ import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 
-from closed_form import solve_closed  # noqa: E402
-from rs_analytics import front_radius  # noqa: E402
-from two_phase_analytics import SG_EPS  # noqa: E402
+from gpn_multiphase_solver.diagnostics.closed_form import solve_closed  # noqa: E402
+from gpn_multiphase_solver.diagnostics.rs import front_radius  # noqa: E402
+from gpn_multiphase_solver.diagnostics.two_phase import SG_EPS  # noqa: E402
 
 # Сетки для проверки; 50 — рабочая сетка примера.
 GRIDS = (25, 50, 100, 150)

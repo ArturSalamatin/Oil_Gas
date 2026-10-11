@@ -40,9 +40,11 @@ from example_runner import run_example  # noqa: E402
 from relperm_plot import report_relperm  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
+from gpn_multiphase_solver.diagnostics.two_phase import (  # noqa: E402
+    SG_EPS, degassing_front)
 
 import two_phase_analytics as tpa  # noqa: E402
-import temperature_asymptotics as ta  # noqa: E402
+from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote  # noqa: E402
 
 
 def _times_to_plot(history):
@@ -55,11 +57,11 @@ def _times_to_plot(history):
 def _add_temperature_analytics(history, grid, config, pvt,
                                output_dir: Path, title: str):
     """Перестроить temperature_profiles.png: JT-асимптотика и линия фронта."""
-    T_as = ta.single_phase_asymptote(config, history)
-    fr = tpa.degassing_front(history, grid, config, pvt)
+    T_as = single_phase_asymptote(config, history)
+    fr = degassing_front(history, grid, config, pvt)
     r = grid.r_centers
     Sg = history.states[-1].Sg
-    mask1 = Sg <= tpa.SG_EPS
+    mask1 = Sg <= SG_EPS
 
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_profiles(history, grid, _times_to_plot(history), field="T", ax=ax)

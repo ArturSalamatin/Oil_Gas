@@ -90,9 +90,8 @@ def _run(name: str) -> dict:
     final = history.states[-1]
     return {
         "history": history,
-        "grid": simulator._grid,
-        # config нужен балансу энергии: compute_balance(history, grid, config)
-        # пересобирает по нему PVT и rock (FEAT-016).
+        "grid": simulator.grid,
+        # конфиг примера — для проверок, которым он нужен
         "config": cfg,
         "Rs0": cfg.initial_conditions.Rs0,
         "p": final.p,
@@ -1581,7 +1580,7 @@ class TestHighGasSaturation:
         cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
         sim, _ = SimulatorFactory.from_config(cfg)
         # Closure принимает объект ОФП напрямую — работает и с CoreyRP.
-        clo = Closure(sim._energy._pvt, create_relperm(cfg),
+        clo = Closure(sim.pvt, create_relperm(cfg),
                       cfg.initial_conditions.Rs0)
 
         p_well = float(results[HIGH_SG]["p"][0])
@@ -1990,9 +1989,10 @@ class TestOilRateRampUp:
 
         r = results[self.NAME]
         cfg, history, grid = r["config"], r["history"], r["grid"]
-        # closed_form берёт PVT как simulator._energy._pvt (_prepare)
-        sim = types.SimpleNamespace(
-            _energy=types.SimpleNamespace(_pvt=_pvt_of_config(cfg)))
+        # closed_form берёт PVT и ОФП как simulator.pvt, simulator.relperm (_prepare)
+        from gpn_multiphase_solver.factory import create_relperm
+        sim = types.SimpleNamespace(pvt=_pvt_of_config(cfg),
+                                    relperm=create_relperm(cfg))
 
         fig, ax = plt.subplots()
         try:

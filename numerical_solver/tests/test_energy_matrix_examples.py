@@ -852,7 +852,7 @@ def test_matrix_matches_reference(example):
 
     def probe(a, b, c, d, dt, T_old, T_ref, hydro_result, state_prev, bc):
         ref_a, ref_b, ref_c, ref_d, d_scale = build_reference(
-            simulator._grid, simulator._pvt, cfg.rock,
+            simulator.grid, simulator.pvt, cfg.rock,
             hydro_result, state_prev, dt, bc, T_ref=T_ref, with_scale=True)
 
         where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"

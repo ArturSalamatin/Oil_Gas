@@ -252,10 +252,9 @@ def _front_radius(r, p, pb):
 
 def _prepare(history, grid, simulator, config):
     """Общая подготовка overlay: PVT, ОФП и решение на сетке примера."""
-    from gpn_multiphase_solver.factory import create_relperm
-
-    pvt = simulator._energy._pvt
-    relperm = create_relperm(config)
+    # PVT и ОФП — объекты решателя, которыми считалась задача (DEBT-011)
+    pvt = simulator.pvt
+    relperm = simulator.relperm
     return solve_closed(config, pvt, relperm, grid.r_centers)
 
 
@@ -286,9 +285,7 @@ def saturation_from_numeric(config, history, simulator):
     Замыкание строится напрямую, без квадратуры: профиль давления здесь
     не нужен, нужна только функция Sg(p).
     """
-    from gpn_multiphase_solver.factory import create_relperm
-
-    clo = Closure(simulator._energy._pvt, create_relperm(config),
+    clo = Closure(simulator.pvt, simulator.relperm,
                   config.initial_conditions.Rs0)
     return np.array([clo.Sg(pp) for pp in history.states[-1].p])
 

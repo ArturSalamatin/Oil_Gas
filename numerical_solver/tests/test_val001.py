@@ -88,7 +88,7 @@ class TestDupuitPressure:
     def test_pressure_log_profile(self):
         """p(r_j) = p_wf + Δp·ln(r_j/rw)/ln(R/rw) в центрах ячеек (eq:cell_center)."""
         sim, history = _run_val001()
-        r = sim._grid.r_centers
+        r = sim.grid.r_centers
         p_exact = P_WF + (P_EXT - P_WF) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         # Центры LogRadialGrid — те же, что у прототипа, который считает
         # давление (DEBT-063). При c_o = 0 течение несжимаемое: профиль
@@ -119,7 +119,7 @@ class TestStationaryFlux:
         """u_o·r = const — закон сохранения в цилиндрических координатах."""
         sim, history = _run_val001()
         u_o = history.hydro_results[-1].u_o
-        r_f = sim._grid.r_faces
+        r_f = sim.grid.r_faces
         u_r = u_o * r_f
         # u_r < 0 (поток к скважине)
         assert u_r[0] < 0
@@ -215,7 +215,7 @@ class TestPipeline:
         history = simulator.run(initial)
 
         npz_path = tmp_path / "val001.npz"
-        save_npz(history, simulator._grid, npz_path)
+        save_npz(history, simulator.grid, npz_path)
 
         data = np.load(npz_path)
 

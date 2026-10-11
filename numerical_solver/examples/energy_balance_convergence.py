@@ -86,7 +86,7 @@ def _apply_dt(config, dt):
 
 def _measure_balance(sim, history, config) -> dict:
     """Невязка баланса: финальная и максимальная по шагам."""
-    bal = compute_balance(history, sim._grid, config)
+    bal = compute_balance(history, sim.grid, config)
     # Максимум берём с 1-го шага: на нулевом ΔE = 0, невязка не определена.
     max_rel = (float(np.max(bal["rel_residual"][1:]))
                if len(bal["t"]) > 1 else 0.0)

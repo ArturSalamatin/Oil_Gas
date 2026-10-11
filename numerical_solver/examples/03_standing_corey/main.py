@@ -58,7 +58,7 @@ def overlay_temperature(ax, history, grid, simulator):
     import temperature_asymptotics as ta
 
     config = load_config(Path(__file__).resolve().parent / "config.json")
-    pvt = simulator._energy._pvt
+    pvt = simulator.pvt
 
     # JT-асимптотика рисуется только там, где она выведена, — в однофазной
     # зоне. В двухфазной работает ещё скрытая теплота разгазирования, и
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # PVT берём из собранного симулятора — тот же объект, что считал задачу.
     from gpn_multiphase_solver.factory import SimulatorFactory
     sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
+    pvt = sim.pvt
 
     print()
     tpa.report(history, grid, config, pvt)

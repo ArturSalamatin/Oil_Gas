@@ -163,7 +163,7 @@ def _draw_rs(ax, history, grid, simulator, config):
     Вызывается после отрисовки численных кривых, поэтому отдельного PNG
     не создаётся — точки ложатся в rs_profiles.png.
     """
-    pvt = simulator._energy._pvt
+    pvt = simulator.pvt
 
     st = history.states[-1]
     Rs0 = config.initial_conditions.Rs0

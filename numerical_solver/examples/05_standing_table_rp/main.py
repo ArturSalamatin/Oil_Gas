@@ -93,8 +93,8 @@ if __name__ == "__main__":
     # PVT и ОФП берём из собранного симулятора — те же объекты, что считали задачу.
     from gpn_multiphase_solver.factory import SimulatorFactory
     sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
-    relperm = tpa._build_relperm(config)
+    pvt = sim.pvt
+    relperm = sim.relperm
 
     # ОФП — центральный сюжет этого примера.
     # График строит example_runner (output/relperm.png), здесь печатаем числа

@@ -28,7 +28,7 @@ import numpy as np
 _EXAMPLES = Path(__file__).resolve().parent
 _ROOT = _EXAMPLES.parent
 # Прототип radial_blackoil — установленный дистрибутив (DEBT-059), путь к нему не добавляется
-for _p in (str(_ROOT), str(_EXAMPLES), str(_EXAMPLES / "03_standing_corey")):
+for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -145,7 +145,7 @@ def report(config_path, label):
     scale = max(abs(acc) + abs(conv) + abs(jt) + abs(ad) + abs(deg), 1e-30)
 
     # Баланс по скрипту.
-    bal = eb.compute_balance(history, sim._grid, cfg)
+    bal = eb.compute_balance(history, sim.grid, cfg)
 
     print(f"\n=== {label} ===")
     print(f"шагов решателя: {len(log)}, сохранённых: {len(history.times)}")

@@ -108,7 +108,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # Grid нужен для save_csv и профильных графиков (r_centers).
     # Factory возвращает только (simulator, initial_state), поэтому
     # берём сетку из симулятора.
-    grid = simulator._grid
+    grid = simulator.grid
 
     history = simulator.run(initial_state)
 
@@ -184,8 +184,10 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # Замыкающие кривые k_r(S_g) в остальных графиках не видны, хотя именно
     # они определяют насыщенность в стационаре (условие GOR = Rs0). Рисуем
     # их вместе с рабочим диапазоном расчёта — общий модуль для всех
-    # примеров, аналитических и табличных.
-    plot_relperm(config, history, output_dir, title)
+    # примеров, аналитических и табличных. ОФП — объект решателя (DEBT-011),
+    # а не пересобранная фабрикой копия.
+    plot_relperm(config, history, output_dir, title,
+                 relperm=simulator.relperm)
 
     # ── PVT ──
     # Свойства флюида в штатных графиках не видны, хотя определяют профиль
@@ -226,7 +228,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # (Rs0 = 0) функция сама сообщает, что проверять нечего.
     if config.initial_conditions.Rs0 > 0.0:
         print()
-        report_rs(config, history, simulator._energy._pvt)
+        report_rs(config, history, simulator.pvt)
         if steady_state:
             print()
             report_closed(config, history, grid, simulator)

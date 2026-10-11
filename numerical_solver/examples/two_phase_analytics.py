@@ -412,4 +412,4 @@ if __name__ == "__main__":
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)
 
-    report(history, sim._grid, config, sim._energy._pvt)
+    report(history, sim.grid, config, sim.pvt)

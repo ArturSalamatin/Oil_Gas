@@ -70,7 +70,7 @@ def check_one(folder: str) -> dict:
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
 
-        bal = compute_balance(history, simulator._grid, config)
+        bal = compute_balance(history, simulator.grid, config)
         rel = abs(float(bal["rel_residual"][-1]))
 
         status = "OK" if rel <= TOL_ABSOLUTE else "ПРОВАЛ"

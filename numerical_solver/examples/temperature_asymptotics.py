@@ -32,15 +32,6 @@ import numpy as np
 SG_EPS = 1e-12
 
 
-def _pvt_of(simulator):
-    """PVT-объект, которым считалась задача (конвенция closed_form._prepare).
-
-    Берём у решателя, а не создаём заново: проверка обязана видеть ровно
-    те свойства, что стояли в расчёте.
-    """
-    return simulator._energy._pvt
-
-
 def single_phase_asymptote(config, history):
     """Однофазная асимптотика: T = T_ext + mu_JT,o·(p - p_0), [N].
 
@@ -118,4 +109,4 @@ if __name__ == "__main__":
     cfg = load_config(folder / "config.json")
     sim, init = SimulatorFactory.from_config(cfg)
     hist = sim.run(init)
-    report_asymptotics(cfg, hist, sim._grid, sim)
+    report_asymptotics(cfg, hist, sim.grid, sim)

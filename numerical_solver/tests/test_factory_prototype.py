@@ -136,7 +136,7 @@ class TestFactoryTablePVT:
         config = load_config(TABLE_CONFIG)
         simulator, initial = SimulatorFactory.from_config(config)
 
-        assert isinstance(simulator._pvt, TableFullPVT)
+        assert isinstance(simulator.pvt, TableFullPVT)
 
     def test_factory_passes_max_retries(self):
         """Factory доносит numerics.max_retries до Simulator (DEBT-007, DEBT-015).
@@ -274,7 +274,7 @@ class TestPVTConsistency:
         config = load_config(TABLE_CONFIG)
         simulator, _ = SimulatorFactory.from_config(config)
 
-        our_pvt = simulator._pvt.hydro   # PrototypePVTAdapter
+        our_pvt = simulator.pvt.hydro    # PrototypePVTAdapter
         proto_pvt = our_pvt.proto_pvt    # BlackOilPVT
 
         p_pa = 15e6

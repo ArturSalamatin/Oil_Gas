@@ -127,8 +127,8 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     mu_JT = config.thermal.mu_JT_oil
 
     sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
-    rock = sim._energy._rock
+    pvt = sim.pvt
+    rock = config.rock
     p_arr = np.array([p0])
     Rs_arr = np.array([0.0])
     T_arr = np.array([T0])

@@ -58,7 +58,7 @@ def _run_balance(example: str, p_wf: float | None = None) -> dict:
     # Длительность прогона — часть контракта теста: при неверном усечении
     # истории тест считал бы другой сценарий и всё равно был бы зелёным.
     assert history.times[-1] == pytest.approx(21600.0)
-    return compute_balance(history, simulator._grid, config)
+    return compute_balance(history, simulator.grid, config)
 
 
 # Порог замыкания баланса. Дискретные уравнения схемы — тождество: если
@@ -142,7 +142,7 @@ def test_balance_independent_of_history_structure(example):
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
         assert history.n_saved == n_intervals + 1
-        return compute_balance(history, simulator._grid, config)
+        return compute_balance(history, simulator.grid, config)
 
     sparse = run(1)     # одна запись на весь прогон
     dense = run(6)      # почасовые записи

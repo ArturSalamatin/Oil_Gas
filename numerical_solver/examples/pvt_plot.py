@@ -72,9 +72,6 @@ from gpn_multiphase_solver.io.output import plot_pvt_properties  # noqa: E402
 from gpn_multiphase_solver.units import BAR_TO_PA  # noqa: E402
 from gpn_multiphase_solver.pvt.table_full import TableFullPVT  # noqa: E402
 
-# PVT берём у того же решателя, что считал задачу; помощник уже есть —
-# заводить второй способ доступа к одному объекту незачем.
-from temperature_asymptotics import _pvt_of  # noqa: E402
 # PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
 from figure_io import save_figure  # noqa: E402
 
@@ -85,8 +82,9 @@ def _get_pvt(config, simulator):
     Fallback нужен, чтобы модуль оставался вызываемым и без прогона
     (так его зовут тесты, у которых в кэше только history/grid/config).
     """
+    # PVT у того же решателя, что считал задачу (Simulator.pvt, DEBT-011)
     if simulator is not None:
-        return _pvt_of(simulator)
+        return simulator.pvt
     from gpn_multiphase_solver.factory import create_pvt
     return create_pvt(config)
 

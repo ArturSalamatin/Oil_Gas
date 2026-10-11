@@ -226,6 +226,6 @@ if __name__ == "__main__":
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)
 
-    plot_energy_balance(history, sim._grid, config, folder / "output")
+    plot_energy_balance(history, sim.grid, config, folder / "output")
     # Автономный запуск: SVG только что сохранённого рисунка — в EMF (FEAT-026).
     export_emf(folder / "output")

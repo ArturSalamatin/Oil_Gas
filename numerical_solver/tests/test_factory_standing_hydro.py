@@ -90,7 +90,7 @@ class TestFactoryStandingHydro:
         simulator, initial = SimulatorFactory.from_config(config)
         history = simulator.run(initial)
 
-        r = simulator._grid.r_centers
+        r = simulator.grid.r_centers
         p_wf_last = config.time.history[-1].p_wf  # 10e6 Па
         p_exact = p_wf_last + (P0 - p_wf_last) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         np.testing.assert_allclose(
@@ -247,7 +247,7 @@ class TestStandingInitialState:
         """p0 = p_b(50) − 1 Па: избыток ~6e-6 < 1e-5 — допустимо (округление ввода)."""
         config = load_config(BASELINE)
         simulator, _ = SimulatorFactory.from_config(config)
-        pb = float(simulator._pvt.pb(np.array([50.0]))[0])
+        pb = float(simulator.pvt.pb(np.array([50.0]))[0])
         config.initial_conditions.p0 = pb - 1.0
         SimulatorFactory.from_config(config)
 

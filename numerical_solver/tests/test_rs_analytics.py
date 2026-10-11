@@ -70,7 +70,7 @@ def _draw(cfg, pvt, hist):
     """Наложение на пустые оси; возвращает (кружки, подписи линий)."""
     fig, ax = plt.subplots()
     grid = SimpleNamespace(r_centers=R[:hist.states[-1].p.size])
-    sim = SimpleNamespace(_energy=SimpleNamespace(_pvt=pvt))
+    sim = SimpleNamespace(pvt=pvt)
     rs_analytics._draw_rs(ax, hist, grid, sim, cfg)
     marks = [ln for ln in ax.get_lines() if ln.get_marker() == "o"]
     labels = [ln.get_label() for ln in ax.get_lines()]

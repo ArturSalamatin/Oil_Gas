@@ -17,7 +17,8 @@
   (г) имя, нужное функции, но не связанное в модуле: потерянная строка
       импорта самого файла (deepcopy в run_series, DEBT-031);
   (д) именованные аргументы вызовов run_example(...) против её сигнатуры.
-Не ловится: атрибуты объектов (sim._energy._rock), типы аргументов.
+Приватные атрибуты объектов ловит test_no_private_solver_access (DEBT-011);
+типы аргументов не ловятся.
 """
 
 import ast
@@ -260,3 +261,42 @@ def test_checker_sees_broken_names(tmp_path, case):
     problems = _script_problems(script)
     assert any("no_such" in p for p in problems), (
         f"{case}: пропавшее имя не замечено, найдено: {problems}")
+
+
+# ── Приватный доступ (DEBT-011) ──────────────────────────────
+
+# self и cls — доступ объекта к собственным полям: подменённый метод
+# решателя в verify_balance_vs_solver.py работает внутри его класса.
+_OWN = {"self", "cls"}
+
+
+def _private_access(tree: ast.AST) -> list[str]:
+    """Обращения .имя к приватным полям чужих объектов и from <пакет> import _имя."""
+    found = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Attribute) and node.attr.startswith("_")
+                and not node.attr.startswith("__")
+                and not (isinstance(node.value, ast.Name)
+                         and node.value.id in _OWN)):
+            found.append(f"строка {node.lineno}: .{node.attr}")
+        elif (isinstance(node, ast.ImportFrom) and node.module
+              and node.module.split(".")[0] in CHECKED_PACKAGES):
+            found += [f"строка {node.lineno}: from {node.module} import {a.name}"
+                      for a in node.names if a.name.startswith("_")]
+    return found
+
+
+@pytest.mark.parametrize("script", EXAMPLE_SCRIPTS)
+def test_no_private_solver_access(script):
+    """Скрипт examples/ берёт объекты задачи через публичный интерфейс пакета (DEBT-011).
+
+    Примеры передаются заказчику как образец работы с библиотекой:
+    sim._energy._pvt в примере стал бы интерфейсом, который нельзя
+    менять. Ловится .имя у чужого объекта (sim._grid, tpa._build_relperm)
+    и from gpn_multiphase_solver... import _имя. Импорт приватных имён
+    между модулями examples/ (_resolve_example) — их внутреннее дело
+    до FEAT-030 и не ловится.
+    """
+    tree = ast.parse((EXAMPLES_DIR / script).read_text(encoding="utf-8"))
+    found = _private_access(tree)
+    assert not found, f"{script}: приватный доступ — {found}"

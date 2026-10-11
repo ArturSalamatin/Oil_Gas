@@ -102,10 +102,10 @@ def run(config_base, factor):
 
     sim, initial = SimulatorFactory.from_config(config)
     history = sim.run(initial)
-    grid = sim._grid
+    grid = sim.grid
 
     near_th, far_th, C = theoretical_slopes(
-        config, sim._energy._pvt, sim._energy._rock, mu_JT)
+        config, sim.pvt, config.rock, mu_JT)
 
     # Ближний наклон меряем на финале: там конвекция уже вывела
     # приствольную зону на JT-стационар.

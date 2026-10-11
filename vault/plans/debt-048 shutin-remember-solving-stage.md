@@ -9,7 +9,8 @@ issue: DEBT-048
 github: 78
 branch: refactor/debt-048/shutin-remember-solving-stage
 status: реализован
-worktree: .worktrees/debt-048
+worktree: .worktrees/debt-048; удалён после влития
+merged: fb69869 (2026-10-11)
 commits: 0266c9f (тесты), f885384 (прототип), 17a62ea (адаптер), 52f4902 (README), 8c3eb6e (CHANGELOG)
 depends: BUG-022 (решение пользователя 2026-10-08 — влить раньше) — влит 7b47ac8 (2026-10-10)
 audit:

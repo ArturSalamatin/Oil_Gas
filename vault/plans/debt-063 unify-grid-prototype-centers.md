@@ -7,7 +7,8 @@ issue: DEBT-063
 github: 98
 branch: refactor/debt-063/unify-grid-prototype-centers
 status: реализован
-worktree: .worktrees/debt-063
+worktree: .worktrees/debt-063; удалён после влития
+merged: d11e3fe (2026-10-11)
 audit:
   date: 2026-10-11
   round: 1

@@ -690,12 +690,12 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         bad = {}
         for name in ALL_EXAMPLES:
             r = results[name]
-            bal = compute_balance(r["history"], r["grid"], r["config"])
+            bal = compute_energy_balance(r["history"])
             rel = abs(float(bal["rel_residual"][-1]))
             # «not <»: NaN в невязке — тоже провал (прежнее «>=» его пропускало)
             if not rel < 1e-12:
@@ -715,7 +715,7 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from mass_balance import compute_mass_balance
+        from gpn_multiphase_solver.mass_balance import compute_mass_balance
 
         bad = {}
         for name in ALL_EXAMPLES:
@@ -741,12 +741,12 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         for name in ALL_EXAMPLES:
             r = results[name]
             cfg = r["config"]
-            bal = compute_balance(r["history"], r["grid"], cfg)
+            bal = compute_energy_balance(r["history"])
 
             assert "cum_cond" in bal, f"{name}: нет ключа cum_cond"
             cond = bal["cum_cond"]
@@ -765,7 +765,7 @@ class TestSharedChecks:
                     f"{name}: lambda = 0, но cum_cond != 0: {cond[-1]}")
 
     def test_full_key_set_always_returned(self, results):
-        """Набор ключей compute_balance полный независимо от конфига.
+        """Набор ключей compute_energy_balance полный независимо от конфига.
 
         Прежние копии для однофазных примеров не возвращали cum_jt (01) и
         cum_deg (01, 02) — отсутствующие ключи ломали бы вызывающий код.
@@ -776,14 +776,14 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
                     "cum_deg", "cum_cond", "total", "residual",
                     "rel_residual"}
         for name in ALL_EXAMPLES:
             r = results[name]
-            bal = compute_balance(r["history"], r["grid"], r["config"])
+            bal = compute_energy_balance(r["history"])
             missing = required - set(bal)
             assert not missing, f"{name}: отсутствуют ключи {sorted(missing)}"
 
@@ -2824,7 +2824,7 @@ class TestShutInStrongCooling:
         """На останове пласт греют сжатие (77 %) и растворение газа (22 %).
 
         Приращения членов баланса энергии по области от конца добычи до
-        30 сут (energy_balance.compute_balance), Дж: ΔE = +1.775e11,
+        30 сут (energy.balance.compute_energy_balance), Дж: ΔE = +1.775e11,
         адиабатический +1.371e11, дегазация (здесь — растворение)
         +3.962e10, Джоуль–Томсон +6.7e8, конвекция +2.0e8. За добычу член
         дегазации отрицателен (-2.226e11): газ выделялся и охлаждал.
@@ -2833,10 +2833,10 @@ class TestShutInStrongCooling:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         r = results[self.NAME]
-        bal = compute_balance(r["history"], r["grid"], r["config"])
+        bal = compute_energy_balance(r["history"])
         E = self.END_PROD
         d = {k: float(bal[k][-1] - bal[k][E])
              for k in ("delta_E", "cum_adiab", "cum_deg", "cum_jt", "cum_conv")}

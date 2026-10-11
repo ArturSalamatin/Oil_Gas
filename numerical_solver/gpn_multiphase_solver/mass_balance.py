@@ -18,12 +18,15 @@ Simulator, и интегралы копятся здесь по принятым
 Невязка — уровень допуска Ньютона, а не округлений, как у баланса энергии:
 проверяется не физика, а всё между невязкой Ньютона и историей (допуск,
 накопленный по шагам; знаки потоков адаптера; учёт дробления шага). Сборка
-невязки, график и печать — examples/mass_balance.py.
+невязки — compute_mass_balance ниже (DEBT-011); график и печать —
+examples/mass_balance.py.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
+import numpy as np
 
 if TYPE_CHECKING:
     from .state import HydroResult
@@ -70,3 +73,34 @@ class MassBalanceAccumulator:
         return {"M_o": M_o, "M_g": M_g,
                 "cum_o_well": self.cum_o_well, "cum_o_ext": self.cum_o_ext,
                 "cum_g_well": self.cum_g_well, "cum_g_ext": self.cum_g_ext}
+
+
+# ── Ряды баланса по истории ──────────────────────────────────
+
+
+def compute_mass_balance(history) -> dict | None:
+    """Баланс массы по снимкам истории; None — масса не сохраняется. Ур. (eq:residual_oil)."""
+    # Снимки либо все есть, либо все None: Simulator решает один раз, по
+    # запасу начального состояния (simulator.py, run).
+    if not history.mass_balance or history.mass_balance[0] is None:
+        return None
+    out = {k: np.array([s[k] for s in history.mass_balance]) for k in MASS_KEYS}
+    out["t"] = np.array(history.times)
+    for a in ("o", "g"):
+        well, ext = out[f"cum_{a}_well"], out[f"cum_{a}_ext"]
+        dM = out[f"M_{a}"] - out[f"M_{a}"][0]
+        out[f"dM_{a}"] = dM
+        # Физические знаки для чтения: добыча и приток с контура > 0.
+        # 0.0 − x, а не −x: у примеров без газа печаталось бы −0.0000e+00.
+        out[f"prod_{a}"] = 0.0 - well
+        out[f"inflow_{a}"] = 0.0 - ext
+        # Сумма невязок eq:residual_oil (eq:residual_gas) по ячейкам и шагам:
+        # внутренние грани сократились, остались забой и контур
+        out[f"residual_{a}"] = dM + ext - well
+        # Нормировка — сумма модулей членов, как у баланса энергии
+        # (energy.balance.compute_energy_balance). При t = 0 и у газа примеров 01,
+        # 02 все члены нулевые: делить не на что, невязка 0.
+        scale = np.abs(dM) + np.abs(well) + np.abs(ext)
+        scale = np.where(scale > 0.0, scale, 1.0)
+        out[f"rel_residual_{a}"] = np.abs(out[f"residual_{a}"]) / scale
+    return out

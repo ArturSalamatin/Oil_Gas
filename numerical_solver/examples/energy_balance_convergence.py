@@ -54,7 +54,7 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from energy_balance import compute_balance  # noqa: E402
+from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
 # Из convergence — только прогон серии: невязка — округления, порядка
 # по Δt у неё нет, проверяется уровень (см. шапку этого модуля, раздел
 # «СМЫСЛ ПРОВЕРКИ»).
@@ -86,7 +86,7 @@ def _apply_dt(config, dt):
 
 def _measure_balance(sim, history, config) -> dict:
     """Невязка баланса: финальная и максимальная по шагам."""
-    bal = compute_balance(history, sim.grid, config)
+    bal = compute_energy_balance(history)
     # Максимум берём с 1-го шага: на нулевом ΔE = 0, невязка не определена.
     max_rel = (float(np.max(bal["rel_residual"][1:]))
                if len(bal["t"]) > 1 else 0.0)

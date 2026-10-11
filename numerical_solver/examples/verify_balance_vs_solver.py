@@ -12,7 +12,7 @@
     E_jt   = Σ_j J_jt_j · dt
     E_ad   = Σ_j V_j Q_ad_j · dt
     E_deg  = Σ_j V_j Q_deg_j · dt
-и сравниваем с тем, что считает compute_balance по истории. Невязка схемы
+и сравниваем с тем, что считает compute_energy_balance по истории. Невязка схемы
 на уровне 1e-12 означает, что решатель самосогласован и искать надо в
 скрипте; почленное расхождение показывает, в каком именно члене.
 
@@ -35,7 +35,7 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
-import energy_balance as eb
+from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
 
 def run_instrumented(config_path):
@@ -140,12 +140,12 @@ def report(config_path, label):
     ad = sum(r['E_ad'] for r in log)
     deg = sum(r['E_deg'] for r in log)
     src = conv + jt + ad + deg
-    # Та же нормировка, что в energy_balance.compute_balance — сумма модулей
+    # Та же нормировка, что в energy.balance.compute_energy_balance — сумма модулей
     # всех членов: иначе «отн.» решателя и скрипта были бы разными числами.
     scale = max(abs(acc) + abs(conv) + abs(jt) + abs(ad) + abs(deg), 1e-30)
 
     # Баланс по скрипту.
-    bal = eb.compute_balance(history, sim.grid, cfg)
+    bal = compute_energy_balance(history)
 
     print(f"\n=== {label} ===")
     print(f"шагов решателя: {len(log)}, сохранённых: {len(history.times)}")

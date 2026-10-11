@@ -22,8 +22,8 @@
 на него линейно (останов 16 после 21 сут: 5.3e-6 м³ст/сут).
 
 ФИЗИКА ЖИВЁТ В ЯДРЕ: интегралы потоков копит gpn_multiphase_solver/
-mass_balance.py по всем принятым шагам, запас на записях отдаёт решатель.
-Здесь — только сборка массивов, график и печать.
+mass_balance.py по всем принятым шагам, запас на записях отдаёт решатель,
+ряды собирает там же compute_mass_balance (DEBT-011). Здесь — график и печать.
 
 Запуск для конкретного примера:
     cd numerical_solver
@@ -46,39 +46,11 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gpn_multiphase_solver.mass_balance import MASS_KEYS  # noqa: E402
+from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
 # Одна копия правила разбора имени примера («16» → 16_well_shut_in)
 from energy_balance import _resolve_example  # noqa: E402
-
-
-def compute_mass_balance(history) -> dict | None:
-    """Баланс массы по снимкам истории; None — масса не сохраняется. Ур. (eq:residual_oil)."""
-    # Снимки либо все есть, либо все None: Simulator решает один раз, по
-    # запасу начального состояния (simulator.py, run).
-    if not history.mass_balance or history.mass_balance[0] is None:
-        return None
-    out = {k: np.array([s[k] for s in history.mass_balance]) for k in MASS_KEYS}
-    out["t"] = np.array(history.times)
-    for a in ("o", "g"):
-        well, ext = out[f"cum_{a}_well"], out[f"cum_{a}_ext"]
-        dM = out[f"M_{a}"] - out[f"M_{a}"][0]
-        out[f"dM_{a}"] = dM
-        # Физические знаки для чтения: добыча и приток с контура > 0.
-        # 0.0 − x, а не −x: у примеров без газа печаталось бы −0.0000e+00.
-        out[f"prod_{a}"] = 0.0 - well
-        out[f"inflow_{a}"] = 0.0 - ext
-        # Сумма невязок eq:residual_oil (eq:residual_gas) по ячейкам и шагам:
-        # внутренние грани сократились, остались забой и контур
-        out[f"residual_{a}"] = dM + ext - well
-        # Нормировка — сумма модулей членов, как у баланса энергии
-        # (energy_balance.compute_balance). При t = 0 и у газа примеров 01,
-        # 02 все члены нулевые: делить не на что, невязка 0.
-        scale = np.abs(dM) + np.abs(well) + np.abs(ext)
-        scale = np.where(scale > 0.0, scale, 1.0)
-        out[f"rel_residual_{a}"] = np.abs(out[f"residual_{a}"]) / scale
-    return out
 
 
 def plot_mass_balance(config, history, output_dir: Path) -> dict | None:

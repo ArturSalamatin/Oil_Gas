@@ -599,7 +599,7 @@ class TestValidationThermal:
             load_config(_write_json(tmp_path, raw))
 
     def test_zero_conductivity_accepted(self, tmp_path):
-        """λ = 0 — штатный режим «без теплопроводности» (примеры 01–09, 04a)."""
+        """λ = 0 — штатный режим «без теплопроводности» (примеры 01, 02)."""
         raw = _minimal_raw()
         raw["rock"].update(lambda_solid=0.0, lambda_oil=0.0, lambda_gas=0.0)
         cfg = load_config(_write_json(tmp_path, raw))

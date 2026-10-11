@@ -7,7 +7,8 @@ issue: DEBT-008
 github: 89
 branch: refactor/debt-008/dead-config-fields
 status: реализован
-worktree: .worktrees/debt-008
+worktree: .worktrees/debt-008; удалён после влития
+merged: 23d2cec (2026-10-11)
 audit:
   date: 2026-10-11
   round: 2

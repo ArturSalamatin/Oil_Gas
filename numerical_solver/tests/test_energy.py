@@ -702,16 +702,17 @@ class TestComputeConductiveTransmissibility:
         lam_val = 1.228
         lambda_eff = np.full(N_cells, lam_val)
 
-        Q_T_int, _ = solver.compute_conductive_transmissibility(lambda_eff, N_cells)
+        Q_T = solver.compute_conductive_transmissibility(lambda_eff, N_cells)
 
         # Последовательные сопротивления: Q_T = 2πh / (w_L/λ + w_R/λ) = 2πhλ / (w_L + w_R)
+        # Внутренние грани — Q_T[1..N-1] (массив по номеру грани, DEBT-020)
         w_L = grid.log_weights_left
         w_R = grid.log_weights_right
         expected = 2.0 * np.pi * grid.h * lam_val / (w_L + w_R)
-        np.testing.assert_allclose(Q_T_int, expected, rtol=1e-12)
+        np.testing.assert_allclose(Q_T[1:N_cells], expected, rtol=1e-12)
 
     def test_Q_T_ext(self):
-        """Q_T_ext = (2*pi*h / ln(R_ext/r_c[-1])) * lambda_eff[-1]."""
+        """Контурная грань: Q_T[N] = (2*pi*h / ln(R_ext/r_c[-1])) * lambda_eff[-1]."""
         N_cells = 5
         grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
         pvt = _make_pvt()
@@ -720,11 +721,11 @@ class TestComputeConductiveTransmissibility:
         lam_val = 1.228
         lambda_eff = np.full(N_cells, lam_val)
 
-        _, Q_T_ext = solver.compute_conductive_transmissibility(lambda_eff, N_cells)
+        Q_T = solver.compute_conductive_transmissibility(lambda_eff, N_cells)
 
         geom_ext = 2.0 * np.pi * grid.h / np.log(grid.R_ext / grid.r_centers[-1])
         expected = geom_ext * lam_val
-        assert Q_T_ext == pytest.approx(expected, rel=1e-10)
+        assert Q_T[N_cells] == pytest.approx(expected, rel=1e-10)
 
     def test_zero_lambda_gives_zero_Q_T(self):
         """lambda_eff = 0 -> Q_T = 0 (нулевая теплопроводность)."""
@@ -737,11 +738,36 @@ class TestComputeConductiveTransmissibility:
         lambda_eff = np.zeros(N_cells)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+            Q_T = solver.compute_conductive_transmissibility(
                 lambda_eff, N_cells)
 
-        np.testing.assert_allclose(Q_T_int, 0.0, atol=1e-30)
-        assert Q_T_ext == pytest.approx(0.0, abs=1e-30)
+        # Все грани, включая забойную и контурную
+        np.testing.assert_allclose(Q_T, 0.0, atol=1e-30)
+
+    def test_face_indexed_array(self):
+        """Q_T — массив по граням [N+1], как Φ±: Q_T[0] = 0, Q_T[N] — контур.
+
+        DEBT-020: проводимость хранилась парой (внутренние [N-1] со сдвигом
+        индекса и контур отдельным числом). Индекс — номер грани: грань f
+        разделяет ячейки f-1 и f. Q_T[0] равно нулю ТОЧНО — не малое число,
+        а ГУ Неймана у забоя (ssec:bc_disc); на этом нуле держится сборка
+        строки 0 по общей формуле. N = 1: внутренних граней нет, массив из
+        двух элементов. λ различны по ячейкам, контурная грань берёт λ
+        ячейки N-1.
+        """
+        for N_cells in (1, 5):
+            grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+            solver = TridiagEnergySolver(grid, _make_pvt(), _rock())
+            lam = np.linspace(0.8, 1.6, N_cells)
+
+            Q_T = solver.compute_conductive_transmissibility(lam, N_cells)
+
+            assert Q_T.shape == (N_cells + 1,)
+            assert Q_T[0] == 0.0, "забойная грань: ГУ Неймана, Q_T[0] = 0"
+            geom_ext = 2.0 * np.pi * grid.h / np.log(
+                grid.R_ext / grid.r_centers[-1])
+            assert Q_T[N_cells] == pytest.approx(geom_ext * lam[-1], rel=1e-12)
+            assert np.all(Q_T[1:N_cells] > 0.0)
 
 
 class TestComputeConvectiveCoefficients:
@@ -1024,7 +1050,7 @@ class TestAssembleTridiag:
         Phi_plus, Phi_minus, _, _ = solver.compute_convective_coefficients(
             Q_o, Q_g, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'], N_cells, ext)
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             props['lambda_eff'], N_cells)
 
         J_jt = np.zeros(N_cells)
@@ -1033,7 +1059,7 @@ class TestAssembleTridiag:
 
         a, b, c, d = solver.assemble_tridiag(
             N_cells, DT, T_old, T_EXT,
-            props['rho_cp_eff'], Q_T_int, Q_T_ext,
+            props['rho_cp_eff'], Q_T,
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
         # b > |a| + |c| (строгое диагональное преобладание)
@@ -1068,7 +1094,7 @@ class TestAssembleTridiag:
         Phi_plus, Phi_minus, _, _ = solver.compute_convective_coefficients(
             hydro.Q_o, hydro.Q_g, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'], N_cells, ext)
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             props['lambda_eff'], N_cells)
 
         J_jt = np.zeros(N_cells)
@@ -1077,7 +1103,7 @@ class TestAssembleTridiag:
 
         a, b, c, d = solver.assemble_tridiag(
             N_cells, DT, T_old, T_EXT,
-            props['rho_cp_eff'], Q_T_int, Q_T_ext,
+            props['rho_cp_eff'], Q_T,
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
         for j in range(N_cells):
@@ -1094,19 +1120,110 @@ class TestAssembleTridiag:
         props = solver.compute_cell_properties(
             np.full(N_cells, P0), np.zeros(N_cells),
             np.full(N_cells, RS0), np.ones(N_cells), np.full(N_cells, T0))
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             props['lambda_eff'], N_cells)
         Phi_plus = np.zeros(N_cells + 1)
         Phi_minus = np.zeros(N_cells + 1)
 
         a, b, c, d = solver.assemble_tridiag(
             N_cells, DT, np.full(N_cells, T0), T_EXT,
-            props['rho_cp_eff'], Q_T_int, Q_T_ext,
+            props['rho_cp_eff'], Q_T,
             Phi_plus, Phi_minus,
             np.zeros(N_cells), np.zeros(N_cells), np.zeros(N_cells))
 
         assert a[0] == 0.0, "a[0] must be 0 (Neumann BC)"
         assert c[N_cells - 1] == 0.0, "c[N-1] must be 0 (Dirichlet BC)"
+
+    def test_wellbore_face_phi_plus_not_in_matrix(self):
+        """Φ⁺ забойной грани (индекс 0) в матрицу и правую часть не входит.
+
+        ГУ забоя (ssec:bc_disc): забойная грань конвективного вклада не
+        даёт — слева ячейки нет, перепада T через грань нет. На рабочем
+        пути Φ⁺[0] = 0 (добыча, Φ < 0; втекание через забой исключено,
+        eq:bc_pwf_shutin), поэтому ни один пример и ни сверка матрицы с
+        эталоном не заметят, если сборка начнёт прибавлять Φ⁺[0] к b[0]
+        (DEBT-020: сборка операциями над массивами граней). Сценарий:
+        Φ⁺[0] = 500 Вт/К против 0, прочие входы одинаковы; N = 1, 2, 5 —
+        с ячейкой, где забой и контур совпадают, и без неё.
+        Ожидание: a, b, c, d совпадают побитово.
+        """
+        for N_cells in (1, 2, 5):
+            grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+            solver = TridiagEnergySolver(grid, _make_pvt(), _rock())
+            props = solver.compute_cell_properties(
+                np.full(N_cells, P0), np.zeros(N_cells),
+                np.full(N_cells, RS0), np.ones(N_cells),
+                np.full(N_cells, T0))
+            Q_T = solver.compute_conductive_transmissibility(
+                props['lambda_eff'], N_cells)
+            # Φ⁻ < 0 на всех гранях (приток к скважине), значения различны
+            Phi_minus = np.linspace(-500.0, -100.0, N_cells + 1)
+            z = np.zeros(N_cells)
+
+            def assemble(phi_plus_0):
+                Phi_plus = np.zeros(N_cells + 1)
+                Phi_plus[0] = phi_plus_0
+                return solver.assemble_tridiag(
+                    N_cells, DT, np.full(N_cells, T0), T_EXT,
+                    props['rho_cp_eff'], Q_T,
+                    Phi_plus, Phi_minus, z, z, z)
+
+            for name, x, y in zip("abcd", assemble(0.0), assemble(500.0)):
+                assert np.array_equal(x, y), (
+                    f"N = {N_cells}, {name}: Φ⁺ забойной грани вошёл в "
+                    f"сборку (ГУ забоя, ssec:bc_disc)")
+
+    def test_two_cells_rows_by_formulas(self):
+        """N = 2: обе строки граничные — коэффициенты по формулам постановки.
+
+        eq:tridiag_a…eq:tridiag_d с ГУ ssec:bc_disc. Ячейка 0: левая грань 0
+        (забой) — Q_T = 0, Φ± грани 0 не входят, a[0] = 0. Ячейка 1: правая
+        грань 2 (контур) — c[1] = 0, T_ext уходит в d[1] с весом
+        (Q_T грани 2 − Φ⁻[2]). Внутренних ячеек нет: цикл прежней сборки
+        пуст, срезы массивов граней в новой (DEBT-020) — на краю.
+        Ожидание собрано здесь по формулам, не из ядра. Потоки на гранях
+        различны и ненулевы на ВСЕХ гранях, включая Φ⁻[0] и Φ⁺[2], которые
+        в строки входить не должны: подмена грани на соседнюю дала бы
+        другое число.
+        """
+        N_cells = 2
+        grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)
+        solver = TridiagEnergySolver(grid, _make_pvt(), _rock())
+        props = solver.compute_cell_properties(
+            np.full(N_cells, P0), np.zeros(N_cells),
+            np.full(N_cells, RS0), np.ones(N_cells), np.full(N_cells, T0))
+        Q_T = solver.compute_conductive_transmissibility(
+            props['lambda_eff'], N_cells)
+        Q1, Q2 = Q_T[1], Q_T[2]            # проводимости граней 1 и 2
+
+        Phi_plus = np.array([0.0, 120.0, 70.0])
+        Phi_minus = np.array([-300.0, -500.0, -40.0])
+        T_old = np.array([T0 - 3.0, T0 + 1.0])
+        J_jt = np.array([7.0, -2.0])
+        Q_ad = np.array([0.5, -0.1])
+        Q_deg = np.array([-0.3, 0.2])
+
+        a, b, c, d = solver.assemble_tridiag(
+            N_cells, DT, T_old, T_EXT, props['rho_cp_eff'],
+            Q_T, Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
+
+        V = grid.volumes
+        cap = V * props['rho_cp_eff'] / DT
+        # Ячейка 0: грань 0 — забой (Нейман), грань 1 — внутренняя
+        assert a[0] == 0.0
+        assert c[0] == pytest.approx(-Q1 + Phi_minus[1], rel=1e-12)
+        assert b[0] == pytest.approx(cap[0] + Q1 - Phi_minus[1], rel=1e-12)
+        assert d[0] == pytest.approx(
+            cap[0] * T_old[0] + J_jt[0] + V[0] * (Q_ad[0] + Q_deg[0]),
+            rel=1e-12)
+        # Ячейка 1: грань 1 — внутренняя, грань 2 — контур (Дирихле)
+        assert a[1] == pytest.approx(-Q1 - Phi_plus[1], rel=1e-12)
+        assert c[1] == 0.0
+        assert b[1] == pytest.approx(
+            cap[1] + Q1 + Q2 + Phi_plus[1] - Phi_minus[2], rel=1e-12)
+        assert d[1] == pytest.approx(
+            cap[1] * T_old[1] + (Q2 - Phi_minus[2]) * T_EXT
+            + J_jt[1] + V[1] * (Q_ad[1] + Q_deg[1]), rel=1e-12)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1224,12 +1341,11 @@ class TestAdvectiveFormDetectors:
         N = self.N_CELLS
         solver = s['solver']
 
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             s['props']['lambda_eff'], N)
         z = np.zeros(N)
         zf = np.zeros(N + 1)
-        args = (N, DT, s['T_old'], T_EXT, s['props']['rho_cp_eff'],
-                Q_T_int, Q_T_ext)
+        args = (N, DT, s['T_old'], T_EXT, s['props']['rho_cp_eff'], Q_T)
 
         a1, b1, c1, d1 = solver.assemble_tridiag(
             *args, s['Phi_plus'], s['Phi_minus'], z, z, z)
@@ -1343,20 +1459,21 @@ class TestAdvectiveFormDetectors:
         Phi_minus = -s['Phi_plus'][::1].copy()
         assert np.max(Phi_plus) > 0.0, "ветвь оттока не активирована"
 
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             s['props']['lambda_eff'], N)
         z = np.zeros(N)
         a, b, c, d = solver.assemble_tridiag(
             N, DT, s['T_old'], T_EXT, s['props']['rho_cp_eff'],
-            Q_T_int, Q_T_ext, Phi_plus, Phi_minus, z, z, z)
+            Q_T, Phi_plus, Phi_minus, z, z, z)
 
         # Проверяем по eq:tridiag_a/b/c: Φ⁺ берётся с ЛЕВОЙ грани j
+        # (Q_T и Φ± индексируются номером грани, DEBT-020)
         for j in range(1, N - 1):
-            assert a[j] == pytest.approx(-Q_T_int[j - 1] - Phi_plus[j]), (
+            assert a[j] == pytest.approx(-Q_T[j] - Phi_plus[j]), (
                 f"a[{j}]: Φ⁺ должен браться с левой грани {j}")
             assert b[j] == pytest.approx(
                 s['grid'].volumes[j] * s['props']['rho_cp_eff'][j] / DT
-                + Q_T_int[j - 1] + Q_T_int[j]
+                + Q_T[j] + Q_T[j + 1]
                 + Phi_plus[j] - Phi_minus[j + 1]), (
                 f"b[{j}]: в адвективной форме Φ⁺ с грани j, Φ⁻ с грани j+1")
 
@@ -1375,7 +1492,7 @@ class TestAdvectiveFormDetectors:
         props = solver.compute_cell_properties(
             np.full(1, P0), np.zeros(1), np.full(1, RS0),
             np.ones(1), np.full(1, T0))
-        Q_T_int, Q_T_ext = solver.compute_conductive_transmissibility(
+        Q_T = solver.compute_conductive_transmissibility(
             props['lambda_eff'], 1)
 
         # Потоки на двух гранях РАЗЛИЧНЫ — иначе дефект не проявится:
@@ -1388,15 +1505,15 @@ class TestAdvectiveFormDetectors:
 
         a, b, c, d = solver.assemble_tridiag(
             1, DT, np.full(1, T0), T_EXT, props['rho_cp_eff'],
-            Q_T_int, Q_T_ext, Phi_plus, Phi_minus, z, z, z)
+            Q_T, Phi_plus, Phi_minus, z, z, z)
 
         cap = grid.volumes[0] * props['rho_cp_eff'][0] / DT
-        # Забойная грань вклада не даёт, контурная даёт РОВНО ОДИН раз
-        assert b[0] == pytest.approx(cap + Q_T_ext - Phi_minus[1]), (
+        # Забойная грань вклада не даёт, контурная (Q_T[1]) даёт РОВНО ОДИН раз
+        assert b[0] == pytest.approx(cap + Q_T[1] - Phi_minus[1]), (
             "при N = 1 вклад контурной грани учтён неверно "
             "(дважды или потерян)")
         assert d[0] == pytest.approx(
-            cap * T0 + Q_T_ext * T_EXT + (-Phi_minus[1]) * T_EXT), (
+            cap * T0 + Q_T[1] * T_EXT + (-Phi_minus[1]) * T_EXT), (
             "при N = 1 правая часть собрана неверно")
         assert a[0] == 0.0 and c[0] == 0.0, (
             "при N = 1 связей с соседями нет")

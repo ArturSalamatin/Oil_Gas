@@ -355,11 +355,12 @@ def test_ref_conductive_matches_annulus_solution():
         Q_int, two_pi_h / R_layers, rtol=1e-12,
         err_msg="эталон: сопротивления двух слоёв кольца складываются")
 
-    # compute_conductive_transmissibility читает только сетку
-    Q_solver, _ = TridiagEnergySolver(grid, None, None) \
+    # compute_conductive_transmissibility читает только сетку; массив по
+    # граням [N+1] (DEBT-020), внутренние — Q_solver[1:N]
+    Q_solver = TridiagEnergySolver(grid, None, None) \
         .compute_conductive_transmissibility(lam_cells, N)
     np.testing.assert_allclose(
-        Q_solver, two_pi_h / R_layers, rtol=1e-12,
+        Q_solver[1:N], two_pi_h / R_layers, rtol=1e-12,
         err_msg="решатель compute_conductive_transmissibility")
 
 

@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: DEBT-020
 github: 99
 branch: refactor/debt-020/unified-face-conductance
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-020
 audit:
   date: 2026-10-11

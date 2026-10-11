@@ -1,0 +1,54 @@
+[base] D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\main.py
+[base] пакеты: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\gpn_multiphase_solver\__init__.py | D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+=== 11: разгазирование у контура ===
+Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\config.json
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\output\energy_balance.png
+  dE финал          = -5.3719e+09 Дж
+  Адиабатика финал  = -3.8145e+09 Дж
+  Конвекция финал   = -5.4806e+07 Дж
+  Джоуль-Томсон     = +5.0550e+09 Дж
+  Скрытая теплота   = -6.5591e+09 Дж
+  Теплопроводность  = +1.4683e+06 Дж
+  Невязка финал     = +1.9073e-06 Дж  (9.14e-17)
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\output\mass_balance.png
+Баланс массы компонентов, м3ст:
+  Нефть: dM = +7.1707e+01, добыча = +9.4662e+02, приток с контура = +1.0183e+03
+         невязка финал = -8.8517e-10 (4.35e-13), max по записям 7.07e-12
+  Газ  : dM = -1.6809e+04, добыча = +4.7359e+04, приток с контура = +3.0550e+04
+         невязка финал = -4.4954e-06 (4.75e-11), max по записям 9.84e-11
+EMF: 10 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\output\emf (5.1 с)
+Шагов сохранено: 73
+Время расчёта:   1.57 с
+p(r_w) финал:    6.117 МПа
+T(r_w) финал:    350.421 К
+Sg макс:         0.02012
+Rs мин:          3.352 м³ст/м³ст
+q_o финал:       3.7692e-03 м³ст/с
+q_g финал:       1.1733e-01 м³ст/с
+Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\output
+
+── Rs: равновесие Black Oil без кинетики ──
+  ячейки с газом (Sg > 1e-08) — 50: max|Rs_числ - Rs_eq(p)| = 5.329e-15 м³ст/м³ст (1.78e-14 % от Rs0)
+  ячейки без газа — 0: пересыщенных (Rs > Rs_eq(p) + 1e-05) — 0, ниже pb (нефть недонасыщена) — 0
+  Rs: 3.3521 … 29.9461 при Rs0 = 30.0, pb = 15.0000 МПа; ячеек с Rs > Rs0: 0
+
+── Замкнутое решение (GOR = Rs0): из расчёта ничего не берётся ──
+  q_o: 3.762474e-03 аналитика vs 3.769194e-03 расчёт (0.178 %)
+  max|p_ана - p_чис| = 10.82 кПа (0.120 % депрессии)
+  Sg макс: 0.01934 аналитика vs 0.02012 расчёт
+  фронт r_b = 46.9873 м (p = pb = 15.000 МПа)
+  замыкание при численном p: max|dSg| = 7.86e-04 (524.7309 % в двухфазной зоне)
+
+── PVT: table ──
+  рабочий диапазон: p = 6.1143 … 15.0500 МПа
+  Rs0 = 30 м³ст/м³ст,  p_b = 15.0000 МПа (в рабочем диапазоне)
+  узлов таблицы в рабочем диапазоне: 1
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     6.1143     3.3430   1.06671   2.8329e-03    0.01866   1.2223e-05    799.50     45.55
+    10.5822    16.7465   1.13373   2.1627e-03    0.01330   1.3116e-05    762.29     63.90
+    15.0500    30.0000   1.19993   1.5003e-03    0.00799   1.4013e-05    729.62    106.43
+
+── Асимптотика температуры (однофазная зона) ──
+  не проверяется: однофазных ячеек нет (газ во всей области)

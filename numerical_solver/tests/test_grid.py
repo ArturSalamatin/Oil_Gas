@@ -72,21 +72,16 @@ class TestValidation:
 #
 # N=3, r_w=1, R_ext=8, h=1, k=1
 # Грани (geomspace): r_f = 1 · (8/1)^{j/3} = 1, 2, 4, 8
-# x = (r_L/r_R)^2 = (1/2)^2 = 0.25 — одинаков для всех ячеек
-# Центр масс: r_j = r_R · sqrt(exp(-0.25·ln(0.25)/(1-0.25) - 1))
-#           = r_R · sqrt(exp(-0.25·(-1.3863)/0.75 - 1))
-#           = r_R · sqrt(exp(0.4621 - 1))
-#           = r_R · sqrt(exp(-0.5379))
-#           = r_R · sqrt(0.58388)
-#           = r_R · 0.76413
+# r_L/r_R = 1/2 — одинаково для всех ячеек
+# Центр ячейки — среднее геометрическое граней (eq:cell_center):
+# r_j = √(r_L · r_R) = r_R · √(r_L/r_R) = r_R · √0.5 = r_R · 0.70711
 
 R_W = 1.0
 R_E = 8.0
 FACES_3 = np.array([1.0, 2.0, 4.0, 8.0])
 
 # Вычислим эталонные центры:
-_x = 0.25
-_factor = np.sqrt(np.exp(-_x * np.log(_x) / (1.0 - _x) - 1.0))
+_factor = np.sqrt(0.5)
 CENTERS_3 = FACES_3[1:] * _factor  # [2·f, 4·f, 8·f]
 
 VOLUMES_3 = np.pi * 1.0 * np.array([
@@ -188,7 +183,10 @@ class TestStationaryRate:
         np.testing.assert_allclose(-q_internal, q_analytic, rtol=1e-3)
 
     def test_flux_exact_for_any_N(self):
-        """Центр масс кольца точен для логарифмического профиля при любом N."""
+        """Забойный поток на логарифмическом профиле точен при любом N."""
+        # Точность — свойство проводимости грани 2πkh/ln(r_0/r_w), а не выбора
+        # центра: при p = A + B·ln r поток T·(p_0 − p_wf)/μ = 2πkh·B/μ не зависит
+        # от r_0. Сам центр ячейки проверяет TestCellCenterGeometricMean.
         r_w, R_ext, h, k, mu = 0.1, 500.0, 10.0, 1e-13, 0.001
         p_wf, p_ext = 10e6, 25e6
         q_analytic = 2 * np.pi * k * h * (p_ext - p_wf) / (mu * np.log(R_ext / r_w))
@@ -303,29 +301,27 @@ class TestMonotonicity:
         assert np.all(g.volumes > 0)
 
 
-# ── Центр масс: независимая верификация ───────────────────────
+# ── Центр ячейки: независимая верификация ─────────────────────
 
-class TestCenterMassVerification:
-    """Проверка: r_center — точка, где <ln(r)>_volume = ln(r_center)."""
+class TestCellCenterGeometricMean:
+    """Проверка eq:cell_center: центр — середина ячейки по ln r."""
 
     @pytest.fixture
     def grid(self):
         return LogRadialGrid(r_well=0.1, R_ext=500.0, h=10.0, N=50)
 
-    def test_log_average_property(self, grid):
-        """∫ ln(r)·r dr / ∫ r dr по кольцу [r_L, r_R] должен = ln(r_center)."""
-        for j in range(grid.N):
-            r_L = grid.r_faces[j]
-            r_R = grid.r_faces[j + 1]
-            # ∫_{r_L}^{r_R} r·ln(r) dr = [r²/2·ln(r) - r²/4]
-            integral_num = (
-                r_R**2 / 2 * np.log(r_R) - r_R**2 / 4
-                - r_L**2 / 2 * np.log(r_L) + r_L**2 / 4
-            )
-            integral_den = (r_R**2 - r_L**2) / 2
-            log_avg = integral_num / integral_den
-            assert log_avg == pytest.approx(
-                np.log(grid.r_centers[j]), rel=1e-12), f"cell {j}"
+    def test_log_midpoint_property(self, grid):
+        """ln r_j = (ln r_{j-1/2} + ln r_{j+1/2})/2 в каждой ячейке."""
+        # Эталон — по граням, независимо от кода центров. Допуск абсолютный:
+        # ln r проходит через ноль (r ≈ 1 м на этой сетке)
+        mid = 0.5 * (np.log(grid.r_faces[:-1]) + np.log(grid.r_faces[1:]))
+        np.testing.assert_allclose(np.log(grid.r_centers), mid, rtol=0, atol=1e-13)
+
+    def test_equal_log_weights(self, grid):
+        """Веса eq:face_interp равны: w_L = ln(r_{j+1/2}/r_j) = w_R = ln(r_{j+1}/r_{j+1/2})."""
+        # На сетке eq:log_grid обе половины — по половине шага ln(r_{j+1}/r_j)
+        np.testing.assert_allclose(grid.log_weights_left, grid.log_weights_right,
+                                   rtol=1e-12)
 
 
 # ── Гармоническая интерполяция через log_weights ──────────────

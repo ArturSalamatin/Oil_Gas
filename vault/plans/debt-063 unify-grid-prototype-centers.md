@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: DEBT-063
 github: 98
 branch: refactor/debt-063/unify-grid-prototype-centers
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-063
 audit:
   date: 2026-10-11

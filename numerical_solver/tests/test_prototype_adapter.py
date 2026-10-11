@@ -131,6 +131,34 @@ def result(adapter, initial_state, bc):
 
 
 # ═══════════════════════════════════════════════════════════
+# 0. Одна сетка с прототипом (DEBT-063)
+# ═══════════════════════════════════════════════════════════
+
+class TestGridsMatchPrototype:
+    """LogRadialGrid и RadialGrid прототипа — одни и те же ячейки.
+
+    Фабрика строит обе сетки из одних полей конфига (factory.py, сетка
+    прототипа — в _create_prototype_hydro). Гидродинамику считает прототип на
+    своей, энергию и вывод GPN — на LogRadialGrid. Расхождение центров
+    отнесло бы решение прототипа к чужим точкам (до DEBT-063 — на h²/6 по
+    ln r) — побитовое сравнение ловит любую правку формулы с одной стороны.
+    """
+
+    @pytest.mark.parametrize("r_w, R, n", [
+        (0.1, 50.0, 20),      # VAL-001, этот модуль
+        (0.1, 50.0, 100),     # configs/baseline.json
+        (0.1, 200.0, 350),    # пример 19 (мелкая сетка)
+    ])
+    def test_same_cells(self, r_w, R, n):
+        """Грани, центры, объёмы совпадают побитово."""
+        ours = LogRadialGrid(r_well=r_w, R_ext=R, h=H, N=n, k=K_PERM)
+        proto = RadialGrid(r_w, R, H, n, K_MD)
+        np.testing.assert_array_equal(ours.r_faces, proto.faces_m)
+        np.testing.assert_array_equal(ours.r_centers, proto.centers_m)
+        np.testing.assert_array_equal(ours.volumes, proto.bulk_volumes_m3)
+
+
+# ═══════════════════════════════════════════════════════════
 # A. Шаг 1: set_bhp_control
 # ═══════════════════════════════════════════════════════════
 
@@ -574,9 +602,13 @@ class TestUpstreamWithZeroKro:
 class TestMassBalance:
     """F_oil[j] = V·φ·Δ(So/Bo)/dt + G_o[j+1] - G_o[j] ≈ 0.
 
-    Допуск ~2% из-за разных центров ячеек:
-    наш Grid — центр масс кольца (eq:cell_center), прототип — √(r_i·r_{i+1}).
-    Проводимости расходятся → потоки немного разные.
+    Баланс собран из объёмов ячеек (общих с прототипом) и потоков G_o
+    прототипа — центры ячеек в него не входят. Невязку ограничивает критерий
+    Ньютона прототипа ||F||_inf <= 1e-11 + 1e-8·||F0||_inf м³ст/с
+    (radial_blackoil/blackoil.py, _newton_fixed_active_set). На этом шаге
+    ||F0||_inf ≈ 37·|G_o[0]| — гарантия 3.7e-7 в долях дебита, допуск 1e-6
+    её покрывает. Замер DEBT-063 — 5.5e-12 (квадратичная сходимость).
+    Прежний допуск 0.02 объяснялся «разными центрами» — неверно.
     """
 
     def test_oil_balance(self, result, initial_state, our_grid, our_pvt):
@@ -592,7 +624,7 @@ class TestMassBalance:
         residual = accum + net_flux
 
         scale = np.abs(result.G_o[0])
-        np.testing.assert_allclose(residual / scale, 0.0, atol=0.02,
+        np.testing.assert_allclose(residual / scale, 0.0, atol=1e-6,
                                    err_msg="Баланс нефтяного компонента нарушен")
 
 

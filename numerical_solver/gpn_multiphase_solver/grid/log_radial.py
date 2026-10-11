@@ -8,25 +8,11 @@ import numpy as np
 from .base import Grid
 
 
-def _cell_centers_mass(r_left: np.ndarray, r_right: np.ndarray) -> np.ndarray:
-    """Центры масс кольцевых слоёв (vectorized). Ур. (eq:cell_center) problem_statement.tex.
-
-    r_j = r_right * sqrt(exp(-x*ln(x)/(1-x) - 1)),  x = (r_left/r_right)^2
-    """
-    x = (r_left / r_right) ** 2
-    thin = np.abs(x - 1.0) < 1e-12
-    x_safe = np.where(thin, 0.5, x)
-    arg = -x_safe * np.log(x_safe) / (1.0 - x_safe) - 1.0
-    result = r_right * np.sqrt(np.exp(arg))
-    result[thin] = 0.5 * (r_left[thin] + r_right[thin])
-    return result
-
-
 class LogRadialGrid(Grid):
-    """Логарифмическая радиальная сетка с центрами масс.
+    """Логарифмическая радиальная сетка.
 
     Грани: geomspace(r_well, R_ext, N+1).
-    Центры: центр масс кольцевого слоя (eq:cell_center).
+    Центры: среднее геометрическое граней √(r_{j-1/2}·r_{j+1/2}) (eq:cell_center).
     Проводимости: T = 2πkh / ln(r_center[j+1]/r_center[j]).
     Immutable после создания.
     """
@@ -60,10 +46,13 @@ class LogRadialGrid(Grid):
         # Грани (eq:log_grid)
         self._r_faces = np.geomspace(r_well, R_ext, N + 1)
 
-        # Центры (eq:cell_center)
-        self._r_centers = _cell_centers_mass(
-            self._r_faces[:-1], self._r_faces[1:]
-        )
+        # Центры (eq:cell_center): середина ячейки по ln r — среднее
+        # геометрическое граней. Та же формула и тот же порядок операций,
+        # что у RadialGrid прототипа (radial_blackoil/grid.py), — центры
+        # совпадают побитово, и гидродинамика, энергия и вывод относятся к
+        # одним точкам (DEBT-063). Совпадение проверяет
+        # tests/test_prototype_adapter.py::TestGridsMatchPrototype.
+        self._r_centers = np.sqrt(self._r_faces[:-1] * self._r_faces[1:])
 
         # Объёмы (eq:volume)
         self._volumes = np.pi * h * (

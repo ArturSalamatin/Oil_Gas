@@ -86,13 +86,17 @@ class TestDupuitPressure:
     """Профиль p(r) = лог-формула на центрах ячеек."""
 
     def test_pressure_log_profile(self):
-        """p(r_j) = p_wf + Δp·ln(r_j/rw)/ln(R/rw) на центрах масс ячеек."""
+        """p(r_j) = p_wf + Δp·ln(r_j/rw)/ln(R/rw) в центрах ячеек (eq:cell_center)."""
         sim, history = _run_val001()
         r = sim._grid.r_centers
         p_exact = P_WF + (P_EXT - P_WF) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
-        # Newton-солвер (PrototypeHydroAdapter) даёт нестационарное решение
-        # за один шаг dt=86400 с — не точный лог-профиль, фактическая ошибка ~8e-4
-        np.testing.assert_allclose(history.states[-1].p, p_exact, rtol=1e-2)
+        # Центры LogRadialGrid — те же, что у прототипа, который считает
+        # давление (DEBT-063). При c_o = 0 течение несжимаемое: профиль
+        # стационарный на каждом шаге, а двухточечная схема с проводимостью
+        # 2πkh/ln(r_{j+1}/r_j) воспроизводит его в центрах до округления
+        # (замер: отклонение 0). До DEBT-063 эталон строился в других точках
+        # и расходился на 8.5e-4 — разница точек, а не ошибка решения.
+        np.testing.assert_allclose(history.states[-1].p, p_exact, rtol=1e-12)
 
 
 class TestStationaryFlux:

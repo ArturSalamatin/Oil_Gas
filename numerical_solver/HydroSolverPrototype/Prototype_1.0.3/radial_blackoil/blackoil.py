@@ -29,6 +29,8 @@ default): a Newton solve also needs max_c |F_c,i|*dt/PV_i <= cell_tol in every
 cell i (PV_i: pore volume of state_old), besides the absolute test.
 BUG-024: the fourth stage limits the Rs update of undersaturated cells,
 |dRs| <= dr_rel*Rs_sat(p) (dr_rel = 0.2, as ds_max for Sg).
+DEBT-048: the fourth stage is callable alone (advance_fourth_stage); the GPN adapter
+calls it on shut-in steps that follow two steps the fourth stage solved.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -383,7 +385,7 @@ class RadialBlackOilModel:
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
         if that fails too, the fallback again with a globalized Newton (BUG-016);
         if that fails too and phase_switching_stage is on, the fallback with phase
-        switches inside Newton (BUG-020).
+        switches inside Newton (BUG-020) -- advance_fourth_stage.
         If all stages fail, the report carries the original algorithm's Newton (DEBT-030)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
@@ -417,12 +419,7 @@ class RadialBlackOilModel:
             # with _advance_phases routed to _newton_switching.  Shut-in after production
             # with a developed gas zone (examples 19-21: Sg near the well 0.4) failed all
             # three; see _newton_switching for the mechanism.
-            self._phase_switching=True
-            try:
-                new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
-                rep.globalized=True; rep.phase_switching=True
-            finally:
-                self._phase_switching=False
+            new,rep=self.advance_fourth_stage(state_old,dt_s,max_active_iter,max_newton)
             if rep.converged: return new,rep
         if not rep.converged:
             # DEBT-030: the last attempt is often the BHP 'shut' branch, which
@@ -435,6 +432,23 @@ class RadialBlackOilModel:
             rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
                         active_set_iterations=orig.active_set_iterations,
                         phase_switches=orig.phase_switches)
+        return new,rep
+    def advance_fourth_stage(self,state_old,dt_s,max_active_iter=12,max_newton=15):
+        """The fourth stage of advance alone (BUG-020, DEBT-048): the BUG-014 fallback with
+        phase switches inside Newton; its own report, also when it fails."""
+        # DEBT-048: the GPN adapter calls it directly on shut-in steps that follow two steps
+        # the fourth stage solved, skipping the first three stages, which fail there.  A step
+        # solved here is bitwise the step advance solves after the first three stages fail:
+        # every attribute set here and in _fallback is restored in finally, and between
+        # solves the model keeps only the old-state inventories cache, a function of
+        # state_old.  Independent of phase_switching_stage: the flag only adds this stage
+        # to advance.
+        self._phase_switching=True
+        try:
+            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+            rep.globalized=True; rep.phase_switching=True
+        finally:
+            self._phase_switching=False
         return new,rep
     def _fallback(self,state_old,dt_s,max_active_iter,max_newton):
         """BUG-014 fallback: no lower bound on Sg; BHP control fixes the well branch

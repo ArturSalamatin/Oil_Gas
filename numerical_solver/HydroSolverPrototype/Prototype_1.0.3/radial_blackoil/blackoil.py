@@ -31,6 +31,10 @@ BUG-024: the fourth stage limits the Rs update of undersaturated cells,
 |dRs| <= dr_rel*Rs_sat(p) (dr_rel = 0.2, as ds_max for Sg).
 DEBT-048: the fourth stage is callable alone (advance_fourth_stage); the GPN adapter
 calls it on shut-in steps that follow two steps the fourth stage solved.
+DEBT-054: the Newton report says why a solve stopped (exit_reason), with the absolute
+tolerance of its test (residual_tol) and the per-cell measure (cell_measure) on the
+residual it reports; a failed fourth-stage Newton reports the iterations it ran,
+not max_iter (DEBT-061).
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -52,6 +56,16 @@ class BlackOilNewtonReport:
     fallback: bool = False    # step solved by advance's fallback, BUG-014
     globalized: bool = False  # advance's third stage ran (||F||_2 line search, Sg step limit), BUG-016
     phase_switching: bool = False  # advance's fourth stage ran (phase switches inside Newton), BUG-020
+    # DEBT-054: why the Newton stopped and how far it was from each convergence test, on
+    # the residual of residual_inf.  residual_tol -- atol + rtol*scale of the absolute test
+    # (None: exit 'active_set', the residual of a guess no Newton solved); cell_measure --
+    # max_c |F_c,i|*dt/PV_i of the per-cell test, BUG-022 (None: the test is off);
+    # exit_reason -- 'converged', 'line_search', 'linear_solver', 'max_iter', 'nonfinite',
+    # 'active_set', 'sg_bound' (fourth stage: a root with two-phase Sg > 0.98), 'branch'
+    # (_fallback: the Newton converged on an inconsistent BHP branch); '' -- not set.
+    residual_tol: float | None = None
+    cell_measure: float | None = None
+    exit_reason: str = ''
 
 def _sg_activation_cap(relperm):
     """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
@@ -250,11 +264,21 @@ class RadialBlackOilModel:
         """BUG-022: dt/PV_i of the per-cell convergence test (pore volume of state_old); None when the test is off."""
         if self.cell_tol is None: return None
         return float(dt_s)/self.rock.pore_volume_m3(self.grid.bulk_volumes_m3,state_old.pressure_bar)
+    def _cell_measure(self,f,w):
+        """BUG-022, DEBT-054: max_c |f_c,i|*dt/PV_i over the oil and gas rows of f = residual(); None when the test is off."""
+        if w is None: return None
+        n=self.grid.n
+        return max(float(np.max(np.abs(f[:n])*w)),float(np.max(np.abs(f[n:])*w)))
     def _cells_converged(self,f,w):
         """BUG-022: max_c |f_c,i|*dt/PV_i <= cell_tol over the oil and gas rows of f = residual(); True when the test is off."""
-        if w is None: return True
-        n=self.grid.n
-        return max(float(np.max(np.abs(f[:n])*w)),float(np.max(np.abs(f[n:])*w)))<=self.cell_tol
+        # the same operations as before DEBT-054, so the test is bitwise unchanged
+        m=self._cell_measure(f,w)
+        return m is None or m<=self.cell_tol
+    def _newton_report(self,converged,iterations,nrm,tol,f,w,reason,**fields):
+        """DEBT-054: report of a Newton solve -- ||F||_inf, its absolute tolerance, the per-cell measure of the same f, the exit reason."""
+        return BlackOilNewtonReport(converged,iterations,float(nrm),
+                                    residual_tol=None if tol is None else float(tol),
+                                    cell_measure=self._cell_measure(f,w),exit_reason=reason,**fields)
     def _pressure_fd_step(self,p_bar,gas_active,p_rel_step=1e-6,p_abs_step=1e-4):
         """One-sided pressure perturbation that stays on the same PVTO-saturation segment.
 
@@ -359,11 +383,15 @@ class RadialBlackOilModel:
         # bitwise the f0 that the Jacobian call returns at the same z: wherever the
         # solve converged before, iterates and reports are unchanged, and the
         # Jacobian that was built only to detect convergence is no longer built.
-        if nrm<=tol and self._cells_converged(f,w): return z,BlackOilNewtonReport(True,0,float(nrm))
+        # DEBT-054: every report carries the absolute tolerance, the per-cell measure of f
+        # (the residual of the z it returns: the Jacobian call returns residual(z) at the same
+        # z, see BUG-021 above; a rejected trial leaves f untouched) and why the solve stopped.
+        # A failure at iteration it reports it (the failed iteration counted), as before.
+        if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,0,nrm,tol,f,w,'converged')
         for it in range(1,max_iter+1):
             J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active)
             try: dz=self._linear_solve(J,-f)
-            except Exception: return z,BlackOilNewtonReport(False,it,float(nrm))
+            except Exception: return z,self._newton_report(False,it,nrm,tol,f,w,'linear_solver')
             if self._sg_step_max is not None:
                 # BUG-016: scale the whole update (p and Sg together, the Newton
                 # direction is kept) so that |dSg| of two-phase cells <= limit
@@ -376,17 +404,18 @@ class RadialBlackOilModel:
                     ft=self.residual(trial,state_old,dt_s,gas_active)
                     if merit(ft)<mf: z=trial; f=ft; accepted=True; break
                 alpha*=0.5
-            if not accepted: return z,BlackOilNewtonReport(False,it,float(nrm))
+            if not accepted: return z,self._newton_report(False,it,nrm,tol,f,w,'line_search')
             nrm=np.linalg.norm(f,np.inf)
-            if nrm<=tol and self._cells_converged(f,w): return z,BlackOilNewtonReport(True,it,float(nrm))
-        return z,BlackOilNewtonReport(False,max_iter,float(nrm))
+            if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,it,nrm,tol,f,w,'converged')
+        return z,self._newton_report(False,max_iter,nrm,tol,f,w,'max_iter')
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
         if that fails too, the fallback again with a globalized Newton (BUG-016);
         if that fails too and phase_switching_stage is on, the fallback with phase
         switches inside Newton (BUG-020) -- advance_fourth_stage.
-        If all stages fail, the report carries the original algorithm's Newton (DEBT-030)."""
+        If all stages fail, the report carries the original algorithm's Newton (DEBT-030),
+        with its tolerance, per-cell measure and exit reason (DEBT-054)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -429,9 +458,13 @@ class RadialBlackOilModel:
             # algorithm's Newton instead (as before BUG-014); the branch fields
             # (well_branch, well_switches, fallback, globalized) stay the last
             # attempt's.  Accepted steps are untouched (_grow_dt reads them).
+            # DEBT-054: the absolute tolerance, the per-cell measure and the exit reason are
+            # Newton fields too -- the original algorithm's, consistent with its residual.
             rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
                         active_set_iterations=orig.active_set_iterations,
-                        phase_switches=orig.phase_switches)
+                        phase_switches=orig.phase_switches,
+                        residual_tol=orig.residual_tol,cell_measure=orig.cell_measure,
+                        exit_reason=orig.exit_reason)
         return new,rep
     def advance_fourth_stage(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """The fourth stage of advance alone (BUG-020, DEBT-048): the BUG-014 fallback with
@@ -485,6 +518,9 @@ class RadialBlackOilModel:
                 # Newton failed or the branch is inconsistent: the other branch, once
                 other='open' if branch=='shut' else 'shut'
                 if other in tried or (other=='open' and open_hopeless):
+                    # DEBT-054: a Newton that converged on an inconsistent branch failed by the
+                    # branch, not by the Newton; a failed Newton keeps its own exit reason
+                    if rep.converged: rep.exit_reason='branch'
                     rep.converged=False; return new,rep
                 branch=other
         finally:
@@ -514,7 +550,12 @@ class RadialBlackOilModel:
                 guess.sg[activate]=sg0; guess.rs_sm3_sm3[activate]=rsat
             if np.any(deactivate): guess.sg[deactivate]=0.0; guess.rs_sm3_sm3[deactivate]=self.pvt.rs_sat(guess.pressure_bar[deactivate])
             mask=newmask
-        r=self.residual(self.pack(guess,mask),state_old,dt_s,mask); return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),max_active_iter,total_switches)
+        # DEBT-054: the phase loop ran out; r is the residual of the guess with the new phase set,
+        # which no Newton solved -- no absolute tolerance, the per-cell measure of r
+        r=self.residual(self.pack(guess,mask),state_old,dt_s,mask)
+        return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),max_active_iter,total_switches,
+                                          cell_measure=self._cell_measure(r,self._cell_weights(state_old,dt_s)),
+                                          exit_reason='active_set')
     def _switch_phases(self,p,x,mask):
         """BUG-020: phase switch at a Newton iterate (p, x) of the fourth stage; returns (x, mask, switches)."""
         rs_sat=self.pvt.rs_sat(p); x=x.copy()
@@ -556,6 +597,8 @@ class RadialBlackOilModel:
         # BUG-022: dt/PV_i of the per-cell test, None when it is off
         w=self._cell_weights(state_old,dt_s)
         switched=total=0; flips=np.zeros(nf,int); prev=None; polish=False
+        # DEBT-054, DEBT-061: why the loop stopped; a pass with it > max_iter breaks on the limit
+        reason='max_iter'
         self._upwind_frozen=np.zeros(nf,bool); self._upwind_left=np.zeros(nf,bool)
         try:
             # one pass more than max_iter: the residual after the last update is checked too
@@ -576,14 +619,15 @@ class RadialBlackOilModel:
                             new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
                             # same bound as _trial_is_reasonable: no root with Sg > 0.98
                             ok=not np.any(new.sg[mask]>0.98)
-                            return new,BlackOilNewtonReport(ok,it-1,float(nrm),1,total)
+                            return new,self._newton_report(ok,it-1,nrm,tol,f,w,'converged' if ok else 'sg_bound',
+                                                           active_set_iterations=1,phase_switches=total)
                     else:
                         # converged with a held upstream cell the solution contradicts: polish
                         # without holding, so the result solves the original upwind scheme
                         self._upwind_frozen=None; polish=True; continue
                 if it>max_iter: break
                 try: dz=self._linear_solve(J,-f)
-                except Exception: break
+                except Exception: reason='linear_solver'; break
                 # per-cell limits; Rs of undersaturated cells >= 0, pressure >= 1 bar
                 x=z[n:]; lim=dp_rel*np.maximum(p,1.0)
                 pn=np.maximum(p+np.clip(dz[:n],-lim,lim),1.0+1e-6)
@@ -598,11 +642,16 @@ class RadialBlackOilModel:
                 # limit are bitwise the former ones (np.clip returns them unchanged).
                 lim_rs=dr_rel*np.maximum(self.pvt.rs_sat(p),1.0)
                 xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+np.clip(dz[n:],-lim_rs,lim_rs),0.0))
-                if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): break
+                if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): reason='nonfinite'; break
                 xn,mask,switched=self._switch_phases(pn,xn,mask); total+=switched
                 z=np.concatenate([pn,xn])
+            # DEBT-061: the passes it ran minus one, as the converged report above -- not max_iter,
+            # which a break after a linear-solver failure or a non-finite update reported too.
+            # f is evaluated here, before finally drops the held upstream cells: residual_inf and
+            # the per-cell measure are of the scheme the Newton was solving (DEBT-054)
             f=self.residual(z,state_old,dt_s,mask)
-            return self.unpack(z,mask),BlackOilNewtonReport(False,max_iter,float(np.linalg.norm(f,np.inf)),1,total)
+            return self.unpack(z,mask),self._newton_report(False,it-1,np.linalg.norm(f,np.inf),tol,f,w,reason,
+                                                           active_set_iterations=1,phase_switches=total)
         finally:
             self._upwind_frozen=None; self._upwind_left=None
     def well_rates(self,state):

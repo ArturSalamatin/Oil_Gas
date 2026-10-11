@@ -252,7 +252,7 @@ class Simulator:
                 n_fail += 1
                 dev_log.debug(f"  подшаг {h:.3e} с не сошёлся: {exc}")
                 if size == 1:
-                    raise RuntimeError(self._failure_message(state, dt)) from exc
+                    raise RuntimeError(self._failure_message(state, dt, exc)) from exc
                 size //= 2
                 continue
 
@@ -307,14 +307,19 @@ class Simulator:
                 f"{h_min_ok:.3g} с, отказов гидродинамики {n_fail}")
         return state, hydro_result
 
-    def _failure_message(self, state: SimulationState, dt: float) -> str:
-        """Текст отказа: факты подшага, на котором исчерпано дробление (BUG-018, DEBT-015)."""
+    def _failure_message(self, state: SimulationState, dt: float,
+                         exc: HydroConvergenceError) -> str:
+        """Текст отказа: факты подшага, на котором исчерпано дробление, и его отказ гидродинамики (BUG-018, DEBT-015, DEBT-054)."""
         # Факты, а не догадка о причине: отказ бывает из-за величины шага
         # (DEBT-007, BUG-003 — помогает дробление глубже) и не из-за неё
         # (BUG-017, BUG-018 до исправления, BUG-019 — шаг не сходится и при
         # мелких подшагах). Различить их здесь нельзя. Начало текста
         # цитируют README примеров 03, 05, 06, 07, 10 и тесты — менять
         # вместе с ними.
+        # Конец текста — текст HydroConvergenceError этого подшага (DEBT-054): у
+        # прототипа там допуск, мера условия по ячейке, причина выхода Ньютона и
+        # какое условие сходимости не выполнено. Прежде он был виден только в
+        # цепочке traceback и в отладочном журнале.
         n_units = 2 ** self._max_retries
         n_two = int(np.count_nonzero(state.regime == 1))
         return (
@@ -326,7 +331,8 @@ class Simulator:
             f"(сейчас max_retries = {self._max_retries}, допустимо до 20). "
             f"Если отказ вызван величиной шага, поможет больший "
             f"numerics.max_retries или меньший time.dt_integration; если шаг "
-            f"не сходится и при мелких подшагах, причина не в его величине.")
+            f"не сходится и при мелких подшагах, причина не в его величине. "
+            f"Последний отказ гидродинамики: {exc}")
 
     def _check_temperature(self, T: np.ndarray, dt: float, t: float) -> None:
         """Отказ, если после шага энергии T ≤ 0 или не конечна (DEBT-047)."""

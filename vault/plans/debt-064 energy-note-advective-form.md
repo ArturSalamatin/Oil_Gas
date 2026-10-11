@@ -7,7 +7,8 @@ issue: DEBT-064
 github: 101
 branch: refactor/debt-064/energy-note-advective-form
 status: реализован
-worktree: .worktrees/debt-064
+worktree: .worktrees/debt-064; удалён после влития
+merged: 25ddbd7 (2026-10-11)
 audit:
   date: 2026-10-11
   found: 6

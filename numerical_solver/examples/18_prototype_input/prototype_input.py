@@ -355,7 +355,9 @@ def plot_comparison(history, grid, proto: dict, imex: dict | None, output_dir: P
     from matplotlib.lines import Line2D
     from figure_io import save_figure
 
-    r = grid.r_centers   # все источники — по номеру ячейки, абсцисса — центры нашей сетки
+    # Все источники — по номеру ячейки; абсцисса — центры ячеек: у нашей
+    # сетки и у прототипа они одни (DEBT-063)
+    r = grid.r_centers
 
     # ── Профили ──
     # Цвет — момент времени (как на штатных профилях), источник — стиль линии:

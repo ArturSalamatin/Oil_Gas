@@ -114,7 +114,7 @@ def _advance(self, state, dt, bc, balance, mass
             hydro_result = self._hydro.solve(state, h, bc)
         except HydroConvergenceError as exc:
             if size == 1:             # исчерпан наименьший подшаг dt/2**max_retries
-                raise RuntimeError(self._failure_message(state, dt)) from exc
+                raise RuntimeError(self._failure_message(state, dt, exc)) from exc
             size //= 2
             continue
 
@@ -164,7 +164,9 @@ def _advance(self, state, dt, bc, balance, mass
   текстом `_failure_message`: глубина дробления, $t$ подшага, число
   двухфазных ячеек, $\max S_g$ и оба рычага (`numerics.max_retries`,
   `time.dt_integration`); причину текст не называет. Начало текста
-  цитируют README примеров 03, 05, 06, 07, 10 и тесты
+  цитируют README примеров 03, 05, 06, 07, 10 и тесты. В конце — текст
+  отказа гидродинамики последнего подшага (DEBT-054): у прототипа он
+  называет, какое условие сходимости не выполнено
 - накопитель баланса энергии передаётся в `energy.solve(..., collect=)`
   на **каждом** принятом подшаге и вызывается безусловно: баланс должен
   считаться всегда, при любой структуре истории. См. [[модули-energy-tridiag]]

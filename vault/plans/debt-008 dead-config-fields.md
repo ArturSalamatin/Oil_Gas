@@ -6,7 +6,7 @@ date: 2026-10-10
 issue: DEBT-008
 github: 89
 branch: refactor/debt-008/dead-config-fields
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-008
 audit:
   date: 2026-10-11

@@ -6,8 +6,9 @@ date: 2026-10-11
 issue: DEBT-023
 github: 100
 branch: refactor/debt-023/physical-conductivity-examples
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-023
+implemented: 2026-10-11 (6d4eaf9…0f3f8c1 от 47a05e1; 1722 passed; шаги 0–8 по плану, расхождений нет)
 base: ccc5ae3 (после DEBT-020, DEBT-048, DEBT-063; числа пересняты 2026-10-11)
 audit:
   date: 2026-10-11

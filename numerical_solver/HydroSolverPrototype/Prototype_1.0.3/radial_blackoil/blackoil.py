@@ -27,6 +27,8 @@ where it cannot be consistent (outer and all old cell pressures <= p_wf).
 BUG-022: a per-cell convergence test (constructor argument cell_tol, off by
 default): a Newton solve also needs max_c |F_c,i|*dt/PV_i <= cell_tol in every
 cell i (PV_i: pore volume of state_old), besides the absolute test.
+BUG-024: the fourth stage limits the Rs update of undersaturated cells,
+|dRs| <= dr_rel*Rs_sat(p) (dr_rel = 0.2, as ds_max for Sg).
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -517,8 +519,8 @@ class RadialBlackOilModel:
             x[act]=sg0
         m=mask.copy(); m[deact]=False; m[act]=True
         return x,m,int(np.count_nonzero(deact)+np.count_nonzero(act))
-    def _newton_switching(self,state_old,dt_s,max_iter=40,rtol=1e-8,atol_sm3s=1e-11,dp_rel=0.3,ds_max=0.2,flips_to_freeze=2):
-        """BUG-020 fourth stage: Newton with phase switches after every iteration, per-cell update limits, no line search."""
+    def _newton_switching(self,state_old,dt_s,max_iter=40,rtol=1e-8,atol_sm3s=1e-11,dp_rel=0.3,ds_max=0.2,flips_to_freeze=2,dr_rel=0.2):
+        """BUG-020 fourth stage: Newton with phase switches after every iteration, per-cell update limits (p, Sg; Rs -- BUG-024), no line search."""
         # Shut-in after production with a developed gas zone.  The well cell is upstream of no
         # face once the well is shut, and its gas storage per unit Sg, 1/Bg - Rs/Bo, is small at
         # low pressure (7.4 at 51 bar against 38.9 at 200 bar, example 20): the first Newton
@@ -526,8 +528,9 @@ class RadialBlackOilModel:
         # Sg to -23...-1137 (c_t < 0 there), the third stage scales the whole update by
         # 0.2/|dSg| and the pressure crawls.  Here a cell leaves the two-phase set as soon as
         # an iterate takes its Sg below 0, and the limits act per cell (dpMaxRel, dsMax of OPM
-        # Flow).  No line search: after the per-cell limit the update is not a descent
-        # direction of ||F||, and the search stopped at the first iteration (plan BUG-020, 1.4).
+        # Flow; the Rs of undersaturated cells since BUG-024, see the update below).  No line
+        # search: after the per-cell limit the update is not a descent direction of ||F||, and
+        # the search stopped at the first iteration (plan BUG-020, 1.4).
         # Later steps: in the stagnant undersaturated zone near the shut well the pressure is
         # level to 1e-3 bar, the upstream cell of 1-11 faces flips every iteration and the
         # Newton converges linearly (26 iterations against 15); faces that flipped twice keep
@@ -570,7 +573,17 @@ class RadialBlackOilModel:
                 # per-cell limits; Rs of undersaturated cells >= 0, pressure >= 1 bar
                 x=z[n:]; lim=dp_rel*np.maximum(p,1.0)
                 pn=np.maximum(p+np.clip(dz[:n],-lim,lim),1.0+1e-6)
-                xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+dz[n:],0.0))
+                # BUG-024: |dRs| of undersaturated cells <= dr_rel*Rs_sat(p) -- the analogue of
+                # ds_max: a share of the admissible range 0 <= Rs <= Rs_sat(p).  Unlimited, the
+                # first shut-in hours after production with a developed gas zone (GPN config 20,
+                # q_oil = 0) gave |dRs| up to 1.7e4 per iteration; the cut at Rs = 0 then either
+                # stalled the Newton (a cell near the well held at Rs = 0, ||F|| constant for 30
+                # iterations) or sent it into chaos (p up to 433 bar, mass phase switches), and
+                # whether a daily step passed at dt/512 depended on round-off of earlier steps.
+                # dr_rel 0.1-0.5 passes, 1.0 fails (plan BUG-024, 1.3-1.5).  Steps below the
+                # limit are bitwise the former ones (np.clip returns them unchanged).
+                lim_rs=dr_rel*np.maximum(self.pvt.rs_sat(p),1.0)
+                xn=np.where(mask,x+np.clip(dz[n:],-ds_max,ds_max),np.maximum(x+np.clip(dz[n:],-lim_rs,lim_rs),0.0))
                 if not (np.all(np.isfinite(pn)) and np.all(np.isfinite(xn))): break
                 xn,mask,switched=self._switch_phases(pn,xn,mask); total+=switched
                 z=np.concatenate([pn,xn])

@@ -1,0 +1,46 @@
+[base] D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\main.py
+[base] пакеты: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\gpn_multiphase_solver\__init__.py | D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+=== 21: R_s0 = 100, горячий пласт — охлаждение забоя ===
+Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\config.json
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\output\energy_balance.png
+  dE финал          = -9.4354e+10 Дж
+  Адиабатика финал  = -5.2283e+10 Дж
+  Конвекция финал   = +2.6151e+10 Дж
+  Джоуль-Томсон     = +4.9111e+10 Дж
+  Скрытая теплота   = -1.1734e+11 Дж
+  Теплопроводность  = +7.2315e+06 Дж
+  Невязка финал     = -3.0518e-05 Дж  (9.00e-17)
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\output\mass_balance.png
+Баланс массы компонентов, м3ст:
+  Нефть: dM = -1.6825e+03, добыча = +5.3053e+03, приток с контура = +3.6228e+03
+         невязка финал = -6.2755e-11 (5.91e-15), max по записям 7.29e-14
+  Газ  : dM = -8.7111e+04, добыча = +4.4939e+05, приток с контура = +3.6228e+05
+         невязка финал = +1.6298e-08 (1.81e-14), max по записям 6.21e-14
+EMF: 10 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\output\emf (5.0 с)
+Шагов сохранено: 31
+Время расчёта:   1.23 с
+p(r_w) финал:    3.045 МПа
+T(r_w) финал:    397.521 К
+Sg макс:         0.40831
+Rs мин:          13.102 м³ст/м³ст
+q_o финал:       1.9356e-03 м³ст/с
+q_g финал:       1.6604e-01 м³ст/с
+Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\output
+
+── Rs: равновесие Black Oil без кинетики ──
+  ячейки с газом (Sg > 1e-08) — 328: max|Rs_числ - Rs_eq(p)| = 0.000e+00 м³ст/м³ст (0.00e+00 % от Rs0)
+  ячейки без газа — 22: пересыщенных (Rs > Rs_eq(p) + 1e-05) — 0, ниже pb (нефть недонасыщена) — 0
+  Rs: 13.1016 … 100.0000 при Rs0 = 100.0, pb = 17.2235 МПа; ячеек с Rs > Rs0: 0
+
+── PVT: standing ──
+  рабочий диапазон: p = 3.0447 … 17.7000 МПа
+  Rs0 = 100 м³ст/м³ст,  p_b = 17.2235 МПа (в рабочем диапазоне)
+  PVT аналитический — выделенных узлов нет
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+     3.0447    13.1016   1.12963   4.8038e-04    0.04611   1.5228e-05    716.63     15.77
+    10.3723    54.7172   1.22947   3.4099e-04    0.01353   1.6341e-05    683.04     53.72
+    17.7000   100.0000   1.34621   2.7894e-04    0.00793   1.7970e-05    648.27     91.66
+
+── Стационарная аналитика отключена (steady_state=False): замкнутое решение и асимптотика температуры не строятся ──

@@ -1,0 +1,20 @@
+[base] D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\05_standing_table_rp\closed_form_convergence.py
+[base] пакеты: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\gpn_multiphase_solver\__init__.py | D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+Сходимость замкнутого решения к расчёту при измельчении сетки
+(аналитика от N не зависит — сходится численное решение)
+
+    N     dt     q_o расчёт    q_o аналит.  откл. q, %  откл. p, %   Sg расч.   Sg анал.
+   25   3600   1.091722e-02   1.089749e-02      0.1807      0.1547    0.01258    0.01256
+   50   3600   1.090857e-02   1.089749e-02      0.1016      0.0895    0.01400    0.01399
+  100   3600   1.090331e-02   1.089749e-02      0.0534      0.0470    0.01472    0.01472
+  200   3600   1.090045e-02   1.089749e-02      0.0271      0.0239    0.01509    0.01508
+  400   3600   1.089899e-02   1.089749e-02      0.0137      0.0121    0.01527    0.01527
+
+Наблюдаемый порядок по N: 0.934 (дебит), 0.926 (давление)
+Отношение по краям: 13.2x (дебит), 12.8x (давление) при N×16
+
+Степенное убывание подтверждает: замкнутое решение верно,
+а расхождение на N = 50 — погрешность конечных объёмов.
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\05_standing_table_rp\output\closed_form_convergence.png
+EMF: 1 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\05_standing_table_rp\output\emf (2.2 с)

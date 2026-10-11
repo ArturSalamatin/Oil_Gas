@@ -1,0 +1,21 @@
+[base] D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\01_single_phase_no_jt\spatial_convergence.py
+[base] пакеты: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\gpn_multiphase_solver\__init__.py | D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+── N = 50 ──
+   max ошибка T (все шаги): 0.003661 К
+   ошибка T (финал):        0.003661 К
+── N = 200 ──
+   max ошибка T (все шаги): 0.000953 К
+   ошибка T (финал):        0.000953 К
+── N = 800 ──
+   max ошибка T (все шаги): 0.000253 К
+   ошибка T (финал):        0.000253 К
+
+N=50 → N=200 (ожидаем ~4x при O(h)):
+   отношение max ошибок: 3.8x   (порядок p = 0.97)
+   отношение fin ошибок: 3.8x
+N=200 → N=800 (ожидаем ~4x при O(h)):
+   отношение max ошибок: 3.8x   (порядок p = 0.96)
+   отношение fin ошибок: 3.8x
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\01_single_phase_no_jt\output\spatial_convergence.png
+EMF: 1 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\01_single_phase_no_jt\output\emf (2.2 с)

@@ -32,7 +32,8 @@ PAIRS = [
     ("03_standing_corey/README.md", r"$7.4\cdot10^{-9}$ | $2.4\cdot10^{-3}$ | 0.19772",
      r"$1.3\cdot10^{-8}$ | $2.4\cdot10^{-3}$ | 0.19769"),
     ("03_standing_corey/README.md", "$r_b$, $q_o$ и $T(r_w)$ сходятся монотонно, первым порядком:",
-     "$r_b$, $q_o$ и $T(r_w)$ сходятся монотонно, первым порядком (у $r_b$"),
+     "$r_b$, $q_o$ и $T(r_w)$ сходятся монотонно, первым порядком (у $r_b$ — с $N = 50$: "
+     "приращения 0.00094 и 0.00042 м при удвоениях; на паре 25 → 50 — 0.00103 м):"),
     ("04_table_table/README.md", "**2.637 м**", "**2.630 м**"),
     ("04_table_table/README.md", "27.95 кПа (0.233 % депрессии)", "23.58 кПа (0.197 % депрессии)"),
     ("04_table_table/README.md", "| $S_g^{max}$ | 0.01468 |", "| $S_g^{max}$ | 0.01470 |"),
@@ -42,6 +43,12 @@ PAIRS = [
     ("04_table_table/README.md", "| 13.1 | 2.614 | 351.4888 |", "| 12.0 | 2.612 | 351.4884 |"),
     ("04_table_table/README.md", "| 8.5 | 2.606 | 351.4877 |", "| 8.0 | 2.606 | 351.4872 |"),
     ("04_table_table/README.md", "0.0051 и 0.0027 К при удвоениях", "0.0051 и 0.0031 К при удвоениях"),
+    # Докстринг: столбец «макс|dp|» таблицы ряда (выравнивание сохраняется)
+    ("04_table_table/grid_convergence.py", "0.878 %                     63.9",
+     "0.878 %                     46.3"),
+    ("04_table_table/grid_convergence.py", "1.96         28.0", "1.96         23.6"),
+    ("04_table_table/grid_convergence.py", "1.98         13.1", "1.98         12.0"),
+    ("04_table_table/grid_convergence.py", "1.50          8.5", "1.50          8.0"),
     ("04_table_table/grid_convergence.py", "(2.694 -> 2.637 -> 2.614 ->", "(2.666 -> 2.630 -> 2.612 ->"),
     ("04_table_table/grid_convergence.py", "приращения 0.0051 и 0.0027 К при", "приращения 0.0051 и 0.0031 К при"),
     ("04_table_table/grid_convergence.py", "замер 2026-09-29", "замер 2026-10-11, DEBT-063"),
@@ -130,23 +137,33 @@ SUMMARY = {
     "21": (r"$4.5\cdot10^{-17}$ | $+7.28\cdot10^{6}$", r"$9.0\cdot10^{-17}$ | $+7.23\cdot10^{6}$"),
 }
 
-bad = 0
-for rel, old, new in PAIRS:
-    text = (EX / rel).read_text(encoding="utf-8")
-    n_old, n_new = text.count(old), text.count(new)
-    want_old, want_new = (0, 1) if AFTER else (1, 0)
-    if (n_old, n_new) != (want_old, want_new):
-        bad += 1
-        print(f"! {rel}: «было» {n_old}×, «станет» {n_new}× — {old[:60]!r}")
-summary = (EX / "README.md").read_text(encoding="utf-8").splitlines()
-for ex, (old, new) in SUMMARY.items():
-    # Строка таблицы баланса энергии: у примера есть и строки других таблиц
-    # («| **13b** | **60 с** |…»); у этой — коэффициенты теплопроводности
-    rows = [s for s in summary if s.startswith(f"| **{ex}** |")
+def summary_row(lines, ex):
+    """Строка таблицы баланса энергии сводного README для примера ex."""
+    # У примера есть и строки других таблиц («| **13b** | **60 с** |…»);
+    # у этой — коэффициенты теплопроводности
+    return [s for s in lines if s.startswith(f"| **{ex}** |")
             and ("1.5 / 0.14 / 0.04" in s or "2.5 / 0.13 / 0.05" in s)]
-    ok = len(rows) == 1 and (new if AFTER else old) in rows[0]
-    if not ok:
-        bad += 1
-        print(f"! README.md, сводная таблица, {ex}: строк {len(rows)}; {rows[:1]}")
-print(f"пар: {len(PAIRS)} + строк сводной таблицы: {len(SUMMARY)}; нарушений: {bad} "
-      f"({'после' if AFTER else 'до'} шага 4)")
+
+
+def main():
+    bad = 0
+    for rel, old, new in PAIRS:
+        text = (EX / rel).read_text(encoding="utf-8")
+        n_old, n_new = text.count(old), text.count(new)
+        want_old, want_new = (0, 1) if AFTER else (1, 0)
+        if (n_old, n_new) != (want_old, want_new):
+            bad += 1
+            print(f"! {rel}: «было» {n_old}×, «станет» {n_new}× — {old[:60]!r}")
+    summary = (EX / "README.md").read_text(encoding="utf-8").splitlines()
+    for ex, (old, new) in SUMMARY.items():
+        rows = summary_row(summary, ex)
+        ok = len(rows) == 1 and (new if AFTER else old) in rows[0]
+        if not ok:
+            bad += 1
+            print(f"! README.md, сводная таблица, {ex}: строк {len(rows)}; {rows[:1]}")
+    print(f"пар: {len(PAIRS)} + строк сводной таблицы: {len(SUMMARY)}; нарушений: {bad} "
+          f"({'после' if AFTER else 'до'} шага 4)")
+
+
+if __name__ == "__main__":
+    main()

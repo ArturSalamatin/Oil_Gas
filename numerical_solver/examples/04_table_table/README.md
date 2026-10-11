@@ -107,9 +107,9 @@ $R_s \in \{0, 30\}$.
 ## Аналитика
 
 Все проверки гидродинамики опираются на стационар: в нём компонентные
-потоки $G^o$ и $G^g$ постоянны по $r$. Формулы реализованы в общих
-модулях [closed_form.py](../closed_form.py) и
-[two_phase_analytics.py](../two_phase_analytics.py).
+потоки $G^o$ и $G^g$ постоянны по $r$. Формулы реализованы в пакете:
+[diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py) и
+[diagnostics/two_phase.py](../../gpn_multiphase_solver/diagnostics/two_phase.py).
 
 ### 1. Гидродинамика устанавливается за ~10 ч — настоящим переходным процессом
 
@@ -143,7 +143,7 @@ $R_e^2/\chi$ при $\chi = k/(\phi\mu_o c_o) \approx 0.3$ м²/с состав�
 ### 3. Замкнутое решение
 
 Дебит квадратурой, профиль давления — ОДУ от контура внутрь
-([closed_form.py](../closed_form.py)); из расчёта не берётся ничего.
+([diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py)); из расчёта не берётся ничего.
 
 | величина | аналитика | расчёт | расхождение |
 |---|---|---|---|
@@ -364,9 +364,9 @@ cd numerical_solver
 | `grid_convergence.py` | сходимость к замкнутому решению по сетке, ~2 мин |
 | `config.json`, `*.csv` | конфигурация и таблицы |
 
-Аналитика $p$, $S_g$, $R_s$ и баланс энергии — общие модули `examples/`
-([closed_form.py](../closed_form.py), [rs_analytics.py](../rs_analytics.py),
-[energy_balance.py](../energy_balance.py)), их подключает `example_runner`.
+Аналитика $p$, $S_g$, $R_s$ и баланс энергии — в пакете ([diagnostics/](../../gpn_multiphase_solver/diagnostics/),
+ряды баланса — [energy/balance.py](../../gpn_multiphase_solver/energy/balance.py)); печать
+и рисунки — общие модули `examples/`, их подключает `example_runner`.
 
 ## Дальше
 

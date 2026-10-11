@@ -151,7 +151,7 @@ $$\boxed{q_o = \frac{2\pi k h}{\ln(R_e/r_w)}\int_{p_{wf}}^{p_e} \frac{k_{ro}(S_g
 при $N = 200$ — см. «Сходимость по сетке»), то есть это погрешность
 конечных объёмов, а не ошибка вывода.
 
-Решение выводится общим модулем [closed_form.py](../closed_form.py) и
+Решение выводит модуль пакета [diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py) и
 применяется ко всем сценариям с $R_{s,0} > 0$: в него входят только PVT,
 ОФП и граничные давления, поэтому вид замыканий (корреляции или таблицы)
 роли не играет.
@@ -334,8 +334,8 @@ $\sim\varepsilon\,\text{cap}\,T$ копились с числом подшаго
 | `config.json` | Конфигурация задачи |
 
 Своих проверочных скриптов у примера нет. Аналитика $p$, $S_g$ и $R_s$
-живёт в общих модулях [../closed_form.py](../closed_form.py) и
-[../rs_analytics.py](../rs_analytics.py): эти выводы не зависят ни от вида
+живёт в пакете — [diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py) и
+[diagnostics/rs.py](../../gpn_multiphase_solver/diagnostics/rs.py): эти выводы не зависят ни от вида
 PVT, ни от вида ОФП, и подключаются самим `example_runner`. Температурная асимптотика и баланс
 энергии — тоже общие модули `examples/`.
 

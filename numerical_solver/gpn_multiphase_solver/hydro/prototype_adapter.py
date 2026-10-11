@@ -24,6 +24,11 @@ Internal и outer — без инверсии.
 HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адаптивный-шаг.md).
 См. P1-адаптер-единицы.md.
 
+Память ступени 4 (DEBT-048): после STAGE4_MEMORY принятых подряд шагов, решённых
+ступенью 4 advance, при том же управлении и на продолжении той же траектории шаг
+решается сразу ступенью 4 (advance_fourth_stage). Её отказ — отказ шага без
+ступеней 1-3; после STAGE4_MAX_FAILURES отказов подряд память сбрасывается.
+
 Баланс массы (DEBT-039): component_inventories — запас компонентов
 функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
 и контур за шаг (подшаг один — dt·G того же состояния).
@@ -41,19 +46,36 @@ from ..bc import PressureControl, RateControl
 from ..units import BAR_TO_PA, DAY_TO_S
 from ..fluxes import phase_fluxes_from_components
 
+# Память ступени 4 (DEBT-048). Замер плана (vault/plans/debt-048
+# shutin-remember-solving-stage.md, 1.2 и 1.9): вариант m2s — после BUG-024
+# −80 % итераций Ньютона на останове конфига 20, −69 % в примере 17;
+# 22 примера из 23 побитово.
+STAGE4_MEMORY = 2         # принятых подряд шагов ступени 4, после которых шаг — сразу ею
+STAGE4_MAX_FAILURES = 2   # отказов подряд ступени 4 по памяти, после которых память сброшена
+
 
 class PrototypeHydroAdapter(HydroSolver):
     """Adapter: RadialBlackOilModel (бар) → HydroSolver (Па)."""
 
-    def __init__(self, model, grid: Grid, pvt: HydroPVT):
+    def __init__(self, model, grid: Grid, pvt: HydroPVT,
+                 stage4_memory: int | None = STAGE4_MEMORY):
         """
-        model       — RadialBlackOilModel, уже сконфигурированный
-        grid        — наш Grid (LogRadialGrid)
-        pvt         — наш HydroPVT; фабрика передаёт тот же FullPVT, что решателю энергии (DEBT-006)
+        model         — RadialBlackOilModel, уже сконфигурированный
+        grid          — наш Grid (LogRadialGrid)
+        pvt           — наш HydroPVT; фабрика передаёт тот же FullPVT, что решателю энергии (DEBT-006)
+        stage4_memory — после стольких принятых подряд шагов ступени 4 шаг решается
+                        сразу ею (DEBT-048); None — память выключена
         """
         self._model = model
         self._grid = grid
         self._pvt = pvt
+        # Память ступени 4 (DEBT-048): серия принятых подряд шагов, решённых
+        # ступенью 4; отказы подряд ступени 4 по памяти; ключ продолжения —
+        # (управление, t конца последнего принятого шага).
+        self._stage4_memory = stage4_memory
+        self._stage4_run = 0
+        self._stage4_failures = 0
+        self._stage4_key = None
 
     def component_inventories(self, state: SimulationState) -> tuple[float, float]:
         """Запас компонентов функцией прототипа, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
@@ -102,15 +124,47 @@ class PrototypeHydroAdapter(HydroSolver):
         )
 
         # ── Шаг 3: advance ──
-        new_proto, report = self._model.advance(proto_state, dt)
+        # Память ступени 4 (DEBT-048). На останове из развитой газовой зоны почти
+        # каждый шаг решает только ступень 4 advance (BUG-020), а ступени 1-3 перед
+        # ней не сходятся: на непринятые решения уходило около 80 % итераций
+        # Ньютона на останове. После STAGE4_MEMORY принятых подряд шагов ступени 4
+        # шаг решается сразу ею: advance_fourth_stage побитово тот же, что advance
+        # после трёх отказов. Её отказ — отказ шага, ступени 1-3 не пробуются:
+        # замер плана — после её отказа они не решили ни одного шага из 2486.
+        # Страховка от шага, который решили бы только они, — сброс памяти после
+        # STAGE4_MAX_FAILURES отказов подряд. Одиночный шаг ступени 4 память не
+        # включает: пример 16 (один такой шаг за расчёт) остаётся побитовым.
+        # Память — только на продолжении той же траектории при том же управлении:
+        # ключ — управление (атрибуты модели после set_*) и t конца последнего
+        # принятого шага; повтор подшага после отказа идёт из того же состояния.
+        m = self._model
+        control = (m.control_mode, m.p_bhp_bar, m.oil_rate_target_sm3_day, m.min_bhp_bar)
+        if (control, state.t) != self._stage4_key:
+            self._stage4_run = self._stage4_failures = 0
+        by_memory = (self._stage4_memory is not None
+                     and self._stage4_run >= self._stage4_memory)
+        if by_memory:
+            new_proto, report = m.advance_fourth_stage(proto_state, dt)
+        else:
+            new_proto, report = m.advance(proto_state, dt)
         if not report.converged:
+            # Отказ полного перебора серию не обнуляет: повтор того же подшага
+            # меньшим шагом остаётся на той же траектории.
+            if by_memory:
+                self._stage4_failures += 1
+                if self._stage4_failures >= STAGE4_MAX_FAILURES:
+                    self._stage4_run = self._stage4_failures = 0
             # Дробит шаг Simulator (DEBT-015): делит пополам только этот
             # подшаг и повторяет его из того же состояния. Здесь — факты
             # отказа для журнала; текст для пользователя — в Simulator.
             raise HydroConvergenceError(
-                f"advance не сошёлся: dt = {dt:.3e} с, "
+                f"advance не сошёлся{' (ступень 4 по памяти)' if by_memory else ''}: "
+                f"dt = {dt:.3e} с, "
                 f"t = {state.t / DAY_TO_S:.4f} сут, итераций {report.iterations}, "
                 f"невязка {report.residual_inf:.2e}")
+        self._stage4_run = self._stage4_run + 1 if report.phase_switching else 0
+        self._stage4_failures = 0
+        self._stage4_key = (control, state.t + dt)
 
         # ── Шаг 4: BlackOilState (бар) → SimulationState (Па) ──
         new_state = SimulationState(

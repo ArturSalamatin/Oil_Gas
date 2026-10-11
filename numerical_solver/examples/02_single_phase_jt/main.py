@@ -140,7 +140,7 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     beta = rho_o * c_p_o * abs(Q_o) / (2 * np.pi * h)
     kappa = rho_cp_eff / dt  # Вт/(м³·К) — коэффициент накопления
 
-    # Множитель адиабатики с учётом JT: (1 + ρ·cp·μ_JT), см. tridiag.py:223
+    # Множитель адиабатики с учётом JT: (1 + ρ·cp·μ_JT), см. TridiagEnergySolver.compute_adiabatic
     adiab_factor = 1.0 + rho_o * c_p_o * mu_JT
 
     C_dup = (p0 - p_wf) / np.log(R_e / r_w)

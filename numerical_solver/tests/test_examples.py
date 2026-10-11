@@ -748,8 +748,8 @@ class TestSharedChecks:
                 assert abs(float(cond[-1])) > 0.0, (
                     f"{name}: lambda != 0, но cum_cond = 0 — член не считается")
             else:
-                # Q_T_ext = geom * lambda_eff[-1] при lambda = 0 даёт ровно
-                # 0.0, без NaN и inf (tridiag.py:179).
+                # Q_T[N] = geom * lambda_eff[-1] при lambda = 0 даёт ровно
+                # 0.0, без NaN и inf (compute_conductive_transmissibility).
                 assert np.all(cond == 0.0), (
                     f"{name}: lambda = 0, но cum_cond != 0: {cond[-1]}")
 

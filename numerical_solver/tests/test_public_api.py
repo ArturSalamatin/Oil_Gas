@@ -6,6 +6,7 @@
 рисунки проверок и страж независимости пакета от examples/.
 """
 
+import ast
 from pathlib import Path
 
 import matplotlib
@@ -155,3 +156,37 @@ def test_plot_relperm_curves_panels(sg_max, n_panels):
 def test_pvt_table_nodes_none_for_correlation():
     """У корреляции Стендинга узлов нет — None: маркеры на гладкой кривой вводили бы в заблуждение."""
     assert pvt_table_nodes(create_pvt(load_config(BASELINE)), 50.0) is None
+
+
+# ── Независимость пакета от examples/ ────────────────────────
+
+PACKAGE_DIR = SOLVER_ROOT / "gpn_multiphase_solver"
+EXAMPLES_DIR = SOLVER_ROOT / "examples"
+
+
+def test_package_does_not_depend_on_examples():
+    """Пакет не импортирует модули examples/ и не правит sys.path (DEBT-011).
+
+    Критерий поставки: пакет работает после установки, без репозитория.
+    Проверка статическая, разбором AST: импорт пакета в этом же процессе
+    ничего не доказал бы — другие тесты кладут examples/ в sys.path.
+    Относительные импорты (from .mass_balance) — свои модули пакета.
+    """
+    example_modules = {p.stem for p in EXAMPLES_DIR.glob("*.py")}
+    found = []
+    for path in sorted(PACKAGE_DIR.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                tops = [a.name.split(".")[0] for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                tops = [node.module.split(".")[0]]
+            else:
+                tops = []
+            rel = path.relative_to(PACKAGE_DIR).as_posix()
+            found += [f"{rel}:{node.lineno} импорт {t}" for t in tops
+                      if t in example_modules]
+            if (isinstance(node, ast.Attribute) and node.attr == "path"
+                    and isinstance(node.value, ast.Name) and node.value.id == "sys"):
+                found.append(f"{rel}:{node.lineno} sys.path")
+    assert not found, found

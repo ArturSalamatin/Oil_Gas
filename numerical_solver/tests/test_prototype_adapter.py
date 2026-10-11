@@ -845,3 +845,63 @@ class TestMassBalanceIntegrals:
 
         # Один вызов advance: повторов с меньшим шагом внутри адаптера нет
         assert calls == [DT]
+
+
+# ═══════════════════════════════════════════════════════════
+# Лимиты Ньютона из конфига (DEBT-008)
+# ═══════════════════════════════════════════════════════════
+
+class TestNewtonLimits:
+    """Адаптер передаёт лимиты Ньютона в каждый вызов прототипа (DEBT-008).
+
+    До DEBT-008 адаптер звал advance(proto_state, dt), и поля
+    numerics.newton_max_iter, max_active_set_iter ни на что не влияли.
+    Решения здесь нет: подмена возвращает исходное состояние как
+    сошедшееся и записывает переданные ключевые аргументы.
+    """
+
+    @staticmethod
+    def _recorder(calls, name, phase_switching=False):
+        def call(proto_state, dt, **kw):
+            calls.append((name, kw))
+            return proto_state, SimpleNamespace(
+                converged=True, phase_switching=phase_switching,
+                iterations=0, residual_inf=0.0)
+        return call
+
+    def test_limits_reach_advance(self, model, our_grid, our_pvt,
+                                  initial_state, bc, monkeypatch):
+        """Лимиты из конструктора — ключевыми аргументами advance."""
+        adapter = PrototypeHydroAdapter(model, our_grid, our_pvt,
+                                        max_newton=7, max_active_iter=5)
+        calls = []
+        monkeypatch.setattr(model, "advance", self._recorder(calls, "advance"))
+        adapter.solve(initial_state, dt=DT, bc=bc)
+        assert calls == [("advance", dict(max_active_iter=5, max_newton=7))]
+
+    def test_default_limits_are_prototype_defaults(self, model, adapter,
+                                                   initial_state, bc, monkeypatch):
+        """Адаптер без лимитов (фикстура) передаёт 12 и 15 — умолчания advance."""
+        calls = []
+        monkeypatch.setattr(model, "advance", self._recorder(calls, "advance"))
+        adapter.solve(initial_state, dt=DT, bc=bc)
+        assert calls == [("advance", dict(max_active_iter=12, max_newton=15))]
+
+    def test_limits_reach_fourth_stage_by_memory(self, model, our_grid, our_pvt,
+                                                 initial_state, bc, monkeypatch):
+        """Шаг по памяти ступени 4 (DEBT-048) получает те же лимиты, что advance."""
+        # Память включается после STAGE4_MEMORY принятых подряд шагов ступени 4
+        # на продолжении траектории; подмена сообщает phase_switching=True.
+        from gpn_multiphase_solver.hydro.prototype_adapter import STAGE4_MEMORY
+        adapter = PrototypeHydroAdapter(model, our_grid, our_pvt,
+                                        max_newton=7, max_active_iter=5)
+        calls = []
+        monkeypatch.setattr(model, "advance",
+                            self._recorder(calls, "advance", phase_switching=True))
+        monkeypatch.setattr(model, "advance_fourth_stage",
+                            self._recorder(calls, "fourth", phase_switching=True))
+        state = initial_state
+        for _ in range(STAGE4_MEMORY + 1):
+            state = adapter.solve(state, dt=DT, bc=bc).state
+        assert [name for name, _ in calls] == ["advance"] * STAGE4_MEMORY + ["fourth"]
+        assert all(kw == dict(max_active_iter=5, max_newton=7) for _, kw in calls)

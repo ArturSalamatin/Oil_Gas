@@ -161,6 +161,30 @@ class TestFactoryTablePVT:
 
         assert simulator._max_retries == 9
 
+    def test_factory_passes_newton_fields(self):
+        """Поля Ньютона из конфига доходят до прототипа (DEBT-008).
+
+        До DEBT-008 фабрика их не передавала: прототип считал со своими
+        умолчаниями при любом значении в конфиге (проба
+        vault/issues/debt-008/probes/red_state.out.txt).
+        """
+        config = load_config(TABLE_CONFIG)
+        nc = config.numerics
+        nc.newton_max_iter, nc.max_active_set_iter = 7, 5
+        nc.rs_switch_tol, nc.sg_switch_tol = 2e-5, 3e-9
+        simulator, _ = SimulatorFactory.from_config(config)
+        hydro = simulator._hydro
+        assert (hydro._max_newton, hydro._max_active_iter) == (7, 5)
+        assert (hydro._model.rs_switch_tol, hydro._model.sg_switch_tol) == (2e-5, 3e-9)
+
+    def test_factory_default_newton_fields(self):
+        """Без numerics в конфиге — умолчания прототипа: 15, 12, 1e-5, 1e-9."""
+        config = load_config(TABLE_CONFIG)
+        simulator, _ = SimulatorFactory.from_config(config)
+        hydro = simulator._hydro
+        assert (hydro._max_newton, hydro._max_active_iter) == (15, 12)
+        assert (hydro._model.rs_switch_tol, hydro._model.sg_switch_tol) == (1e-5, 1e-9)
+
     def test_prototype_relperm_from_csv(self):
         """Прототип получает табличную ОФП с узлами CSV, а не пересчёт на 101 узле (DEBT-006).
 
@@ -448,6 +472,20 @@ class TestInitialStateVsTable:
         config = load_config(TABLE_CONFIG)
         config.initial_conditions.p0 = 15e6 - 1.0
         SimulatorFactory.from_config(config)
+
+    def test_supersaturation_tolerance_from_config(self):
+        """Допуск пересыщения старта — numerics.rs_switch_tol (DEBT-008).
+
+        p0 на 1 Па ниже p_b(30): избыток R_s 3e-6. При умолчании 1e-5 старт
+        допустим (тест выше), при допуске 1e-6 — нет: проверка берёт тот же
+        допуск, по которому решатель включает газ. До DEBT-008 допуск 1e-5 был
+        зашит в фабрике (проба red_state.out.txt, п. 4).
+        """
+        config = load_config(TABLE_CONFIG)
+        config.initial_conditions.p0 = 15e6 - 1.0
+        config.numerics.rs_switch_tol = 1e-6
+        with pytest.raises(ValueError, match="пересыщено"):
+            SimulatorFactory.from_config(config)
 
     def test_dead_oil_below_table_pb0_passes(self):
         """Rs0 = 0, p0 = 3 МПа ниже табличного p_b(0) = 5 МПа — допустимо.

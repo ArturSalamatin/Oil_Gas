@@ -40,7 +40,6 @@
     "Rs0": 30.0
   },
   "time": {
-    "start_day": 0.0,
     "dt_integration": 3600,
     "history": [
       {
@@ -52,12 +51,9 @@
     ]
   },
   "numerics": {
-    "dt_min": 1.0,
-    "dt_max": 86400,
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO",
-    "format": "npz"
+    "log_level": "INFO"
   }
 }

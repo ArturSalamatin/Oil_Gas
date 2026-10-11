@@ -181,7 +181,8 @@ def convert(book: Path, out_dir: Path) -> None:
         # Шаг интегрирования = наибольший шаг прототипа DTMAX (мин → с). Свой
         # выбор шага прототипа (DT initial, DT minimum) решатель не повторяет:
         # шаг постоянен на интервале истории (дробится только при отказе Ньютона).
-        "time": {"start_day": 0.0, "dt_integration": float(m["DTMAX"]) * 60.0,
+        # start_day не пишется: поле удалено из схемы (DEBT-008), время истории — от 0
+        "time": {"dt_integration": float(m["DTMAX"]) * 60.0,
                  "history": history},
         "numerics": {"skin": float(m["Well skin"]),
                      "jacobian_mode": str(m["Jacobian mode"]).strip(),

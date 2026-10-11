@@ -55,7 +55,8 @@ class SimulatorFactory:
 
         # 2. PVT (FullPVT — гидро + тепловые)
         pvt = _create_pvt(config)
-        _check_undersaturated_start(config.initial_conditions, pvt)
+        _check_undersaturated_start(config.initial_conditions, pvt,
+                                    config.numerics.rs_switch_tol)
         # BUG-019: отрицательная сжимаемость нефти или газа — предупреждение
         _warn_negative_compressibility(config, pvt)
 
@@ -270,16 +271,13 @@ def _check_relperm_table(Sg: list, relperm_file: str) -> None:
                 f"Строки — по возрастанию S_g.")
 
 
-# Допуск пересыщения на старте, м³ст/м³ст, — rs_switch_tol решателя
-# (RadialBlackOilModel, blackoil.py:32; фабрика его не меняет): проверка
-# отвергает ровно те состояния, которые решатель при давлении p0 счёл бы
-# пересыщенными. Округление ввода не мешает: p0 на 1 Па ниже p_b даёт избыток
-# ~6e-6 (Стендинг, Rs0 = 50) и 3e-6 (таблица 0/30).
-_RS0_SUPERSAT_TOL = 1e-5
-
-
-def _check_undersaturated_start(ic, pvt) -> None:
-    """Начальное состояние недонасыщенное: Rs0 <= Rs_eq(p0), иначе ValueError (BUG-017)."""
+def _check_undersaturated_start(ic, pvt, rs_tol: float) -> None:
+    """Начальное состояние недонасыщенное: Rs0 <= Rs_eq(p0) + rs_tol, иначе ValueError (BUG-017)."""
+    # Допуск rs_tol, м³ст/м³ст, — numerics.rs_switch_tol, тот же, что фабрика
+    # передаёт решателю (DEBT-008): проверка отвергает ровно те состояния,
+    # которые решатель при давлении p0 счёл бы пересыщенными. При умолчании
+    # 1e-5 округление ввода не мешает: p0 на 1 Па ниже p_b даёт избыток ~6e-6
+    # (Стендинг, Rs0 = 50) и 3e-6 (таблица 0/30).
     # Начальное состояние всегда однофазное (S_g = 0, шаг 8 from_config) —
     # инициализации со свободным газом нет. При Rs0 > Rs_eq(p0) решатель на
     # первом шаге выделяет избыток «в закрытом сосуде», и давление молча
@@ -288,7 +286,7 @@ def _check_undersaturated_start(ic, pvt) -> None:
     # нефти табличное p_b(0) условно (5 МПа в демо-таблице), а Rs_eq(p0) = 0 =
     # Rs0 при любом p0 ниже — пересыщения нет.
     Rs_eq = float(pvt.Rs_eq(np.array([ic.p0]))[0])
-    if ic.Rs0 > Rs_eq + _RS0_SUPERSAT_TOL:
+    if ic.Rs0 > Rs_eq + rs_tol:
         pb = float(pvt.pb(np.array([ic.Rs0]))[0])
         raise ValueError(
             f"Начальное состояние пересыщено газом: Rs0 = {ic.Rs0:g} м³ст/м³ст "
@@ -407,7 +405,9 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     proto_grid = RadialGrid(gc.r_well, gc.R_ext, gc.h, config.grid.N,
                             rc.permeability * M2_TO_MD)
 
-    # Порода прототипа (p_ref в бар, cr в 1/бар)
+    # Порода прототипа (p_ref в бар, cr в 1/бар): φ(p) = porosity·exp(c_r·(p − p0)).
+    # Опорное давление — начальное p0: rock.porosity задана при p0, поля p_ref
+    # в конфиге нет (DEBT-008).
     proto_rock = CompressibleRock(
         phi_ref=rc.porosity,
         p_ref_bar=ic.p0 / BAR_TO_PA,
@@ -431,6 +431,10 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
         p_bhp_bar=p_bhp_bar, p_outer_bar=p_outer_bar,
         outer_rs_sm3_sm3=ic.Rs0,
         skin=nc.skin,
+        # Допуски переключения фаз (DEBT-008): газ включается в ячейке при
+        # Rs > Rs_eq(p) + rs_switch_tol, выключается при Sg < −sg_switch_tol.
+        rs_switch_tol=nc.rs_switch_tol,
+        sg_switch_tol=nc.sg_switch_tol,
         jacobian_mode=nc.jacobian_mode,
         linear_solver=nc.linear_solver,
         # BUG-020: четвёртая ступень advance — Ньютон с переключением набора фаз
@@ -454,7 +458,10 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     # TableFullPVT до PrototypePVTAdapter проверкой поля _hydro через hasattr;
     # числа те же побитово: TableFullPVT делегирует гидро-методы без
     # арифметики, а rho_o, rho_g — общие методы HydroPVT.
-    return PrototypeHydroAdapter(model, grid, pvt)
+    # Лимиты Ньютона (DEBT-008): адаптер передаёт их в каждый вызов advance
+    return PrototypeHydroAdapter(model, grid, pvt,
+                                 max_newton=nc.newton_max_iter,
+                                 max_active_iter=nc.max_active_set_iter)
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):

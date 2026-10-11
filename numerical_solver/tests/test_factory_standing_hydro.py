@@ -79,10 +79,12 @@ class TestFactoryStandingHydro:
         assert history.well_data[-1].q_o_std > 0
 
     def test_standing_dupuit_pressure(self):
-        """Профиль давления ≈ лог-профиль Дюпюи (однофазный, Newton).
+        """Профиль давления = лог-профиль Дюпюи в центрах ячеек (однофазный).
 
-        baseline.json: 2 интервала, последний p_wf=10e6. Newton даёт
-        нестационарное решение, rtol=1e-2.
+        baseline.json, последний p_wf = 10e6. Центры LogRadialGrid — те же,
+        что у прототипа (DEBT-063); в них отклонение от Дюпюи — до округления
+        (замер DEBT-063: 6.7e-16). Прежние rtol=1e-2 и «нестационарное
+        решение» объясняли расхождение 1.03e-4 — разницу точек сравнения.
         """
         config = load_config(BASELINE)
         simulator, initial = SimulatorFactory.from_config(config)
@@ -92,7 +94,7 @@ class TestFactoryStandingHydro:
         p_wf_last = config.time.history[-1].p_wf  # 10e6 Па
         p_exact = p_wf_last + (P0 - p_wf_last) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         np.testing.assert_allclose(
-            history.states[-1].p, p_exact, rtol=1e-2)
+            history.states[-1].p, p_exact, rtol=1e-12)
 
     def test_beal_reaches_pvt(self):
         """pvt.mu_o_undersaturated = "beal" доходит до StandingFullPVT (FEAT-027).

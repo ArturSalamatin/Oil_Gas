@@ -602,9 +602,13 @@ class TestUpstreamWithZeroKro:
 class TestMassBalance:
     """F_oil[j] = V·φ·Δ(So/Bo)/dt + G_o[j+1] - G_o[j] ≈ 0.
 
-    Допуск ~2% из-за разных центров ячеек:
-    наш Grid — центр масс кольца (eq:cell_center), прототип — √(r_i·r_{i+1}).
-    Проводимости расходятся → потоки немного разные.
+    Баланс собран из объёмов ячеек (общих с прототипом) и потоков G_o
+    прототипа — центры ячеек в него не входят. Невязку ограничивает критерий
+    Ньютона прототипа ||F||_inf <= 1e-11 + 1e-8·||F0||_inf м³ст/с
+    (radial_blackoil/blackoil.py, _newton_fixed_active_set). На этом шаге
+    ||F0||_inf ≈ 37·|G_o[0]| — гарантия 3.7e-7 в долях дебита, допуск 1e-6
+    её покрывает. Замер DEBT-063 — 5.5e-12 (квадратичная сходимость).
+    Прежний допуск 0.02 объяснялся «разными центрами» — неверно.
     """
 
     def test_oil_balance(self, result, initial_state, our_grid, our_pvt):
@@ -620,7 +624,7 @@ class TestMassBalance:
         residual = accum + net_flux
 
         scale = np.abs(result.G_o[0])
-        np.testing.assert_allclose(residual / scale, 0.0, atol=0.02,
+        np.testing.assert_allclose(residual / scale, 0.0, atol=1e-6,
                                    err_msg="Баланс нефтяного компонента нарушен")
 
 

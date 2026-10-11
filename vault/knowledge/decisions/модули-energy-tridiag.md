@@ -114,18 +114,20 @@ F[j+1/2] = sum_alpha( <Phi_alpha · T>_{j+1/2} )
 ### Кондуктивный поток через грань (eq. 25)
 
 ```python
-Q_lambda[j+1/2] = (2*pi*h / ln(r_{j+1}/r_j)) * lambda_eff_face * (T_{j+1} - T_j)
+Q_lambda[j+1/2] = (2*pi*h / ln(r_{j+1}/r_j)) * lambda_eff_face * (T_j - T_{j+1})   # > 0 — от скважины
 ```
 
-lambda_eff_face — гармоническое среднее с логарифмическими весами (eq. 21):
+lambda_eff_face — гармоническое среднее с нормированными логарифмическими весами (`eq:face_interp`):
 ```python
-lambda_eff_face = 1.0 / (w_left/lambda_eff[j] + w_right/lambda_eff[j+1])
+lambda_eff_face = (w_left + w_right) / (w_left/lambda_eff[j] + w_right/lambda_eff[j+1])   # w_left + w_right = ln(r_{j+1}/r_j)
 ```
 
 Обозначим кондуктивную проводимость:
 ```python
-Q_T[j+1/2] = (2*pi*h / ln(r_{j+1}/r_j)) * lambda_eff_face
+Q_T[j+1/2] = (2*pi*h / ln(r_{j+1}/r_j)) * lambda_eff_face == 2*pi*h / (w_left/lambda_eff[j] + w_right/lambda_eff[j+1])
 ```
+
+До [[BUG-027]] здесь, как в `.tex`, среднее было без множителя `(w_left + w_right)` — двойной ln [[BUG-002]]; знак потока был обратным конвенции (`T_{j+1} − T_j`).
 
 ## Источниковые члены
 

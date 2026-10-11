@@ -351,41 +351,58 @@ class TestHarmonicInterpolation:
         # Q_face = 2πh·λ / ln(r_center[j+1]/r_center[j]) · (ln(r[j+1]) - ln(r[j]))
         #        = 2πh·λ · 1 = 2πh·λ = const
 
-        # Через log_weights: λ_face = 1 / (w_L/λ + w_R/λ) = λ / (w_L + w_R)
-        # Кондуктивная проводимость: Q_T_f = 2πh / ln(r_c[j+1]/r_c[j]) · λ_face
+        # Через log_weights (BUG-027): сопротивления двух кольцевых слоёв
+        # [r_j, r_{j+1/2}] и [r_{j+1/2}, r_{j+1}] складываются,
+        # Q_T_f = 2πh / (w_L/λ + w_R/λ) = 2πhλ / (w_L + w_R), и
+        # w_L + w_R = ln(r_c[j+1]/r_c[j]) — в знаменателе один ln. Запись
+        # «2πh/ln · 1/(w_L/λ + w_R/λ)» (ненормированное «среднее» λ/ln под
+        # вторым ln) — дефект BUG-002; до BUG-027 она стояла и в этом
+        # комментарии, и в постановке.
         # Q_face = Q_T_f · (T[j+1] - T[j])
 
         w_L = grid.log_weights_left
         w_R = grid.log_weights_right
-        lam_face = lam / (w_L + w_R) * (w_L + w_R)  # = λ для постоянного λ
+        Q_T = 2 * np.pi * grid.h / (w_L / lam + w_R / lam)    # [N-1], Вт/К
 
         for f in range(grid.N - 1):
-            log_ratio = np.log(grid.r_centers[f + 1] / grid.r_centers[f])
-            Q_T = 2 * np.pi * grid.h * lam / log_ratio
             dT = T_centers[f + 1] - T_centers[f]
-            Q_face = Q_T * dT
-            # dT = ln(r[f+1]) - ln(r[f]) = log_ratio → Q_face = 2πhλ
+            Q_face = Q_T[f] * dT
+            # dT = ln(r[f+1]) - ln(r[f]) = w_L + w_R → Q_face = 2πhλ
             assert Q_face == pytest.approx(
                 2 * np.pi * grid.h * lam, rel=1e-10), f"face {f}"
 
     def test_harmonic_mean_nontrivial(self, grid):
-        """Гармоническое среднее с log_weights для неоднородного λ: положительное, конечное."""
-        lam_cells = 1.0 + np.arange(grid.N, dtype=float)
+        """Среднее eq:face_interp при неоднородном λ лежит между λ_j и λ_{j+1}.
+
+        Проверяется свойство среднего, а не только знак. Ненормированная форма
+        1/(w_L/λ_j + w_R/λ_{j+1}) — запись постановки до BUG-027 — в
+        1/ln(r_{j+1}/r_j) ≈ 5.9 раза больше верного среднего на этой сетке и
+        выходит за max(λ_j, λ_{j+1}).
+        """
+        lam_cells = 1.0 + np.arange(grid.N, dtype=float)    # растёт: λ_j < λ_{j+1}
         w_L = grid.log_weights_left
         w_R = grid.log_weights_right
-        lam_face = 1.0 / (w_L / lam_cells[:-1] + w_R / lam_cells[1:])
+        lam_face = (w_L + w_R) / (w_L / lam_cells[:-1] + w_R / lam_cells[1:])
 
-        assert np.all(lam_face > 0)
         assert np.all(np.isfinite(lam_face))
+        # Допуск 1e-12 — запас на округление: среднее строго между λ_j и λ_{j+1},
+        # ошибка его счёта — несколько ULP
+        assert np.all(lam_face >= lam_cells[:-1] * (1 - 1e-12))
+        assert np.all(lam_face <= lam_cells[1:] * (1 + 1e-12))
 
     def test_uniform_lambda_face_value(self, grid):
-        """При однородном λ: λ_face = λ / (w_L + w_R) = λ / ln(r_{j+1}/r_j)."""
+        """При однородном λ среднее eq:face_interp равно λ.
+
+        Нормировка весов eq:face_interp: w_L + w_R = ln(r_{j+1}/r_j) между
+        центрами ячеек — та же проверка, что до BUG-027, но величина
+        называется средним, только если равна λ.
+        """
         lam_val = 2.5
         w_L = grid.log_weights_left
         w_R = grid.log_weights_right
-        lam_face = 1.0 / (w_L / lam_val + w_R / lam_val)
         log_ratio_centers = np.log(grid.r_centers[1:] / grid.r_centers[:-1])
-        np.testing.assert_allclose(lam_face, lam_val / log_ratio_centers, rtol=1e-12)
+        lam_face = log_ratio_centers / (w_L / lam_val + w_R / lam_val)
+        np.testing.assert_allclose(lam_face, lam_val, rtol=1e-12)
 
 
 # ── Параметризованный тест: баланс объёмов ────────────────────

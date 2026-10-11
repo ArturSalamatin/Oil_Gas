@@ -321,7 +321,8 @@ class TestCaseD_PureConduction:
 
         # Аналитический Q для потока от центра j к центру j+1:
         # Q = 2πhλ / ln(r_{j+1}/r_j) · ΔT   (один ln)
-        # Код вычисляет: geom * lambda_face = (2πh/ln) * (λ/ln) = 2πhλ/ln²
+        # До BUG-002 код вычислял geom · lambda_face = (2πh/ln) · (λ/ln) = 2πhλ/ln²;
+        # сейчас — последовательные сопротивления 2πh/(w_L/λ + w_R/λ) = 2πhλ/ln.
         # Сравним: Q_T_internal[0] / (2πhλ/ln(r_c[1]/r_c[0]))
         r_c = grid.r_centers
         Q_analyt_0 = 2 * np.pi * H * lambda_eff_val / np.log(r_c[1] / r_c[0])

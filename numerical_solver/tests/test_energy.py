@@ -686,12 +686,13 @@ class TestComputeAdiabatic:
 
 
 class TestComputeConductiveTransmissibility:
-    """compute_conductive_transmissibility: Q_T = geom * lambda_face."""
+    """compute_conductive_transmissibility: Q_T = 2πh / (w_L/λ_L + w_R/λ_R)."""
 
     def test_uniform_lambda(self):
-        """При однородном lambda_eff:
-        lambda_face = lam / (w_L + w_R) (гармоническое среднее с ненормированными весами).
-        Q_T = geom * lambda_face.
+        """При однородном lambda_eff: Q_T = 2πhλ / (w_L + w_R) = 2πhλ / ln(r_{j+1}/r_j).
+
+        Один ln в знаменателе (BUG-002). В записи документа — eq:heat_cond_disc
+        со средним eq:face_interp — среднее грани при однородной λ равно λ (BUG-027).
         """
         N_cells = 5
         grid = LogRadialGrid(R_WELL, R_EXT, H, N_cells, K_PERM)

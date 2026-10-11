@@ -7,7 +7,8 @@ issue: DEBT-014
 github: 95
 branch: refactor/debt-014/compact-history-configs
 status: реализован
-worktree: .worktrees/debt-014
+worktree: .worktrees/debt-014; удалён после влития
+merged: 5116369 (2026-10-11)
 audit:
   date: 2026-10-10
   found: 8

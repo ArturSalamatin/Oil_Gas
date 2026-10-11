@@ -37,7 +37,7 @@ Simulator ──→ EnergyUnitDecorator ──→ TridiagEnergySolver (SI → SI
 
 ### EnergyUnitDecorator
 
-Для текущей реализации — тождественный (SI → SI, все коэффициенты = 1). Заложен для будущего: если появится тепловой модуль во внутренних единицах — декоратор обеспечит конвертацию.
+Эскиз, в коде не реализован: тепловой модуль работает в SI, единицы гидродинамики переводят адаптеры прототипа (`units.py`). Если появится тепловой модуль во внутренних единицах — декоратор обеспечит конвертацию; для SI он тождественный (все коэффициенты = 1).
 
 ```python
 class EnergyUnitDecorator(EnergySolver):
@@ -48,8 +48,10 @@ class EnergyUnitDecorator(EnergySolver):
     def __init__(self, solver: EnergySolver):
         self._solver = solver
     
-    def solve(self, hydro_result, state_prev, dt, T_ext):
-        return self._solver.solve(hydro_result, state_prev, dt, T_ext)
+    def solve(self, hydro_result, state_prev, dt, bc, collect=None):
+        # collect передаётся дальше обязательно: обёртка, его
+        # потерявшая, оставит баланс энергии нулевым без ошибки
+        return self._solver.solve(hydro_result, state_prev, dt, bc, collect)
 ```
 
 ### Полиморфизм по единицам

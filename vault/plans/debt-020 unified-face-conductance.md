@@ -7,7 +7,8 @@ issue: DEBT-020
 github: 99
 branch: refactor/debt-020/unified-face-conductance
 status: реализован
-worktree: .worktrees/debt-020
+worktree: .worktrees/debt-020; удалён после влития
+merged: cf827d1 (2026-10-11)
 audit:
   date: 2026-10-11
   found: 6

@@ -111,9 +111,8 @@ class TridiagEnergySolver(EnergySolver):
             Q_o, Q_g, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'], N, ext)
 
-        # Подшаг 4: кондуктивная проводимость
-        Q_T_internal, Q_T_ext = self.compute_conductive_transmissibility(
-            props['lambda_eff'], N)
+        # Подшаг 4: кондуктивная проводимость граней, Q_T [N+1]
+        Q_T = self.compute_conductive_transmissibility(props['lambda_eff'], N)
 
         # Подшаг 5: источники (JT, адиабатический, дегазация)
         # p_wf — фактическое давление на забойной грани после гидро-шага.
@@ -160,13 +159,16 @@ class TridiagEnergySolver(EnergySolver):
             collect.add_substep(
                 hydro_result=hydro_result, state_prev=state_prev, dt=dt,
                 props=props, Phi_o=Phi_o, Phi_g=Phi_g,
-                Q_T_ext=Q_T_ext, J_jt=J_jt, Q_ad=Q_ad, Q_deg=Q_deg,
+                # Накопителю нужна только контурная грань: внутренние
+                # телескопируются, забойная равна нулю (balance.py,
+                # add_accumulation).
+                Q_T_ext=Q_T[N], J_jt=J_jt, Q_ad=Q_ad, Q_deg=Q_deg,
                 T_ext=theta_ext)
 
         # Подшаг 6: сборка СЛАУ — в отклонениях от T_ref
         a, b, c, d = self.assemble_tridiag(
             N, dt, theta_old, theta_ext,
-            props['rho_cp_eff'], Q_T_internal, Q_T_ext,
+            props['rho_cp_eff'], Q_T,
             Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
         # Проба (DEBT-016): dt передаётся ФАКТИЧЕСКИЙ — тот, с которым
@@ -327,35 +329,37 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def compute_conductive_transmissibility(self, lambda_eff, N):
-        """Теплопроводность: Q_T = 2πh / (w_L/λ_L + w_R/λ_R).
-
-        Последовательные кольцевые сопротивления R_α = ln(r_face/r_center_α) / (2πh·λ_α).
-        Возвращает Q_T_internal [N-1] и Q_T_ext (скаляр).
-        """
+        """Проводимости граней Q_T [N+1], Вт/К. Ур. (eq:heat_cond_disc) problem_statement.tex."""
         grid = self._grid
 
-        # Внутренние грани
-        if N > 1:
-            w_L = grid.log_weights_left    # ln(r_face / r_center_left)
-            w_R = grid.log_weights_right   # ln(r_center_right / r_face)
-            lam_L = lambda_eff[:-1]
-            lam_R = lambda_eff[1:]
-            # Последовательные кольцевые сопротивления: R = w/λ, Q_T = 2πh / ΣR.
-            # При λ = 0 (конфиг без теплопроводности) сопротивление бесконечно,
-            # а проводимость — ноль. Считаем через errstate, чтобы промежуточные
-            # inf не печатали предупреждение: 2πh/inf = 0 — верный ответ.
-            with np.errstate(divide='ignore'):
-                R_series = w_L / lam_L + w_R / lam_R
-                Q_T_internal = 2.0 * np.pi * grid.h / R_series
-        else:
-            Q_T_internal = np.empty(0)
+        # Индекс — номер грани, как у Phi_plus/Phi_minus (DEBT-020): грань f
+        # разделяет ячейки f-1 и f.
+        #   Q_T[0] = 0       — забой, ГУ Неймана (ssec:bc_disc): кондуктивного
+        #                      потока в скважину нет при любой T за гранью;
+        #   Q_T[1..N-1]      — внутренние грани;
+        #   Q_T[N]           — контур.
+        Q_T = np.zeros(N + 1)
+
+        # Внутренние грани. При N = 1 их нет: веса сетки и срезы λ пустые,
+        # срез Q_T[1:1] тоже — отдельная ветвь не нужна.
+        w_L = grid.log_weights_left    # ln(r_face / r_center_left)
+        w_R = grid.log_weights_right   # ln(r_center_right / r_face)
+        lam_L = lambda_eff[:-1]
+        lam_R = lambda_eff[1:]
+        # Последовательные кольцевые сопротивления: R = w/λ, Q_T = 2πh / ΣR.
+        # При λ = 0 (конфиг без теплопроводности) сопротивление бесконечно,
+        # а проводимость — ноль. Считаем через errstate, чтобы промежуточные
+        # inf не печатали предупреждение: 2πh/inf = 0 — верный ответ.
+        with np.errstate(divide='ignore'):
+            R_series = w_L / lam_L + w_R / lam_R
+            Q_T[1:N] = 2.0 * np.pi * grid.h / R_series
 
         # Контур: λ_face = λ_eff[N-1] (нет ячейки за контуром)
         geom_ext = 2.0 * np.pi * grid.h / np.log(
             grid.R_ext / grid.r_centers[-1])
-        Q_T_ext = geom_ext * lambda_eff[-1]
+        Q_T[N] = geom_ext * lambda_eff[-1]
 
-        return Q_T_internal, Q_T_ext
+        return Q_T
 
     # ──────────────────────────────────────────────────────
     # Подшаг 5a: JT-вклад (eq:QJT_disc, адвективная форма)
@@ -513,7 +517,7 @@ class TridiagEnergySolver(EnergySolver):
     # ──────────────────────────────────────────────────────
 
     def assemble_tridiag(self, N, dt, T_old, T_ext,
-                           rho_cp_eff, Q_T_internal, Q_T_ext,
+                           rho_cp_eff, Q_T,
                            Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg):
         """Собрать коэффициенты a, b, c, d. Применить ГУ. Ур. (eq:tridiag_a)–(eq:tridiag_d)."""
         V = self._grid.volumes
@@ -531,17 +535,17 @@ class TridiagEnergySolver(EnergySolver):
         # выделена явно: общие блоки ниже писали бы в b[0] дважды, и
         # вторая запись затирала бы первую (постановка, ГУ, случай N = 1).
         if N == 1:
-            b[0] = cap[0] + Q_T_ext - Phi_minus[1]
+            b[0] = cap[0] + Q_T[1] - Phi_minus[1]
             d[0] = (cap[0] * T_old[0]
-                    + Q_T_ext * T_ext
+                    + Q_T[1] * T_ext
                     + (-Phi_minus[1]) * T_ext
                     + J_jt[0] + V[0] * (Q_ad[0] + Q_deg[0]))
             return a, b, c, d
 
         # ── Внутренние ячейки (j = 1..N-2) ──
         for j in range(1, N - 1):
-            Q_T_L = Q_T_internal[j - 1]
-            Q_T_R = Q_T_internal[j]
+            Q_T_L = Q_T[j]          # грань j (левая)
+            Q_T_R = Q_T[j + 1]      # грань j+1 (правая)
 
             a[j] = -Q_T_L - Phi_plus[j]
             c[j] = -Q_T_R + Phi_minus[j + 1]
@@ -564,7 +568,7 @@ class TridiagEnergySolver(EnergySolver):
         # Физически: вынос флюида с T_0 не создаёт члена при неизвестных —
         # перенос без градиента. Втекание через забой (Phi_plus[0] > 0)
         # для данной постановки не определено — см. DEBT-019.
-        Q_T_R0 = Q_T_internal[0]
+        Q_T_R0 = Q_T[1]
 
         a[0] = 0.0
         c[0] = -Q_T_R0 + Phi_minus[1]
@@ -576,14 +580,14 @@ class TridiagEnergySolver(EnergySolver):
         # температура уходит в правую часть, поэтому в b остаётся
         # −Phi_minus[N], а в d добавляется (−Phi_minus[N])·T_ext.
         # Слева — вклад грани N-1 по общему правилу.
-        Q_T_LN = Q_T_internal[-1]
+        Q_T_LN = Q_T[N - 1]
 
         a[N - 1] = -Q_T_LN - Phi_plus[N - 1]
         c[N - 1] = 0.0
-        b[N - 1] = (cap[N - 1] + Q_T_LN + Q_T_ext
+        b[N - 1] = (cap[N - 1] + Q_T_LN + Q_T[N]
                     + Phi_plus[N - 1] - Phi_minus[N])
         d[N - 1] = (cap[N - 1] * T_old[N - 1]
-                    + Q_T_ext * T_ext
+                    + Q_T[N] * T_ext
                     + (-Phi_minus[N]) * T_ext
                     + J_jt[N - 1]
                     + V[N - 1] * (Q_ad[N - 1] + Q_deg[N - 1]))

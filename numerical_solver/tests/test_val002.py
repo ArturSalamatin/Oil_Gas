@@ -164,8 +164,7 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
     Phi_plus, Phi_minus, Phi_o, Phi_g = solver.compute_convective_coefficients(
         hydro.Q_o, hydro.Q_g, props['rho_o'], props['rho_g'],
         props['c_p_o'], props['c_p_g'], N, ext)
-    Q_T_internal, Q_T_ext = solver.compute_conductive_transmissibility(
-        props['lambda_eff'], N)
+    Q_T = solver.compute_conductive_transmissibility(props['lambda_eff'], N)
     # p_wf — давление на забойной грани: в адвективной форме JT-вклад
     # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без p_wf не считается
     # (BUG-012). Берётся из HydroResult — тот же источник, что у решателя
@@ -188,7 +187,7 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
 
     a, b, c, d = solver.assemble_tridiag(
         N, dt, state_prev.T, T_ext,
-        props['rho_cp_eff'], Q_T_internal, Q_T_ext,
+        props['rho_cp_eff'], Q_T,
         Phi_plus, Phi_minus, J_jt, Q_ad, Q_deg)
 
     # Невязка: a·T_{j-1} + b·T_j + c·T_{j+1} − d_j
@@ -316,17 +315,17 @@ class TestCaseD_PureConduction:
         lambda_eff_val = (1 - PHI) * rock.lambda_solid + PHI * rock.lambda_oil
         lambda_eff = np.full(N, lambda_eff_val)
 
-        Q_T_internal, Q_T_ext = s['solver'].compute_conductive_transmissibility(
-            lambda_eff, N)
+        Q_T = s['solver'].compute_conductive_transmissibility(lambda_eff, N)
 
         # Аналитический Q для потока от центра j к центру j+1:
         # Q = 2πhλ / ln(r_{j+1}/r_j) · ΔT   (один ln)
         # До BUG-002 код вычислял geom · lambda_face = (2πh/ln) · (λ/ln) = 2πhλ/ln²;
         # сейчас — последовательные сопротивления 2πh/(w_L/λ + w_R/λ) = 2πhλ/ln.
-        # Сравним: Q_T_internal[0] / (2πhλ/ln(r_c[1]/r_c[0]))
+        # Сравним: Q_T[1] / (2πhλ/ln(r_c[1]/r_c[0])); грань 1 — между
+        # центрами ячеек 0 и 1 (Q_T по номеру грани, DEBT-020)
         r_c = grid.r_centers
         Q_analyt_0 = 2 * np.pi * H * lambda_eff_val / np.log(r_c[1] / r_c[0])
-        ratio = Q_T_internal[0] / Q_analyt_0
+        ratio = Q_T[1] / Q_analyt_0
 
         # После исправления BUG-002: один ln → ratio ≈ 1
         np.testing.assert_allclose(ratio, 1.0, rtol=0.05,

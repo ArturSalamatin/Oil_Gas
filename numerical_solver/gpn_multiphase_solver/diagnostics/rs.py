@@ -166,18 +166,9 @@ def front_radius(config, history, grid, pvt):
     Брать центр последней ячейки с p < pb нельзя: фронт лежит ВНУТРИ ячейки,
     и такая оценка систематически занижает r_b. На логарифмической сетке
     ячейки к периферии широкие, и при фронте в несколько метров занижение
-    доходит до ~10 %. Поэтому интерполируем ln r по p между соседними
-    ячейками — профиль логарифмичен, интерполяция именно по ln r.
-
-    np.interp здесь не годится: он требует возрастающий массив узлов, а p
-    и ln r монотонны в противоположные стороны, и он молча вернёт мусор.
+    доходит до ~10 %. Интерполяция ln r по p и краевые случаи — isobar_radius.
     """
-    p = history.states[-1].p
-    r = grid.r_centers
     _below, pb = degassed_cells(config, history, pvt)
-
-    j = int(np.searchsorted(p, pb))          # p возрастает с ростом r
-    if not (0 < j < len(p)):
-        return np.nan
-    w = (pb - p[j - 1]) / (p[j] - p[j - 1])
-    return float(np.exp(np.log(r[j - 1]) + w * (np.log(r[j]) - np.log(r[j - 1]))))
+    # Давление на контуре — p0: фабрика задаёт p_ext = ic.p0 (factory.py).
+    return isobar_radius(grid.r_centers, history.states[-1].p, pb,
+                         config.geometry.R_ext, config.initial_conditions.p0)

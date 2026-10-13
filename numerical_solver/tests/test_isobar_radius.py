@@ -17,7 +17,11 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from gpn_multiphase_solver.diagnostics.rs import isobar_radius
+from gpn_multiphase_solver.diagnostics.rs import front_radius, isobar_radius
+from gpn_multiphase_solver.diagnostics.two_phase import degassing_front
+from gpn_multiphase_solver.factory import create_pvt
+from gpn_multiphase_solver.io.config import load_config
+from gpn_multiphase_solver.state import SimulationState
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 MPA = 1e6
@@ -109,3 +113,43 @@ def test_contour_node_not_beyond_grid_raises():
     p = np.array([10, 11, 12, 13, 14, 14.5]) * MPA
     with pytest.raises(ValueError, match="узел контура"):
         isobar_radius(R, p, PB, 40.0, P_EXT)
+
+
+# ── Численный профиль: rs.front_radius и two_phase.degassing_front — одно число ──
+
+def _case04():
+    """(config, pvt) примера 04 без расчёта: pb = 15 МПа, R_ext = 50 м, p0 = 20 МПа."""
+    cfg = load_config(EXAMPLES / "04_table_table" / "config.json")
+    return cfg, create_pvt(cfg)
+
+
+def _history(p_mpa):
+    """История из одного состояния: газ (Sg = 0.1) в ячейках с p < 15 МПа.
+
+    hydro_results — для dupuit_check внутри degassing_front: G_o — потоки
+    нефти через грани [N+1], < 0 (к скважине, конвенция знаков).
+    """
+    p = np.asarray(p_mpa, float) * MPA
+    gas = p < PB
+    st = SimulationState(p=p, Sg=np.where(gas, 0.1, 0.0), Rs=np.full(p.size, 30.0),
+                         T=np.full(p.size, 350.0), regime=np.where(gas, 1, 2), t=0.0)
+    hr = SimpleNamespace(G_o=np.full(p.size + 1, -1e-5))
+    return SimpleNamespace(states=[st], hydro_results=[hr])
+
+
+@pytest.mark.parametrize("p_mpa", [
+    [10, 12, 14, 16, 18, 19.5],      # пересечение внутри сетки
+    [10, 11, 12, 13, 14, 14.5],      # газ до контура: прежде nan у обеих
+    [15.5, 16, 17, 18, 19, 19.5],    # газа в ячейках нет: nan
+])
+def test_numeric_profile_functions_agree(p_mpa):
+    """rs.front_radius и degassing_front['r_b_interp'] — одно число, равное isobar_radius."""
+    cfg, pvt = _case04()
+    pb = float(pvt.pb(np.array([cfg.initial_conditions.Rs0]))[0])
+    hist = _history(p_mpa)
+    grid = SimpleNamespace(r_centers=R)
+    expected = isobar_radius(R, np.asarray(p_mpa, float) * MPA, pb,
+                             cfg.geometry.R_ext, cfg.initial_conditions.p0)
+    # assert_equal считает nan равным nan
+    np.testing.assert_equal(front_radius(cfg, hist, grid, pvt), expected)
+    np.testing.assert_equal(degassing_front(hist, grid, cfg, pvt)["r_b_interp"], expected)

@@ -22,7 +22,8 @@ eq:Qad_disc, eq:mdot_disc, eq:energy_disc_full). Локальное дробле
 интервала должна совпасть с серией 5.
 
 План: vault/plans/val-004 shutin-timestep-convergence.md; замеры —
-vault/issues/val-004/probes/limits.out.txt.
+vault/issues/val-004/probes/limits.out.txt. Нарастание после смены управления
+(FEAT-032) — класс TestRampAfterShutIn; серии его выключают явно.
 """
 
 import copy
@@ -84,6 +85,10 @@ def _run(k):
     """Серия k: состояния на конец добычи и через 1 ч останова, отказы на останове."""
     cfg = load_config(CFG)
     cfg.time.history = _shutin_history(cfg, k)
+    # Шаги серии задаёт история; нарастание после смены управления (FEAT-032)
+    # их изменило бы. При h0 = 2 с первый интервал останова (0.44…0.11 с) короче
+    # h0 и m = 0, но умолчание поля не должно решать за тест.
+    cfg.time.dt_after_control_change = None
     # dt_integration = 1 сут длиннее любого интервала останова: каждый
     # интервал — ровно один шаг, если гидродинамика сошлась
     # (TimeSchedule.substeps: n_sub = 1). Добыча — те же суточные шаги.
@@ -120,6 +125,10 @@ def _run_forced_split(k):
     """Серия k с отказом первой попытки каждого интервала останова — шаг делит Simulator."""
     cfg = load_config(CFG)
     cfg.time.history = _shutin_history(cfg, k)
+    # Шаги серии задаёт история; нарастание после смены управления (FEAT-032)
+    # их изменило бы. При h0 = 2 с первый интервал останова (0.44…0.11 с) короче
+    # h0 и m = 0, но умолчание поля не должно решать за тест.
+    cfg.time.dt_after_control_change = None
     # Начало и длина каждого интервала останова. Первая попытка интервала —
     # вызов с state.t = начало и dt = длина; подшаги H/2 под условие не
     # попадают (второй начинается не на границе интервала, первый короче).
@@ -141,6 +150,19 @@ def _run_forced_split(k):
     sim._hydro.solve = failing_first
     hist = sim.run(s0)
     return {"end": hist.states[-1], "n_forced": len(forced), "n_records": len(hist.times)}
+
+
+def _run_1h_shutin(h0):
+    """Добыча из конфига + 1 ч останова одним интервалом; нарастание h0 (None — выключено)."""
+    cfg = load_config(CFG)
+    hist = cfg.time.history
+    assert len(hist) == N_PROD + 1, "сценарий bug020_rs150 изменился"
+    shut = copy.deepcopy(hist[N_PROD])
+    shut.dt = HOUR
+    cfg.time.history = list(hist[:N_PROD]) + [shut]
+    cfg.time.dt_after_control_change = h0
+    sim, s0 = SimulatorFactory.from_config(cfg)
+    return sim.run(s0).states[-1]
 
 
 @pytest.fixture(scope="module")
@@ -244,3 +266,36 @@ class TestShutinTimestepConvergence:
             a = np.asarray(getattr(r["end"], f), float)
             b = np.asarray(getattr(ref, f), float)
             assert np.array_equal(a, b), f"{f}: max|Δ| = {np.max(np.abs(a - b)):.3e}"
+
+
+@pytest.fixture(scope="module")
+def shutin_ends():
+    """Конец первого часа останова: без нарастания и с h0 = 2 с (~10 с)."""
+    return {h0: _run_1h_shutin(h0) for h0 in (None, 2.0)}
+
+
+class TestRampAfterShutIn:
+    """FEAT-032: нарастающий шаг после останова вчетверо уменьшает ошибку T(r_w) за первый час.
+
+    Один шаг 3600 с (практика примеров 16, 17 до FEAT-032) занижает подъём T(r_w)
+    за час на 0.230 К — 15 % подъёма 1.58 К (замер VAL-004). С h0 = 2 с первый
+    подшаг 3600/2**11 = 1.758 с, затем ×2 до 1800 с (12 подшагов): ошибка
+    −0.059 К (план FEAT-032, раздел 1.3). Остаток — крупные подшаги конца часа.
+    R_s(r_w) не проверяется: его задаёт длина первого подшага (BUG-026), а
+    подшаг ≲ 0.5 с, нужный для R_s, упирается в пол округления невязки (BUG-025).
+    """
+
+    def test_one_step_underestimates_heating(self, shutin_ends):
+        """Без нарастания T(r_w) через 1 ч ниже предела на 0.230 К — исходная ошибка FEAT-032."""
+        assert T_LIM - shutin_ends[None].T[0] == pytest.approx(0.2304, abs=2e-3)
+
+    def test_ramp_reduces_error(self, shutin_ends):
+        """С h0 = 2 с: T(r_w) = 397.9646 К (−0.059 от предела), p(r_w) = 183.0089 бар; ошибка T < 0.3 прежней.
+
+        Ловит: нарастание выключено или не доходит до первого шага останова
+        (ошибка 0.23 К), неверная последовательность подшагов (числа другие).
+        """
+        st = shutin_ends[2.0]
+        assert st.T[0] == pytest.approx(397.9646, abs=2e-3)
+        assert st.p[0] / BAR == pytest.approx(183.0089, abs=2e-3)
+        assert T_LIM - st.T[0] < 0.3 * (T_LIM - shutin_ends[None].T[0])

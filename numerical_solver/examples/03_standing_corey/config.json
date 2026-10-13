@@ -57,6 +57,8 @@
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "03: Standing + Corey",
+    "steady_state": true
   }
 }

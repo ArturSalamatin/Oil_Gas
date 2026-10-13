@@ -153,6 +153,10 @@
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "15: пуск скважины с линейно растущим дебитом нефти",
+    "steady_state": true,
+    "n_profiles": 6,
+    "closed_form_overlays": []
   }
 }

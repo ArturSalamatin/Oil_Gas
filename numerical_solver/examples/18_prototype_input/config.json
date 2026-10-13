@@ -161,6 +161,9 @@
     "linear_solver": "sparse"
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "18: вход прототипа (INPUT_TEMPLATE.xlsx)",
+    "steady_state": false,
+    "n_profiles": 6
   }
 }

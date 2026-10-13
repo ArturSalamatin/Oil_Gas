@@ -141,6 +141,11 @@ def results():
     return _LazyResults()
 
 
+def _output(name: str):
+    """Секция output конфига примера (FEAT-030): состав штатного вывода."""
+    return load_config(EXAMPLES_DIR / name / "config.json").output
+
+
 # ═══════════════════════════════════════════════════════════
 # A. Структура папок
 # ═══════════════════════════════════════════════════════════
@@ -214,6 +219,32 @@ class TestConfigs:
         for section, keys in removed.items():
             for key in keys:
                 assert key not in raw.get(section, {}), f"{name}: {section}.{key}"
+
+    def test_output_explicit(self):
+        """У каждого примера заголовок и steady_state заданы в конфиге явно (FEAT-030).
+
+        Умолчание steady_state сменилось с true (run_example) на false
+        (решение пользователя 2026-10-13): пример без явного поля тихо
+        потерял бы стационарную аналитику. Множество примеров с true —
+        те, у кого до FEAT-030 main.py флаг не снимал.
+        """
+        steady = set()
+        for name in ALL_EXAMPLES:
+            out = json.loads((EXAMPLES_DIR / name / "config.json")
+                             .read_text(encoding="utf-8"))["output"]
+            assert isinstance(out.get("title"), str) and out["title"].strip(), (
+                f"{name}: нет output.title")
+            assert isinstance(out.get("steady_state"), bool), (
+                f"{name}: нет явного output.steady_state")
+            if out["steady_state"]:
+                steady.add(name)
+        assert steady == {
+            "01_single_phase_no_jt", "02_single_phase_jt", "03_standing_corey",
+            "04_table_table", "04a_high_gas_saturation", "05_standing_table_rp",
+            "06_table_corey_rp", "07_degassing_adiabatic_only", "08_degassing_jt",
+            "09_degassing_latent_heat", "10_deep_degassing",
+            "11_degassing_at_boundary", "12_large_drainage_radius",
+            "13a_pwf_ramp_down", "15_oil_rate_ramp_up"}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1759,24 +1790,24 @@ class TestPwfRampDown:
                           r["grid"].r_centers)
         assert cl["q_o"] == pytest.approx(3.2827e-3, rel=1e-4)
 
-    def test_main_plots_six_moments(self):
-        """main.py 13a рисует профили на 6 моментах: 0, 3, ..., 15 сут.
+    def test_config_plots_six_moments(self):
+        """Конфиг 13a: профили на 6 моментах — 0, 3, ..., 15 сут (output.n_profiles).
 
         Решение пользователя 2026-09-29: 31 кривая (каждая запись) нечитаема —
         10 цветов цикла повторяются трижды, легенда не помещается.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=6" in text
+        assert _output(self.NAME).n_profiles == 6
 
-    def test_main_disables_saturation_overlay(self):
-        """main.py 13a не рисует стационарное решение на профилях S_g.
+    def test_config_disables_saturation_overlay(self):
+        """Конфиг 13a: стационарное решение не рисуется на профилях S_g (output.closed_form_overlays).
 
         Решение пользователя 2026-09-29: замыкание GOR = R_s0 на 15 сут
         (GOR = 54.9) даёт S_g почти вдвое ниже численной — на графике это
         выглядит как ошибка. Пунктир стационара на профилях p остаётся.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert 'overlays={"Sg": None}' in text
+        out = _output(self.NAME)
+        assert out.steady_state is True
+        assert out.closed_form_overlays == ["p"]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1989,21 +2020,21 @@ class TestOilRateRampUp:
         assert "дебит задан" in out
         assert "6.5949" in out
 
-    def test_main_plots_six_moments(self):
-        """main.py 15 рисует профили на 6 моментах: 0, 3, ..., 15 сут (как 13a)."""
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=6" in text
+    def test_config_plots_six_moments(self):
+        """Конфиг 15: профили на 6 моментах — 0, 3, ..., 15 сут, как 13a (output.n_profiles)."""
+        assert _output(self.NAME).n_profiles == 6
 
-    def test_main_disables_closed_form_overlays(self):
-        """main.py 15 не рисует стационар на профилях давления и S_g.
+    def test_config_disables_closed_form_overlays(self):
+        """Конфиг 15: стационар не рисуется на профилях давления и S_g (output.closed_form_overlays = []).
 
         На 15 сут у забоя избыток свободного газа (GOR 58.1 против Rs0 = 30,
         S_g^max 0.038 против 0.018 у замыкания GOR = Rs0), давление ниже
         стационарного на 464 кПа — на графике это выглядит как ошибка.
-        Сверка остаётся в консоли (report_closed).
+        Сверка остаётся в консоли (report_closed): steady_state = true.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert 'overlays={"p": None, "Sg": None}' in text
+        out = _output(self.NAME)
+        assert out.steady_state is True
+        assert out.closed_form_overlays == []
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2126,17 +2157,16 @@ class TestHighGorCooling:
                 (f"запись {n}: двухфазная ячейка выше p_b с "
                  f"S_g = {st.Sg[above].min():.3e} — шум округления")
 
-    def test_main_disables_steady_state(self):
-        """main.py 14 отключает стационарную аналитику целиком.
+    def test_config_disables_steady_state(self):
+        """Конфиг 14 отключает стационарную аналитику целиком (output.steady_state = false).
 
-        steady_state=False (решение пользователя 2026-10-01): снимает пунктир
-        стационара с профилей p и S_g, сверку report_closed и асимптотику
-        температуры. За 360 сут стационар не достигнут (GOR < R_s0, газ у
-        фронта ещё копится), сравнение с пределом t -> inf точность расчёта
-        не характеризует. Ловит: возврат стационарных наложений.
+        Решение пользователя 2026-10-01: снимает пунктир стационара с
+        профилей p и S_g, сверку report_closed и асимптотику температуры.
+        За 360 сут стационар не достигнут (GOR < R_s0, газ у фронта ещё
+        копится), сравнение с пределом t -> inf точность расчёта не
+        характеризует. Ловит: возврат стационарных наложений.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "steady_state=False" in text
+        assert _output(self.NAME).steady_state is False
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2252,19 +2282,17 @@ class TestPwfAlternating:
                 f"запись {n} (конец суток при 6 МПа): "
                 f"{np.count_nonzero(bad)} однофазных ячеек ниже p_b")
 
-    def test_main_plots_seven_moments(self):
-        """main.py 13b рисует профили на 7 моментах: 0, 5, ..., 30 сут.
+    def test_config_plots_seven_moments(self):
+        """Конфиг 13b: профили на 7 моментах — 0, 5, ..., 30 сут (output.n_profiles).
 
         Решение пользователя 2026-09-30: 5, 15, 25 сут — концы суток при
         6 МПа, 10, 20, 30 сут — при 10.75 МПа.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=7" in text
+        assert _output(self.NAME).n_profiles == 7
 
-    def test_main_disables_steady_state(self):
-        """main.py 13b отключает стационарную аналитику (решение 2026-09-29)."""
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "steady_state=False" in text
+    def test_config_disables_steady_state(self):
+        """Конфиг 13b отключает стационарную аналитику (решение 2026-09-29; output.steady_state)."""
+        assert _output(self.NAME).steady_state is False
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2421,16 +2449,16 @@ class TestWellShutIn:
         assert hi == pytest.approx(0.048261, rel=1e-4)
         assert r["Sg"].max() == 0.0        # на последней записи газа нет
 
-    def test_main_settings(self):
-        """main.py 16: 7 моментов профилей, без стационарной аналитики, наложения штатные.
+    def test_config_settings(self):
+        """Конфиг 16: 7 моментов профилей, без стационарной аналитики, наложения штатные.
 
         Решения пользователя 2026-10-03 (5, 6): профили равномерно; наложение
         R_s не отключается — после DEBT-026 на финале без газа кружков нет.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=7" in text
-        assert "steady_state=False" in text
-        assert "overlays=" not in text
+        out = _output(self.NAME)
+        assert out.n_profiles == 7
+        assert out.steady_state is False
+        assert out.closed_form_overlays == ["p", "Sg"]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2605,15 +2633,14 @@ class TestStandingCoreyCooling:
         assert lo < cfg.initial_conditions.p0 - pb < hi
 
     @pytest.mark.parametrize("name", list(STANDING_COREY_COOLING))
-    def test_main_disables_steady_state(self, name):
-        """main.py отключает стационарную аналитику целиком.
+    def test_config_disables_steady_state(self, name):
+        """Конфиг отключает стационарную аналитику целиком (output.steady_state = false).
 
-        steady_state=False (как у 14): за 30 сут GOR < R_s0, газ ещё копится
-        — сравнение с пределом t -> inf точность расчёта не характеризует.
+        Как у 14: за 30 сут GOR < R_s0, газ ещё копится — сравнение с
+        пределом t -> inf точность расчёта не характеризует.
         Ловит: возврат стационарных наложений.
         """
-        text = (EXAMPLES_DIR / name / "main.py").read_text(encoding="utf-8")
-        assert "steady_state=False" in text
+        assert _output(name).steady_state is False
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2859,16 +2886,16 @@ class TestShutInStrongCooling:
         _lo, hi = _relperm_module()._sg_range(r["history"])
         assert hi == pytest.approx(0.44899, abs=1e-4)
 
-    def test_main_settings(self):
-        """main.py 17: 7 моментов профилей, без стационарной аналитики, наложения штатные.
+    def test_config_settings(self):
+        """Конфиг 17: 7 моментов профилей, без стационарной аналитики, наложения штатные.
 
         Как у 16 (решение FEAT-019): профили равномерно 0, 5, …, 30 сут;
         стационар последнего интервала (q = 0) тривиален — p = p0 всюду.
         """
-        text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=7" in text
-        assert "steady_state=False" in text
-        assert "overlays=" not in text
+        out = _output(self.NAME)
+        assert out.n_profiles == 7
+        assert out.steady_state is False
+        assert out.closed_form_overlays == ["p", "Sg"]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -2971,10 +2998,11 @@ class TestPrototypeInput:
             assert not pi.imex_applicable(inputs / f"{case}.xlsx"), case
 
     def test_main_settings(self):
-        """main.py 18: 6 моментов профилей, без стационарной аналитики, сверка с прототипом и IMEX вызывается."""
+        """18: 6 моментов профилей и без стационарной аналитики (конфиг); main.py вызывает сверку с прототипом и IMEX."""
+        out = _output(self.NAME)
+        assert out.n_profiles == 6
+        assert out.steady_state is False
         text = (EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8")
-        assert "n_profiles=6" in text
-        assert "steady_state=False" in text
         assert "report_and_plot(" in text
 
     def test_conversion_rate_book(self, tmp_path):

@@ -187,7 +187,13 @@ def convert(book: Path, out_dir: Path) -> None:
         "numerics": {"skin": float(m["Well skin"]),
                      "jacobian_mode": str(m["Jacobian mode"]).strip(),
                      "linear_solver": str(m["Linear solver"]).strip()},
-        "output": {"log_level": "INFO"},
+        # Состав штатного вывода команды расчёта (FEAT-030; до неё — аргументы
+        # run_example в main.py 18). 6 моментов профилей: у книги-шаблона —
+        # по моменту на каждый режим p_wf (150 / 120 / 100 бар) и конец.
+        # Без стационарной аналитики: режим скважины меняется, а к концу
+        # расчёта двухфазная зона ещё растёт — предел t -> inf недостижим.
+        "output": {"log_level": "INFO", "title": f"18: вход прототипа ({book.name})",
+                   "steady_state": False, "n_profiles": 6},
     }
     (out_dir / "config.json").write_text(
         json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

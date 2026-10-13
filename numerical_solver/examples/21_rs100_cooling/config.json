@@ -58,6 +58,8 @@
     "max_retries": 9
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "21: R_s0 = 100, горячий пласт — охлаждение забоя",
+    "steady_state": false
   }
 }

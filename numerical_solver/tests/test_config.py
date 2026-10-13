@@ -1088,6 +1088,60 @@ class TestLiteralValidation:
         assert load_config(_write_json(tmp_path, raw)).output.log_level == "debug"
 
 
+class TestOutputFields:
+    """Состав штатного вывода: output.title, n_profiles, steady_state, closed_form_overlays (FEAT-030).
+
+    Поля читает run_case (report/pipeline.py) и команда расчёта. Опечатка в
+    конфиге заказчика не должна молча менять состав вывода — как log_level
+    до DEBT-008: значение вне допустимых отвергает load_config с именем поля.
+    """
+
+    def test_output_defaults(self, tmp_path):
+        """Без полей: заголовок — по папке конфига, 4 опорных момента, стационар выключен, наложения p и S_g.
+
+        steady_state = false по умолчанию — решение пользователя 2026-10-13:
+        замкнутое решение и асимптотика T — пределы t -> inf, в сценарии
+        заказчика стационар может быть не достигнут.
+        """
+        cfg = load_config(_write_json(tmp_path, _minimal_raw()))
+        assert cfg.output.title is None
+        assert cfg.output.n_profiles is None
+        assert cfg.output.steady_state is False
+        assert cfg.output.closed_form_overlays == ["p", "Sg"]
+
+    def test_output_fields_read(self, tmp_path):
+        """Заданные значения читаются как есть."""
+        raw = _minimal_raw()
+        raw["output"] = {"title": "Скв. 1", "n_profiles": 5, "steady_state": True,
+                         "closed_form_overlays": ["p"]}
+        out = load_config(_write_json(tmp_path, raw)).output
+        assert (out.title, out.n_profiles, out.steady_state,
+                out.closed_form_overlays) == ("Скв. 1", 5, True, ["p"])
+
+    @pytest.mark.parametrize("field_name, value", [
+        ("title", ""),                          # пустой заголовок — опечатка
+        ("title", 5),
+        ("n_profiles", 1),                      # один момент эволюции не показывает
+        ("n_profiles", 2.5),
+        ("n_profiles", True),                   # bool — подкласс int
+        ("n_profiles", "6"),
+        ("steady_state", 1),                    # 1 вместо true
+        ("steady_state", "true"),
+        ("steady_state", None),
+        ("closed_form_overlays", "p"),          # строка вместо списка
+        ("closed_form_overlays", ["T"]),        # наложения T замкнутого решения нет
+        ("closed_form_overlays", ["p", "p"]),
+    ], ids=["title_empty", "title_int", "n_profiles_1", "n_profiles_float",
+            "n_profiles_true", "n_profiles_str", "steady_int", "steady_str",
+            "steady_null", "overlays_str", "overlays_T", "overlays_repeat"])
+    def test_output_field_rejected(self, tmp_path, field_name, value):
+        """Недопустимое значение → ValueError с именем поля output.<поле>."""
+        raw = _minimal_raw()
+        raw["output"] = {field_name: value}
+        with pytest.raises(ValueError, match=rf"output\.{field_name}"):
+            load_config(_write_json(tmp_path, raw))
+
+
 class TestNumericsWiredFields:
     """Поля Ньютона, которые фабрика и адаптер передают прототипу (DEBT-008)."""
 

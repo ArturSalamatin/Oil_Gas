@@ -30,8 +30,9 @@ HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адапти�
 ступеней 1-3; после STAGE4_MAX_FAILURES отказов подряд память сбрасывается.
 
 Текст отказа (DEBT-054): прежний текст (dt, t, итерации, невязка) и хвост из отчёта
-Ньютона — абсолютный допуск, мера условия по ячейке с порогом numerics.newton_cell_tol,
-причина выхода, какое условие сходимости не выполнено и чья это статистика (ступень 1
+Ньютона — абсолютный допуск, мера условия по ячейке с порогом numerics.newton_cell_tol
+и её предел округления (DEBT-055), причина выхода, какое условие сходимости не выполнено
+(отказ на пределе округления — отдельной оговоркой) и чья это статистика (ступень 1
 после подмены DEBT-030 или ступень 4 по памяти).
 
 Баланс массы (DEBT-039): component_inventories — запас компонентов
@@ -73,12 +74,13 @@ _EXIT_REASONS = {
 
 
 def _failure_details(report, cell_tol: float | None, stage: int) -> str:
-    """Хвост текста отказа: допуск, мера ячеек, причина выхода, невыполненное условие (DEBT-054)."""
-    # Поля residual_tol, cell_measure, exit_reason несёт BlackOilNewtonReport с DEBT-054.
-    # Подставные отчёты тестов (SimpleNamespace, отчёт без этих полей) их не имеют —
-    # хвоста нет, текст прежний.
+    """Хвост текста отказа: допуск, мера ячеек, предел округления, причина выхода, невыполненное условие (DEBT-054, DEBT-055)."""
+    # Поля residual_tol, cell_measure, exit_reason несёт BlackOilNewtonReport с DEBT-054,
+    # cell_floor — с DEBT-055. Подставные отчёты тестов (SimpleNamespace, отчёт без этих
+    # полей) их не имеют — хвоста нет, текст прежний.
     tol = getattr(report, "residual_tol", None)
     measure = getattr(report, "cell_measure", None)
+    floor = getattr(report, "cell_floor", None)
     reason = getattr(report, "exit_reason", "")
     if tol is None and measure is None and not reason:
         return ""
@@ -89,6 +91,10 @@ def _failure_details(report, cell_tol: float | None, stage: int) -> str:
         text += f", мера ячеек {measure:.2e}"
         if cell_tol is not None:
             text += f" (порог numerics.newton_cell_tol = {cell_tol:g})"
+        # DEBT-055: предел округления меры на том же приближении — мера вектора |J|·ulp(z)
+        # (eq:newton_cell_floor); есть только у отказа Ньютона с условием по ячейке
+        if floor is not None:
+            text += f", предел округления {floor:.2e}"
     if reason:
         text += f", выход: {_EXIT_REASONS.get(reason, reason)}"
     # Какое условие не выполнено — те же сравнения, что в Ньютоне прототипа
@@ -109,6 +115,12 @@ def _failure_details(report, cell_tol: float | None, stage: int) -> str:
                 (False, False): "не выполнены оба условия сходимости",
                 (True, True): "оба условия сходимости выполнены",
             }[(abs_ok, measure <= cell_tol)]
+            # DEBT-055: только условие ячейки, и мера не выше предела округления — точнее
+            # на этом шаге не решить; предел пропорционален шагу, дробление его снимает.
+            # Сравнение — факт, как и классы выше (максимумы по сетке; в отказах на
+            # пределе, замеренных планом, оно верно и поячеечно)
+            if abs_ok and measure > cell_tol and floor is not None and measure <= floor:
+                text += ", мера не выше предела округления (он пропорционален шагу)"
     # Чьи числа: при отказе advance — исходного алгоритма (подмена DEBT-030), у ступени 4
     # по памяти (DEBT-048) — её собственные
     return text + f"; числа — Ньютона ступени {stage}"

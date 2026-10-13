@@ -38,6 +38,9 @@ not max_iter (DEBT-061).
 BUG-025: the absolute Newton tolerance is not below the round-off floor of the storage
 term, max(atol, ROUNDOFF_KAPPA*eps*M_max/dt) (_absolute_tol): a shut-in step shorter than
 ~0.05 s after production with a developed gas zone failed every stage of advance.
+DEBT-055: a failed Newton report also carries the rounding limit of the per-cell measure
+(cell_floor): the measure of |J| @ ulp(z), the change of the residual when every unknown
+moves by one ulp; the Newton does not get far below it, and it grows as dt.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -75,6 +78,13 @@ class BlackOilNewtonReport:
     residual_tol: float | None = None
     cell_measure: float | None = None
     exit_reason: str = ''
+    # DEBT-055: rounding limit of cell_measure on the same iterate -- the per-cell measure of
+    # |J| @ ulp(z): the unknowns are representable to ulp(z) only, and the Newton stops at
+    # 0.1-0.4 of it (GPN probes).  J is the last Jacobian of the solve; for the 'max_iter' exit
+    # of _newton_fixed_active_set it is the Jacobian of the iterate before the last update.
+    # Only on a failed solve with the per-cell test on; None otherwise ('active_set': no Newton
+    # failed; 'branch': the Newton converged).
+    cell_floor: float | None = None
 
 def _sg_activation_cap(relperm):
     """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
@@ -138,10 +148,15 @@ class RadialBlackOilModel:
         # With cell_tol a solve also needs max_c |F_c,i|*dt/PV_i <= cell_tol in every cell i
         # (the gas rows divided by gas_residual_scale, as in residual).  For an undersaturated
         # cell upstream of no face (the shut-in well cell) its Rs enters the storage only, and
-        # the Rs error of a step is estimated by cell_tol*Bo*(gas_residual_scale + Rs).  Far
-        # below ~eps_mach*PV_max/PV_min the test is not met and steps are split (GPN example
-        # 17 at cell_tol = 1e-10: 214 rejected steps against 47; the mechanism is not
-        # established -- both the line search and the stage-4 Newton stall).
+        # the Rs error of a step is estimated by cell_tol*Bo*(gas_residual_scale + Rs).
+        # DEBT-055: below a rounding limit the test is not met.  The unknowns are representable
+        # to ulp(z) only, and the measure does not get far below that of |J| @ ulp(z)
+        # (cell_floor of a failed report; the Newton stops at 0.1-0.4 of it).  It is the
+        # pressure term of the face fluxes, ~eps_mach*p*T*lambda*dt/PV_i: it grows as dt and,
+        # near the well of the log grid, as N^2/ln^2(r_e/r_w) -- not as PV_max/PV_min, as
+        # BUG-022 assumed.  A step below it fails and is split until the limit drops (GPN
+        # example 17 at cell_tol = 1e-10: 214 rejected steps against 47; at 1e-8 only N = 350
+        # with daily steps meets it).
         if cell_tol is not None and not 0.0<float(cell_tol)<np.inf:
             raise ValueError('cell_tol must be a positive finite number or None')
         self.cell_tol=None if cell_tol is None else float(cell_tol)
@@ -278,16 +293,21 @@ class RadialBlackOilModel:
         if w is None: return None
         n=self.grid.n
         return max(float(np.max(np.abs(f[:n])*w)),float(np.max(np.abs(f[n:])*w)))
+    def _cell_floor(self,J,z,w):
+        """DEBT-055: rounding limit of the per-cell measure -- _cell_measure of |J| @ ulp(z); None when the test is off or there is no Jacobian."""
+        if w is None or J is None: return None
+        return self._cell_measure(abs(J)@np.spacing(np.abs(z)),w)
     def _cells_converged(self,f,w):
         """BUG-022: max_c |f_c,i|*dt/PV_i <= cell_tol over the oil and gas rows of f = residual(); True when the test is off."""
         # the same operations as before DEBT-054, so the test is bitwise unchanged
         m=self._cell_measure(f,w)
         return m is None or m<=self.cell_tol
-    def _newton_report(self,converged,iterations,nrm,tol,f,w,reason,**fields):
-        """DEBT-054: report of a Newton solve -- ||F||_inf, its absolute tolerance, the per-cell measure of the same f, the exit reason."""
+    def _newton_report(self,converged,iterations,nrm,tol,f,w,reason,J=None,z=None,**fields):
+        """DEBT-054: report of a Newton solve -- ||F||_inf, its absolute tolerance, the per-cell measure of the same f, the exit reason; DEBT-055: on a failure the rounding limit of the measure at (J, z)."""
         return BlackOilNewtonReport(converged,iterations,float(nrm),
                                     residual_tol=None if tol is None else float(tol),
-                                    cell_measure=self._cell_measure(f,w),exit_reason=reason,**fields)
+                                    cell_measure=self._cell_measure(f,w),exit_reason=reason,
+                                    cell_floor=None if converged else self._cell_floor(J,z,w),**fields)
     def _absolute_tol(self,state_old,dt_s,atol_sm3s):
         """BUG-025: atol of the absolute Newton test, not below the round-off floor ROUNDOFF_KAPPA*eps*M_max/dt of the storage term."""
         # The storage term of the residual is (M_new - M_old)/dt in m3st/s, each inventory
@@ -417,10 +437,12 @@ class RadialBlackOilModel:
         # z, see BUG-021 above; a rejected trial leaves f untouched) and why the solve stopped.
         # A failure at iteration it reports it (the failed iteration counted), as before.
         if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,0,nrm,tol,f,w,'converged')
+        # DEBT-055: the last Jacobian goes into a failure report (rounding limit of the measure)
+        J=None
         for it in range(1,max_iter+1):
             J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active)
             try: dz=self._linear_solve(J,-f)
-            except Exception: return z,self._newton_report(False,it,nrm,tol,f,w,'linear_solver')
+            except Exception: return z,self._newton_report(False,it,nrm,tol,f,w,'linear_solver',J=J,z=z)
             if self._sg_step_max is not None:
                 # BUG-016: scale the whole update (p and Sg together, the Newton
                 # direction is kept) so that |dSg| of two-phase cells <= limit
@@ -433,10 +455,10 @@ class RadialBlackOilModel:
                     ft=self.residual(trial,state_old,dt_s,gas_active)
                     if merit(ft)<mf: z=trial; f=ft; accepted=True; break
                 alpha*=0.5
-            if not accepted: return z,self._newton_report(False,it,nrm,tol,f,w,'line_search')
+            if not accepted: return z,self._newton_report(False,it,nrm,tol,f,w,'line_search',J=J,z=z)
             nrm=np.linalg.norm(f,np.inf)
             if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,it,nrm,tol,f,w,'converged')
-        return z,self._newton_report(False,max_iter,nrm,tol,f,w,'max_iter')
+        return z,self._newton_report(False,max_iter,nrm,tol,f,w,'max_iter',J=J,z=z)
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
         BHP well branch as an outer constraint and no lower bound on Sg (BUG-014);
@@ -488,12 +510,13 @@ class RadialBlackOilModel:
             # (well_branch, well_switches, fallback, globalized) stay the last
             # attempt's.  Accepted steps are untouched (_grow_dt reads them).
             # DEBT-054: the absolute tolerance, the per-cell measure and the exit reason are
-            # Newton fields too -- the original algorithm's, consistent with its residual.
+            # Newton fields too -- the original algorithm's, consistent with its residual; and the
+            # rounding limit of the measure (DEBT-055).
             rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
                         active_set_iterations=orig.active_set_iterations,
                         phase_switches=orig.phase_switches,
                         residual_tol=orig.residual_tol,cell_measure=orig.cell_measure,
-                        exit_reason=orig.exit_reason)
+                        exit_reason=orig.exit_reason,cell_floor=orig.cell_floor)
         return new,rep
     def advance_fourth_stage(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """The fourth stage of advance alone (BUG-020, DEBT-048): the BUG-014 fallback with
@@ -649,7 +672,7 @@ class RadialBlackOilModel:
                             new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
                             # same bound as _trial_is_reasonable: no root with Sg > 0.98
                             ok=not np.any(new.sg[mask]>0.98)
-                            return new,self._newton_report(ok,it-1,nrm,tol,f,w,'converged' if ok else 'sg_bound',
+                            return new,self._newton_report(ok,it-1,nrm,tol,f,w,'converged' if ok else 'sg_bound',J=J,z=z,
                                                            active_set_iterations=1,phase_switches=total)
                     else:
                         # converged with a held upstream cell the solution contradicts: polish
@@ -678,9 +701,10 @@ class RadialBlackOilModel:
             # DEBT-061: the passes it ran minus one, as the converged report above -- not max_iter,
             # which a break after a linear-solver failure or a non-finite update reported too.
             # f is evaluated here, before finally drops the held upstream cells: residual_inf and
-            # the per-cell measure are of the scheme the Newton was solving (DEBT-054)
+            # the per-cell measure are of the scheme the Newton was solving (DEBT-054); the rounding
+            # limit -- with the Jacobian of the last pass, built at the same z (DEBT-055)
             f=self.residual(z,state_old,dt_s,mask)
-            return self.unpack(z,mask),self._newton_report(False,it-1,np.linalg.norm(f,np.inf),tol,f,w,reason,
+            return self.unpack(z,mask),self._newton_report(False,it-1,np.linalg.norm(f,np.inf),tol,f,w,reason,J=J,z=z,
                                                            active_set_iterations=1,phase_switches=total)
         finally:
             self._upwind_frozen=None; self._upwind_left=None

@@ -149,9 +149,9 @@ $\bsat$       & полный коэфф.\ расширения $B_o$ вдоль 
 $c_{ot}$      & сжимаемость насыщенной нефти вместе с~выделяющимся газом~\eqref{eq:c_ot} & Па$^{-1}$ \\
 
 \multicolumn{3}{l}{\textbf{Пористая среда}} \\
-$\phi$        & пористость (постоянная)                   & --- \\
+$\phi$        & пористость, $\phi(p)$~\eqref{eq:porosity}; $\phi_0 = \phi(p_0)$ & --- \\
 $k$           & абсолютная проницаемость (постоянная)     & м$^2$ \\
-$c_r$         & сжимаемость порового пространства ($=0$ в данной модели) & Па$^{-1}$ \\
+$c_r$         & сжимаемость порового пространства, $(1/\phi)\,d\phi/dp$ & Па$^{-1}$ \\
 $k_{ro}(S_o)$ & относит.\ фазовая проницаемость нефти    & --- \\
 $k_{rg}(S_g)$ & относит.\ фазовая проницаемость газа     & --- \\
 $(\rho c_p)_s$& объёмная теплоёмкость скелета породы (индекс $s$~--- solid) & Дж/(м$^3\cdot$К) \\
@@ -272,11 +272,18 @@ $h$           & мощность (толщина) пласта                  
   \item \textbf{Локальное термодинамическое равновесие порода--флюид.}
         Температура породы и~флюидов одинакова в~каждой точке:
         $T_s = T_f = T$.
-  \item \textbf{Постоянная пористость.}
-        $\phi = \mathrm{const}$, сжимаемость породы $c_r = 0$.
-        В~разделе~\ref{ssec:equations} формулы записываются в~общем виде
-        при $c_r \neq 0$ для полноты; при упрощении
-        (раздел~\ref{sec:splitting}) $c_r = 0$.
+  \item \textbf{Сжимаемость порового пространства.}
+        Пористость зависит только от~давления:
+        \begin{equation}\label{eq:porosity}
+          \phi(p) = \phi_0\,e^{c_r\,(p - \ppl)},
+        \end{equation}
+        $\phi_0$~--- пористость при начальном давлении~$\ppl$,
+        $c_r$~--- сжимаемость порового пространства (постоянная).
+        Деформация скелета учитывается только через поровый объём:
+        объёмные величины отнесены к~начальному объёму элемента пласта,
+        изменение размеров элемента и~площадей его граней не~учитывается,
+        масса скелета в~элементе постоянна. При $c_r = 0$ пористость
+        постоянна, $\phi = \phi_0$.
   \item \textbf{Отсутствие теплообмена с~кровлей и~подошвой.}
         Задача осреднена по~вертикали; тепловые потери через кровлю
         и~подошву пласта не~учитываются. Все величины ($p$, $T$, $S_g$,
@@ -377,7 +384,7 @@ $\Lambda_\alpha = k\,k_{r\alpha}/\mu_\alpha$,
 Коэффициенты при производных температуры:
 \begin{equation}\label{eq:main_rhocpeff}
 \rhocpeff
-    = (1-\phi)\,(\rho c_p)_s
+    = (1-\phi_0)\,(\rho c_p)_s
       + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
 \end{equation}
 \begin{equation}\label{eq:main_rhocpconv}
@@ -402,10 +409,15 @@ $\Lambda_\alpha = k\,k_{r\alpha}/\mu_\alpha$,
     = \phi\!\left[ 1+
       \sum_\alpha S_\alpha\,
         \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}
-      + c_r\!\left(p + (\rho c_p)_s\,T\right)
     \right]\pdt{p}.
   }
 \end{equation}
+Сжимаемость породы входит в~$\Qad$ и~$\rhocpeff$ только через
+пористость~$\phi = \phi(p)$~\eqref{eq:porosity}. Скелет~--- с~множителем
+$1 - \phi_0$: его масса в~элементе постоянна. Членов
+$c_r\,(p + (\rho c_p)_s T)$ нет: работа флюида над стенками пор уходит
+в~упругую энергию скелета, а~не~в~тепло
+(приложение~\ref{app:energy_derivation}, \eqref{eq:rock_dt}).
 \begin{equation}\label{eq:main_Qdeg}
 \Qdeg = - L(p,T)\,\mdot,
 \end{equation}
@@ -478,10 +490,10 @@ $T$~--- из уравнения~4 на~известных полях $p$, $S_g$,
         $c_{p,\alpha}(p,T)$, $\alpha_\alpha(p,T)$;
   \item теплота дегазации $L(p,T)$;
   \item ОФП: $k_{ro}(S_o)$, $k_{rg}(S_g)$;
-  \item свойства породы: $\phi$, $k$, $(\rho c_p)_s$;
+  \item свойства породы: $\phi(p)$~\eqref{eq:porosity} ($\phi_0$, $c_r$), $k$, $(\rho c_p)_s$;
   \item теплопроводность среды~\eqref{eq:lambda_eff}:
-        $\leff = (1{-}\phi)\,\hat\lambda_s
-        + \phi\,(S_o\,\hat\lambda_o + S_g\,\hat\lambda_g)$.
+        $\leff = (1{-}\phi_0)\,\hat\lambda_s
+        + \phi_0\,(S_o\,\hat\lambda_o + S_g\,\hat\lambda_g)$.
 \end{itemize}
 
 \paragraph{Граничные условия:}
@@ -636,7 +648,7 @@ $c_{ot} < 0$ при $p > 34.5$~МПа, то~есть при $R_s > 351$~м$^3$с
 \subsubsection{Свойства породы}
 
 \begin{itemize}[nosep]
-  \item $\phi$~--- пористость, постоянная.
+  \item $\phi(p)$~--- пористость~\eqref{eq:porosity}: $\phi_0$ при~$\ppl$ и~сжимаемость порового пространства~$c_r$.
   \item $k$~--- абсолютная проницаемость (постоянная), м$^2$.
   \item $(\rho c_p)_s$~--- объёмная теплоёмкость скелета,
         Дж/(м$^3\cdot$К).
@@ -648,12 +660,15 @@ $c_{ot} < 0$ при $p > 34.5$~МПа, то~есть при $R_s > 351$~м$^3$с
 Параллельная (объёмно-взвешенная) модель:
 \begin{equation}\label{eq:lambda_eff}
   \boxed{
-    \leff = (1-\phi)\,\hat\lambda_s + \phi\,(S_o\,\hat\lambda_o + S_g\,\hat\lambda_g).
+    \leff = (1-\phi_0)\,\hat\lambda_s + \phi_0\,(S_o\,\hat\lambda_o + S_g\,\hat\lambda_g).
   }
 \end{equation}
 Параметры $\hat\lambda_s$, $\hat\lambda_o$, $\hat\lambda_g$~--- постоянные,
 задаются в~конфигурационном файле. $\leff$ изменяется по~пласту вместе
-с~$S_g$.
+с~$S_g$. Пористость в~замыкании~--- начальная~$\phi_0$: модель
+эмпирическая, а~поправка от~$\phi(p)$ мала~--- при
+$c_r\,|p - \ppl| = 4.5\cdot10^{-3}$, $\phi_0 = 0.2$ и~теплопроводностях
+1.5 / 0.14~Вт/(м$\cdot$К) около 0.1\,\%.
 
 
 %=============================================================================
@@ -803,27 +818,27 @@ $L(p,T)$ и~т.\,д.
 \subsection{Упрощение гидродинамических уравнений}\label{ssec:simplification}
 %-----------------------------------------------------------------------------
 
-При $T = \Tpl = \mathrm{const}$ и~$c_r = 0$ в~уравнениях
+При $T = \Tpl = \mathrm{const}$ в~уравнениях
 баланса масс~\eqref{eq:mass_oil}, \eqref{eq:mass_gas} упрощаются
 PVT-свойства:
 \begin{itemize}[nosep]
   \item $R_s$, $B_o$, $B_g$, $\mu_o$, $\mu_g$ зависят только от~$p$;
   \item все производные по~$T$ обращаются в~нуль;
-  \item $\phi = \mathrm{const}$ и~выносится из-под производной по~$t$.
+  \item пористость $\phi(p)$~\eqref{eq:porosity}~--- тоже функция только~$p$.
 \end{itemize}
 
 Консервативные уравнения сохраняют свою форму:
 \begin{equation}\label{eq:mass_oil_simplified}
   \boxed{
-    \phi\,\pdt{}\!\left(\frac{1 - S_g}{B_o(p)}\right)
+    \pdt{}\!\left(\phi(p)\,\frac{1 - S_g}{B_o(p)}\right)
     + \divr{\frac{u_o}{B_o(p)}} = 0,
   }
 \end{equation}
 \begin{equation}\label{eq:mass_gas_simplified}
   \boxed{
-    \phi\,\pdt{}\!\left(
+    \pdt{}\!\left(\phi(p)\!\left[
       \frac{R_s(p)\,(1 - S_g)}{B_o(p)} + \frac{S_g}{B_g(p)}
-    \right)
+    \right]\right)
     + \divr{\left[
       \frac{R_s(p)\,u_o}{B_o(p)} + \frac{u_g}{B_g(p)}
     \right]} = 0.
@@ -1065,13 +1080,13 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 \paragraph{Невязка баланса нефтяного компонента:}
 \begin{equation}\label{eq:residual_oil}
   \boxed{
-    F_j^{\text{oil}} = V_j\,\phi\,
-      \frac{(1 - S_{g,j}^{n+1})/B_{o,j}^{n+1}
-            - (1 - S_{g,j}^n)/B_{o,j}^n}{\Delta t}
+    F_j^{\text{oil}} = V_j\,
+      \frac{\phi_j^{n+1}(1 - S_{g,j}^{n+1})/B_{o,j}^{n+1}
+            - \phi_j^n(1 - S_{g,j}^n)/B_{o,j}^n}{\Delta t}
       + \left(G_{j+\half}^{o} - G_{j-\half}^{o}\right) = 0,
   }
 \end{equation}
-где $G_{j+\half}^{o} = \mathcal{T}_{j+\half}\,
+где $\phi_j^n = \phi(p_j^n)$~\eqref{eq:porosity}, $G_{j+\half}^{o} = \mathcal{T}_{j+\half}\,
 (\Lambda_o/B_o)_{j+\half}\,(p_j - p_{j+1})$~--- поток нефтяного
 компонента через грань~\eqref{eq:flux_oil}. Подвижность берётся
 из~ячейки выше по~потоку.
@@ -1079,10 +1094,10 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 \paragraph{Невязка баланса газового компонента:}
 \begin{equation}\label{eq:residual_gas}
   \boxed{
-    F_j^{\text{gas}} = V_j\,\phi\,
-      \frac{\left[\frac{R_{s,j}^{n+1}(1-S_{g,j}^{n+1})}{B_{o,j}^{n+1}}
+    F_j^{\text{gas}} = V_j\,
+      \frac{\phi_j^{n+1}\left[\frac{R_{s,j}^{n+1}(1-S_{g,j}^{n+1})}{B_{o,j}^{n+1}}
             + \frac{S_{g,j}^{n+1}}{B_{g,j}^{n+1}}\right]
-            - \left[\frac{R_{s,j}^n(1-S_{g,j}^n)}{B_{o,j}^n}
+            - \phi_j^n\left[\frac{R_{s,j}^n(1-S_{g,j}^n)}{B_{o,j}^n}
             + \frac{S_{g,j}^n}{B_{g,j}^n}\right]}{\Delta t}
       + \left(G_{j+\half}^{g} - G_{j-\half}^{g}\right) = 0,
   }
@@ -1490,15 +1505,18 @@ $\mu_{\mathrm{JT}}\,p_j\,D_j \neq 0$~--- тот же паразитный чле
 что и~в~конвекции.
 
 \paragraph{Адиабатический эффект (временной).}
-Вычисляется поточечно в~центре ячейки (при~$c_r = 0$,
-через~$\mu_{\mathrm{JT}}$~\eqref{eq:main_Qad_muJT}):
+Вычисляется поточечно в~центре ячейки
+(через~$\mu_{\mathrm{JT}}$~\eqref{eq:main_Qad_muJT}):
 \begin{equation}\label{eq:Qad_disc}
-  V_j\,{\Qad}_j = V_j\,\phi\,
+  V_j\,{\Qad}_j = V_j\,\phi_j^{n+1}\,
     \left(1 + \sum_\alpha S_{\alpha,j}\,
     \rho_{\alpha,j}\,c_{p,\alpha,j}\,
     \mu_{\mathrm{JT},\alpha,j}\right)
     \frac{p_j^{n+1}-p_j^n}{\Delta t}.
 \end{equation}
+Пористость $\phi_j^{n+1} = \phi(p_j^{n+1})$~\eqref{eq:porosity}~--- та~же,
+что в~запасах гидродинамики~\eqref{eq:residual_oil}; так~же она входит
+во~флюидную часть~$\rhocpeff$, скелет~--- с~$1 - \phi_0$.
 
 \paragraph{Теплота дегазации.}
 Вычисляется поточечно:
@@ -1542,7 +1560,7 @@ $R_{s,N-1}$ нельзя~--- при~$p_{N-1} < p_b$ это состав уже
 $1/B_o$ уже содержится внутри~$G^o$~\eqref{eq:flux_oil} и~взят
 из~ячейки \emph{выше по~потоку}. Асимметрия не~случайна и~не~является
 непоследовательностью: временной член выражает \textbf{запас} нефти
-в~ячейке, $\phi(1-S_{g,j})/B_{o,j}$, а~пространственный~---
+в~ячейке, $\phi_j^{n+1}(1-S_{g,j})/B_{o,j}$, а~пространственный~---
 \textbf{поток} через грань, и~для потока условия выше по~потоку~---
 единственный согласованный выбор.
 
@@ -1579,7 +1597,7 @@ $R_s$ без фазового перехода такая дискретизац
 Массовый темп дегазации для ячейки~$j$:
 \begin{equation}\label{eq:mdot_disc}
   V_j\,\mdot_j = -\rho_g^{\text{ст}}\!\left[
-    V_j\,\phi\,\frac{1-S_{g,j}^{n+1}}{B_{o,j}^{n+1}}\,
+    V_j\,\phi_j^{n+1}\,\frac{1-S_{g,j}^{n+1}}{B_{o,j}^{n+1}}\,
       \frac{R_{s,j}^{n+1} - R_{s,j}^n}{\Delta t}
     + \mathcal{R}_j
   \right].
@@ -2323,7 +2341,10 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 Ниже приведён полный вывод уравнения
 энергии~\eqref{eq:energy_final} из~первого начала термодинамики.
 
-Рассмотрим неподвижный элемент пористой среды. Первое начало
+Рассмотрим неподвижный элемент пористой среды; объёмные величины
+отнесены к~его начальному объёму. Масса скелета в~элементе постоянна;
+при $c_r \ne 0$ меняется поровый объём~\eqref{eq:porosity}, изменение
+размеров элемента не~учитывается. Первое начало
 термодинамики для открытой системы:
 \begin{equation}\label{eq:first_law_open}
   \frac{dE_{\mathrm{total}}}{dt}
@@ -2334,15 +2355,18 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 
 Определим входящие в~\eqref{eq:first_law_open} величины:
 \begin{itemize}[nosep]
-  \item $E_{\mathrm{total}}$~--- полная внутренняя энергия вещества
-        внутри элемента (порода + флюиды), Дж/м$^3$;
+  \item $E_{\mathrm{total}}$~--- внутренняя энергия флюидов и~тепловая
+        энергия скелета внутри элемента, Дж/м$^3$; упругая энергия
+        деформации скелета в~$E_{\mathrm{total}}$ не~входит;
   \item $\dot{Q}$~--- подвод тепла к~элементу за~счёт теплопроводности
         (кондукция через границы элемента), Вт/м$^3$;
   \item $\dot{W}_{\text{внешн}}$~--- мощность работы, совершаемой
-        системой над~окружением, помимо работы проталкивания
-        (в~рассматриваемой задаче $\dot{W}_{\text{внешн}} = 0$:
-        нет подвижных стенок и~внешних механических воздействий),
-        Вт/м$^3$;
+        системой над~окружением, помимо работы проталкивания, Вт/м$^3$.
+        Здесь это работа флюида над стенками пор:
+        $\dot{W}_{\text{внешн}} = p\,\partial\phi/\partial t$. Она
+        запасается упругой энергией скелета и~в~тепло не~переходит
+        (упругая деформация обратима). Других механических воздействий
+        нет; при $c_r = 0$ $\dot{W}_{\text{внешн}} = 0$;
   \item $\dot{m}_{\mathrm{in}}$, $\dot{m}_{\mathrm{out}}$~--- массовые
         расходы флюида, втекающего в~элемент и~вытекающего из~него
         через его границы, кг/(м$^3\cdot$с);
@@ -2355,11 +2379,11 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 \begin{equation}\label{eq:energy_cons}
   \pdt{E}
   + \divr{F}
-  = \divr{\leff\,\pdr{T}},
+  = \divr{\leff\,\pdr{T}} - p\,\pdt{\phi},
 \end{equation}
 где
 \begin{equation}\label{eq:E_expanded}
-  E = (1 - \phi)\,(\rho c_p)_s\,T + \phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha,
+  E = (1 - \phi_0)\,(\rho c_p)_s\,T + \phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha,
 \end{equation}
 \begin{equation}\label{eq:E_enthalpy_relation}
 \phi\sum_\alpha S_\alpha\,\rho_\alpha\,e_\alpha = \phi\sum_\alpha S_\alpha\,\rho_\alpha\,h_\alpha
@@ -2368,6 +2392,13 @@ $R_s$ на уравнение~\eqref{eq:mass_oil} имеет ту же разм�
 \begin{equation}\label{eq:F_total}
   F = \sum_\alpha \rho_\alpha\,h_\alpha\,u_\alpha, \quad  h_\alpha = e_\alpha + p/\rho_\alpha.
 \end{equation}
+Тепловая энергия скелета в~\eqref{eq:E_expanded}~--- его масса
+в~элементе, умноженная на~удельную теплоёмкость. Масса постоянна,
+поэтому множитель $1 - \phi_0$ от~давления не~зависит. Запись
+$(1 - \phi)\,(\rho c_p)_s T$ с~$\phi(p)$ означала~бы, что скелет при
+изменении давления уходит из~элемента и~уносит энергию
+$(\rho c_p)_s T$~--- величину, которая зависит от~выбора нуля отсчёта
+энтальпии.
 
 Определим энтальпию многокомпонентной нефтяной фазы, которая является смесью двух компонентов.
 Её энтальпия разлагается через парциальные энтальпии:
@@ -2604,7 +2635,7 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 Таким образом, уравнение~\eqref{eq:energy_cons} принимает следующий вид
 с~учётом выполненных преобразований
 \begin{multline}\label{eq:energy_cons_der}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+  \pdt{}\left( (1 - \phi_0)\,(\rho c_p)_s\,T - \phi\,p\right) + p\,\pdt{\phi}
       +
       \\
     \left(\phi\,\rho_g^{\text{ст}}\,
@@ -2650,7 +2681,7 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 В~результате группировки слагаемых в~уравнении~\eqref{eq:energy_cons_der}
 с~учётом соотношения~\eqref{eq:gibbs_duhem} запишем
 \begin{multline}\label{eq:energy_cons_derived}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+  \pdt{}\left( (1 - \phi_0)\,(\rho c_p)_s\,T - \phi\,p\right) + p\,\pdt{\phi}
       +
       \\
     \left(\phi\,\rho_g^{\text{ст}}\,
@@ -2670,7 +2701,7 @@ $L\,\mdot = 0$ независимо от~значения~$L$, поэтому з
 определения~\eqref{eq:rho_oil} плотности нефтяной фазы и
 определения энтальпии нефти~\eqref{eq:oil_enthalpy_components}
 \begin{multline}\label{eq:energy_cons_derived2}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+  \pdt{}\left( (1 - \phi_0)\,(\rho c_p)_s\,T - \phi\,p\right) + p\,\pdt{\phi}
       +
       \\
     \phi\,\rho_g^{\text{ст}}\,
@@ -2701,7 +2732,7 @@ $\alpha_o$~--- её коэффициент объёмного теплового
 
 Подставляя~\eqref{eq:dh_oil} в~уравнение~\eqref{eq:energy_cons_derived2}, получим
 \begin{multline}\label{eq:energy_cons_derived3}
-  \pdt{}\left( (1 - \phi)\,(\rho c_p)_s\,T - \phi\,p\right)
+  \pdt{}\left( (1 - \phi_0)\,(\rho c_p)_s\,T - \phi\,p\right) + p\,\pdt{\phi}
       +
       \\
     \phi\,\rho_g\,S_g
@@ -2716,22 +2747,27 @@ $\alpha_o$~--- её коэффициент объёмного теплового
   \divr{\leff\,\pdr{T}} - L\mdot.
 \end{multline}
 
-Раскроем производные от слагаемых, описывающих теплоёмкость пород и
-работу внешних сил
+Раскроем производные от слагаемых, описывающих теплоёмкость скелета
+и~работу давления
 \begin{equation}\label{eq:rock_dt}
   \pdt{}\!\left[
-    (1-\phi)\,(\rho c_p)_s\,T-\phi\,p
-  \right]
-  = (1-\phi)\,(\rho c_p)_s\,\pdt{T}
-    - (\rho c_p)_s\,T\,\phi\,c_r\,\pdt{p}-\phi\,(1 + p\,c_r)\,\pdt{p}.
+    (1-\phi_0)\,(\rho c_p)_s\,T-\phi\,p
+  \right] + p\,\pdt{\phi}
+  = (1-\phi_0)\,(\rho c_p)_s\,\pdt{T}
+    - \phi\,\pdt{p}.
 \end{equation}
+Слагаемое $p\,\partial\phi/\partial t$ из~$\partial(\phi p)/\partial t$
+сокращается с~работой флюида над стенками пор~\eqref{eq:energy_cons};
+у~скелета производной~$\partial\phi/\partial t$ нет, так как его масса
+постоянна. Сжимаемость породы остаётся в~уравнении энергии только
+через~$\phi(p)$.
 Подставим это выражение в~уравнение~\eqref{eq:energy_cons_derived3}
 и~перегруппируем слагаемые
 \begin{multline}\label{eq:energy_cons_derived4}
-  \left[(1-\phi)\,(\rho c_p)_s\, +\phi\,\rho_g\,S_gc_{p,g}\,  +\phi\,S_o\,\rho_oc_{p,o}\right]\pdt{T}
+  \left[(1-\phi_0)\,(\rho c_p)_s\, +\phi\,\rho_g\,S_gc_{p,g}\,  +\phi\,S_o\,\rho_oc_{p,o}\right]\pdt{T}
     +
     \\
-    (\phi\,S_g\,(1 - \alpha_g\,T)+\phi\,S_o\,(1 - \alpha_o\,T)\,-(\rho c_p)_s\,T\,\phi\,c_r-\phi\,(1 + p\,c_r))\,\pdt{p}
+    (\phi\,S_g\,(1 - \alpha_g\,T)+\phi\,S_o\,(1 - \alpha_o\,T)-\phi)\,\pdt{p}
       +
       \\
     (\rho_g\,u_gc_{p,g}+\rho_ou_oc_{p,o})\,\pdr{T} + (u_g\,(1 - \alpha_g\,T)+ u_o\,(1 - \alpha_o\,T))\pdr{p} =
@@ -2742,7 +2778,7 @@ $\alpha_o$~--- её коэффициент объёмного теплового
 Определим эффективные характеристики гомогенной смеси
 \begin{equation}
 \rhocpeff
-    = (1-\phi)\,(\rho c_p)_s
+    = (1-\phi_0)\,(\rho c_p)_s
       + \phi\,(S_o\,\rho_o\,c_{p,o} + S_g\,\rho_g\,c_{p,g}),
 \end{equation}
 \begin{equation}
@@ -2750,7 +2786,7 @@ $\alpha_o$~--- её коэффициент объёмного теплового
     = \rho_o\,c_{p,o}\,u_o + \rho_g\,c_{p,g}\,u_g,
 \end{equation}
 \begin{equation}
-\Qad = \phi\left[T\,\sum_\alpha S_\alpha\,\alpha_\alpha + (\rho c_p)_s\,T\,c_r + p\,c_r\right]\pdt{p},
+\Qad = \phi\,T\sum_\alpha S_\alpha\,\alpha_\alpha\,\pdt{p},
 \end{equation}
 \begin{equation}
 \QJT = -\left[u_g\,(1 - \alpha_g\,T) + u_o\,(1 - \alpha_o\,T)\right]\pdr{p},
@@ -2799,7 +2835,6 @@ $\QJT$ и~$\Qad$:
     = \phi\!\left[
       \sum_\alpha S_\alpha\!\left(1
         + \rho_\alpha\,c_{p,\alpha}\,\mu_{\mathrm{JT},\alpha}\right)
-      + c_r\!\left(p + (\rho c_p)_s\,T\right)
     \right]\pdt{p}.
   }
 \end{equation}
@@ -2812,6 +2847,26 @@ $\mu_{\mathrm{JT},\alpha}(p,T)$ заменяет~$\alpha_\alpha(p,T)$
 как входной параметр. Пересчёт, при необходимости:
 $\alpha_\alpha = (1 + \rho_\alpha\,c_{p,\alpha}\,
 \mu_{\mathrm{JT},\alpha})/T$.
+
+\paragraph{Проверка: обратимое адиабатическое сжатие.}
+Пусть течения, теплопроводности и~дегазации нет ($u_\alpha = 0$,
+$\leff = 0$, $\mdot = 0$), фаза одна. Насыщенная упруго деформируемая
+порода сжимается обратимо и~адиабатически~--- энтропия элемента
+постоянна. Энтропия флюида меняется на~$\phi\,\rho\,c_p\,dT/T -
+\phi\,\alpha\,dp$ (соотношение Максвелла $(\partial s/\partial p)_T =
+-\alpha/\rho$), скелета~--- на~$(1-\phi_0)\,(\rho c_p)_s\,dT/T$: его
+масса постоянна, упругая деформация энтропии не~меняет. Сумма равна
+нулю:
+\[
+  \bigl[(1-\phi_0)\,(\rho c_p)_s + \phi\,\rho\,c_p\bigr]\,dT
+  = \phi\,\alpha\,T\,dp.
+\]
+Это в~точности~\eqref{eq:energy_cons_derived4} при тех~же условиях:
+$\rhocpeff\,\partial T/\partial t = \Qad$,
+$\Qad = \phi\,\alpha\,T\,\partial p/\partial t$. С~членом
+$c_r\,(p + (\rho c_p)_s T)$ в~$\Qad$ энтропия в~обратимом процессе
+менялась~бы на~$\phi\,c_r\,(p/T + (\rho c_p)_s)\,dp$ и~при одном из~знаков
+$dp$ убывала~бы, что невозможно.
 
 
 %=============================================================================

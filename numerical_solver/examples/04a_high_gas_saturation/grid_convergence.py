@@ -49,9 +49,8 @@ sys.path.insert(0, str(HERE))
 
 import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
 
-from closed_form import solve_closed  # noqa: E402
+from gpn_multiphase_solver.diagnostics.closed_form import solve_closed  # noqa: E402
 from convergence import run_series  # noqa: E402
-from gpn_multiphase_solver.factory import _create_relperm  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 
 # Сетки для проверки; 150 — рабочая сетка примера (config.json).
@@ -70,8 +69,8 @@ def _measure(sim, history, config):
     Дебит расчёта берётся как |G_o| на забое: поток положителен ОТ скважины
     (конвенция знаков проекта), поэтому дебит добычи — модуль потока.
     """
-    grid = sim._grid
-    cl = solve_closed(config, sim._energy._pvt, _create_relperm(config),
+    grid = sim.grid
+    cl = solve_closed(config, sim.pvt, sim.relperm,
                       grid.r_centers)
     q_num = abs(history.hydro_results[-1].G_o[0])
     return {

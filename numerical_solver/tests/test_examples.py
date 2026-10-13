@@ -22,6 +22,7 @@ import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import NumericsConfig, load_config
+from gpn_multiphase_solver.io.output import pvt_table_nodes, relperm_table_nodes
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -90,9 +91,8 @@ def _run(name: str) -> dict:
     final = history.states[-1]
     return {
         "history": history,
-        "grid": simulator._grid,
-        # config нужен балансу энергии: compute_balance(history, grid, config)
-        # пересобирает по нему PVT и rock (FEAT-016).
+        "grid": simulator.grid,
+        # конфиг примера — для проверок, которым он нужен
         "config": cfg,
         "Rs0": cfg.initial_conditions.Rs0,
         "p": final.p,
@@ -380,11 +380,9 @@ def test_thermal_actually_differs(results):
 
 
 def _asymptotics_module():
-    """Общий модуль examples/temperature_asymptotics.py."""
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import temperature_asymptotics
-    return temperature_asymptotics
+    """Однофазная асимптотика — модуль пакета (DEBT-011)."""
+    from gpn_multiphase_solver.diagnostics import temperature
+    return temperature
 
 
 def test_02_relaxes_toward_jt_asymptote(results):
@@ -691,12 +689,12 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         bad = {}
         for name in ALL_EXAMPLES:
             r = results[name]
-            bal = compute_balance(r["history"], r["grid"], r["config"])
+            bal = compute_energy_balance(r["history"])
             rel = abs(float(bal["rel_residual"][-1]))
             # «not <»: NaN в невязке — тоже провал (прежнее «>=» его пропускало)
             if not rel < 1e-12:
@@ -716,7 +714,7 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from mass_balance import compute_mass_balance
+        from gpn_multiphase_solver.mass_balance import compute_mass_balance
 
         bad = {}
         for name in ALL_EXAMPLES:
@@ -742,12 +740,12 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         for name in ALL_EXAMPLES:
             r = results[name]
             cfg = r["config"]
-            bal = compute_balance(r["history"], r["grid"], cfg)
+            bal = compute_energy_balance(r["history"])
 
             assert "cum_cond" in bal, f"{name}: нет ключа cum_cond"
             cond = bal["cum_cond"]
@@ -766,7 +764,7 @@ class TestSharedChecks:
                     f"{name}: lambda = 0, но cum_cond != 0: {cond[-1]}")
 
     def test_full_key_set_always_returned(self, results):
-        """Набор ключей compute_balance полный независимо от конфига.
+        """Набор ключей compute_energy_balance полный независимо от конфига.
 
         Прежние копии для однофазных примеров не возвращали cum_jt (01) и
         cum_deg (01, 02) — отсутствующие ключи ломали бы вызывающий код.
@@ -777,14 +775,14 @@ class TestSharedChecks:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
                     "cum_deg", "cum_cond", "total", "residual",
                     "rel_residual"}
         for name in ALL_EXAMPLES:
             r = results[name]
-            bal = compute_balance(r["history"], r["grid"], r["config"])
+            bal = compute_energy_balance(r["history"])
             missing = required - set(bal)
             assert not missing, f"{name}: отсутствуют ключи {sorted(missing)}"
 
@@ -939,8 +937,8 @@ def _pvt_module():
 
 def _pvt_of_config(cfg):
     """PVT, собранный фабрикой по конфигу (эталон для сверки)."""
-    from gpn_multiphase_solver.factory import _create_pvt
-    return _create_pvt(cfg)
+    from gpn_multiphase_solver.factory import create_pvt
+    return create_pvt(cfg)
 
 
 def _pvto_lines(ax, gid):
@@ -957,7 +955,7 @@ def _table_pvto_axes(name, p_range):
     Rs0 = float(cfg.initial_conditions.Rs0)
     fig, axes = plt.subplots(2, 3)
     plot_pvt_properties(pvt, Rs0, p_range, axes=axes,
-                        table_nodes=_pvt_module()._pvt_table_nodes(pvt, Rs0))
+                        table_nodes=pvt_table_nodes(pvt, Rs0))
     return fig, axes, pvt, Rs0
 
 
@@ -990,7 +988,7 @@ class TestPvtPlot:
 
         Эталон — вызов pvt.pb(Rs0). Допуск 1e-6 Па: обе стороны обязаны
         считать ОДНИМ вызовом, а не своей формулой. Заодно покрывается
-        ветка simulator=None (fallback на factory._create_pvt): fixture
+        ветка simulator=None (fallback на factory.create_pvt): fixture
         results симулятор не хранит.
         """
         pvt_plot = _pvt_module()
@@ -1023,7 +1021,7 @@ class TestPvtPlot:
                     f"{name}: у аналитического PVT узлов быть не может")
 
     def test_physical_branch_matches_rs_analytics(self, results):
-        """Физическое R_s сводки report_pvt совпадает с rs_analytics.rs_expected побитово.
+        """Физическое R_s сводки report_pvt совпадает с diagnostics.rs.rs_expected побитово.
 
         Обе стороны считают min(Rs_eq(p), Rs0). Расхождение двух
         реализаций одной формулы — тот самый класс дефектов, ради
@@ -1032,7 +1030,7 @@ class TestPvtPlot:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from rs_analytics import rs_expected
+        from gpn_multiphase_solver.diagnostics.rs import rs_expected
         pvt_plot = _pvt_module()
 
         p = np.linspace(5e6, 25e6, 50)
@@ -1080,7 +1078,7 @@ class TestPvtPlot:
         """
         pvt_plot = _pvt_module()
         r = results["04_table_table"]
-        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+        nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                           r["Rs0"])
         assert nodes is not None, "у табличного PVT узлы обязаны быть"
         assert np.allclose(nodes["p_gas"], [5e6, 15e6, 30e6])
@@ -1095,7 +1093,7 @@ class TestPvtPlot:
         pvt_plot = _pvt_module()
         for name in ANALYTIC_PVT:
             r = results[name]
-            nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+            nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                               r["Rs0"])
             assert nodes is None, f"{name}: у корреляции узлов быть не может"
 
@@ -1145,7 +1143,7 @@ class TestPvtPlot:
         """
         pvt_plot = _pvt_module()
         r = results["04_table_table"]
-        nodes = pvt_plot._pvt_table_nodes(_pvt_of_config(r["config"]),
+        nodes = pvt_table_nodes(_pvt_of_config(r["config"]),
                                           r["Rs0"])
         assert set(nodes) >= {"p_gas", "p_oil"}, "ключи должны быть раздельны"
         assert "p_all" not in nodes, (
@@ -1217,10 +1215,10 @@ class TestPvtPlot:
         """
         cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
         pvt = _pvt_of_config(cfg)
-        nodes = _pvt_module()._pvt_table_nodes(pvt, 30.0)
+        nodes = pvt_table_nodes(pvt, 30.0)
         assert np.allclose(nodes["p_branch"], [15e6, 30e6])
         assert np.allclose(nodes["p_oil"], [5e6, 15e6, 30e6])
-        assert _pvt_module()._pvt_table_nodes(pvt, 20.0)["p_branch"].size == 0
+        assert pvt_table_nodes(pvt, 20.0)["p_branch"].size == 0
 
     def test_describe_mu_o_branch(self):
         """Подпись Стендинга перечисляет свойства, горизонтальные выше p_b (FEAT-027).
@@ -1418,10 +1416,10 @@ class TestWorkingRange:
         Таблица ОФП примера 12; ожидается строка «рабочий диапазон: S_g =
         0.000000 … 0.050000» вместо «расчёт однофазный».
         """
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         cfg = load_config(self.CFG)
         _relperm_module().report_relperm(cfg, _shut_in_like_history(),
-                                         _create_relperm(cfg))
+                                         create_relperm(cfg))
         out = capsys.readouterr().out
         assert "расчёт однофазный" not in out
         assert "рабочий диапазон: S_g = 0.000000 … 0.050000" in out
@@ -1433,7 +1431,7 @@ class TestWorkingRange:
         расчёта, 1 у однофазного. Перехват вызова — тот же приём, что в
         test_plot_pvt_layout_2x3.
         """
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         rp_mod = _relperm_module()
         calls = []
         orig = rp_mod.plt.subplots
@@ -1445,7 +1443,7 @@ class TestWorkingRange:
         monkeypatch.setattr(rp_mod.plt, "subplots", spy)
         cfg = load_config(self.CFG)
         rp_mod.plot_relperm(cfg, _shut_in_like_history(), tmp_path, "16-синт",
-                            _create_relperm(cfg))
+                            create_relperm(cfg))
         assert calls[0][:2] == (1, 2), f"панелей: {calls[0][:2]}"
 
 
@@ -1456,16 +1454,17 @@ class TestWorkingRange:
 class TestTableNodesByClass:
     """Скрипты графиков находят узлы таблиц по классу модели, а не по приватным полям.
 
-    До DEBT-006 _table_nodes (relperm_plot.py) тестов не имел, а узлы PVT
-    проверяли в основном тесты на фикстуре results (метка slow). Здесь —
+    До DEBT-006 узлы ОФП (сейчас io/output.py::relperm_table_nodes, прежде
+    _table_nodes в relperm_plot.py) тестов не имели, а узлы PVT проверяли
+    в основном тесты на фикстуре results (метка slow). Здесь —
     быстрые проверки без расчёта.
     """
 
     def test_relperm_nodes_from_csv(self):
         """Табличная ОФП примера 04: узлы — ровно строки relperm.csv."""
-        from gpn_multiphase_solver.factory import _create_relperm, _read_relperm_csv
+        from gpn_multiphase_solver.factory import create_relperm, _read_relperm_csv
         cfg = load_config(EXAMPLES_DIR / "04_table_table" / "config.json")
-        nodes = _relperm_module()._table_nodes(_create_relperm(cfg))
+        nodes = relperm_table_nodes(create_relperm(cfg))
         expected = _read_relperm_csv(cfg.config_dir / cfg.relperm.file)
         assert nodes is not None, "у табличной ОФП узлы обязаны быть"
         for got, exp in zip(nodes, expected):
@@ -1473,15 +1472,15 @@ class TestTableNodesByClass:
 
     def test_relperm_nodes_none_for_corey(self):
         """Кори примера 03: выделенных точек нет — None."""
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.factory import create_relperm
         cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
-        assert _relperm_module()._table_nodes(_create_relperm(cfg)) is None
+        assert relperm_table_nodes(create_relperm(cfg)) is None
 
     def test_pvt_nodes_none_for_standing(self):
         """Стендинг примера 03: узлов PVT нет — None (без фикстуры results, DEBT-006)."""
         cfg = load_config(EXAMPLES_DIR / "03_standing_corey" / "config.json")
         Rs0 = float(cfg.initial_conditions.Rs0)
-        assert _pvt_module()._pvt_table_nodes(_pvt_of_config(cfg), Rs0) is None
+        assert pvt_table_nodes(_pvt_of_config(cfg), Rs0) is None
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1574,14 +1573,14 @@ class TestHighGasSaturation:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from closed_form import Closure
+        from gpn_multiphase_solver.diagnostics.closed_form import Closure
         from gpn_multiphase_solver.factory import (
-            SimulatorFactory, _create_relperm)
+            SimulatorFactory, create_relperm)
 
         cfg = load_config(EXAMPLES_DIR / HIGH_SG / "config.json")
         sim, _ = SimulatorFactory.from_config(cfg)
         # Closure принимает объект ОФП напрямую — работает и с CoreyRP.
-        clo = Closure(sim._energy._pvt, _create_relperm(cfg),
+        clo = Closure(sim.pvt, create_relperm(cfg),
                       cfg.initial_conditions.Rs0)
 
         p_well = float(results[HIGH_SG]["p"][0])
@@ -1773,12 +1772,12 @@ class TestPwfRampDown:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from closed_form import solve_closed
-        from gpn_multiphase_solver.factory import _create_relperm
+        from gpn_multiphase_solver.diagnostics.closed_form import solve_closed
+        from gpn_multiphase_solver.factory import create_relperm
 
         r = results[self.NAME]
         cfg = r["config"]
-        cl = solve_closed(cfg, _pvt_of_config(cfg), _create_relperm(cfg),
+        cl = solve_closed(cfg, _pvt_of_config(cfg), create_relperm(cfg),
                           r["grid"].r_centers)
         assert cl["q_o"] == pytest.approx(3.2827e-3, rel=1e-4)
 
@@ -1807,23 +1806,29 @@ class TestPwfRampDown:
 # ═══════════════════════════════════════════════════════════
 
 def _closed_form():
-    """Общий модуль examples/closed_form.py."""
+    """Наложения и сверка — examples/closed_form.py."""
     import sys
     sys.path.insert(0, str(EXAMPLES_DIR))
     import closed_form
     return closed_form
 
 
+def _closed_form_core():
+    """Замкнутое решение — модуль пакета (DEBT-011)."""
+    from gpn_multiphase_solver.diagnostics import closed_form
+    return closed_form
+
+
 @pytest.fixture(scope="module")
 def stationary_base():
     """Конфиг примера 12, его PVT, ОФП и сетка (r центров ячеек)."""
-    from gpn_multiphase_solver.factory import _create_relperm
+    from gpn_multiphase_solver.factory import create_relperm
     from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
     cfg = load_config(EXAMPLES_DIR / "12_large_drainage_radius" / "config.json")
     g = cfg.geometry
     grid = LogRadialGrid(r_well=g.r_well, R_ext=g.R_ext, h=g.h,
                          N=cfg.grid.N, k=cfg.rock.permeability)
-    return cfg, _pvt_of_config(cfg), _create_relperm(cfg), grid.r_centers
+    return cfg, _pvt_of_config(cfg), create_relperm(cfg), grid.r_centers
 
 
 class TestStationaryPwf:
@@ -1850,7 +1855,7 @@ class TestStationaryPwf:
     def test_pressure_control_uses_last_interval(self):
         """Управление по давлению: уставка последнего интервала (13a — 6 МПа)."""
         cfg = load_config(EXAMPLES_DIR / "13a_pwf_ramp_down" / "config.json")
-        assert _closed_form().stationary_pwf(cfg, None, None) == 6.0e6
+        assert _closed_form_core().stationary_pwf(cfg, None, None) == 6.0e6
 
     def test_rate_control_inverts_last_rate(self, stationary_base):
         """Дебит 270 м³ст/сут: p_wf* = 6.59493 МПа, q_o решения = заданному.
@@ -1861,7 +1866,7 @@ class TestStationaryPwf:
         аудита 1.96e-8. Ловит: неверное обращение, возврат к p_wf из конфига.
         """
         cfg, pvt, rp, r = stationary_base
-        cl = _closed_form().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
+        cl = _closed_form_core().solve_closed(self._rate_config(cfg, 270.0), pvt, rp, r)
         assert cl["p_wf"] == pytest.approx(6.59493e6, rel=1e-5)
         assert cl["q_o"] == pytest.approx(270.0 / 86400.0, rel=1e-6)
 
@@ -1869,13 +1874,13 @@ class TestStationaryPwf:
         """Дебит 1000 м³ст/сут выше стационарного максимума (412 при 1 атм):
         стационар при min_bhp — ограничение активно."""
         cfg, pvt, rp, _ = stationary_base
-        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
+        pw = _closed_form_core().stationary_pwf(self._rate_config(cfg, 1000.0), pvt, rp)
         assert pw == 101325.0
 
     def test_zero_rate_gives_contour_pressure(self, stationary_base):
         """Нулевой дебит: депрессии нет, p_wf* = p_e."""
         cfg, pvt, rp, _ = stationary_base
-        pw = _closed_form().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
+        pw = _closed_form_core().stationary_pwf(self._rate_config(cfg, 0.0), pvt, rp)
         assert pw == cfg.initial_conditions.p0
 
 
@@ -1990,9 +1995,10 @@ class TestOilRateRampUp:
 
         r = results[self.NAME]
         cfg, history, grid = r["config"], r["history"], r["grid"]
-        # closed_form берёт PVT как simulator._energy._pvt (_prepare)
-        sim = types.SimpleNamespace(
-            _energy=types.SimpleNamespace(_pvt=_pvt_of_config(cfg)))
+        # closed_form берёт PVT и ОФП как simulator.pvt, simulator.relperm (_prepare)
+        from gpn_multiphase_solver.factory import create_relperm
+        sim = types.SimpleNamespace(pvt=_pvt_of_config(cfg),
+                                    relperm=create_relperm(cfg))
 
         fig, ax = plt.subplots()
         try:
@@ -2824,7 +2830,7 @@ class TestShutInStrongCooling:
         """На останове пласт греют сжатие (77 %) и растворение газа (22 %).
 
         Приращения членов баланса энергии по области от конца добычи до
-        30 сут (energy_balance.compute_balance), Дж: ΔE = +1.775e11,
+        30 сут (energy.balance.compute_energy_balance), Дж: ΔE = +1.775e11,
         адиабатический +1.371e11, дегазация (здесь — растворение)
         +3.962e10, Джоуль–Томсон +6.7e8, конвекция +2.0e8. За добычу член
         дегазации отрицателен (-2.226e11): газ выделялся и охлаждал.
@@ -2833,10 +2839,10 @@ class TestShutInStrongCooling:
         """
         import sys
         sys.path.insert(0, str(EXAMPLES_DIR))
-        from energy_balance import compute_balance
+        from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         r = results[self.NAME]
-        bal = compute_balance(r["history"], r["grid"], r["config"])
+        bal = compute_energy_balance(r["history"])
         E = self.END_PROD
         d = {k: float(bal[k][-1] - bal[k][E])
              for k in ("delta_E", "cum_adiab", "cum_deg", "cum_jt", "cum_conv")}

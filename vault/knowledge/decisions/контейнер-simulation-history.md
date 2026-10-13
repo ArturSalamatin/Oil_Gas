@@ -77,7 +77,8 @@ class SimulationHistory:
 (`gpn_multiphase_solver/mass_balance.py`): `M_o`, `M_g` — запас нефтяного и
 газового компонентов, м³ст; `cum_o_well`, `cum_o_ext`, `cum_g_well`,
 `cum_g_ext` — интегралы потоков через забой и контур от $t = 0$, м³ст (знак
-как у $G$). Невязка $\Delta M + \int G_N\,dt - \int G_0\,dt$ и графики —
+как у $G$). Невязка $\Delta M + \int G_N\,dt - \int G_0\,dt$ —
+`compute_mass_balance` того же модуля (DEBT-011), график и печать —
 `examples/mass_balance.py`.
 
 Интегралы, как и члены баланса энергии, копятся по всем принятым шагам
@@ -110,8 +111,10 @@ def n_saved(self) -> int:
 Упаковка в массивы — не метод контейнера, а функция
 `history_to_arrays(history)` модуля `io/output.py`: `times` — `[K]`; `p`,
 `T`, `Sg`, `Rs` — `[K, N]`; `q_o_std`, `q_g_std`, `p_wf`, `T_wf` — `[K]`.
-Поля `balance` и `mass_balance` в неё не входят — их читают постобработки
-`examples/energy_balance.py` и `examples/mass_balance.py`.
+Поля `balance` и `mass_balance` в неё не входят — ряды из них собирают
+`energy/balance.py::compute_energy_balance` и `mass_balance.py::compute_mass_balance`
+(DEBT-011), рисунки — `io/output.py` (`plot_energy_balance_series`,
+`plot_mass_balance_series`).
 
 ## Жизненный цикл
 

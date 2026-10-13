@@ -41,9 +41,9 @@ from gpn_multiphase_solver.units import S_TO_DAY
 def run_and_compute_errors(config, n_ode_points=500):
     """Прогон + рекуррентное ОДУ → ошибка T на каждом шаге."""
     sim, initial_state = SimulatorFactory.from_config(config)
-    grid = sim._grid
-    pvt = sim._energy._pvt
-    rock = sim._energy._rock
+    grid = sim.grid
+    pvt = sim.pvt
+    rock = config.rock
     history = sim.run(initial_state)
 
     N = grid.N

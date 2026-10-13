@@ -41,6 +41,15 @@ TIME_PATTERNS = [
     re.compile(r"^Время расчёта:"),
 ]
 
+# Файлы, в которые прототип пишет время выполнения ("wall_seconds"), — от
+# прогона к прогону разные при одном и том же коде (проверено двумя прогонами
+# примера 18 на одном дереве, DEBT-011). Сравниваются не побайтно, а
+# отмечаются отдельно.
+TIME_FILES = {
+    "18_prototype_input": {"prototype/results.xlsx", "prototype/run_summary.json",
+                           "prototype/run_summary.txt", "prototype/summary.json"},
+}
+
 
 def _sha(path: Path) -> str:
     """SHA-256 содержимого файла."""
@@ -140,7 +149,10 @@ def compare(a_path: Path, b_path: Path) -> int:
                     msgs.append(f"    [{i}] до:    {x}")
                     msgs.append(f"    [{i}] после: {y}")
         fa, fb = ea["files"], eb["files"]
+        skipped = TIME_FILES.get(name, set())
         for f in sorted(set(fa) | set(fb)):
+            if f in skipped:
+                continue
             if fa.get(f) != fb.get(f):
                 state = ("нет до" if f not in fa else
                          "нет после" if f not in fb else "содержимое")
@@ -151,7 +163,9 @@ def compare(a_path: Path, b_path: Path) -> int:
             for m in msgs:
                 print(f"  {m}")
         else:
-            print(f"{name}: совпадает ({len(fa)} файлов)")
+            note = (f", без {len(skipped)} файлов с временем выполнения"
+                    if skipped else "")
+            print(f"{name}: совпадает ({len(fa) - len(skipped)} файлов{note})")
     print(f"итог: {'совпадает' if not bad else f'расхождения в {bad} примерах'}")
     return 1 if bad else 0
 

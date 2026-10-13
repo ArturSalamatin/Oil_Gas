@@ -79,8 +79,16 @@ numerical_solver/
 │   ├── energy/                 # Тепловой модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: EnergySolver
-│   │   └── tridiag.py          # TridiagEnergySolver
+│   │   ├── tridiag.py          # TridiagEnergySolver
+│   │   └── balance.py          # Накопитель баланса энергии + ряды compute_energy_balance (DEBT-013, DEBT-011)
 │   │
+│   ├── diagnostics/            # Проверки расчёта (DEBT-011): ничего не печатают и не рисуют
+│   │   ├── closed_form.py      # Замкнутое решение двухфазного стационара (GOR = Rs0)
+│   │   ├── two_phase.py        # GOR, S_g из замыкания, Дюпюи, фронт разгазирования
+│   │   ├── rs.py               # Равновесие R_s, радиус изобары p_b
+│   │   └── temperature.py      # Однофазная асимптотика T
+│   │
+│   ├── mass_balance.py         # Накопитель баланса массы + ряды compute_mass_balance (DEBT-039, DEBT-011)
 │   ├── fluxes.py               # G по Дарси (путь тестов) + общий шаг Q, u, m, Gm обоих гидро-путей (DEBT-028)
 │   ├── bc.py                   # Управление скважиной (данные): WellControl, PressureControl, RateControl (FEAT-020)
 │   ├── simulator.py            # 6. Оркестратор: Simulator, TimeSchedule, ScheduleInterval
@@ -90,7 +98,7 @@ numerical_solver/
 │   ├── io/                     # Ввод/вывод
 │   │   ├── __init__.py
 │   │   ├── config.py           # Чтение JSON, валидация, dataclasses
-│   │   └── output.py           # Сохранение результатов, визуализация
+│   │   └── output.py           # Сохранение результатов, визуализация (в т. ч. рисунки балансов и ОФП, узлы таблиц — DEBT-011)
 │   │
 │   └── state.py                # SimulationState, HydroResult, EnergyResult, WellData, BoundaryConditions, SimulationHistory
 │
@@ -304,6 +312,23 @@ class SimulationState:
    - конвертирует форматы данных (если нужно)
 
 Паттерн Adapter позволяет не менять ни Simulator, ни код коллеги.
+
+## Диагностика и граница пакет / examples (DEBT-011)
+
+Решатель с примерами и тестами передаётся заказчику (решение пользователя 2026-10-10): всё, чем проверяется расчёт, должно быть доступно после установки пакета, без репозитория.
+
+**В пакете** — вычисление и рисование:
+- `diagnostics/` — замкнутое решение, аналитика двухфазного стационара, равновесие $R_s$, однофазная асимптотика $T$; функции от `(config, history, grid, pvt, relperm)`, без печати и рисунков;
+- ряды балансов — `energy/balance.py::compute_energy_balance`, `mass_balance.py::compute_mass_balance` (рядом с накопителями);
+- рисунки — `io/output.py`: `plot_energy_balance_series`, `plot_mass_balance_series`, `plot_relperm_curves`, `plot_pvt_properties`, узлы таблиц `relperm_table_nodes`, `pvt_table_nodes`. Рисуют на переданных осях (или создают их) и возвращают оси; файлов не пишут и не печатают.
+
+**Объекты задачи** — публичные свойства `Simulator.grid`, `Simulator.pvt`, `Simulator.relperm` и функции фабрики `create_pvt`, `create_relperm` (без решателя). Приватный доступ (`sim._energy._pvt`, `factory._create_*`) из примеров убран.
+
+**В `examples/`** до [[FEAT-030]] — конвейер `run_example`, наложения на профили (`make_overlay_*`, `_draw_rs`), печать отчётов (`report_*`), обёртки рисунков с записью PNG, `figure_io`, CLI-блоки. Это и переносится в команду расчёта FEAT-030.
+
+**Стражи** (разбор AST):
+- `tests/test_example_scripts.py::test_no_private_solver_access` — скрипты `examples/` не обращаются к приватным полям чужих объектов и не импортируют `_имена` из пакета;
+- `tests/test_public_api.py::test_package_does_not_depend_on_examples` — пакет не импортирует модули `examples/` и не трогает `sys.path`.
 
 ## Решения, отличные от InjectorGPN
 

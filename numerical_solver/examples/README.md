@@ -386,8 +386,9 @@ $$\frac{k_{rg}(S_g)}{k_{ro}(S_g)} = \bigl[R_{s,0}-R_s(p)\bigr]\frac{\mu_g B_g}{\
 
 $$q_o = \frac{2\pi k h}{\ln(R_e/r_w)}\int_{p_{wf}}^{p_e}\frac{k_{ro}(S_g(p))}{\mu_o B_o}\,dp$$
 
-Вывод не зависит ни от источника PVT, ни от вида ОФП, поэтому модуль
-[closed_form.py](closed_form.py) подключается ко всем сценариям с
+Вывод не зависит ни от источника PVT, ни от вида ОФП, поэтому решение
+([diagnostics/closed_form.py](../gpn_multiphase_solver/diagnostics/closed_form.py); наложения на профили —
+[closed_form.py](closed_form.py)) подключается ко всем сценариям с
 $R_{s,0}>0$:
 
 | пример | PVT / ОФП | $q_o$ расчёт | $q_o$ аналитика | расхождение |
@@ -476,8 +477,8 @@ $$\text{есть газ: } R_s = R_s^{eq}(p), \qquad
 $R_s = \min(R_s^{eq}(p), R_{s,0})$ верна только при монотонно падающем
 давлении.
 
-Модуль [rs_analytics.py](rs_analytics.py) проверяет оба условия на
-последней записи у всех сценариев с $R_{s,0} > 0$ и печатает в консоль
+Модуль [diagnostics/rs.py](../gpn_multiphase_solver/diagnostics/rs.py) проверяет оба условия на
+последней записи у всех сценариев с $R_{s,0} > 0$, а [rs_analytics.py](rs_analytics.py) печатает в консоль
 расхождение в ячейках с газом, число пересыщенных ячеек без газа и число
 ячеек без газа ниже $p_b$. Ячейкой с газом считается $S_g > 10^{-8}$. Ячейки,
 которые решатель после растворения газа ещё числит двухфазными
@@ -607,7 +608,7 @@ $$\Delta E = E_{\text{адиаб}} + E_{\text{конв}} + E_{\text{JT}} + E_{\t
 кельвинов. Решение от сдвига не меняется (не больше $4\cdot10^{-11}$ К).
 
 **Нормировка — сумма модулей всех членов**, $|\Delta E| + \sum_k |E_k|$
-(`energy_balance.compute_balance`). Ошибка округления растёт с модулями
+(`energy.balance.compute_energy_balance`). Ошибка округления растёт с модулями
 складываемых кумулятивных сумм, а не с результатом. Прежняя нормировка
 $\max(|\Delta E|, |\sum_k E_k|)$ ломалась, когда вклады гасят друг друга: с
 физическим знаком $\mu_{JT}$ (2026-09-29) у примера 10
@@ -679,7 +680,8 @@ $5.6\cdot10^{-9}$) и 10 (газ, $4.9\cdot10^{-9}$). До BUG-022 выше вс
 
 ### Асимптотика температуры — только однофазная зона
 
-Модуль [temperature_asymptotics.py](temperature_asymptotics.py) проверяет
+Модуль [diagnostics/temperature.py](../gpn_multiphase_solver/diagnostics/temperature.py) (печать —
+[temperature_asymptotics.py](temperature_asymptotics.py)) проверяет
 одно утверждение:
 
 $$T(r) = T_{\text{ext}} + \mu_{JT,o}\,[p(r) - p_{\text{ext}}]$$
@@ -784,6 +786,12 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 [example_runner.py](example_runner.py) — а не копируется по папкам: копии
 со временем расходятся.
 
+С DEBT-011 вычислительная часть проверок — в пакете `gpn_multiphase_solver`:
+[diagnostics/](../gpn_multiphase_solver/diagnostics/) (замкнутое решение, двухфазный стационар, $R_s$,
+асимптотика $T$), ряды балансов — `energy/balance.py`, `mass_balance.py`,
+рисунки ОФП и балансов, узлы таблиц — `io/output.py`. Модули ниже — печать,
+наложения на профили и запись рисунков; их перенос в пакет — FEAT-030.
+
 | модуль | что проверяет | автономный запуск |
 |---|---|---|
 | [example_runner.py](example_runner.py) | единый pipeline: конфиг → расчёт → CSV + PNG + проверки | — |
@@ -791,13 +799,13 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 | [relperm_plot.py](relperm_plot.py) | кривые ОФП и рабочий диапазон за весь расчёт | — |
 | [pvt_plot.py](pvt_plot.py) | PVT-свойства и рабочий диапазон давления за весь расчёт | — |
 | [figure_io.py](figure_io.py) | сохранение рисунков: PNG + SVG и EMF в `output/emf/` (Inkscape) | — |
-| [closed_form.py](closed_form.py) | замкнутое решение: дебит квадратурой, профили без данных расчёта | — |
-| [rs_analytics.py](rs_analytics.py) | $R_s = R_s^{eq}(p)$ в ячейках с газом, $R_s \le R_s^{eq}(p)$ в остальных | — |
+| [closed_form.py](closed_form.py) | наложения и сверка замкнутого решения (решение — `diagnostics/closed_form.py`) | — |
+| [rs_analytics.py](rs_analytics.py) | наложение и печать проверки `diagnostics/rs.py`: $R_s = R_s^{eq}(p)$ в ячейках с газом, $R_s \le R_s^{eq}(p)$ в остальных | — |
 | [energy_balance.py](energy_balance.py) | баланс энергии, все пять членов безусловно | `python examples\energy_balance.py 03` |
 | [energy_balance_convergence.py](energy_balance_convergence.py) | уровень невязки баланса на серии $\Delta t$ | `python examples\energy_balance_convergence.py 03` |
 | [mass_balance.py](mass_balance.py) | баланс массы нефтяного и газового компонентов | `python examples\mass_balance.py 16` |
-| [temperature_asymptotics.py](temperature_asymptotics.py) | однофазная асимптотика $T = T_{ext} + \mu_{JT}(p-p_{ext})$ | `python examples\temperature_asymptotics.py 02` |
-| [two_phase_analytics.py](two_phase_analytics.py) | GOR $= R_{s,0}$, $S_g$ из замыкания, фронт, Дюпюи | `python examples\two_phase_analytics.py 03` |
+| [temperature_asymptotics.py](temperature_asymptotics.py) | печать проверки `diagnostics/temperature.py`: однофазная асимптотика $T = T_{ext} + \mu_{JT}(p-p_{ext})$ | `python examples\temperature_asymptotics.py 02` |
+| [two_phase_analytics.py](two_phase_analytics.py) | печать проверок `diagnostics/two_phase.py`: GOR $= R_{s,0}$, $S_g$ из замыкания, фронт, Дюпюи | `python examples\two_phase_analytics.py 03` |
 | [convergence.py](convergence.py) | прогон серии по $\Delta t$ или $N$ с измерением метрики (эталон и обработка серии — у вызывающего скрипта) | — |
 | [check_energy_balance_all.py](check_energy_balance_all.py) | баланс энергии всех примеров, единый порог невязки $10^{-12}$ | `python examples\check_energy_balance_all.py` |
 | [verify_balance_vs_solver.py](verify_balance_vs_solver.py) | сверка диагностики с решателем через инструментирование СЛАУ | `python examples\verify_balance_vs_solver.py` |

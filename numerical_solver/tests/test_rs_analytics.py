@@ -1,4 +1,4 @@
-"""Проверка R_s общего модуля examples/rs_analytics.py (DEBT-026).
+"""Проверка R_s: diagnostics/rs.py (проверка) и examples/rs_analytics.py (печать, наложение); DEBT-026.
 
 Проверка обязана быть верной при любой истории давления:
   ячейка со свободным газом (Sg > SG_GAS): Rs = Rs_eq(p);
@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
-from gpn_multiphase_solver.factory import _create_pvt  # noqa: E402
+from gpn_multiphase_solver.factory import create_pvt  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.state import SimulationState  # noqa: E402
 
@@ -33,6 +33,8 @@ if str(_EXAMPLES) not in sys.path:
     sys.path.insert(0, str(_EXAMPLES))
 
 import rs_analytics  # noqa: E402
+# Проверка R_s — в пакете (DEBT-011); печать и наложение — examples/rs_analytics.py
+from gpn_multiphase_solver.diagnostics import rs as rs_core  # noqa: E402
 
 MPA = 1e6
 R = np.geomspace(0.1, 100.0, 6)        # центры ячеек, м (только для рисунка)
@@ -41,7 +43,7 @@ R = np.geomspace(0.1, 100.0, 6)        # центры ячеек, м (тольк
 def _case(name):
     """(config, pvt) примера без расчёта."""
     cfg = load_config(_EXAMPLES / name / "config.json")
-    return cfg, _create_pvt(cfg)
+    return cfg, create_pvt(cfg)
 
 
 def _history(p_mpa, Rs, regime, Sg=None):
@@ -70,7 +72,7 @@ def _draw(cfg, pvt, hist):
     """Наложение на пустые оси; возвращает (кружки, подписи линий)."""
     fig, ax = plt.subplots()
     grid = SimpleNamespace(r_centers=R[:hist.states[-1].p.size])
-    sim = SimpleNamespace(_energy=SimpleNamespace(_pvt=pvt))
+    sim = SimpleNamespace(pvt=pvt)
     rs_analytics._draw_rs(ax, hist, grid, sim, cfg)
     marks = [ln for ln in ax.get_lines() if ln.get_marker() == "o"]
     labels = [ln.get_label() for ln in ax.get_lines()]
@@ -116,7 +118,7 @@ def test_repressurization_undersaturated_is_not_violation(capsys):
     Rs[1:4] -= 2.0                         # недонасыщенность 2 м³ст/м³ст
     Rs[4:] = 30.0
     hist = _history(p, Rs, regime)
-    old = np.abs(rs_analytics.rs_expected(cfg, pvt, p_pa) - Rs).max()
+    old = np.abs(rs_core.rs_expected(cfg, pvt, p_pa) - Rs).max()
     assert old == pytest.approx(2.0)       # прежняя проверка «не совпадают»
     rep = _report(cfg, hist, pvt, capsys)
     assert rep["max_abs"] == 0.0

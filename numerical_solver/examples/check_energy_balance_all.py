@@ -32,7 +32,7 @@ sys.path.insert(0, str(HERE))
 
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
-from energy_balance import compute_balance  # noqa: E402
+from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
 
 def find_examples() -> list[str]:
     """Папки примеров: NN_имя с config.json внутри, по порядку номера.
@@ -70,7 +70,7 @@ def check_one(folder: str) -> dict:
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
 
-        bal = compute_balance(history, simulator._grid, config)
+        bal = compute_energy_balance(history)
         rel = abs(float(bal["rel_residual"][-1]))
 
         status = "OK" if rel <= TOL_ABSOLUTE else "ПРОВАЛ"

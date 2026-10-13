@@ -13,8 +13,8 @@ t_n):
   cond(t)   — кондуктивный поток через контур
   невязка   — ΔE - (adiab + conv + jt + deg + cond)
 
-ФИЗИКА ЖИВЁТ В ЯДРЕ: gpn_multiphase_solver/energy/balance.py. Здесь —
-только сборка массивов, график и отчёт.
+ФИЗИКА ЖИВЁТ В ЯДРЕ: gpn_multiphase_solver/energy/balance.py — и члены,
+и сборка рядов (compute_energy_balance, DEBT-011). Здесь — график и отчёт.
 
 Вклады накапливаются на каждом подшаге внутри решателя, поэтому баланс
 корректен при любой структуре истории, включая неравномерную.
@@ -30,9 +30,9 @@ t_n):
 от того, посмотрел ли автор скрипта в конфиг: член, нулевой в одном
 сценарии, ненулевой в другом.
 
-Три функции:
-  compute_balance()        — собирает массивы из накопленных в ядре вкладов
-  plot_energy_balance()    — строит график поверх compute_balance()
+Ряды баланса собирает ядро: gpn_multiphase_solver/energy/balance.py,
+compute_energy_balance (DEBT-011). Здесь две функции:
+  plot_energy_balance()    — график и печать поверх compute_energy_balance()
   report_energy_balance()  — обёртка для run_example (конвенция общих модулей)
 
 Запуск для конкретного примера:
@@ -42,8 +42,6 @@ t_n):
 
 import sys
 from pathlib import Path
-
-import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
@@ -56,100 +54,18 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
+from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
+from gpn_multiphase_solver.io.output import plot_energy_balance_series  # noqa: E402
 from figure_io import save_figure, export_emf  # noqa: E402
-
-
-# Шесть накапливаемых членов — их считает и складывает
-# gpn_multiphase_solver/energy/balance.py на каждом подшаге схемы.
-# Остальные три ключа (total, residual, rel_residual) производные:
-# они восстанавливаются из этих шести здесь, при сборке.
-_CUMULATIVE = ("delta_E", "cum_adiab", "cum_conv",
-               "cum_jt", "cum_deg", "cum_cond")
-
-
-def compute_balance(history, grid, config):
-    """Баланс энергии по накопленным на подшагах вкладам (DEBT-013).
-
-    Возвращает dict с массивами длины len(history.times):
-      t, delta_E, cum_adiab, cum_conv, cum_jt, cum_deg, cum_cond,
-      total, residual, rel_residual
-
-    Набор ключей ПОЛНЫЙ всегда, независимо от конфига: члены, физически
-    отсутствующие в сценарии, приходят нулевыми массивами.
-
-    Физика живёт в gpn_multiphase_solver/energy/balance.py: вклады
-    считаются на каждом подшаге внутри решателя по тем же коэффициентам,
-    что уходят в СЛАУ. Восстановить их по записям истории нельзя —
-    при разреженной истории невязка вырастает на три порядка. Здесь
-    остаётся только сборка массивов для графика и отчёта.
-
-    grid и config в расчёте больше не участвуют — сохранены в сигнатуре
-    ради совместимости с четырьмя вызывающими (plot_energy_balance,
-    report_energy_balance и два теста).
-    """
-    del grid, config  # см. примечание о совместимости сигнатуры выше
-
-    out = {k: np.array([s[k] for s in history.balance])
-           for k in _CUMULATIVE}
-    out["t"] = np.array(history.times)
-
-    # Производные величины: считаются из накопленных, а не хранятся.
-    out["total"] = (out["cum_adiab"] + out["cum_conv"] + out["cum_jt"]
-                    + out["cum_deg"] + out["cum_cond"])
-    out["residual"] = out["delta_E"] - out["total"]
-
-    # Нормировка — сумма модулей всех членов, включая ΔE. Невязка есть
-    # разность больших кумулятивных сумм, и ошибка округления растёт с их
-    # модулями, а не с результатом сложения. Нормировка на max(|ΔE|,
-    # |Σ членов|) ломается, когда вклады гасят друг друга (нагрев нефти при
-    # дросселировании против адиабатики и дегазации: |ΔE| на порядки
-    # меньше отдельных членов), и даёт всплески, когда ΔE меняет знак.
-    scale = sum(np.abs(out[k]) for k in _CUMULATIVE)
-    # t = 0: все члены нулевые, делить не на что.
-    scale = np.where(scale < 1e-10, 1.0, scale)
-    out["rel_residual"] = np.abs(out["residual"]) / scale
-
-    return out
 
 
 def plot_energy_balance(history, grid, config, output_dir: Path):
     """Построить график баланса энергии и вернуть финальную отн. невязку."""
-    bal = compute_balance(history, grid, config)
-    t_days = bal["t"] * S_TO_DAY    # время на графиках — в сутках (FEAT-022)
-
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 8), sharex=True,
-                                   gridspec_kw={"height_ratios": [3, 1]})
-
-    ax1.plot(t_days, bal["delta_E"], 'k-', linewidth=2,
-             label=r"$\Delta E$ (накопление)")
-    ax1.plot(t_days, bal["cum_adiab"], 'b--', linewidth=1.5,
-             label="адиабатика (кумул.)")
-    ax1.plot(t_days, bal["cum_conv"], 'r--', linewidth=1.5,
-             label="чистая конвекция (кумул.)")
-    ax1.plot(t_days, bal["cum_jt"], 'm--', linewidth=1.5,
-             label="Джоуль–Томсон (кумул.)")
-    ax1.plot(t_days, bal["cum_deg"], 'c--', linewidth=1.5,
-             label="скрытая теплота (кумул.)")
-    # Кондукция рисуется всегда: при λ = 0 кривая лежит на нуле, и это
-    # наглядно показывает, что член учтён, а не забыт.
-    ax1.plot(t_days, bal["cum_cond"], color='olive', linestyle='--',
-             linewidth=1.5, label="теплопроводность (кумул.)")
-    ax1.plot(t_days, bal["total"], 'g:', linewidth=1.5,
-             label="сумма источников")
-    ax1.set_ylabel("Энергия, Дж")
-    ax1.legend(fontsize=9)
+    bal = compute_energy_balance(history)
     # Имя примера берём из пути к конфигу: модуль общий для всех примеров.
-    ax1.set_title(f"Баланс энергии — {Path(config.config_dir).name}")
-    ax1.grid(True, alpha=0.3)
-    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-
-    ax2.plot(t_days, bal["rel_residual"], 'k-', linewidth=1)
-    ax2.set_xlabel("Время, сут")
-    ax2.set_ylabel(r"|невязка| / $\Sigma$|членов|")
-    ax2.set_title("Относительная невязка баланса")
-    ax2.grid(True, alpha=0.3)
-    ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
+    axes = plot_energy_balance_series(
+        bal, title=f"Баланс энергии — {Path(config.config_dir).name}")
+    fig = axes[0].figure
 
     fig.tight_layout()
     output_dir = Path(output_dir)
@@ -159,7 +75,7 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     plt.close(fig)
     print(f"Сохранён: {out_path}")
 
-    # Та же нормировка, что в compute_balance: печать и тесты должны
+    # Та же нормировка, что в compute_energy_balance: печать и тесты должны
     # показывать одно и то же число.
     final_rel = float(bal["rel_residual"][-1])
     # Без символа Δ: консоль Windows под cp1251 его не кодирует и
@@ -182,7 +98,7 @@ def report_energy_balance(config, history, grid, simulator) -> dict:
     накоплены решателем на подшагах и лежат в history.balance (DEBT-013).
     Аргументы принимаются ради единообразия вызова из run_example.
     """
-    bal = compute_balance(history, grid, config)
+    bal = compute_energy_balance(history)
 
     print("── Баланс энергии ──")
     print(f"  dE финал = {bal['delta_E'][-1]:+.4e} Дж, "
@@ -226,6 +142,6 @@ if __name__ == "__main__":
     sim, initial_state = SimulatorFactory.from_config(config)
     history = sim.run(initial_state)
 
-    plot_energy_balance(history, sim._grid, config, folder / "output")
+    plot_energy_balance(history, sim.grid, config, folder / "output")
     # Автономный запуск: SVG только что сохранённого рисунка — в EMF (FEAT-026).
     export_emf(folder / "output")

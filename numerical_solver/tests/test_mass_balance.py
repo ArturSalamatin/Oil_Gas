@@ -12,7 +12,6 @@
 
 import copy
 import json
-import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -21,18 +20,15 @@ import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import load_config
-from gpn_multiphase_solver.mass_balance import MASS_KEYS, MassBalanceAccumulator
+from gpn_multiphase_solver.mass_balance import (
+    MASS_KEYS, MassBalanceAccumulator, compute_mass_balance)
 from gpn_multiphase_solver.simulator import Simulator
 
 from ._doubles import LogProfileHydroStub, FailingHydroStub
 from .test_simulator import _initial_state, _make_simulator, _single_interval_schedule
 
-# Модуль сборки невязки — общий для примеров (examples/mass_balance.py)
+# Конфиги примеров; сборка невязки — в пакете (compute_mass_balance, DEBT-011)
 _EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
-if str(_EXAMPLES) not in sys.path:
-    sys.path.insert(0, str(_EXAMPLES))
-
-from mass_balance import compute_mass_balance  # noqa: E402
 
 # Порог относительной невязки (нормировка — сумма модулей членов). Уровень —
 # допуск Ньютона прототипа (rtol = 1e-8 к начальной невязке шага, atol =

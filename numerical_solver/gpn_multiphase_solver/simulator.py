@@ -26,7 +26,7 @@ from .hydro.base import HydroSolver, HydroConvergenceError
 from .energy.base import EnergySolver
 from .energy.balance import EnergyBalanceAccumulator
 from .mass_balance import MassBalanceAccumulator
-from .pvt.base import HydroPVT
+from .pvt.base import HydroPVT, RelPermModel
 from .units import DAY_TO_S
 from .log import user_log, dev_log
 
@@ -97,7 +97,8 @@ class Simulator:
     def __init__(self, grid: Grid, hydro: HydroSolver,
                  energy: EnergySolver, pvt: HydroPVT,
                  schedule: TimeSchedule,
-                 max_retries: int = 9):
+                 max_retries: int = 9,
+                 relperm: RelPermModel | None = None):
         """
         grid          — пространственная сетка (immutable, общая для всех модулей)
         hydro         — гидродинамический солвер (ABC: PrototypeHydroAdapter, ...)
@@ -106,6 +107,9 @@ class Simulator:
         schedule      — расписание: интервалы + шаг интегрирования
         max_retries   — глубина дробления шага: наименьший подшаг
                         dt/2**max_retries (numerics.max_retries, DEBT-015)
+        relperm       — модель ОФП, отданная гидродинамике; Simulator её не
+                        использует, а хранит для диагностики (DEBT-011).
+                        None — не задана (тестовые двойники)
         """
         self._grid = grid
         self._hydro = hydro
@@ -113,9 +117,29 @@ class Simulator:
         self._pvt = pvt
         self._schedule = schedule
         self._max_retries = int(max_retries)
+        self._relperm = relperm
         # save_every удалён (DEBT-013): состав истории определяет только
         # структура time.history. output_config удалён (DEBT-053): Simulator
         # его не читал — уровень журнала задаёт фабрика (setup_logging).
+
+    # ── Объекты задачи для диагностики (DEBT-011) ────────────
+    # Публичный доступ вместо sim._grid, sim._energy._pvt: диагностика
+    # обязана видеть ровно те объекты, которыми считалась задача.
+
+    @property
+    def grid(self) -> Grid:
+        """Сетка задачи."""
+        return self._grid
+
+    @property
+    def pvt(self) -> HydroPVT:
+        """PVT задачи — тот же объект, что у решателя энергии и гидродинамики."""
+        return self._pvt
+
+    @property
+    def relperm(self) -> RelPermModel | None:
+        """ОФП задачи по конфигу; Кори прототип получает её таблицей на 101 узле."""
+        return self._relperm
 
     def run(self, initial_state: SimulationState) -> SimulationHistory:
         """Основной цикл по времени.

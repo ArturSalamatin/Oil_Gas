@@ -21,7 +21,7 @@
        Пошаговой ОДУ-аналитики температуры нет: она требует дивергентной
        дискретизации конвекции, JT и дегазации, а постановка адвективная.
 
-Вывод формул — в ../temperature_asymptotics.py и ../closed_form.py;
+Вывод формул — в gpn_multiphase_solver/diagnostics/ (temperature.py, closed_form.py);
 численные подтверждения — в README.md.
 
 Баланс энергии, асимптотику температуры и аналитику двухфазного стационара
@@ -55,22 +55,23 @@ def overlay_temperature(ax, history, grid, simulator):
     фронт определяется давлением насыщения.
     """
     from gpn_multiphase_solver.io.config import load_config
-    import temperature_asymptotics as ta
+    from gpn_multiphase_solver.diagnostics.two_phase import SG_EPS, degassing_front
+    from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote
 
     config = load_config(Path(__file__).resolve().parent / "config.json")
-    pvt = simulator._energy._pvt
+    pvt = simulator.pvt
 
     # JT-асимптотика рисуется только там, где она выведена, — в однофазной
     # зоне. В двухфазной работает ещё скрытая теплота разгазирования, и
     # замкнутого выражения там нет.
-    T_as = ta.single_phase_asymptote(config, history)
+    T_as = single_phase_asymptote(config, history)
     Sg = history.states[-1].Sg
-    mask1 = Sg <= tpa.SG_EPS
+    mask1 = Sg <= SG_EPS
     ax.semilogx(grid.r_centers[mask1], T_as[mask1], color='gray',
                 linestyle=':', linewidth=1.8,
                 label=r"JT-асимптотика: $T_{ext} + \mu_{JT,o}(p - p_{ext})$")
 
-    fr = tpa.degassing_front(history, grid, config, pvt)
+    fr = degassing_front(history, grid, config, pvt)
     ax.axvline(fr["r_b_interp"], color='gray', linestyle=':', linewidth=1.5,
                label=rf"фронт $r_b$ = {fr['r_b_interp']:.3f} м "
                      rf"(левее — двухфазная зона)")
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     # PVT берём из собранного симулятора — тот же объект, что считал задачу.
     from gpn_multiphase_solver.factory import SimulatorFactory
     sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
+    pvt = sim.pvt
 
     print()
     tpa.report(history, grid, config, pvt)

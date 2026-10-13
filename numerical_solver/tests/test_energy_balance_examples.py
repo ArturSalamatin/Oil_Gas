@@ -14,22 +14,17 @@ BUG-004 прожил незамеченным: скрипт energy_balance.py с
 
 import copy
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 # Прототип radial_blackoil pytest берёт по pythonpath в pyproject.toml (DEBT-059).
-# Здесь нужен только путь до самого скрипта примеров — в pyproject.toml его
-# не тащим, это код примеров, а не пакета.
+# Ряды баланса собирает пакет (compute_energy_balance, DEBT-011); из examples/
+# нужны только конфиги примеров.
 _EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
-# Модуль общий для всех примеров (FEAT-016): до выноса он лежал в папке
-# 03_standing_corey, и путь указывал туда.
-if str(_EXAMPLES) not in sys.path:
-    sys.path.insert(0, str(_EXAMPLES))
 
-from energy_balance import compute_balance  # noqa: E402
+from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
 
 from gpn_multiphase_solver.io.config import _HISTORY_TIME_KEYS, load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
@@ -58,7 +53,7 @@ def _run_balance(example: str, p_wf: float | None = None) -> dict:
     # Длительность прогона — часть контракта теста: при неверном усечении
     # истории тест считал бы другой сценарий и всё равно был бы зелёным.
     assert history.times[-1] == pytest.approx(21600.0)
-    return compute_balance(history, simulator._grid, config)
+    return compute_energy_balance(history)
 
 
 # Порог замыкания баланса. Дискретные уравнения схемы — тождество: если
@@ -120,7 +115,7 @@ def test_balance_independent_of_history_structure(example):
     """Накопленные члены не зависят от того, как часто пишется история.
 
     Ключевой тест части B (DEBT-013). Раньше на этом месте стоял тест
-    обратного смысла: compute_balance ОТВЕРГАЛ разреженную историю, потому
+    обратного смысла: compute_energy_balance ОТВЕРГАЛ разреженную историю, потому
     что суммировал приращения (T^n - T^{n-1}) по сохранённым шагам, и при
     пропуске шагов сумма занижалась. Теперь члены копятся на подшагах
     внутри решателя, поэтому структура истории на них не влияет вовсе.
@@ -142,7 +137,7 @@ def test_balance_independent_of_history_structure(example):
         simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
         assert history.n_saved == n_intervals + 1
-        return compute_balance(history, simulator._grid, config)
+        return compute_energy_balance(history)
 
     sparse = run(1)     # одна запись на весь прогон
     dense = run(6)      # почасовые записи

@@ -383,7 +383,7 @@ class TestEndToEnd:
         history = simulator.run(initial_state)
 
         path = tmp_path / "baseline.npz"
-        save_npz(history, simulator._grid, path)
+        save_npz(history, simulator.grid, path)
 
         data = np.load(path)
         assert data['times'][-1] == pytest.approx(345600.0)

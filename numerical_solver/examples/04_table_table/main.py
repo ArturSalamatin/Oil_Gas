@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # PVT берём из собранного симулятора — тот же объект, что считал задачу.
     from gpn_multiphase_solver.factory import SimulatorFactory
     sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim._energy._pvt
+    pvt = sim.pvt
 
     print()
     tpa.report(history, grid, config, pvt)

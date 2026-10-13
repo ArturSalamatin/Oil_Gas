@@ -134,7 +134,7 @@ from ..grid.base import Grid
 
 
 # Шесть накапливаемых членов. total, residual, rel_residual — производные,
-# они не хранятся, а считаются из этих шести при сборке (examples/energy_balance.py).
+# они не хранятся, а считаются из этих шести при сборке (compute_energy_balance ниже).
 CUMULATIVE_KEYS = ("delta_E", "cum_adiab", "cum_conv",
                    "cum_jt", "cum_deg", "cum_cond")
 
@@ -374,3 +374,36 @@ class EnergyBalanceAccumulator:
             cum_deg=self.cum_deg,
             cum_cond=self.cum_cond,
         )
+
+
+# ── Ряды баланса по истории ──────────────────────────────────
+
+
+def compute_energy_balance(history) -> dict:
+    """Ряды баланса энергии по накопленным на подшагах членам (DEBT-013, DEBT-011).
+
+    Возвращает dict массивов длины len(history.times): t, шесть членов
+    CUMULATIVE_KEYS, total, residual, rel_residual. Набор ключей полный
+    при любом конфиге: отсутствующие в сценарии члены — нулевые массивы.
+    """
+    out = {k: np.array([s[k] for s in history.balance])
+           for k in CUMULATIVE_KEYS}
+    out["t"] = np.array(history.times)
+
+    # Производные величины: считаются из накопленных, а не хранятся.
+    out["total"] = (out["cum_adiab"] + out["cum_conv"] + out["cum_jt"]
+                    + out["cum_deg"] + out["cum_cond"])
+    out["residual"] = out["delta_E"] - out["total"]
+
+    # Нормировка — сумма модулей всех членов, включая ΔE. Невязка есть
+    # разность больших кумулятивных сумм, и ошибка округления растёт с их
+    # модулями, а не с результатом сложения. Нормировка на max(|ΔE|,
+    # |Σ членов|) ломается, когда вклады гасят друг друга (нагрев нефти при
+    # дросселировании против адиабатики и дегазации: |ΔE| на порядки
+    # меньше отдельных членов), и даёт всплески, когда ΔE меняет знак.
+    scale = sum(np.abs(out[k]) for k in CUMULATIVE_KEYS)
+    # t = 0: все члены нулевые, делить не на что.
+    scale = np.where(scale < 1e-10, 1.0, scale)
+    out["rel_residual"] = np.abs(out["residual"]) / scale
+
+    return out

@@ -6,7 +6,7 @@ source: DEBT-026
 
 # Проверка Rs — равенство только в ячейках со свободным газом, без газа — неравенство с допуском решателя
 
-Общая проверка газосодержания примеров `numerical_solver/examples/rs_analytics.py` ([[debt-026 rs-check-any-pressure-history]], DEBT-026, issue #56) проверяет на последней записи:
+Общая проверка газосодержания примеров ([[debt-026 rs-check-any-pressure-history]], DEBT-026, issue #56; с DEBT-011 проверка — `numerical_solver/gpn_multiphase_solver/diagnostics/rs.py`, печать и наложение — `examples/rs_analytics.py`) проверяет на последней записи:
 
 | Ячейка | Условие | Смысл |
 |---|---|---|

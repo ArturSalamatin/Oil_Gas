@@ -83,7 +83,7 @@ $$R_s(p) + \frac{k_{rg}(S_g)}{k_{ro}(S_g)}\cdot\frac{\mu_o B_o}{\mu_g B_g} = R_{
 
 Насыщенность оказывается **локальной функцией давления**: $S_g(r) = S_g(p(r))$,
 решать PDE для неё не нужно. Вывод целиком — в докстринге
-[../closed_form.py](../closed_form.py).
+[diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py).
 
 ### Вывод параметра
 
@@ -209,7 +209,7 @@ $\lvert\Delta S_g\rvert \le 0.2$. Значение `max_retries = 12` в кон�
 ### 1. Замкнутое решение
 
 Дебит квадратурой, профиль давления — ОДУ от контура внутрь
-([closed_form.py](../closed_form.py)); из расчёта не берётся ничего.
+([diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py)); из расчёта не берётся ничего.
 
 | величина | замкнутое решение | расчёт | расхождение |
 |---|---|---|---|
@@ -464,9 +464,9 @@ cd numerical_solver
 Выход — в `output/`: `profiles.csv` (~11 МБ), `well_history.csv` и графики
 из предыдущего раздела.
 
-Аналитика $p$, $S_g$, $R_s$ и баланс энергии — общие модули `examples/`
-([closed_form.py](../closed_form.py), [rs_analytics.py](../rs_analytics.py),
-[energy_balance.py](../energy_balance.py)), их подключает `example_runner`.
+Аналитика $p$, $S_g$, $R_s$ и баланс энергии — в пакете ([diagnostics/](../../gpn_multiphase_solver/diagnostics/),
+ряды баланса — [energy/balance.py](../../gpn_multiphase_solver/energy/balance.py)); печать
+и рисунки — общие модули `examples/`, их подключает `example_runner`.
 
 ## Дальше
 

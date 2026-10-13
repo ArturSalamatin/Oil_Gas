@@ -14,7 +14,7 @@ import pytest
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import (
-    SimulatorFactory, _get_or_create_proto_pvt, _get_or_create_proto_rp, _create_pvt,
+    SimulatorFactory, _get_or_create_proto_pvt, _get_or_create_proto_rp, create_pvt,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
 from gpn_multiphase_solver.pvt.hydro_to_blackoil_adapter import HydroPVTtoBlackOilAdapter
@@ -90,7 +90,7 @@ class TestFactoryStandingHydro:
         simulator, initial = SimulatorFactory.from_config(config)
         history = simulator.run(initial)
 
-        r = simulator._grid.r_centers
+        r = simulator.grid.r_centers
         p_wf_last = config.time.history[-1].p_wf  # 10e6 Па
         p_exact = p_wf_last + (P0 - p_wf_last) * np.log(r / R_WELL) / np.log(R_EXT / R_WELL)
         np.testing.assert_allclose(
@@ -105,7 +105,7 @@ class TestFactoryStandingHydro:
         """
         config = load_config(BASELINE)
         config.pvt.mu_o_undersaturated = "beal"
-        pvt = _create_pvt(config)
+        pvt = create_pvt(config)
         p, Rs = np.array([20e6]), np.array([50.0])
         ratio = pvt.mu_o(p, Rs)[0] / pvt._mu_o_beggs(Rs)[0]
         assert ratio == pytest.approx(1.095309, rel=1e-6)
@@ -119,7 +119,7 @@ class TestFactoryStandingHydro:
         config = load_config(TABLE_PVT)
         config.pvt.mu_o_undersaturated = "beal"
         with pytest.raises(ValueError, match="mu_o_undersaturated"):
-            _create_pvt(config)
+            create_pvt(config)
 
 
 class TestStandingDeepDrawdownDenseGrid:
@@ -210,7 +210,7 @@ class TestBranchByClass:
 
     def test_pvt_branch_ignores_private_field_names(self):
         """StandingFullPVT с посторонним _hydro._pvt по-прежнему оборачивается адаптером."""
-        pvt = _create_pvt(load_config(BASELINE))
+        pvt = create_pvt(load_config(BASELINE))
         pvt._hydro = SimpleNamespace(_pvt="посторонний объект")
         proto = _get_or_create_proto_pvt(pvt, P0)
         assert isinstance(proto, HydroPVTtoBlackOilAdapter)
@@ -247,7 +247,7 @@ class TestStandingInitialState:
         """p0 = p_b(50) − 1 Па: избыток ~6e-6 < 1e-5 — допустимо (округление ввода)."""
         config = load_config(BASELINE)
         simulator, _ = SimulatorFactory.from_config(config)
-        pb = float(simulator._pvt.pb(np.array([50.0]))[0])
+        pb = float(simulator.pvt.pb(np.array([50.0]))[0])
         config.initial_conditions.p0 = pb - 1.0
         SimulatorFactory.from_config(config)
 

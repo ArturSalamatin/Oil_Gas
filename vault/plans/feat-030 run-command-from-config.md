@@ -7,7 +7,7 @@ issue: FEAT-030
 github: 104
 branch: feat/feat-030/run-command-from-config
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-030
 audit:
   date: 2026-10-13

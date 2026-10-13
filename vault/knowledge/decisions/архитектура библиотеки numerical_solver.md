@@ -88,6 +88,18 @@ numerical_solver/
 │   │   ├── rs.py               # Равновесие R_s, радиус изобары p_b
 │   │   └── temperature.py      # Однофазная асимптотика T
 │   │
+│   ├── report/                 # Рисунки с записью PNG, печать проверок, конвейер (FEAT-030)
+│   │   ├── pipeline.py         # run_case: конфиг → расчёт → CSV + PNG + печать; CaseResult, CaseConfigError, CaseRunError
+│   │   ├── relperm.py          # relperm.png + сводка ОФП
+│   │   ├── pvt.py              # pvt.png (PVTO) + сводка PVT
+│   │   ├── rs.py               # Наложение R_s^eq(p) на rs_profiles.png + печать проверки R_s
+│   │   ├── closed_form.py      # Наложения и сверка замкнутого решения
+│   │   ├── energy_balance.py   # energy_balance.png + печать членов баланса энергии
+│   │   ├── mass_balance.py     # mass_balance.png + печать баланса массы
+│   │   └── temperature.py      # Печать однофазной асимптотики T
+│   │
+│   ├── cli.py                  # Команда: main(argv) → run_case, коды 0/1/2; configure_batch_run (FEAT-030)
+│   ├── __main__.py             # python -m gpn_multiphase_solver → cli.main
 │   ├── mass_balance.py         # Накопитель баланса массы + ряды compute_mass_balance (DEBT-039, DEBT-011)
 │   ├── fluxes.py               # G по Дарси (путь тестов) + общий шаг Q, u, m, Gm обоих гидро-путей (DEBT-028)
 │   ├── bc.py                   # Управление скважиной (данные): WellControl, PressureControl, RateControl (FEAT-020)
@@ -98,6 +110,7 @@ numerical_solver/
 │   ├── io/                     # Ввод/вывод
 │   │   ├── __init__.py
 │   │   ├── config.py           # Чтение JSON, валидация, dataclasses
+│   │   ├── figures.py          # Запись рисунков: PNG + SVG/EMF через Inkscape (FEAT-026; в пакете с FEAT-030)
 │   │   └── output.py           # Сохранение результатов, визуализация (в т. ч. рисунки балансов и ОФП, узлы таблиц — DEBT-011)
 │   │
 │   └── state.py                # SimulationState, HydroResult, EnergyResult, WellData, BoundaryConditions, SimulationHistory
@@ -300,6 +313,8 @@ class SimulationState:
 }
 ```
 
+Секция `output` (FEAT-030) — состав штатного вывода команды расчёта, на сам расчёт не влияет: `log_level`; `title` (по умолчанию — имя папки конфига); `n_profiles` (моменты профильных графиков, ≥ 2; по умолчанию 4 опорных); `steady_state` (стационарная аналитика, по умолчанию `false`); `closed_form_overlays` (подмножество `["p", "Sg"]`). Проверка полей — `io/config.py::_validate`.
+
 ## Связь с внешним гидродинамическим модулем
 
 Гидродинамический блок коллеги ещё не передан, его интерфейс неизвестен. Подход:
@@ -313,7 +328,7 @@ class SimulationState:
 
 Паттерн Adapter позволяет не менять ни Simulator, ни код коллеги.
 
-## Диагностика и граница пакет / examples (DEBT-011)
+## Диагностика и граница пакет / examples (DEBT-011, FEAT-030)
 
 Решатель с примерами и тестами передаётся заказчику (решение пользователя 2026-10-10): всё, чем проверяется расчёт, должно быть доступно после установки пакета, без репозитория.
 
@@ -324,7 +339,9 @@ class SimulationState:
 
 **Объекты задачи** — публичные свойства `Simulator.grid`, `Simulator.pvt`, `Simulator.relperm` и функции фабрики `create_pvt`, `create_relperm` (без решателя). Приватный доступ (`sim._energy._pvt`, `factory._create_*`) из примеров убран.
 
-**В `examples/`** до [[FEAT-030]] — конвейер `run_example`, наложения на профили (`make_overlay_*`, `_draw_rs`), печать отчётов (`report_*`), обёртки рисунков с записью PNG, `figure_io`, CLI-блоки. Это и переносится в команду расчёта FEAT-030.
+**Рисунки с записью файлов, печать и конвейер** — `report/` ([[FEAT-030]]): `run_case` (штатный набор по конфигу, возвращает `CaseResult` с решателем), наложения на профили (`make_overlay_*`, `_draw_rs`), печать отчётов (`report_*`), обёртки рисунков с записью PNG; запись рисунков и EMF — `io/figures.py`. Модули `report/` не выбирают режим matplotlib и не трогают консоль при импорте — это делает `cli.configure_batch_run`, которую зовут команда и скрипты примеров. Команда расчёта: `python -m gpn_multiphase_solver run config.json` / `gpn-solver run …` (`cli.py`, `__main__.py`), коды возврата 0 / 1 (отказ решателя) / 2 (аргументы, конфиг). Подробно — [[пример — это конфиг и README, штатный набор рисунков и проверок даёт команда пакета]].
+
+**В `examples/`** — конфиги, README и `main.py`: у 17 примеров — обёртка команды (`cli.main`), у 01–05 и 18 — собственная часть после `run_case`; исследования сходимости и средства разработки (`run_all.py`, `two_phase_analytics.py`, `convergence.py`, `energy_balance_convergence.py`, `check_energy_balance_all.py`, `verify_balance_vs_solver.py`, `compare_script_copies.py`).
 
 **Стражи** (разбор AST):
 - `tests/test_example_scripts.py::test_no_private_solver_access` — скрипты `examples/` не обращаются к приватным полям чужих объектов и не импортируют `_имена` из пакета;

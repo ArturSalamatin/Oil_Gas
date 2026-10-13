@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: DEBT-065
 github: 106
 branch: refactor/debt-065/unify-isobar-radius
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-065
 audit:
   date: 2026-10-13

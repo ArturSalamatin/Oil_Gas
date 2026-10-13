@@ -87,6 +87,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 from .closed_form import kr_max_Sg
+from .rs import isobar_radius
 
 # Порог, ниже которого ячейка считается однофазной. В однофазной зоне
 # Sg равен нулю машинно (газ там не выделялся), так что порог отделяет
@@ -192,7 +193,8 @@ def dupuit_check(history, grid, config, pvt):
     r1, p1 = r[mask], p[mask]
     slope_fit = float(np.polyfit(np.log(r1), p1, 1)[0])
 
-    # Профиль Дюпюи, привязанный к самой дальней ячейке (там ГУ Дирихле)
+    # Профиль Дюпюи, привязанный к самой дальней однофазной ячейке
+    # (ближайшей к контуру, где задано p = p0)
     p_dup = p1[-1] + slope_fit * np.log(r1 / r1[-1])
     max_dev = float(np.max(np.abs(p1 - p_dup)))
 
@@ -211,7 +213,7 @@ def dupuit_check(history, grid, config, pvt):
 def degassing_front(history, grid, config, pvt):
     """C. Радиус фронта разгазирования: p(r_b) = pb.
 
-    Возвращает dict: r_b_interp (интерполяция численного профиля),
+    Возвращает dict: r_b_interp (радиус изобары численного профиля, rs.isobar_radius),
     r_b_formula (экстраполяция однофазного Дюпюи от контура), pb,
     cells_below_pb, cells_with_gas.
     """
@@ -221,16 +223,11 @@ def degassing_front(history, grid, config, pvt):
     Rs0 = config.initial_conditions.Rs0
     pb = float(pvt.pb(np.array([Rs0]))[0])
 
-    # Интерполяция r(p = pb): ищем пару соседних ячеек, между которыми
-    # давление пересекает pb, и интерполируем линейно по ln r (профиль
-    # логарифмичен). np.interp здесь не годится: он требует возрастающие
-    # узлы, а p и ln r монотонны в противоположные стороны.
-    r_b_interp = np.nan
-    j = int(np.searchsorted(p, pb))          # p возрастает с ростом r
-    if 0 < j < len(p):
-        w = (pb - p[j - 1]) / (p[j] - p[j - 1])
-        r_b_interp = float(np.exp(np.log(r[j - 1])
-                                  + w * (np.log(r[j]) - np.log(r[j - 1]))))
+    # Радиус изобары — общая функция с rs.front_radius и замкнутым решением
+    # (DEBT-065): интерполяция ln r по p; если давление ниже pb во всех
+    # ячейках — до контура, где p = p0 (factory.py: p_ext = ic.p0).
+    r_b_interp = isobar_radius(r, p, pb, config.geometry.R_ext,
+                               config.initial_conditions.p0)
 
     # Экстраполяция однофазного профиля внутрь от опоры в однофазной зоне:
     #   p(r) = p_ref + slope·ln(r/r_ref)  ⇒  r_b = r_ref·exp[(pb - p_ref)/slope].

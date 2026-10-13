@@ -7,6 +7,7 @@
 - Тепловые параметры: c_p, (ρc_p)_s > 0, λ ≥ 0, предупреждение при L < 0 (DEBT-047);
   L, μ_JT,o, μ_JT,g — конечные, знак любой, предупреждение при μ_JT,o > 0 (DEBT-049).
 - numerics.newton_cell_tol: положительное конечное или null (BUG-022).
+- time.dt_after_control_change: положительное конечное или null (FEAT-032).
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
@@ -541,6 +542,39 @@ class TestNewtonCellTolValidation:
         raw = _minimal_raw()
         raw["numerics"] = {"newton_cell_tol": value}
         with pytest.raises(ValueError, match="newton_cell_tol"):
+            load_config(_write_json(tmp_path, raw))
+
+
+class TestDtAfterControlChange:
+    """time.dt_after_control_change — первый подшаг после смены управления (FEAT-032).
+
+    Положительное конечное число или null (выключено, по умолчанию). Верхней границы
+    нет: значение не меньше шага интервала просто выключает нарастание.
+    """
+
+    def test_default_none(self, tmp_path):
+        """Без поля — None: прежние конфиги считаются как прежде."""
+        cfg = load_config(_write_json(tmp_path, _minimal_raw()))
+        assert cfg.time.dt_after_control_change is None
+
+    def test_value_read(self, tmp_path):
+        """Значение из JSON доходит до конфига без изменений."""
+        raw = _minimal_raw()
+        raw["time"]["dt_after_control_change"] = 2.0
+        assert load_config(_write_json(tmp_path, raw)).time.dt_after_control_change == 2.0
+
+    def test_null_disables(self, tmp_path):
+        """null — нарастание выключено (None)."""
+        raw = _minimal_raw()
+        raw["time"]["dt_after_control_change"] = None
+        assert load_config(_write_json(tmp_path, raw)).time.dt_after_control_change is None
+
+    @pytest.mark.parametrize("value", [0.0, -2.0, float("nan"), float("inf"), True, "2"])
+    def test_invalid_rejected(self, tmp_path, value):
+        """0 и отрицательное бессмысленны, NaN и inf — тоже, bool и строка — опечатка типа."""
+        raw = _minimal_raw()
+        raw["time"]["dt_after_control_change"] = value
+        with pytest.raises(ValueError, match="dt_after_control_change"):
             load_config(_write_json(tmp_path, raw))
 
 

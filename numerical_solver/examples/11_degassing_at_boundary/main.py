@@ -3,15 +3,9 @@
 import sys
 from pathlib import Path
 
-# examples/ в sys.path — для импорта example_runner.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from example_runner import run_example  # noqa: E402
+from gpn_multiphase_solver.cli import main
 
 if __name__ == "__main__":
-    here = Path(__file__).parent
-    run_example(
-        config_path=here / "config.json",
-        output_dir=here / "output",
-        title="11: разгазирование у контура",
-    )
+    # То же, что python -m gpn_multiphase_solver run <папка примера>\config.json:
+    # параметры примера — в секции output конфига (FEAT-030)
+    sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))

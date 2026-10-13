@@ -53,6 +53,25 @@ ALL_EXAMPLES = [
     "21_rs100_cooling",
 ]
 
+# Примеры со своей логикой в main.py после штатного расчёта run_case:
+# аналитика Дюпюи и ОДУ для T (01, 02), наложение T и сводка стационара
+# (03–05), сверка с прототипом и IMEX (18). У остальных main.py — обёртка
+# команды пакета _THIN_MAIN (FEAT-030, решение 6).
+OWN_LOGIC = {"01_single_phase_no_jt", "02_single_phase_jt", "03_standing_corey",
+             "04_table_table", "05_standing_table_rp", "18_prototype_input"}
+
+# Образец обёртки без докстринга — то же, что python -m gpn_multiphase_solver
+# run <папка примера>/config.json (сравнивается дерево разбора, не текст)
+_THIN_MAIN = '''
+import sys
+from pathlib import Path
+
+from gpn_multiphase_solver.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))
+'''
+
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
 SINGLE_PHASE = ["01_single_phase_no_jt", "02_single_phase_jt"]
 
@@ -158,6 +177,26 @@ class TestStructure:
         for fname in ("config.json", "main.py", "README.md"):
             assert (folder / fname).is_file(), f"{name}: нет {fname}"
 
+    @pytest.mark.parametrize("name", [n for n in ALL_EXAMPLES if n not in OWN_LOGIC])
+    def test_thin_main_py_is_command_wrapper(self, name):
+        """main.py примера без своей логики — обёртка команды пакета, без параметров (FEAT-030, решение 6).
+
+        Сравнивается дерево разбора без докстринга с образцом _THIN_MAIN:
+        комментарии и оформление не важны. Ловит: в обёртку возвращаются
+        параметры примера (заголовок, n_profiles) — копия, расходящаяся с
+        конфигом и командой; в обёртке появляется своя логика, а пример не
+        переведён в OWN_LOGIC.
+        """
+        import ast
+        tree = ast.parse((EXAMPLES_DIR / name / "main.py").read_text(encoding="utf-8"))
+        first = tree.body[0]
+        assert isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant), (
+            f"{name}: main.py без докстринга — суть сценария")
+        body = ast.Module(body=tree.body[1:], type_ignores=[])
+        assert ast.dump(body) == ast.dump(ast.parse(_THIN_MAIN)), (
+            f"{name}: main.py — не обёртка команды (образец — _THIN_MAIN в "
+            f"tests/test_examples.py); своя логика — пример в OWN_LOGIC")
+
     def test_no_extra_example_folders(self):
         """Список ALL_EXAMPLES не отстал от содержимого examples/."""
         on_disk = sorted(
@@ -166,9 +205,9 @@ class TestStructure:
         )
         assert on_disk == sorted(ALL_EXAMPLES)
 
-    def test_runner_and_run_all_exist(self):
-        """Инфраструктура на месте."""
-        assert (EXAMPLES_DIR / "example_runner.py").is_file()
+    def test_run_all_and_readme_exist(self):
+        """Инфраструктура на месте; конвейера в examples/ нет — он в пакете (FEAT-030)."""
+        assert not (EXAMPLES_DIR / "example_runner.py").exists()
         assert (EXAMPLES_DIR / "run_all.py").is_file()
         assert (EXAMPLES_DIR / "README.md").is_file()
 
@@ -781,14 +820,15 @@ SHARED_CHECK_MODULES = [
 # Все файлы верхнего уровня examples/ — общие модули и скрипты. Ни один из
 # них не должен снова появиться в папке примера: исход у копии молчаливый
 # при любом порядке sys.path.
-#   - main.py 01, 02, 03, 05 и скрипты сходимости 04, 04a, 05 делают
-#     sys.path.insert(0, ...) сначала для examples/, затем для папки
-#     примера, и папка оказывается ВПЕРЕДИ. Копия ПЕРЕКРЫВАЕТ общий модуль
-#     без ошибки импорта — и для всех, кто его импортирует: копия
-#     figure_io.py подменит его и внутри example_runner.py.
-#   - Остальные main.py вставляют только examples/, и он встаёт впереди
-#     папки скрипта. Копия молча игнорируется: её правка ни на что не влияет.
+#   - Скрипты сходимости (04a, 05) вставляют в sys.path сначала examples/,
+#     затем папку примера, и папка оказывается ВПЕРЕДИ. Копия ПЕРЕКРЫВАЕТ
+#     общий модуль без ошибки импорта — и для всех, кто его импортирует.
+#   - main.py 03–05 вставляют только examples/ (для two_phase_analytics), и
+#     он встаёт впереди папки скрипта. Копия молча игнорируется: её правка
+#     ни на что не влияет. Обёртки команды (17 main.py) sys.path не трогают.
 # Именно так четыре копии energy_balance.py разошлись и породили BUG-004.
+# С FEAT-030 печать и рисунки общих проверок — в пакете (report/), в
+# examples/ общих модулей осталось мало, но механизм прежний.
 # Список строится по диску, а не вручную (DEBT-037): ручной список отстал —
 # example_runner.py, figure_io.py и ещё четыре общих модуля в нём не
 # значились. Новый файл в examples/ попадает под проверку сам.

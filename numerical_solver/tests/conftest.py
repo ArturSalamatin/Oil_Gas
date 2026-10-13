@@ -2,15 +2,22 @@
 
 import os
 
-import pytest
-import numpy as np
+import matplotlib
+# Режим без окон на всю сессию: модули пакета (report/) больше не выбирают
+# его при импорте (FEAT-030), а тесты рисуют — run_case, report.pvt. Прежде
+# его задавали отдельные тестовые модули (test_output.py), и порядок сбора
+# решал, кто первый.
+matplotlib.use("Agg")
+
+import pytest  # noqa: E402
+import numpy as np  # noqa: E402
 
 # radial_blackoil (прототип гидродинамики) pytest берёт из этого же дерева:
 # pythonpath в [tool.pytest.ini_options] numerical_solver/pyproject.toml (DEBT-059).
 
 # FEAT-026: SVG- и EMF-копии рисунков нужны только при запуске примеров,
 # не в тестах (решение пользователя 2026-10-02): конвертация Inkscape
-# добавила бы секунды к каждому run_example и plot_pvt. С "0" save_figure
+# добавила бы секунды к каждому run_case и plot_pvt. С "0" save_figure
 # пишет только PNG, а export_emf не находит SVG и ничего не делает.
 os.environ["GPN_EXAMPLES_EMF"] = "0"
 

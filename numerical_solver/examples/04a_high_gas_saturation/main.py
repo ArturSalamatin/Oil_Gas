@@ -8,21 +8,9 @@
 import sys
 from pathlib import Path
 
-# examples/ в sys.path — для импорта example_runner.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from example_runner import run_example  # noqa: E402
-
-HERE = Path(__file__).parent
-
+from gpn_multiphase_solver.cli import main
 
 if __name__ == "__main__":
-    run_example(
-        config_path=HERE / "config.json",
-        output_dir=HERE / "output",
-        title="04a: высокая газонасыщенность (Table PVT + Corey ОФП)",
-        # p, Sg и Rs аналитику ставит сам example_runner из общих модулей
-        # closed_form.py и rs_analytics.py — она не зависит ни от источника
-        # PVT, ни от вида ОФП. Аналитики для T в двухфазной зоне нет:
-        # схема проверяется балансом энергии и сверкой матрицы с постановкой.
-    )
+    # То же, что python -m gpn_multiphase_solver run <папка примера>\config.json:
+    # параметры примера — в секции output конфига (FEAT-030)
+    sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))

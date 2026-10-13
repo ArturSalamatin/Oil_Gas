@@ -16,7 +16,8 @@
   (в) alias.name при import M as alias: tpa.report;
   (г) имя, нужное функции, но не связанное в модуле: потерянная строка
       импорта самого файла (deepcopy в run_series, DEBT-031);
-  (д) именованные аргументы вызовов run_example(...) против её сигнатуры.
+  (д) именованные аргументы вызовов run_case(...) против её сигнатуры
+      (gpn_multiphase_solver.report.pipeline, FEAT-030).
 Приватные атрибуты объектов ловит test_no_private_solver_access (DEBT-011);
 типы аргументов не ловятся.
 """
@@ -127,7 +128,7 @@ def _nested_code(code: types.CodeType):
 
 
 def _script_problems(path: Path) -> list:
-    """Пропавшие имена скрипта: импорты, alias.name, глобальные имена функций, run_example."""
+    """Пропавшие имена скрипта: импорты, alias.name, глобальные имена функций, аргументы run_case."""
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     problems = []
     aliases = {}   # alias → модуль: для проверки alias.name, класс (в)
@@ -188,21 +189,21 @@ def _script_problems(path: Path) -> list:
                 problems.append(f"{code.co_name} (строка {code.co_firstlineno}): "
                                 f"имя {ins.argval} не связано в модуле")
 
-    # ── (д): именованные аргументы run_example(...) ──
-    # main.py 17 из 22 примеров — только вызов run_example; переименованный
-    # параметр (title → figure_title) ломал бы их TypeError при запуске.
+    # ── (д): именованные аргументы run_case(...) ──
+    # main.py 01–05, 18 зовут run_case (FEAT-030); переименованный параметр
+    # (overlays → curves) ломал бы их TypeError при запуске.
     calls = [n for n in ast.walk(tree)
              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
-             and n.func.id == "run_example"]
-    runner = importlib.import_module("example_runner") if calls else None
-    if runner is not None and hasattr(runner, "run_example"):
-        signature = inspect.signature(runner.run_example)
+             and n.func.id == "run_case"]
+    if calls:
+        pipeline = importlib.import_module("gpn_multiphase_solver.report.pipeline")
+        signature = inspect.signature(pipeline.run_case)
         for call in calls:
             try:
                 signature.bind(*call.args, **{k.arg: k.value
                                               for k in call.keywords if k.arg})
             except TypeError as exc:
-                problems.append(f"строка {call.lineno}: run_example(...) — {exc}")
+                problems.append(f"строка {call.lineno}: run_case(...) — {exc}")
 
     # Одно пропавшее имя встречается в функции несколько раз — без повторов.
     return list(dict.fromkeys(problems))
@@ -240,9 +241,9 @@ BROKEN_SNIPPETS = {
     "g_name_without_import": (
         "def f(config):\n"
         "    return no_such_function(config)\n"),
-    "d_run_example_keyword": (
-        "from example_runner import run_example\n"
-        "run_example(config_path=1, output_dir=2, title=3, no_such_arg=4)\n"),
+    "d_run_case_keyword": (
+        "from gpn_multiphase_solver.report.pipeline import run_case\n"
+        "run_case(config_path=1, output_dir=2, no_such_arg=4)\n"),
     "removed_module": "import no_such_module\n",
 }
 
@@ -294,8 +295,8 @@ def test_no_private_solver_access(script):
     sim._energy._pvt в примере стал бы интерфейсом, который нельзя
     менять. Ловится .имя у чужого объекта (sim._grid, tpa._build_relperm)
     и from gpn_multiphase_solver... import _имя. Импорт приватных имён
-    между модулями examples/ (_resolve_example) — их внутреннее дело
-    до FEAT-030 и не ловится.
+    между модулями examples/ (_resolve_example из two_phase_analytics.py)
+    — их внутреннее дело и не ловится.
     """
     tree = ast.parse((EXAMPLES_DIR / script).read_text(encoding="utf-8"))
     found = _private_access(tree)

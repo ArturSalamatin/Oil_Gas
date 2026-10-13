@@ -5,23 +5,19 @@
     p(r) = p_wf + (p_0 - p_wf) / ln(R_e/r_w) · ln(r/r_w)
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gpn_multiphase_solver.cli import configure_batch_run
+# Консоль UTF-8 и matplotlib без окна — как у команды (FEAT-030)
+configure_batch_run()
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from example_runner import run_example  # noqa: E402
 from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
-
-# Папка примера — в sys.path для импорта соседних модулей.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gpn_multiphase_solver.report.pipeline import run_case  # noqa: E402
 
 
 def _add_dupuit_curve(history, grid, config, output_dir: Path, title: str):
@@ -51,7 +47,7 @@ def _add_dupuit_curve(history, grid, config, output_dir: Path, title: str):
     plt.close(fig)
 
 
-def _add_temperature_analytics(history, grid, config, output_dir: Path,
+def _add_temperature_analytics(history, grid, config, pvt, output_dir: Path,
                                title: str):
     """Перестроить temperature_profiles.png с аналитикой ОДУ (пунктиром).
 
@@ -70,7 +66,6 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     """
     from scipy.integrate import solve_ivp
     from scipy.interpolate import interp1d
-    from gpn_multiphase_solver.factory import SimulatorFactory
 
     r_w = config.geometry.r_well
     R_e = config.geometry.R_ext
@@ -81,8 +76,7 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
     phi = config.rock.porosity
     dt = config.time.dt_integration
 
-    sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim.pvt
+    # pvt — у решателя, который считал задачу (CaseResult, FEAT-030)
     rock = config.rock
     p_arr = np.array([p0])
     Rs_arr = np.array([0.0])
@@ -185,28 +179,27 @@ def _add_temperature_analytics(history, grid, config, output_dir: Path,
 
 if __name__ == "__main__":
     here = Path(__file__).parent
-    elapsed, history, grid, config = run_example(
-        config_path=here / "config.json",
-        output_dir=here / "output",
-        title="01: однофазная несжимаемая фильтрация без JT",
-    )
+    # Заголовок, число профилей, стационарная аналитика — секция output
+    # конфига (FEAT-030)
+    r = run_case(here / "config.json", here / "output")
+    history, grid, config = r.history, r.grid, r.config
 
     _add_dupuit_curve(
         history, grid, config,
         output_dir=here / "output",
-        title="01: однофазная несжимаемая фильтрация без JT",
+        title=r.title,
     )
     print("График давления перестроен с аналитикой Дюпюи.")
 
     _add_temperature_analytics(
-        history, grid, config,
+        history, grid, config, r.simulator.pvt,
         output_dir=here / "output",
-        title="01: однофазная несжимаемая фильтрация без JT",
+        title=r.title,
     )
 
-    # Баланс энергии считает run_example — общей проверкой для всех
-    # примеров (FEAT-016).
+    # Баланс энергии считает run_case — общей проверкой для всех
+    # расчётов (FEAT-016).
 
     # Перестроенные выше рисунки — вторым пакетом: первый конвертировал
-    # run_example (FEAT-026).
+    # run_case (FEAT-026).
     export_emf(here / "output")

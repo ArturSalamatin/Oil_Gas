@@ -6,8 +6,8 @@ relperm.csv. Пример проверяет, что аналитические 
 
 Что наносится на графики:
 
-  p, Sg, Rs — ставит сам example_runner из общих модулей closed_form.py и
-       rs_analytics.py: замкнутое решение (дебит квадратурой, профили без
+  p, Sg, Rs — ставит сам штатный набор run_case (gpn_multiphase_solver/report/:
+       closed_form.py, rs.py): замкнутое решение (дебит квадратурой, профили без
        единого числа из расчёта) и равновесие Rs: Rs = Rs_eq(p) в ячейках
        с газом, Rs <= Rs_eq(p) в остальных.
        Эти выводы не зависят ни от вида PVT, ни от вида ОФП, поэтому здесь
@@ -27,16 +27,16 @@ closed_form_convergence, energy_balance_convergence.
 import sys
 from pathlib import Path
 
-# examples/ в sys.path — для импорта example_runner.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-# Папка примера — для импорта соседних модулей аналитики.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gpn_multiphase_solver.cli import configure_batch_run
+# Консоль UTF-8 и matplotlib без окна — как у команды (FEAT-030)
+configure_batch_run()
 
-import matplotlib
-matplotlib.use("Agg")
+# examples/ в sys.path — для two_phase_analytics (печать проверок стационара 03–05)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import matplotlib.pyplot as plt  # noqa: E402
 
-from example_runner import run_example  # noqa: E402
+from gpn_multiphase_solver.report.pipeline import run_case  # noqa: E402
 from gpn_multiphase_solver.report.relperm import report_relperm  # noqa: E402
 from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
@@ -48,7 +48,7 @@ from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote
 
 
 def _times_to_plot(history):
-    """Те же 4 момента времени, что выбирает example_runner."""
+    """Те же 4 момента времени, что выбирает run_case (report/pipeline.py)."""
     times = history.times
     idx = [0, len(times) // 3, 2 * len(times) // 3, len(times) - 1]
     return [times[i] for i in sorted(set(idx))]
@@ -84,22 +84,18 @@ def _add_temperature_analytics(history, grid, config, pvt,
 
 if __name__ == "__main__":
     here = Path(__file__).parent
-    TITLE = "05: Standing PVT + Table ОФП"
 
-    elapsed, history, grid, config = run_example(
-        config_path=here / "config.json",
-        output_dir=here / "output",
-        title=TITLE,
-    )
+    # Заголовок, число профилей, стационарная аналитика — секция output
+    # конфига (FEAT-030)
+    r = run_case(here / "config.json", here / "output")
+    history, grid, config = r.history, r.grid, r.config
 
-    # PVT и ОФП берём из собранного симулятора — те же объекты, что считали задачу.
-    from gpn_multiphase_solver.factory import SimulatorFactory
-    sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim.pvt
-    relperm = sim.relperm
+    # PVT и ОФП — у решателя, который считал задачу (CaseResult, FEAT-030)
+    pvt = r.simulator.pvt
+    relperm = r.simulator.relperm
 
     # ОФП — центральный сюжет этого примера.
-    # График строит example_runner (output/relperm.png), здесь печатаем числа
+    # График строит run_case (output/relperm.png), здесь печатаем числа
     # на рабочем диапазоне, включая отношение k_rg/k_ro из замыкания.
     print()
     report_relperm(config, history, relperm)
@@ -110,15 +106,15 @@ if __name__ == "__main__":
     print()
     tpa.report(history, grid, config, pvt)
 
-    # report_asymptotics вызывает run_example (FEAT-016) — здесь не дублируем.
+    # report_asymptotics вызывает run_case (FEAT-016) — здесь не дублируем.
     print()
     _add_temperature_analytics(history, grid, config, pvt,
-                               here / "output", TITLE)
+                               here / "output", r.title)
     print("\nГрафик T перестроен с JT-асимптотикой и линией фронта.")
 
-    # Баланс энергии считает run_example — общей проверкой для всех
-    # примеров (FEAT-016).
+    # Баланс энергии считает run_case — общей проверкой для всех
+    # расчётов (FEAT-016).
 
     # Перестроенный выше рисунок — вторым пакетом: первый конвертировал
-    # run_example (FEAT-026).
+    # run_case (FEAT-026).
     export_emf(here / "output")

@@ -68,7 +68,7 @@ TabulatedRelPerm: np.interp по таблице (Sg, kro, krg). Производ
 
 ### 4. Порода: сжимаемая
 
-CompressibleRock: φ(p) = φ_ref · exp(c_r · (p − p_ref)). В нашей постановке c_r = 0, но прототип поддерживает c_r ≠ 0. GPN передаёт φ_ref = `rock.porosity`, p_ref = $p_0$ (`factory.py`): пористость конфига задана при начальном давлении, опорного давления в конфиге нет ([[DEBT-008]]).
+CompressibleRock: φ(p) = φ_ref · exp(c_r · (p − p_ref)). Постановка — φ(p) по `eq:porosity` (DEBT-057); энергия берёт тот же закон (`TridiagEnergySolver.porosity`, фабрика передаёт тот же p0). GPN передаёт φ_ref = `rock.porosity`, p_ref = $p_0$ (`factory.py`): пористость конфига задана при начальном давлении, опорного давления в конфиге нет ([[DEBT-008]]).
 
 ### 5. Вектор неизвестных: 2N, не 3N
 
@@ -208,7 +208,7 @@ TabulatedRelPerm в прототипе не имеет методов dkro_dSg, 
 | Компонент | Переиспользование | Как |
 |---|---|---|
 | RadialGrid | **да** — формулы и центры совпадают (DEBT-063, √) |
-| CompressibleRock | **нет** — у нас c_r = 0, простой скаляр φ |
+| CompressibleRock | тот же закон в энергии — `TridiagEnergySolver.porosity(p)` (DEBT-057) |
 | BlackOilPVT | **да** — через Adapter для HydroPVT |
 | TabulatedRelPerm | **да** — обернуть в наш RelPermModel |
 | RadialBlackOilModel.advance() | **да** — основной вызов для HydroSolver |

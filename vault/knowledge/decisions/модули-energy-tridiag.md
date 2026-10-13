@@ -68,11 +68,13 @@ class EnergySolver(ABC):
 
 ## Порядок вычислений (`TridiagEnergySolver.solve`)
 
-1. `compute_cell_properties` — тепловые PVT и эффективные свойства в ячейках при $(p^{n+1}, S_g^{n+1}, R_s^{n+1}, T^n)$: `Bo`, `rho_o`, `rho_g`, `c_p_o`, `c_p_g`, `mu_JT_o`, `mu_JT_g`, `L`, `rho_cp_eff`, `lambda_eff`.
+Конструктор: `TridiagEnergySolver(grid, pvt, rock, p_ref=None)`; `p_ref` — давление, при котором задана `rock.porosity` (фабрика передаёт `initial_conditions.p0`), при `rock.compressibility` ≠ 0 обязателен. Метод `porosity(p)` — $\varphi(p) = \varphi_0 e^{c_r(p - p_{ref})}$ (`eq:porosity`), тот же закон, что у породы прототипа; при $c_r = 0$ — скаляр `rock.porosity` (DEBT-057).
+
+1. `compute_cell_properties` — тепловые PVT и эффективные свойства в ячейках при $(p^{n+1}, S_g^{n+1}, R_s^{n+1}, T^n)$: `Bo`, `rho_o`, `rho_g`, `c_p_o`, `c_p_g`, `mu_JT_o`, `mu_JT_g`, `L`, `rho_cp_eff`, `lambda_eff`. Скелет и `lambda_eff` — с $\varphi_0$, флюидная часть `rho_cp_eff` — с `porosity(p)`.
 2. `_ext_properties(bc)` — те же свойства фаз при условиях контура $(p_{ext}, T_{ext}, R_{s,ext})$.
 3. `compute_convective_coefficients` → `Phi_plus`, `Phi_minus`, `Phi_o`, `Phi_g`, массивы граней $[N+1]$.
 4. `compute_conductive_transmissibility` → `Q_T`, $[N+1]$.
-5. Источники: `compute_jt` (с `hydro_result.p_wf`) → `J_jt`, Вт; `compute_adiabatic` → `Q_ad`, Вт/м³; `compute_degassing` (с `bc.Rs_ext`) → `Q_deg`, Вт/м³.
+5. Источники: `compute_jt` (с `hydro_result.p_wf`) → `J_jt`, Вт; `compute_adiabatic` (с $\varphi(p^{n+1})$) → `Q_ad`, Вт/м³; `compute_degassing` (с `bc.Rs_ext` и `p=p` — пористость временной части, DEBT-057) → `Q_deg`, Вт/м³.
 6. Сдвиг отсчёта: $T_{ref} = T_{ext}$, $\theta^n = T^n - T_{ref}$, $\theta_{ext} = 0$.
 7. `collect.add_substep(...)`, если `collect` задан.
 8. `assemble_tridiag` → `a`, `b`, `c`, `d` в отклонениях θ; ГУ — точечные поправки к собранным массивам.

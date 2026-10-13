@@ -47,7 +47,7 @@ metadata:
 | `lambda_solid` | float | Вт/(м·К) | Теплопроводность скелета |
 | `lambda_oil` | float | Вт/(м·К) | Теплопроводность нефтяной фазы |
 | `lambda_gas` | float | Вт/(м·К) | Теплопроводность газовой фазы |
-| `compressibility` | float | 1/Па | Сжимаемость породы $c_r$: $\varphi(p) = \varphi\,e^{c_r(p - p_0)}$, `porosity` — при $p_0$; опорного давления нет (DEBT-008) |
+| `compressibility` | float | 1/Па | Сжимаемость породы $c_r$: $\varphi(p) = \varphi\,e^{c_r(p - p_0)}$, `porosity` — при $p_0$; опорного давления нет (DEBT-008); энергия: флюид — $\varphi(p)$, скелет и $\lambda_{eff}$ — `porosity` (DEBT-057) |
 
 Ограничения: `0 < porosity < 1`, `permeability > 0`, все λ > 0.
 

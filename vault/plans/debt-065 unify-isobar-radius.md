@@ -7,7 +7,8 @@ issue: DEBT-065
 github: 106
 branch: refactor/debt-065/unify-isobar-radius
 status: реализован
-worktree: .worktrees/debt-065
+worktree: .worktrees/debt-065; удалён после влития
+merged: aff802a (2026-10-13)
 audit:
   date: 2026-10-13
   found: 7

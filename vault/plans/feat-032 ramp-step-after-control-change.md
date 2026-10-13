@@ -8,7 +8,8 @@ github: 103
 branch: feat/feat-032/ramp-step-after-control-change
 base: 7f8d879
 status: реализован
-worktree: .worktrees/feat-032
+worktree: .worktrees/feat-032; удалён после влития
+merged: 90b5c80 (2026-10-13)
 audit:
   date: 2026-10-13
   round: 1

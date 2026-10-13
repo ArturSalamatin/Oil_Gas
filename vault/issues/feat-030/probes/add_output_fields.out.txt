@@ -1,0 +1,24 @@
+01_single_phase_no_jt: ОК {'title': '01: однофазная несжимаемая фильтрация без JT', 'steady_state': True}
+02_single_phase_jt: ОК {'title': '02: однофазная фильтрация с JT', 'steady_state': True}
+03_standing_corey: ОК {'title': '03: Standing + Corey', 'steady_state': True}
+04_table_table: ОК {'title': '04: Table PVT + Table ОФП', 'steady_state': True}
+04a_high_gas_saturation: ОК {'title': '04a: высокая газонасыщенность (Table PVT + Corey ОФП)', 'steady_state': True}
+05_standing_table_rp: ОК {'title': '05: Standing PVT + Table ОФП', 'steady_state': True}
+06_table_corey_rp: ОК {'title': '06: Table PVT + Corey ОФП', 'steady_state': True}
+07_degassing_adiabatic_only: ОК {'title': '07: только адиабатика', 'steady_state': True}
+08_degassing_jt: ОК {'title': '08: адиабатика + JT', 'steady_state': True}
+09_degassing_latent_heat: ОК {'title': '09: адиабатика + скрытая теплота', 'steady_state': True}
+10_deep_degassing: ОК {'title': '10: глубокое разгазирование', 'steady_state': True}
+11_degassing_at_boundary: ОК {'title': '11: разгазирование у контура', 'steady_state': True}
+12_large_drainage_radius: ОК {'title': '12: большая область дренирования', 'steady_state': True}
+13a_pwf_ramp_down: ОК {'title': '13a: ступенчатое снижение забойного давления', 'steady_state': True, 'n_profiles': 6, 'closed_form_overlays': ['p']}
+13b_pwf_alternating: ОК {'title': '13b: чередование забойного давления 6 ↔ 10.75 МПа', 'steady_state': False, 'n_profiles': 7}
+14_high_gor_cooling: ОК {'title': '14: высокий газовый фактор — охлаждение забоя', 'steady_state': False, 'n_profiles': 6}
+15_oil_rate_ramp_up: ОК {'title': '15: пуск скважины с линейно растущим дебитом нефти', 'steady_state': True, 'n_profiles': 6, 'closed_form_overlays': []}
+16_well_shut_in: ОК {'title': '16: останов скважины после 15 сут добычи', 'steady_state': False, 'n_profiles': 7}
+17_shut_in_strong_cooling: ОК {'title': '17: останов после сильного охлаждения забоя', 'steady_state': False, 'n_profiles': 7}
+18_prototype_input: ОК {'title': '18: вход прототипа (INPUT_TEMPLATE.xlsx)', 'steady_state': False, 'n_profiles': 6}
+19_rs150_cooling: ОК {'title': '19: R_s0 = 150, горячий пласт — охлаждение забоя', 'steady_state': False}
+20_rs300_cooling: ОК {'title': '20: R_s0 = 300 — охлаждение забоя', 'steady_state': False}
+21_rs100_cooling: ОК {'title': '21: R_s0 = 100, горячий пласт — охлаждение забоя', 'steady_state': False}
+итог: ОК; без записи

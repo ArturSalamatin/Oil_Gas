@@ -1,0 +1,5 @@
+дерево: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+код 0, 7.7 с, файлов 12
+  energy_balance.png, mass_balance.png, pressure_profiles.png, profiles.csv, pvt.png, relperm.png, rs_profiles.png, saturation_profiles.png, temperature_profiles.png, well_history.csv, well_rates.png, wellbore_dynamics.png
+  stdout[0:2]: ['=== тест команды ===', 'Конфиг: D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\feat-030\\probes\\out\\key_scenario\\case\\config.json']
+  'Шагов сохранено' в выводе: True

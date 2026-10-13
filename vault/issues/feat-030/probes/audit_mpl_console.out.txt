@@ -1,0 +1,4 @@
+pyplot_import_keeps_backend_unset: код 0: None
+use_after_pyplot_import: код 0: Agg FigureCanvasAgg
+svg_kept_after_package_import: код 0: svg
+stdout_cp1251_then_reconfigure: код 0: cp1251 utf-8

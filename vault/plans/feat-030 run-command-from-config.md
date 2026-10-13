@@ -8,7 +8,8 @@ github: 104
 branch: feat/feat-030/run-command-from-config
 model_level: null
 status: реализован
-worktree: .worktrees/feat-030
+worktree: .worktrees/feat-030; удалён после влития
+merged: 9a5b924 (2026-10-13)
 audit:
   date: 2026-10-13
   round: 1

@@ -64,10 +64,24 @@ if TYPE_CHECKING:
 class TridiagEnergySolver(EnergySolver):
     """Уравнение энергии: конвекция + теплопроводность + JT + адиабатика + дегазация."""
 
-    def __init__(self, grid: Grid, pvt: FullPVT, rock: RockConfig):
+    def __init__(self, grid: Grid, pvt: FullPVT, rock: RockConfig,
+                 p_ref: float | None = None):
         self._grid = grid
         self._pvt = pvt
         self._rock = rock
+        # Опорное давление закона пористости φ(p) = φ0·exp(c_r·(p − p_ref))
+        # (eq:porosity): rock.porosity задана при p_ref. Фабрика передаёт
+        # начальное p0 — то же, что получает порода прототипа (factory.py,
+        # CompressibleRock): энергия и гидродинамика считают один поровый
+        # объём (DEBT-057). При c_r = 0 пористость от p_ref не зависит.
+        # rock = None допустим: тесты сверки матрицы создают решатель только
+        # ради методов, которым порода не нужна.
+        if rock is not None and rock.compressibility != 0.0 and p_ref is None:
+            raise ValueError(
+                f"TridiagEnergySolver: rock.compressibility = {rock.compressibility} "
+                "≠ 0 — нужно p_ref, давление, при котором задана rock.porosity "
+                "(фабрика передаёт initial_conditions.p0)")
+        self._p_ref = p_ref
         # Проба коэффициентов СЛАУ (DEBT-016). None в production коде;
         # тест выставляет колбэк, чтобы сверить a, b, c, d с эталоном,
         # собранным независимо по problem_statement.tex. Отдаются именно
@@ -133,7 +147,8 @@ class TridiagEnergySolver(EnergySolver):
             props['c_p_o'], props['c_p_g'],
             props['mu_JT_o'], props['mu_JT_g'], p, p_old, dt)
         Q_deg = self.compute_degassing(
-            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext)
+            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext,
+            p=p)
 
         # ── Отсчёт температуры от T_ref = T_ext (DEBT-043) ──
         # СЛАУ решается в отклонениях θ = T − T_ref. Схема та же
@@ -203,6 +218,25 @@ class TridiagEnergySolver(EnergySolver):
         return theta_new + T_ref
 
     # ──────────────────────────────────────────────────────
+    # Пористость φ(p) — поровый объём гидродинамики (DEBT-057)
+    # ──────────────────────────────────────────────────────
+
+    def porosity(self, p):
+        """Пористость φ(p) = φ0·exp(c_r·(p − p_ref)) в ячейках. Ур. (eq:porosity)."""
+        rock = self._rock
+        # c_r = 0: скаляр rock.porosity — те же операции, что до DEBT-057,
+        # поэтому расчёты с c_r = 0 побитово прежние; p не нужно.
+        if rock.compressibility == 0.0:
+            return rock.porosity
+        if p is None:
+            raise ValueError(
+                "TridiagEnergySolver.porosity: при rock.compressibility ≠ 0 "
+                "нужно давление p в ячейках")
+        # Та же формула, что у CompressibleRock прототипа (там в барах):
+        # запасы компонентов гидродинамики — V·φ(p)·S_α/B_α
+        return rock.porosity * np.exp(rock.compressibility * (p - self._p_ref))
+
+    # ──────────────────────────────────────────────────────
     # Подшаг 1–2: PVT + эффективные свойства в ячейках
     # ──────────────────────────────────────────────────────
 
@@ -213,7 +247,12 @@ class TridiagEnergySolver(EnergySolver):
         """
         pvt = self._pvt
         rock = self._rock
-        phi = rock.porosity
+        # Флюид — поровый объём φ(p^{n+1}), как в запасах гидродинамики;
+        # скелет — (1 − φ0)(ρc_p)_s: его масса в ячейке постоянна, и от p
+        # теплоёмкость скелета не зависит (DEBT-057, eq:rock_dt).
+        # λ_eff — эмпирическое замыкание при φ0 (eq:lambda_eff).
+        phi0 = rock.porosity
+        phi = self.porosity(p)
 
         Bo = pvt.Bo(p, Rs)
         rho_o = pvt.rho_o(p, Rs)
@@ -225,12 +264,12 @@ class TridiagEnergySolver(EnergySolver):
         L = pvt.L_degas(p, T_old)
 
         # Эффективная теплоёмкость (eq:main_rhocpeff), Дж/(м³·К)
-        rho_cp_eff = ((1 - phi) * rock.rho_cp_solid
+        rho_cp_eff = ((1 - phi0) * rock.rho_cp_solid
                       + phi * (So * rho_o * c_p_o + Sg * rho_g * c_p_g))
 
         # Эффективная теплопроводность (eq:lambda_eff), Вт/(м·К)
-        lambda_eff = ((1 - phi) * rock.lambda_solid
-                      + phi * (So * rock.lambda_oil + Sg * rock.lambda_gas))
+        lambda_eff = ((1 - phi0) * rock.lambda_solid
+                      + phi0 * (So * rock.lambda_oil + Sg * rock.lambda_gas))
 
         return dict(
             Bo=Bo, rho_o=rho_o, rho_g=rho_g,
@@ -441,13 +480,15 @@ class TridiagEnergySolver(EnergySolver):
         return J_jt
 
     # ──────────────────────────────────────────────────────
-    # Подшаг 5b: адиабатический эффект (eq:Qad_disc — форма при c_r = 0, DEBT-057)
+    # Подшаг 5b: адиабатический эффект (eq:Qad_disc; φ = φ(p^{n+1}), DEBT-057)
     # ──────────────────────────────────────────────────────
 
     def compute_adiabatic(self, So, Sg, rho_o, rho_g, c_p_o, c_p_g,
                             mu_JT_o, mu_JT_g, p, p_old, dt):
-        """Q_ad[j] = φ · Σ_α S_α · (1 + ρ_α·cp_α·μ_JT_α) · dp/dt, Вт/м³."""
-        phi = self._rock.porosity
+        """Q_ad[j] = φ(p)·Σ_α S_α·(1 + ρ_α·cp_α·μ_JT_α)·dp/dt, Вт/м³. Ур. (eq:Qad_disc)."""
+        # Сжимаемость породы — только через φ(p): членов c_r·(p + (ρc_p)_s·T)
+        # в Q_ad нет (eq:rock_dt, DEBT-057)
+        phi = self.porosity(p)
         dp_dt = (p - p_old) / dt
         return phi * (
             So * (1.0 + rho_o * c_p_o * mu_JT_o) * dp_dt
@@ -458,7 +499,8 @@ class TridiagEnergySolver(EnergySolver):
     # eq:mdot_conv_face — адвективная пространственная часть)
     # ──────────────────────────────────────────────────────
 
-    def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N, Rs_ext):
+    def compute_degassing(self, So, Sg, Rs, Rs_old, Bo, G_o, L, dt, N, Rs_ext,
+                          p=None):
         """Q_deg[j] = -L · mdot[j], Вт/м³. Ур. (eq:mdot_disc), (eq:mdot_conv_face).
 
         Пространственная часть — в АДВЕКТИВНОЙ форме (BUG-012):
@@ -485,7 +527,9 @@ class TridiagEnergySolver(EnergySolver):
 
         Rs_ext — состав притока с контура (eq:bc_Sg_ext): R_s|_ext = R_s^0.
         """
-        phi = self._rock.porosity
+        # Запас нефти во временной части — с пористостью φ(p^{n+1}) (eq:porosity),
+        # как в запасах гидродинамики (DEBT-057); при c_r = 0 p не нужно.
+        phi = self.porosity(p)
         V = self._grid.volumes
         rho_g_std = self._pvt.rho_g_std
 

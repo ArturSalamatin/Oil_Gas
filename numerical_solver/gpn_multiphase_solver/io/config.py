@@ -51,7 +51,8 @@ class RockConfig:
     # porosity задана при начальном давлении initial_conditions.p0 (factory.py,
     # CompressibleRock). Опорного давления в конфиге нет (DEBT-008): пара
     # (φ_ref, p_ref) пересчитывается точно — porosity = φ_ref·exp(c_r·(p0 − p_ref)).
-    # Энергия берёт постоянную porosity (energy/tridiag.py) — при c_r ≠ 0 см. DEBT-057.
+    # Энергия (energy/tridiag.py, DEBT-057): флюид — φ(p) по тому же закону,
+    # скелет и λ_eff — porosity при p0 (масса скелета в ячейке постоянна).
     compressibility: float = 0.0    # c_r, 1/Па
 
 

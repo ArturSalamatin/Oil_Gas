@@ -1,0 +1,49 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+Прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+предел округления в допуске: kappa = 0 (без подмены)
+k=6 первый шаг 0.10986 с | 1 ч: R_s(r_w) = 40.6122229, p(r_w) = 185.4210591 бар, T(r_w) = 398.0221281 К | отказов 0; подшаги: 0.109863×128, 0.219727×64, 0.439453×64, 0.878906×64, 1.75781×64, 3.51562×64, 7.03125×64, 14.0625×64, 28.125×64; счёт 25.6 с
+.venv\Scripts\python : Traceback (most recent call last):
+At line:1 char:302
++ ... tch {} } }; .venv\Scripts\python ..\vault\issues\bug-025\probes\floor ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 248, in _advance
+    hydro_result = self._hydro.solve(state, h, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 80, in solve
+    r = orig(state, dt, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\hydro\prototype_adapter.py", line 
+234, in solve
+    raise HydroConvergenceError(
+    ...<4 lines>...
+        f"{_failure_details(report, m.cell_tol, 4 if by_memory else 1)}")
+gpn_multiphase_solver.hydro.base.HydroConvergenceError: advance не сошёлся: dt = 1.073e-04 с, t = 10.0000 сут, 
+итераций 4, невязка 5.00e-09 (допуск 1.33e-11), мера ячеек 2.60e-11 (порог numerics.newton_cell_tol = 1e-08), выход: 
+линейный поиск не принял ни одной точки — не выполнено только абсолютное условие; числа — Ньютона ступени 1
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-025\probes\floor_probe.py", line 164, in <module>
+    series(float(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]))
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-025\probes\floor_probe.py", line 144, in series
+    out, el, acc, nf, h = ds.run(1, k, 9)
+                          ~~~~~~^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 91, in run
+    hist = sim.run(s0)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 172, in run
+    state, hydro_result = self._advance(
+                          ~~~~~~~~~~~~~^
+        state, dt, interval.bc, balance, mass)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 255, in _advance
+    raise RuntimeError(self._failure_message(state, dt, exc)) from exc
+RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 1.07e-04 с на подшаге с t = 10.0000 сут: 
+двухфазных ячеек 332 из 350, max S_g = 0.409. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries 
+(сейчас max_retries = 9, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или 
+меньший time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине. Последний отказ 
+гидродинамики: advance не сошёлся: dt = 1.073e-04 с, t = 10.0000 сут, итераций 4, невязка 5.00e-09 (допуск 1.33e-11), 
+мера ячеек 2.60e-11 (порог numerics.newton_cell_tol = 1e-08), выход: линейный поиск не принял ни одной точки — не 
+выполнено только абсолютное условие; числа — Ньютона ступени 1

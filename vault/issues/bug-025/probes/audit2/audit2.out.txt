@@ -1,0 +1,14 @@
+﻿BUG-025, аудит 2 (2026-10-13, база 3f3df63 = 015a297 + DEBT-011; прототип, постановка, тесты плана не менялись)
+
+extract.py + emulate_step3.py — тесты шага 2 дословно из плана:
+  GPN test_prototype_residual_floor.py, база:        1 passed, 7 failed (как в плане: AttributeError ROUNDOFF_KAPPA; 3+1 assert rep.converged; 2 RuntimeError), 13.2 с
+  GPN test_prototype_residual_floor.py, эмуляция 3:  8 passed, 4.1 с
+  прототип test_residual_floor.py, база:              4 failed
+  прототип test_residual_floor.py, эмуляция 3:        4 passed, 0.9 с
+tex_step1.py — шаг 1 на копии постановки: блок «До» найден 1 раз; pdflatex дважды — exit 0,
+  без Undefined/undefined; формула eq:newton_abs_tol без переполнения; новый абзац пояснения —
+  Overfull \hbox 10.0 pt (длинные строчные формулы; в документе таких 19, до 104 pt).
+Числа шага 3/5 на 3f3df63: floor_probe fix 4 — 16 строк dt/ступень совпали с fix_k4_r200.out.txt
+  (без времени счёта); repro 4 16 0.0549 — R_s(r_w) = 22.4587978, 0 отказов;
+  ramp_with_floor 4 example 15 0 0.44 — orig a6e91358e1482446, h0 5d462f35ce3e39b9, 0 отказов.
+Число тестов: tests/ 1826 (DEBT-011: +58 к 1768), прототип 97.

@@ -1,0 +1,11 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver; radial_blackoil: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+
+B. BUG-018, N = 350, cell_tol = 1e-08
+  dt = 86400 с: сошлось False, выход line_search, итераций 4, невязка 6.509e-15 (допуск 5.355e-07), мера 2.5962e-08, предел 6.4200e-08, мера/предел 0.404
+  dt = 43200 с: сошлось False, выход line_search, итераций 6, невязка 5.162e-15 (допуск 5.355e-07), мера 1.1666e-08, предел 3.2100e-08, мера/предел 0.363
+  предел(dt/2)/предел(dt) = 0.50000
+
+C. shutin (rs300, 10 сут добычи), p(r_w) = 50.8965 бар
+  порог 1e-30: сошлось False, выход max_iter, итераций 40, мера 9.7716e-12, предел 4.3389e-11, мера/предел 0.225
+
+D. ступень 4 при пороге 1e-08: сошлось True, выход converged, мера 1.208e-11, предел None

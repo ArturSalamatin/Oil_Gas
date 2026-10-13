@@ -1,0 +1,7 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+Прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+  bug018_n350: 1.0 с, записей 2, вызовов гидро 5, отказов 2
+  ex14: 10.9 с, записей 13, вызовов гидро 362, отказов 1
+  ex16: 15.1 с, записей 54, вызовов гидро 731, отказов 0
+  ex17: 24.6 с, записей 54, вызовов гидро 733, отказов 1
+  daily_shutin: 5.0 с, записей 14, вызовов гидро 27, отказов 7

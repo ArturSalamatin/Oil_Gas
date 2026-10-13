@@ -17,9 +17,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from gpn_multiphase_solver.diagnostics.closed_form import solve_closed
 from gpn_multiphase_solver.diagnostics.rs import front_radius, isobar_radius
 from gpn_multiphase_solver.diagnostics.two_phase import degassing_front
-from gpn_multiphase_solver.factory import create_pvt
+from gpn_multiphase_solver.factory import SimulatorFactory, create_pvt
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.state import SimulationState
 
@@ -153,3 +154,23 @@ def test_numeric_profile_functions_agree(p_mpa):
     # assert_equal считает nan равным nan
     np.testing.assert_equal(front_radius(cfg, hist, grid, pvt), expected)
     np.testing.assert_equal(degassing_front(hist, grid, cfg, pvt)["r_b_interp"], expected)
+
+
+# ── Замкнутое решение: пример 11 ──
+
+def test_closed_form_front_beyond_last_center_example11():
+    """Пример 11: замкнутый профиль ниже pb во всех ячейках — фронт между последним центром и контуром.
+
+    Прежде _front_radius возвращал центр последней ячейки, 46.9873 м, и
+    report_closed печатал его с подписью «p = pb», хотя давление там
+    14.983 МПа. Опорное значение 47.7338 м — то же замкнутое решение на
+    сетке из 20 001 узла до R_ext (проба vault/issues/debt-065/probes/
+    edge_cases.py); с узлом контура на сетке примера — 47.7342 м.
+    """
+    cfg = load_config(EXAMPLES / "11_degassing_at_boundary" / "config.json")
+    sim, _ = SimulatorFactory.from_config(cfg)
+    r = sim.grid.r_centers
+    cl = solve_closed(cfg, sim.pvt, sim.relperm, r)
+    assert np.all(cl["p"] < cl["pb"])                  # край: газ во всех ячейках
+    assert r[-1] < cl["r_b"] < cfg.geometry.R_ext
+    assert cl["r_b"] == pytest.approx(47.7338, rel=1e-4)

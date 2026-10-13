@@ -75,6 +75,10 @@ p_wf* = p_e.
 падает ниже S_gc, где krg тождественно нулевая, и обращение возвращает
 ноль, хотя газ физически есть, и фронт выходит заниженным. Критерий по
 давлению от этого свободен.
+
+Радиус — rs.isobar_radius: интерполяция ln r по p между соседними
+центрами; если профиль ниже pb во всех ячейках — между последним центром
+и контуром, где p = p_e.
 """
 
 from __future__ import annotations
@@ -82,6 +86,8 @@ from __future__ import annotations
 import numpy as np
 from scipy.integrate import quad, solve_ivp
 from scipy.optimize import brentq
+
+from .rs import isobar_radius
 
 
 def kr_max_Sg(relperm, Sg_hi=0.999):
@@ -225,27 +231,14 @@ def solve_closed(config, pvt, relperm, r):
 
     # Фронт — по условию p = pb, а не по обнулению Sg_ana: см. docstring
     # модуля, у Кори с порогом S_gc второй критерий занижает r_b на 13 %.
-    r_b = _front_radius(r, p_ana, pb)
+    # Узел контура (R_e, p_e) — точка, от которой интегрировалось (2): если
+    # профиль ниже pb во всех ячейках (пример 11), фронт между последним
+    # центром и контуром, а не в центре последней ячейки (DEBT-065).
+    r_b = isobar_radius(r, p_ana, pb, R_e, p_e)
 
     _CACHE[key] = dict(q_o=q_o, p_wf=p_wf, p=p_ana, Sg=Sg_ana, pb=pb, r_b=r_b,
                        closure=clo)
     return _CACHE[key]
-
-
-def _front_radius(r, p, pb):
-    """Радиус фронта: интерполяция условия p(r_b) = pb по ln r.
-
-    Профиль логарифмичен, поэтому интерполируем ln r, а не r. np.interp
-    здесь не годится: он требует возрастающие узлы, а p и ln r монотонны
-    в противоположные стороны — молча вернул бы мусор.
-    """
-    if not np.any(p < pb):
-        return np.nan
-    j = int(np.searchsorted(p, pb))          # p возрастает с ростом r
-    if not (0 < j < len(p)):
-        return float(r[p < pb].max())
-    w = (pb - p[j - 1]) / (p[j] - p[j - 1])
-    return float(np.exp(np.log(r[j - 1]) + w * (np.log(r[j]) - np.log(r[j - 1]))))
 
 
 def saturation_from_numeric(config, history, pvt, relperm):

@@ -11,6 +11,8 @@ D. Физика: T сходится к T_ext, JT-охлаждение, стац�
 E. Состав истории: записи на концах интервалов time.history (DEBT-013)
 F. Синхронное дробление шага энергии: подшаги гидро и энергии (BUG-010, DEBT-015)
 G. Отказ при нефизичной температуре: T ≤ 0 или не конечна (DEBT-047)
+H. Глубина первого подшага после смены управления (FEAT-032)
+I. Нарастание шага после смены управления (FEAT-032)
 """
 
 from pathlib import Path
@@ -21,7 +23,7 @@ from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
 from gpn_multiphase_solver.pvt.standing import StandingFullPVT
 from gpn_multiphase_solver.pvt.relperm import CoreyRP
 from gpn_multiphase_solver.state import SimulationState, BoundaryConditions
-from gpn_multiphase_solver.bc import PressureControl
+from gpn_multiphase_solver.bc import PressureControl, RateControl
 from ._doubles import LogProfileHydroStub, FailingHydroStub
 from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.io.config import load_config, RockConfig
@@ -83,6 +85,15 @@ def _single_interval_schedule(dt_hist=86400.0, dt_int=DT_INT, p_wf=P_WF):
     return TimeSchedule(dt_int, [ScheduleInterval(dt=dt_hist, bc=bc)])
 
 
+def _schedule(controls, dt_hists=None, dt_int=DT_INT, h0=None):
+    """TimeSchedule: интервал на каждое управление controls; длины dt_hists (по умолчанию по DT_INT)."""
+    dt_hists = dt_hists or [DT_INT] * len(controls)
+    intervals = [ScheduleInterval(dt=d, bc=BoundaryConditions(
+        well=c, p_ext=P0, T_ext=T0, Rs_ext=RS0, Sg_ext=0.0))
+        for c, d in zip(controls, dt_hists)]
+    return TimeSchedule(dt_int, intervals, dt_after_control_change=h0)
+
+
 # ═══════════════════════════════════════════════════════════
 # A. TimeSchedule
 # ═══════════════════════════════════════════════════════════
@@ -133,6 +144,77 @@ class TestTimeSchedule:
     def test_negative_dt_integration_raises(self):
         with pytest.raises(ValueError):
             _single_interval_schedule(dt_hist=86400.0, dt_int=-1.0)
+
+
+class TestFirstSubstepDepth:
+    """FEAT-032: глубина m первого подшага dt/2**m интервала со сменой управления."""
+
+    def test_off_by_default(self):
+        """Без dt_after_control_change — 0 на любом интервале: путь исполнения прежний."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)])
+        assert s.first_substep_depth(1) == 0
+
+    def test_first_interval_not_a_change(self):
+        """Интервал 0 — не смена (BUG-028: мелкий первый шаг добычи из равновесия не сходится)."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=2.0)
+        assert s.first_substep_depth(0) == 0
+
+    def test_same_control_value_not_a_change(self):
+        """Два интервала с одним p_wf (разные объекты, как их создаёт фабрика) — не смена."""
+        s = _schedule([PressureControl(15e6), PressureControl(15e6)], h0=2.0)
+        assert s.first_substep_depth(1) == 0
+
+    def test_depth_after_pressure_change(self):
+        """Скачок p_wf при dt = 3600 с и h0 = 2 с: m = 11, первый подшаг 1.758 с (примеры 16, 17)."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=2.0)
+        m = s.first_substep_depth(1)
+        assert m == 11
+        assert 3600.0 / 2 ** m <= 2.0 < 3600.0 / 2 ** (m - 1)
+
+    def test_depth_bound_inclusive(self):
+        """h0 ровно dt/2**11 — m = 11: условие dt/2**m <= h0 нестрогое."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=3600.0 / 2 ** 11)
+        assert s.first_substep_depth(1) == 11
+
+    def test_type_change_is_a_change(self):
+        """Давление → дебит (останов q_oil = 0) — смена."""
+        s = _schedule([PressureControl(15e6), RateControl(0.0, 101325.0)], h0=2.0)
+        assert s.first_substep_depth(1) == 11
+
+    @pytest.mark.parametrize("second", [RateControl(2e-3, 1e6), RateControl(1e-3, 2e6)],
+                             ids=["q_oil", "min_bhp"])
+    def test_rate_parameter_change(self, second):
+        """Дебит → другой дебит или другой min_bhp — смена."""
+        s = _schedule([RateControl(1e-3, 1e6), second], h0=2.0)
+        assert s.first_substep_depth(1) == 11
+
+    def test_depth_from_actual_step(self):
+        """m считается от фактического шага интервала, а не от dt_integration.
+
+        dt_hist = 10000 с при dt_integration = 3600 с: n_sub = 3, dt = 3333.3 с;
+        h0 = 1.7 с: 3333.3/2**11 = 1.628 <= 1.7 — m = 11; от 3600 было бы 12 (1.758 > 1.7).
+        """
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)],
+                      dt_hists=[3600.0, 10000.0], h0=1.7)
+        assert s.first_substep_depth(1) == 11
+
+    def test_short_interval(self):
+        """Интервал 10 с (как строки SCHEDULE примера 18), h0 = 2 с: m = 3, подшаг 1.25 с."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)],
+                      dt_hists=[3600.0, 10.0], h0=2.0)
+        assert s.first_substep_depth(1) == 3
+
+    @pytest.mark.parametrize("h0", [3600.0, 5000.0])
+    def test_h0_not_less_than_step(self, h0):
+        """h0 >= шага интервала — m = 0: нарастание не нужно."""
+        s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=h0)
+        assert s.first_substep_depth(1) == 0
+
+    @pytest.mark.parametrize("h0", [0.0, -1.0, float("nan")])
+    def test_rejects_nonpositive(self, h0):
+        """h0 <= 0 и NaN отвергаются, как dt_integration <= 0."""
+        with pytest.raises(ValueError, match="dt_after_control_change"):
+            _schedule([PressureControl(15e6)], h0=h0)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -256,6 +338,15 @@ class TestFactory:
 
         # Последний сохранённый шаг
         assert history.well_data[-1].q_o_std > 0
+
+    def test_dt_after_control_change_reaches_schedule(self):
+        """Поле time.dt_after_control_change доходит до TimeSchedule; без поля — None (FEAT-032)."""
+        config = load_config(BASELINE)
+        simulator, _ = SimulatorFactory.from_config(config)
+        assert simulator._schedule.dt_after_control_change is None
+        config.time.dt_after_control_change = 2.0
+        simulator, _ = SimulatorFactory.from_config(config)
+        assert simulator._schedule.dt_after_control_change == 2.0
 
 
 # ═══════════════════════════════════════════════════════════

@@ -49,16 +49,25 @@ class TimeSchedule:
 
     Аналог InjectorGPN: t_major_step (интервал) + t_minor_step (подшаг).
     Гарантия: n_sub · dt_actual = dt_hist точно (нет накопления ошибки округления).
+    Первый шаг интервала со сменой управления начинается с подшага dt/2**m (FEAT-032).
     """
 
     def __init__(self, dt_integration: float,
-                 intervals: list[ScheduleInterval]):
+                 intervals: list[ScheduleInterval],
+                 dt_after_control_change: float | None = None):
         if dt_integration <= 0:
             raise ValueError(f"dt_integration должен быть > 0, получено {dt_integration}")
         if len(intervals) == 0:
             raise ValueError("intervals не может быть пустым")
+        # Первый подшаг после смены управления, с (FEAT-032); None — нарастания
+        # нет. «not > 0» отсекает и NaN.
+        if dt_after_control_change is not None and not dt_after_control_change > 0:
+            raise ValueError(
+                f"dt_after_control_change должен быть > 0 или None, "
+                f"получено {dt_after_control_change}")
         self.dt_integration = dt_integration
         self.intervals = intervals
+        self.dt_after_control_change = dt_after_control_change
 
     def substeps(self, interval_idx: int) -> tuple[int, float]:
         """Число подшагов и фактический шаг для интервала k.
@@ -75,6 +84,25 @@ class TimeSchedule:
         n_sub = max(n_sub, 1)
         dt_actual = dt_hist / n_sub
         return n_sub, dt_actual
+
+    def first_substep_depth(self, interval_idx: int) -> int:
+        """Глубина m первого подшага dt/2**m на первом шаге интервала со сменой управления (FEAT-032)."""
+        # Смена — граничные условия интервала не равны предыдущим; управление
+        # сравнивается по значению (bc.py). Первый интервал сменой не считается
+        # (решение пользователя): мелкий первый шаг добычи из равновесия в
+        # примерах 19 и 21 не сходится (BUG-028). m — наименьшее, при котором
+        # dt/2**m <= h0: подшаги вида dt/2**k стыкуются с дроблением отказов
+        # (DEBT-015) без остатка, а h0 округляется вниз не более чем вдвое.
+        h0 = self.dt_after_control_change
+        if h0 is None or interval_idx == 0:
+            return 0
+        if self.intervals[interval_idx].bc == self.intervals[interval_idx - 1].bc:
+            return 0
+        _, dt = self.substeps(interval_idx)
+        m = 0
+        while dt / 2 ** m > h0:
+            m += 1
+        return m
 
     def total_time(self) -> float:
         """Суммарное время всех интервалов, с."""

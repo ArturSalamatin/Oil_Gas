@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: DEBT-011
 github: 91
 branch: refactor/debt-011/diagnostics-into-package
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-011
 audit:
   date: 2026-10-11
@@ -1342,3 +1342,15 @@ def test_pvt_table_nodes_none_for_correlation():
 5. 🔵 Охват шага 1 по `factory.py` — номера на `73ef031` (96, 356; вызовы 57, 64); сдвиги ≤ 2 строк.
 
 **Решения пользователя не требуется.**
+
+## 10. Итог реализации (2026-10-11…13)
+
+Ветка `refactor/debt-011/diagnostics-into-package` (worktree `.worktrees/debt-011`, от `87eb55f`), коммиты `2e16385`…`f0ad91a` + vault.
+
+- **Тесты:** 1741 → 1799 (+12 `test_public_api.py`, +46 страж `test_no_private_solver_access`); быстрый уровень 1470 → 1528; полный прогон 1799 passed (541 с), на шаге 11 — 1798 passed.
+- **Снимок вывода 23 примеров** (`probes/snapshot_examples.py`): печать совпадает у всех; файлов `output/` 291 — 287 побайтно, 4 у примера 18 (`prototype/results.xlsx`, `run_summary.json/.txt`, `summary.json`) содержат время выполнения `wall_seconds` и различаются от прогона к прогону при одном коде (проверено двумя прогонами) — проба отмечает их отдельно (`TIME_FILES`). Промежуточный снимок 03 и 16 после шага 9 — побайтно.
+- **Колесо** `pip wheel . --no-deps` содержит `gpn_multiphase_solver/diagnostics/` (5 модулей).
+- **CLI** `energy_balance.py 01`, `mass_balance.py 01`, `two_phase_analytics.py 03`, `temperature_asymptotics.py 02` — код 0.
+- **Отклонения от плана:** (1) страж DEBT-046 поймал вызывающего, которого план пропустил, — `04_table_table/grid_convergence.py` брал `SG_EPS` из `two_phase_analytics` (переведён на пакет в шаге 6); (2) `test_mass_balance.py` и `test_energy_balance_examples.py` больше не кладут `examples/` в `sys.path` — из `examples/` им нужны только конфиги; (3) докстринги и комментарии `main.py` 02, 03 о месте формул обновлены вместе с переносом; (4) вне плана — заметка результатов `knowledge/validation/`, запись `TIME_FILES` в пробе.
+- **База ушла вперёд** на DEBT-054 (`288a65d`, `simulator.py` — `_advance`, `_failure_message`): холостое слияние без конфликтов, переименованных DEBT-011 имён в её коде нет.
+- **Не в git:** `numerical_solver/deliverables/rs150_for_sergey/make_tables.py` зовёт `_create_pvt`, `_create_relperm` — после влития сломается (файл пользователя, не правился).

@@ -6,7 +6,7 @@ date: 2026-10-11
 issue: BUG-025
 github: 105
 branch: fix/bug-025/short-step-residual-floor
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-025
 audit:
   date: 2026-10-13

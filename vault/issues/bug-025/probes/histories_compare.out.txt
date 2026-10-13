@@ -1,0 +1,29 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-025\numerical_solver\gpn_multiphase_solver\factory.py
+Прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-025\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+01_single_phase_no_jt: побитово; отказов 0 -> 0
+02_single_phase_jt: побитово; отказов 0 -> 0
+03_standing_corey: побитово; отказов 0 -> 0
+04_table_table: побитово; отказов 0 -> 0
+04a_high_gas_saturation: побитово; отказов 0 -> 0
+05_standing_table_rp: побитово; отказов 0 -> 0
+06_table_corey_rp: побитово; отказов 0 -> 0
+07_degassing_adiabatic_only: побитово; отказов 0 -> 0
+08_degassing_jt: побитово; отказов 0 -> 0
+09_degassing_latent_heat: побитово; отказов 0 -> 0
+10_deep_degassing: побитово; отказов 1 -> 1
+11_degassing_at_boundary: побитово; отказов 0 -> 0
+12_large_drainage_radius: побитово; отказов 0 -> 0
+13a_pwf_ramp_down: побитово; отказов 0 -> 0
+13b_pwf_alternating: побитово; отказов 0 -> 0
+14_high_gor_cooling: побитово; отказов 1 -> 1
+15_oil_rate_ramp_up: побитово; отказов 0 -> 0
+16_well_shut_in: побитово; отказов 0 -> 0
+17_shut_in_strong_cooling: побитово; отказов 0 -> 0
+18_prototype_input: побитово; отказов 0 -> 0
+19_rs150_cooling: побитово; отказов 0 -> 0
+20_rs300_cooling: побитово; отказов 0 -> 0
+21_rs100_cooling: побитово; отказов 0 -> 0
+test_bug018_n350: побитово; отказов 2 -> 2
+test_bug020_rs150: побитово; отказов 0 -> 0
+test_daily_shutin_rs300: побитово; отказов 7 -> 7
+ИТОГ: OK

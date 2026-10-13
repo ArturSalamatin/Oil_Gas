@@ -188,7 +188,7 @@ $T(r_w) = 351.994$ К, расчёт на 72-м часе — 351.12 К. Отст�
 
 ### Баланс энергии
 
-Общий модуль [`../energy_balance.py`](../energy_balance.py) считает
+Модуль пакета [`report/energy_balance.py`](../../gpn_multiphase_solver/report/energy_balance.py) считает
 покомпонентный баланс:
 
 | Компонент | Значение (финал) | Комментарий |
@@ -250,8 +250,9 @@ $\Delta t$.
 | `check_slopes.py` | Диагностика: наклоны двух участков $T(\ln r)$, прогон с удвоенным $\mu_{JT}$ (автономный) |
 | `config.json` | Конфигурация задачи |
 
-Баланс энергии и его сходимость считают общие модули
-[`../energy_balance.py`](../energy_balance.py) и
+Баланс энергии считает модуль пакета
+[`report/energy_balance.py`](../../gpn_multiphase_solver/report/energy_balance.py), сходимость —
+общий модуль
 [`../energy_balance_convergence.py`](../energy_balance_convergence.py) —
 формулы живут в одном месте для всех примеров.
 
@@ -294,10 +295,11 @@ cd numerical_solver
 .venv\Scripts\python examples\02_single_phase_jt\main.py
 ```
 
+Штатный набор без собственной части примера — `.venv\Scripts\python -m gpn_multiphase_solver run examples\02_single_phase_jt\config.json`.
+
 Автономный запуск отдельных скриптов:
 
 ```powershell
-.venv\Scripts\python examples\energy_balance.py 02
 .venv\Scripts\python examples\energy_balance_convergence.py 02
 .venv\Scripts\python examples\02_single_phase_jt\check_slopes.py
 ```

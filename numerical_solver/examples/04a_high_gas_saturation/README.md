@@ -454,9 +454,11 @@ cd numerical_solver
 .venv\Scripts\python examples\04a_high_gas_saturation\plot_profiles_50k.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\04a_high_gas_saturation\config.json` (из `numerical_solver`; результаты — `examples\04a_high_gas_saturation\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 | Файл | Назначение |
 |---|---|
-| `main.py` | расчёт + сверка с замкнутым решением, ~1 мин |
+| `main.py` | запуск штатного расчёта (обёртка команды пакета), ~1 мин |
 | `grid_convergence.py` | сходимость по сетке $N$ = 25…150, ~3 мин |
 | `plot_profiles_50k.py` | профили на 0…50 000 с по готовому `output/profiles.csv`, секунды |
 | `config.json`, `oil_pvt.csv`, `gas_pvt.csv` | конфигурация и PVT-таблицы |
@@ -466,7 +468,7 @@ cd numerical_solver
 
 Аналитика $p$, $S_g$, $R_s$ и баланс энергии — в пакете ([diagnostics/](../../gpn_multiphase_solver/diagnostics/),
 ряды баланса — [energy/balance.py](../../gpn_multiphase_solver/energy/balance.py)); печать
-и рисунки — общие модули `examples/`, их подключает `example_runner`.
+и рисунки — модули пакета [report/](../../gpn_multiphase_solver/report/), их подключает `run_case`.
 
 ## Дальше
 

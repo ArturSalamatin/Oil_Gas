@@ -1,116 +1,134 @@
-"""Общий pipeline для всех примеров: JSON-конфиг → Factory → run → CSV + графики.
+"""Конвейер расчёта по конфигу: расчёт → CSV + рисунки + печать проверок (FEAT-030).
 
-Каждый пример вызывает run_example() из своего main.py.
-Логика вынесена сюда, чтобы main.py примера оставался коротким и читаемым.
+Перенесён из examples/example_runner.py: тот же штатный набор, что давал
+run_example каждому примеру. Отличия: состав вывода (заголовок, число
+профилей, стационарная аналитика, наложения замкнутого решения) берётся
+из секции output конфига, аргументы его переопределяют; результат —
+CaseResult с решателем; входные файлы внутри каталога вывода — отказ до
+расчёта. Режим matplotlib и кодировку консоли модуль не трогает —
+cli.configure_batch_run.
 """
 
 from __future__ import annotations
 
 import shutil
-import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
-# ── Кодировка консоли ────────────────────────────────────────
-# Консоль Windows по умолчанию cp1251, а вывод примеров содержит символы,
-# которых в ней нет: м³ст/с, λ, μ, Φ, ≠, ≡, →, рамки ── в заголовках.
-# Любой такой print падает с UnicodeEncodeError и обрывает расчёт — причём
-# уже ПОСЛЕ того, как отработал решатель
-#
-# Переключаем поток на UTF-8 с errors="replace". 
-# Файлы (CSV, PNG) пишутся своими
-# кодировками и этой строкой не затрагиваются.
-#
-# run_all.py решает ту же задачу своим _print_safe, но только для
-# собственных сообщений — внутрь дочерних процессов защита не проходит.
-for _stream in (sys.stdout, sys.stderr):
-    if hasattr(_stream, "reconfigure"):
-        _stream.reconfigure(encoding="utf-8", errors="replace")
+import numpy as np
+import matplotlib.pyplot as plt
 
-# ── Прототип radial_blackoil ─────────────────────────────────
-# Установленный дистрибутив radial-blackoil, зависимость пакета (DEBT-059):
-# pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]" из
-# numerical_solver (examples/README.md, «Запуск»). Путь сюда не добавляется.
-
-# ── Графики без интерактивного окна ──────────────────────────
-# Agg — backend без GUI. Задаётся до импорта pyplot, иначе matplotlib
-# успевает выбрать интерактивный backend и падает в консоли/CI.
-import numpy as np  # noqa: E402
-import matplotlib  # noqa: E402
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-
-from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
-from gpn_multiphase_solver.io.config import load_config  # noqa: E402
-from gpn_multiphase_solver.io.output import (  # noqa: E402
-    plot_profiles,
-    plot_well_rate,
-    plot_wellbore_dynamics,
-    save_csv,
-    save_well_csv,
-)
-
-# Модуль лежит рядом, в examples/; путь к этой папке добавляют сами main.py
-# примеров перед импортом example_runner, поэтому импорт по имени работает.
-from relperm_plot import plot_relperm  # noqa: E402
-from rs_analytics import make_overlay_rs, report_rs  # noqa: E402
-from closed_form import (  # noqa: E402
-    make_overlay_pressure, make_overlay_saturation, report_closed)
-from energy_balance import plot_energy_balance  # noqa: E402
-from mass_balance import plot_mass_balance  # noqa: E402
-from temperature_asymptotics import report_asymptotics  # noqa: E402
-from pvt_plot import plot_pvt, report_pvt  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from ..factory import SimulatorFactory
+from ..grid.base import Grid
+from ..io.config import SimulationConfig, load_config
+from ..io.figures import export_emf, save_figure
+from ..io.output import (plot_profiles, plot_well_rate, plot_wellbore_dynamics,
+                         save_csv, save_well_csv)
+from ..simulator import Simulator
+from ..state import SimulationHistory
+from .closed_form import make_overlay_pressure, make_overlay_saturation, report_closed
+from .energy_balance import plot_energy_balance
+from .mass_balance import plot_mass_balance
+from .pvt import plot_pvt, report_pvt
+from .relperm import plot_relperm
+from .rs import make_overlay_rs, report_rs
+from .temperature import report_asymptotics
 
 
-def run_example(config_path: str | Path, output_dir: str | Path,
-                title: str, overlays: dict | None = None,
-                n_profiles: int | None = None,
-                steady_state: bool = True) -> tuple:
-    """Полный расчёт одного примера: конфиг → решение → CSV + PNG.
+class CaseConfigError(ValueError):
+    """Конфиг не читается, не проходит проверку или не собирается фабрикой; расчёт не начат. FEAT-030."""
 
-    Возвращает (elapsed, history, grid, config):
-      elapsed  — время расчёта, с
-      history  — SimulationHistory
-      grid     — Grid (сетка)
-      config   — SimulatorConfig (разобранный JSON)
-    Все выходные файлы кладутся в output_dir (создаётся при необходимости).
+
+class CaseRunError(RuntimeError):
+    """Решатель отказал на шаге по времени; результаты прошлого прогона не тронуты. FEAT-030."""
+
+
+@dataclass
+class CaseResult:
+    """Итог run_case: решатель, история, сетка, конфиг, заголовок, каталог вывода, время расчёта, с. FEAT-030."""
+    elapsed: float
+    simulator: Simulator
+    history: SimulationHistory
+    grid: Grid
+    config: SimulationConfig
+    title: str
+    output_dir: Path
+
+
+def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
+             title: str | None = None, n_profiles: int | None = None,
+             steady_state: bool | None = None,
+             overlays: dict | None = None) -> CaseResult:
+    """Полный штатный расчёт по конфигу: решение → CSV + PNG + печать проверок. FEAT-030.
+
+    Все выходные файлы кладутся в output_dir (None — папка output рядом с
+    конфигом). Каталог очищается целиком после успешного расчёта (решение
+    пользователя 2026-10-13); конфиг и его CSV внутри него — отказ до расчёта.
+
+    title, n_profiles, steady_state — None: значение из секции output
+    конфига (заголовок по умолчанию — имя папки конфига).
 
     overlays — необязательные дополнительные кривые на профильных графиках:
-    {"p": func(ax, history, grid), "T": ..., "Sg": ..., "Rs": ...}. Функция
-    вызывается после отрисовки численных профилей и может добавить на те же
-    оси, например, аналитическое решение. Примеры без аналитики просто не
-    передают overlays. Значение None у ключа отключает наложение по
-    умолчанию для этого поля, например {"Sg": None}.
+    {"p": func(ax, history, grid, simulator), "T": ..., "Sg": ..., "Rs": ...}.
+    Функция вызывается после отрисовки численных профилей и может добавить
+    на те же оси, например, аналитическое решение. Значение None у ключа
+    отключает наложение по умолчанию для этого поля, например {"Sg": None}.
 
     n_profiles — число моментов на профильных графиках, равномерно по
     времени от начала до конца расчёта (ближайшие записи истории). None —
     четыре опорных момента по номеру записи.
 
     steady_state — строить ли стационарную аналитику: замкнутое решение
-    на профилях p и S_g, его сверку report_closed и асимптотику
-    температуры report_asymptotics. Все они — пределы t -> inf при
-    удержании одного режима скважины. False снимает их (например, когда
-    режим меняется каждые сутки); явный overlay примера при этом рисуется.
-    Проверка R_s (наложение и report_rs) от флага не зависит.
+    на профилях p и S_g (каких — output.closed_form_overlays), его сверку
+    report_closed и асимптотику температуры report_asymptotics. Все они —
+    пределы t -> inf при удержании одного режима скважины. False снимает их;
+    явный overlay при этом рисуется. Проверка R_s (наложение и report_rs) от
+    флага не зависит.
     """
     config_path = Path(config_path)
-    output_dir = Path(output_dir)
+    t_start = time.perf_counter()
+    # Ошибки чтения и проверки конфига — до печати и до расчёта. TypeError —
+    # лишний ключ секции (строгая распаковка dataclass), KeyError —
+    # пропущенный ключ внутри секции (time.history).
+    try:
+        config = load_config(config_path)
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise CaseConfigError(f"{config_path}: {exc}") from exc
+
+    out = config.output
+    if title is None:
+        title = out.title if out.title is not None else config_path.resolve().parent.name
+    if n_profiles is None:
+        n_profiles = out.n_profiles
+    elif isinstance(n_profiles, bool) or not isinstance(n_profiles, int) or n_profiles < 2:
+        # Явный аргумент проверяется здесь, а не после расчёта в _profile_times
+        raise ValueError(f"n_profiles = {n_profiles!r}: нужно целое не меньше двух")
+    if steady_state is None:
+        steady_state = out.steady_state
+    output_dir = (Path(output_dir) if output_dir is not None
+                  else config_path.parent / "output")
+    _check_inputs_outside(config_path, config, output_dir)
 
     print(f"=== {title} ===")
     print(f"Конфиг: {config_path}")
 
-    t_start = time.perf_counter()
-
-    config = load_config(config_path)
-    simulator, initial_state = SimulatorFactory.from_config(config)
+    try:
+        simulator, initial_state = SimulatorFactory.from_config(config)
+    except (OSError, ValueError) as exc:
+        # Таблицы PVT/ОФП не читаются или несогласованы (factory.py) — та
+        # же категория: расчёт не начат
+        raise CaseConfigError(f"{config_path}: {exc}") from exc
     # Grid нужен для save_csv и профильных графиков (r_centers).
-    # Factory возвращает только (simulator, initial_state), поэтому
-    # берём сетку из симулятора.
     grid = simulator.grid
 
-    history = simulator.run(initial_state)
+    try:
+        history = simulator.run(initial_state)
+    except RuntimeError as exc:
+        # Отказ шага (Simulator._failure_message) или нефизичная T —
+        # сообщения решателя написаны для пользователя. Каталог вывода не
+        # тронут: очистка — после расчёта.
+        raise CaseRunError(str(exc)) from exc
 
     elapsed = time.perf_counter() - t_start
 
@@ -134,16 +152,21 @@ def run_example(config_path: str | Path, output_dir: str | Path,
 
     # Замкнутое решение по условию GOR = Rs0 не зависит ни от источника PVT,
     # ни от вида ОФП, поэтому подставляется по умолчанию всем двухфазным
-    # сценариям. Пример может задать свой overlay — он имеет приоритет,
-    # а None отключает наложение (см. _pick_overlay).
+    # сценариям. Явный overlay имеет приоритет, а None отключает наложение
+    # (см. _pick_overlay).
     two_phase = config.initial_conditions.Rs0 > 0.0
     # Стационарные наложения — только при steady_state: при частой смене
     # режима скважины предела t -> inf у записей нет.
     steady = two_phase and steady_state
+    # На каких профилях рисовать замкнутое решение — output.closed_form_overlays
+    # (13a: только p; 15: ни на одном). Явный overlay аргумента сильнее.
+    fields = out.closed_form_overlays
     p_overlay = _pick_overlay(overlays, "p",
-                              make_overlay_pressure(config) if steady else None)
+                              make_overlay_pressure(config)
+                              if steady and "p" in fields else None)
     sg_overlay = _pick_overlay(overlays, "Sg",
-                               make_overlay_saturation(config) if steady else None)
+                               make_overlay_saturation(config)
+                               if steady and "Sg" in fields else None)
 
     _plot_field(history, grid, times_to_plot, "p",
                 f"{title}\nПрофили давления",
@@ -160,7 +183,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     if np.max(history.states[0].Rs) > 0.0:
         # Аналитика Rs = min(Rs_eq(p), Rs0) зависит только от PVT и давления,
         # поэтому применима во ВСЕХ сценариях с газом и включается по
-        # умолчанию. Пример может подменить её своим overlay или отключить (None).
+        # умолчанию. Явный overlay подменяет её или отключает (None).
         rs_overlay = _pick_overlay(overlays, "Rs", make_overlay_rs(config))
         _plot_field(history, grid, times_to_plot, "Rs",
                     f"{title}\nПрофили газосодержания",
@@ -183,9 +206,9 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # ── ОФП ──
     # Замыкающие кривые k_r(S_g) в остальных графиках не видны, хотя именно
     # они определяют насыщенность в стационаре (условие GOR = Rs0). Рисуем
-    # их вместе с рабочим диапазоном расчёта — общий модуль для всех
-    # примеров, аналитических и табличных. ОФП — объект решателя (DEBT-011),
-    # а не пересобранная фабрикой копия.
+    # их вместе с рабочим диапазоном расчёта — для любой модели ОФП,
+    # аналитической и табличной. ОФП — объект решателя (DEBT-011), а не
+    # пересобранная фабрикой копия.
     plot_relperm(config, history, output_dir, title,
                  relperm=simulator.relperm)
 
@@ -200,7 +223,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # ── Баланс энергии ──
     # Интегральная проверка: схема не должна терять и создавать энергию.
     # Считается ВСЕГДА, включая однофазные сценарии — там просто часть
-    # членов тождественно нулевая (см. докстринг energy_balance.py).
+    # членов тождественно нулевая (см. докстринг report/energy_balance.py).
     #
     # Считается безусловно и при любой структуре истории: члены копятся
     # на подшагах внутри решателя, а не восстанавливаются по записям.
@@ -216,7 +239,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     plot_mass_balance(config, history, output_dir)
 
     # ── EMF-копии рисунков (FEAT-026) ──
-    # Все рисунки run_example уже сохранены (PNG + SVG в emf/):
+    # Все рисунки run_case уже сохранены (PNG + SVG в emf/):
     # один запуск Inkscape на пакет, а не на каждый рисунок.
     export_emf(output_dir)
 
@@ -234,7 +257,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
             report_closed(config, history, grid, simulator)
 
     # ── PVT: числовая сводка ──
-    # Безусловно, в отличие от report_rs: у однофазных примеров (Rs0 = 0)
+    # Безусловно, в отличие от report_rs: у однофазных сценариев (Rs0 = 0)
     # B_o и mu_o тоже осмысленны, там вырождена лишь вторая ветвь, и
     # report_pvt сам сообщает об этом вместо того, чтобы молчать.
     print()
@@ -243,7 +266,7 @@ def run_example(config_path: str | Path, output_dir: str | Path,
     # ── Асимптотика температуры (только однофазная зона) ──
     # T = T_ext + μ_JT·(p − p_ext): скорость сокращается, профиль не
     # зависит от дебита. От теплопроводности проверка не зависит и
-    # считается при любом λ. Расхождение на штатных 3 сутках отражает
+    # считается при любом λ. Расхождение на коротком расчёте отражает
     # незавершённую релаксацию T, а не дефект.
     #
     # Двухфазной аналитики нет: в адвективной форме схемы стационарное
@@ -254,17 +277,36 @@ def run_example(config_path: str | Path, output_dir: str | Path,
         report_asymptotics(config, history, grid, simulator)
     else:
         # Одна строка вместо двух отчётов: без неё пропажа сверок в
-        # консоли выглядела бы как сбой подключения модулей.
+        # консоли выглядела бы как сбой подключения модулей. Текст прежний
+        # (run_example): его сверяют снимки вывода примеров и тесты.
         print("── Стационарная аналитика отключена (steady_state=False): "
               "замкнутое решение и асимптотика температуры не строятся ──")
 
-    return elapsed, history, grid, config
+    return CaseResult(elapsed=elapsed, simulator=simulator, history=history,
+                      grid=grid, config=config, title=title, output_dir=output_dir)
+
+
+def _check_inputs_outside(config_path: Path, config, output_dir: Path) -> None:
+    """Конфиг и его CSV не лежат внутри каталога вывода: его очистка их удалила бы. FEAT-030."""
+    # Каталог вывода очищается целиком (shutil.rmtree) после расчёта —
+    # решение пользователя 2026-10-13. Узкая защита — от самого опасного
+    # случая: --output . из папки конфига стёр бы конфиг и таблицы.
+    out = output_dir.resolve()
+    names = (config.pvt.oil_pvt_file, config.pvt.gas_pvt_file, config.relperm.file)
+    inputs = [config_path] + [config.config_dir / n for n in names if n]
+    for f in inputs:
+        f = f.resolve()
+        if f == out or out in f.parents:
+            raise CaseConfigError(
+                f"каталог вывода {out} содержит входной файл {f}: после расчёта "
+                f"каталог очищается целиком, и файл был бы удалён. Укажите "
+                f"другой каталог вывода.")
 
 
 def _pick_overlay(overlays: dict, key: str, default):
-    """Наложение поля key: нет ключа — default, иначе значение примера (None — без наложения)."""
+    """Наложение поля key: нет ключа — default, иначе значение аргумента (None — без наложения)."""
     # Не `overlays.get(key) or default`: так явный None молча заменялся бы
-    # умолчанием, и отключить стационарное решение из примера было бы нельзя.
+    # умолчанием, и отключить стационарное решение было бы нельзя.
     if key in overlays:
         return overlays[key]
     return default
@@ -296,7 +338,7 @@ def _plot_field(history, grid, times_to_plot, field: str,
     overlay — необязательная функция (ax, history, grid, simulator),
     дорисовывающая на те же оси дополнительную кривую (например,
     аналитическое решение). simulator передаётся потому, что аналитике
-    бывают нужны внутренние модули решателя (energy solver, PVT).
+    бывают нужны объекты решателя (PVT, ОФП).
     """
     fig, ax = plt.subplots(figsize=(7, 5))
     plot_profiles(history, grid, times_to_plot, field=field, ax=ax)

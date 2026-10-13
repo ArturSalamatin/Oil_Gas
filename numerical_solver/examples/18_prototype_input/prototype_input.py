@@ -187,7 +187,13 @@ def convert(book: Path, out_dir: Path) -> None:
         "numerics": {"skin": float(m["Well skin"]),
                      "jacobian_mode": str(m["Jacobian mode"]).strip(),
                      "linear_solver": str(m["Linear solver"]).strip()},
-        "output": {"log_level": "INFO"},
+        # Состав штатного вывода команды расчёта (FEAT-030; до неё — аргументы
+        # run_example в main.py 18). 6 моментов профилей: у книги-шаблона —
+        # по моменту на каждый режим p_wf (150 / 120 / 100 бар) и конец.
+        # Без стационарной аналитики: режим скважины меняется, а к концу
+        # расчёта двухфазная зона ещё растёт — предел t -> inf недостижим.
+        "output": {"log_level": "INFO", "title": f"18: вход прототипа ({book.name})",
+                   "steady_state": False, "n_profiles": 6},
     }
     (out_dir / "config.json").write_text(
         json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -354,7 +360,7 @@ def plot_comparison(history, grid, proto: dict, imex: dict | None, output_dir: P
     """prototype_profiles.png (p, S_g, R_s по r) и prototype_rates.png (q_o, q_g, GOR по t): расчёт, прототип, IMEX."""
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    from figure_io import save_figure
+    from gpn_multiphase_solver.io.figures import save_figure
 
     # Все источники — по номеру ячейки; абсцисса — центры ячеек: у нашей
     # сетки и у прототипа они одни (DEBT-063)

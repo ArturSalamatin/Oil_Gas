@@ -52,6 +52,8 @@
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "05: Standing PVT + Table ОФП",
+    "steady_state": true
   }
 }

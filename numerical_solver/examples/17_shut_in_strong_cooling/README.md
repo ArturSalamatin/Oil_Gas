@@ -202,7 +202,7 @@ $R_{s,0}$. На `rs_profiles.png` кружки $R_s^{eq}(p)$ на 20–30 сут
 
 ## Стационарная аналитика отключена
 
-В `main.py` задано `steady_state=False`. Стационар последнего интервала
+В конфиге задано `output.steady_state = false`. Стационар последнего интервала
 ($q_{oil} = 0$) тривиален: давление $p_0$ всюду. Асимптотика температуры
 сравнивала бы незавершённый прогрев с пределом $t \to \infty$. Вместо этих
 разделов консоль печатает строку «Стационарная аналитика отключена».
@@ -282,7 +282,7 @@ $R_{s,0}$. На `rs_profiles.png` кружки $R_s^{eq}(p)$ на 20–30 сут
   `time.dt_after_control_change` (раздел выше); `null` — первый час одним
   шагом. Меньше ~0.5 с первый подшаг может не сойтись: невязка Ньютона
   упирается в округление.
-- **Число моментов на профилях** — `n_profiles` в `main.py` (равномерно по
+- **Число моментов на профилях** — `output.n_profiles` в конфиге (равномерно по
   времени, ближайшие записи).
 
 ## Запуск
@@ -291,6 +291,8 @@ $R_{s,0}$. На `rs_profiles.png` кружки $R_s^{eq}(p)$ на 20–30 сут
 cd numerical_solver
 .venv\Scripts\python examples\17_shut_in_strong_cooling\main.py
 ```
+
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\17_shut_in_strong_cooling\config.json` (из `numerical_solver`; результаты — `examples\17_shut_in_strong_cooling\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
 
 Около 40 с (расчёт — около 25 с). Результаты — в `output/`.
 

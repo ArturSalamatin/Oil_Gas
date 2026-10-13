@@ -1,4 +1,4 @@
-"""Баланс энергии во времени — общая проверка для всех примеров.
+"""Баланс энергии во времени — штатная проверка любого расчёта (FEAT-030: из examples/energy_balance.py).
 
 Проверка интегральная: она не зависит ни от вида ОФП, ни от источника PVT,
 ни от того, какие тепловые эффекты включены в конфиге. Смысл один — схема
@@ -31,38 +31,26 @@ t_n):
 сценарии, ненулевой в другом.
 
 Ряды баланса собирает ядро: gpn_multiphase_solver/energy/balance.py,
-compute_energy_balance (DEBT-011). Здесь две функции:
-  plot_energy_balance()    — график и печать поверх compute_energy_balance()
-  report_energy_balance()  — обёртка для run_example (конвенция общих модулей)
-
-Запуск для конкретного примера:
-    cd numerical_solver
-    .venv\\Scripts\\python examples\\energy_balance.py 03
+compute_energy_balance (DEBT-011). Здесь — plot_energy_balance(): график и
+печать поверх compute_energy_balance(). Входит в штатный набор run_case
+(report/pipeline.py).
 """
 
-import sys
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+# Режим matplotlib модуль не выбирает: это делает команда расчёта
+# (cli.configure_batch_run) или вызывающий скрипт (FEAT-030)
+import matplotlib.pyplot as plt
 
-_EXAMPLES = Path(__file__).resolve().parent
-_ROOT = _EXAMPLES.parent
-# Прототип radial_blackoil — установленный дистрибутив (DEBT-059), путь к нему не добавляется
-for _p in (str(_ROOT), str(_EXAMPLES)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
-from gpn_multiphase_solver.io.output import plot_energy_balance_series  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from ..energy.balance import compute_energy_balance
+from ..io.output import plot_energy_balance_series
+from ..io.figures import save_figure
 
 
 def plot_energy_balance(history, grid, config, output_dir: Path):
     """Построить график баланса энергии и вернуть финальную отн. невязку."""
     bal = compute_energy_balance(history)
-    # Имя примера берём из пути к конфигу: модуль общий для всех примеров.
+    # Имя расчёта берём из пути к конфигу (папка конфига): модуль общий для всех расчётов.
     axes = plot_energy_balance_series(
         bal, title=f"Баланс энергии — {Path(config.config_dir).name}")
     fig = axes[0].figure
@@ -89,59 +77,3 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     print(f"  Невязка финал     = {bal['residual'][-1]:+.4e} Дж  "
           f"({final_rel:.2e})")
     return final_rel
-
-
-def report_energy_balance(config, history, grid, simulator) -> dict:
-    """Баланс энергии для run_example — конвенция общих модулей.
-
-    simulator, grid и config в расчёте не участвуют: члены баланса уже
-    накоплены решателем на подшагах и лежат в history.balance (DEBT-013).
-    Аргументы принимаются ради единообразия вызова из run_example.
-    """
-    bal = compute_energy_balance(history)
-
-    print("── Баланс энергии ──")
-    print(f"  dE финал = {bal['delta_E'][-1]:+.4e} Дж, "
-          f"сумма источников = {bal['total'][-1]:+.4e} Дж")
-    # Остаток — округления, а не ошибка расщепления: расщепление сказывается
-    # на самом T, не на замыкании баланса (BUG-007). С DEBT-043 — 0…5e-15.
-    print(f"  относительная невязка = {bal['rel_residual'][-1]:.4e} "
-          f"(уровень округлений; дефект члена даёт 1e-3 и выше)")
-    return bal
-
-
-def _resolve_example(name_or_prefix: str) -> Path:
-    """examples/<имя>/ по полному имени или числовому префиксу ('03').
-
-    Пользователю не нужно печатать '03_standing_corey' целиком.
-    Ошибка при отсутствии или неоднозначности префикса.
-    """
-    exact = _EXAMPLES / name_or_prefix
-    if exact.is_dir():
-        return exact
-    matches = sorted(d for d in _EXAMPLES.iterdir()
-                     if d.is_dir() and d.name.startswith(name_or_prefix))
-    if not matches:
-        raise SystemExit(f"нет примера '{name_or_prefix}'")
-    if len(matches) > 1:
-        raise SystemExit(f"неоднозначно: {[m.name for m in matches]}")
-    return matches[0]
-
-
-# ── Автономный запуск ──
-if __name__ == "__main__":
-    from gpn_multiphase_solver.io.config import load_config
-    from gpn_multiphase_solver.factory import SimulatorFactory
-
-    if len(sys.argv) < 2:
-        raise SystemExit(
-            "укажите пример: python examples\\energy_balance.py 03")
-
-    folder = _resolve_example(sys.argv[1])
-    config = load_config(folder / "config.json")
-    sim, initial_state = SimulatorFactory.from_config(config)
-    history = sim.run(initial_state)
-
-    plot_energy_balance(history, sim.grid, config, folder / "output")
-    # Автономный запуск: SVG только что сохранённого рисунка — в EMF (FEAT-026).
-    export_emf(folder / "output")

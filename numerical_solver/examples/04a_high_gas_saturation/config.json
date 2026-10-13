@@ -60,6 +60,8 @@
     "max_retries": 12
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "04a: высокая газонасыщенность (Table PVT + Corey ОФП)",
+    "steady_state": true
   }
 }

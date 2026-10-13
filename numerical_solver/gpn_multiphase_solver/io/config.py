@@ -158,7 +158,7 @@ class NumericsConfig:
     # (DEBT-008). Газ включается в ячейке при R_s > R_s,eq(p) + rs_switch_tol
     # (м³ст/м³ст), выключается при S_g < −sg_switch_tol. rs_switch_tol — ещё и допуск
     # проверки пересыщения старта (factory._check_undersaturated_start, BUG-017) и
-    # проверки R_s примеров (examples/rs_analytics.py, DEBT-026).
+    # проверки R_s (report/rs.py, DEBT-026).
     rs_switch_tol: float = 1e-5
     sg_switch_tol: float = 1e-9
     # Якобиан и решатель СЛАУ прототипа (допустимые значения проверяет его конструктор)
@@ -203,6 +203,23 @@ class OutputConfig:
     log_level: str = "INFO"
     # save_every удалён (DEBT-013): частоту вывода задаёт структура
     # time.history — второго механизма отбора записей больше нет.
+
+    # Состав штатного вывода run_case и команды расчёта (FEAT-030). Параметры
+    # оформления, на расчёт не влияют.
+    # Заголовок рисунков и печати; None — имя папки конфига.
+    title: Optional[str] = None
+    # Число моментов на профильных графиках, равномерно по времени (не меньше
+    # двух); None — четыре опорных момента по номеру записи.
+    n_profiles: Optional[int] = None
+    # Стационарная аналитика: замкнутое решение (наложения на профили p и S_g,
+    # сверка report_closed) и асимптотика температуры. Это пределы t -> inf при
+    # одном режиме скважины; по умолчанию выключена — в сценарии, где
+    # стационар не достигнут, сверка показала бы расхождение, не связанное
+    # с точностью расчёта (решение пользователя 2026-10-13).
+    steady_state: bool = False
+    # На каких профилях рисовать замкнутое решение при steady_state = true:
+    # подмножество ["p", "Sg"]. Сверка report_closed печатается при любом.
+    closed_form_overlays: list[str] = field(default_factory=lambda: ["p", "Sg"])
 
 
 # ── Полный конфиг ────────────────────────────────────────────
@@ -652,6 +669,27 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(
             f"output.log_level должен быть одним из {', '.join(_LOG_LEVELS)} "
             f"(регистр не важен), получено {lvl!r}")
+
+    # Поля состава вывода (FEAT-030). Тип — явно: секция output не входит в
+    # _NUMERIC_SECTIONS, а bool — подкласс int (true в n_profiles — опечатка).
+    oc = cfg.output
+    if oc.title is not None and (not isinstance(oc.title, str) or not oc.title.strip()):
+        raise ValueError(
+            f"output.title должен быть непустой строкой или null, получено {oc.title!r}")
+    n = oc.n_profiles
+    if n is not None and (isinstance(n, bool) or not isinstance(n, int) or n < 2):
+        raise ValueError(
+            f"output.n_profiles должен быть целым ≥ 2 или null, получено {n!r}")
+    if not isinstance(oc.steady_state, bool):
+        raise ValueError(
+            f"output.steady_state должен быть true или false, получено {oc.steady_state!r}")
+    ov = oc.closed_form_overlays
+    # Нестроковый элемент даёт f not in ("p", "Sg") == True — отказ, а не
+    # TypeError; до set() доходят только строки "p", "Sg"
+    if (not isinstance(ov, list) or any(f not in ("p", "Sg") for f in ov)
+            or len(set(ov)) != len(ov)):
+        raise ValueError(
+            f'output.closed_form_overlays — список без повторов из "p", "Sg", получено {ov!r}')
 
 
 def _validate_interval(h: HistoryInterval, where: str) -> None:

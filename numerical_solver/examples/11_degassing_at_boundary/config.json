@@ -54,6 +54,8 @@
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "11: разгазирование у контура",
+    "steady_state": true
   }
 }

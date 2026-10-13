@@ -55,6 +55,9 @@
     "max_retries": 12
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "14: высокий газовый фактор — охлаждение забоя",
+    "steady_state": false,
+    "n_profiles": 6
   }
 }

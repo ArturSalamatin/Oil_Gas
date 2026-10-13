@@ -48,9 +48,10 @@ import numpy as np
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parents[1]))
-sys.path.insert(0, str(HERE.parents[0]))
 
-import example_runner  # noqa: E402,F401  (консоль в UTF-8: скрипт печатает м³ст/с)
+from gpn_multiphase_solver.cli import configure_batch_run  # noqa: E402
+# консоль UTF-8: скрипт печатает м³ст/с (FEAT-030)
+configure_batch_run()
 
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402

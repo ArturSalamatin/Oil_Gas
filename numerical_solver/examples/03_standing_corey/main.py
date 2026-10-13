@@ -7,8 +7,8 @@
 
 Что наносится на графики (overlays):
 
-  p, Sg, Rs — ставит сам example_runner из общих модулей closed_form.py и
-       rs_analytics.py: замкнутое решение (дебит квадратурой, профили p и
+  p, Sg, Rs — ставит сам штатный набор run_case (gpn_multiphase_solver/report/:
+       closed_form.py, rs.py): замкнутое решение (дебит квадратурой, профили p и
        Sg без единого числа из расчёта) и равновесие Rs: Rs = Rs_eq(p) в
        ячейках с газом, Rs <= Rs_eq(p) в остальных.
        Эти выводы не зависят ни от вида PVT, ни от вида ОФП, поэтому
@@ -25,7 +25,7 @@
 численные подтверждения — в README.md.
 
 Баланс энергии, асимптотику температуры и аналитику двухфазного стационара
-считает example_runner общими модулями из examples/ (FEAT-016). Здесь
+считает штатный набор run_case (gpn_multiphase_solver/report/, FEAT-030). Здесь
 вызывается только ../two_phase_analytics.report — сводка проверок, которых
 нет в графиках: постоянство GOR по граням, наклон Дюпюи из потока,
 совпадение двух оценок фронта.
@@ -34,12 +34,14 @@
 import sys
 from pathlib import Path
 
-# examples/ в sys.path — для импорта example_runner.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-# Папка примера — для импорта соседних модулей аналитики.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gpn_multiphase_solver.cli import configure_batch_run
+# Консоль UTF-8 и matplotlib без окна — как у команды (FEAT-030)
+configure_batch_run()
 
-from example_runner import run_example  # noqa: E402
+# examples/ в sys.path — для two_phase_analytics (печать проверок стационара 03–05)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from gpn_multiphase_solver.report.pipeline import run_case  # noqa: E402
 
 import two_phase_analytics as tpa  # noqa: E402
 
@@ -47,7 +49,7 @@ import two_phase_analytics as tpa  # noqa: E402
 def overlay_temperature(ax, history, grid, simulator):
     """JT-асимптотика в однофазной зоне + линия фронта разгазирования.
 
-    Сигнатура (ax, history, grid, simulator) задана run_example. Симулятор
+    Сигнатура (ax, history, grid, simulator) задана run_case. Симулятор
     конфиг не хранит, поэтому перечитываем его из файла рядом.
 
     Обе кривые от формы дискретизации конвекции не зависят —
@@ -79,28 +81,24 @@ def overlay_temperature(ax, history, grid, simulator):
 
 if __name__ == "__main__":
     here = Path(__file__).parent
-    TITLE = "03: Standing + Corey"
 
-    elapsed, history, grid, config = run_example(
-        config_path=here / "config.json",
-        output_dir=here / "output",
-        title=TITLE,
+    # Заголовок, число профилей, стационарная аналитика — секция output
+    # конфига (FEAT-030)
+    r = run_case(
+        here / "config.json",
+        here / "output",
         # Rs здесь не передаём: проверка равновесия Rs не зависит
         # ни от ОФП, ни от источника PVT, поэтому её ставит сам
-        # example_runner из общего модуля rs_analytics.py.
+        # штатный набор (report/rs.py).
         # p, Sg, Rs не передаём: их аналитика общая для всех сценариев с
-        # газом, и example_runner ставит её сам. Переопределение здесь
+        # газом, и run_case ставит её сам. Переопределение здесь
         # только отключило бы более полное замкнутое решение.
         overlays={"T": overlay_temperature},
     )
 
-    # PVT берём из собранного симулятора — тот же объект, что считал задачу.
-    from gpn_multiphase_solver.factory import SimulatorFactory
-    sim, _ = SimulatorFactory.from_config(config)
-    pvt = sim.pvt
-
+    # PVT — у решателя, который считал задачу (CaseResult, FEAT-030)
     print()
-    tpa.report(history, grid, config, pvt)
+    tpa.report(r.history, r.grid, r.config, r.simulator.pvt)
 
-    # Асимптотику температуры и баланс энергии считает run_example —
-    # общими проверками для всех примеров (FEAT-016).
+    # Асимптотику температуры и баланс энергии считает run_case —
+    # общими проверками для всех расчётов (FEAT-016).

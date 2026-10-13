@@ -54,6 +54,8 @@
     "skin": 0.0
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "10: глубокое разгазирование",
+    "steady_state": true
   }
 }

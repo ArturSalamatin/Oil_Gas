@@ -1,4 +1,4 @@
-"""Наложение R_s^eq(p) на профиль газосодержания и печать проверки R_s — для run_example.
+"""Наложение R_s^eq(p) на профиль газосодержания и печать проверки R_s — для run_case (FEAT-030: из examples/rs_analytics.py).
 
 Проверка (равенство в ячейках со свободным газом, неравенство с допуском
 решателя без газа) — gpn_multiphase_solver.diagnostics.rs (DEBT-011), там
@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from gpn_multiphase_solver.diagnostics.rs import (
+from ..diagnostics.rs import (
     SG_GAS, degassed_cells, front_radius, rs_error, rs_supersaturation)
 
 
 def make_overlay_rs(config):
-    """Собрать overlay-функцию для example_runner, замкнув на неё config.
+    """Собрать overlay-функцию для run_case, замкнув на неё config.
 
     Хук вызывается как overlay(ax, history, grid, simulator) и своего config
     не получает, а Simulator его не хранит — поэтому конфиг замыкается здесь.

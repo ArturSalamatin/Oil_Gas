@@ -115,6 +115,8 @@ cd numerical_solver
 .venv\Scripts\python examples\07_degassing_adiabatic_only\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\07_degassing_adiabatic_only\config.json` (из `numerical_solver`; результаты — `examples\07_degassing_adiabatic_only\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 ## Дальше
 
 Обзор всех примеров и рекомендации, с какого начать, — в

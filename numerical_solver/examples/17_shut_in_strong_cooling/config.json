@@ -74,6 +74,9 @@
     "max_retries": 9
   },
   "output": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "title": "17: останов после сильного охлаждения забоя",
+    "steady_state": false,
+    "n_profiles": 7
   }
 }

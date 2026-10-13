@@ -1,4 +1,4 @@
-"""График PVT-свойств — общий для всех примеров.
+"""График PVT-свойств — штатный рисунок pvt.png (FEAT-030: из examples/pvt_plot.py).
 
 PVT-свойства замыкают систему уравнений фильтрации, но в штатном наборе
 графиков (p, S_g, T, дебиты) их не видно. Между тем именно они определяют
@@ -10,9 +10,8 @@ PVT-свойства замыкают систему уравнений филь
 замыкание GOR = Rs0.
 
 Модуль — оформитель: само построение кривых делегируется ядру библиотеки
-(`gpn_multiphase_solver.io.output.plot_pvt_properties`), чтобы та же функция
-была доступна пользователю установленного пакета, а не только тому, кто
-выгрузил репозиторий целиком (examples/ в дистрибутив не входит); узлы
+(`gpn_multiphase_solver.io.output.plot_pvt_properties`), которое рисует на
+переданных осях и пригодно для своих рисунков пользователя; узлы
 таблиц — там же, pvt_table_nodes (DEBT-011). Здесь остаётся всё, что знает
 про config: извлечение Rs0, подпись модели, рабочий диапазон из history,
 компоновка фигуры, запись PNG и печать сводки.
@@ -64,15 +63,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+# Режим matplotlib модуль не выбирает: это делает команда расчёта
+# (cli.configure_batch_run) или вызывающий скрипт (FEAT-030)
+import matplotlib.pyplot as plt
+import numpy as np
 
-from gpn_multiphase_solver.io.output import plot_pvt_properties, pvt_table_nodes  # noqa: E402
+from ..io.output import plot_pvt_properties, pvt_table_nodes
 
-# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
-from figure_io import save_figure  # noqa: E402
+# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_case.
+from ..io.figures import save_figure
 
 
 def _get_pvt(config, simulator):
@@ -84,7 +83,7 @@ def _get_pvt(config, simulator):
     # PVT у того же решателя, что считал задачу (Simulator.pvt, DEBT-011)
     if simulator is not None:
         return simulator.pvt
-    from gpn_multiphase_solver.factory import create_pvt
+    from ..factory import create_pvt
     return create_pvt(config)
 
 

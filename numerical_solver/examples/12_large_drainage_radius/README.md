@@ -224,6 +224,8 @@ cd numerical_solver
 .venv\Scripts\python examples\12_large_drainage_radius\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\12_large_drainage_radius\config.json` (из `numerical_solver`; результаты — `examples\12_large_drainage_radius\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 Результаты — в `output/`.
 
 ## Дальше

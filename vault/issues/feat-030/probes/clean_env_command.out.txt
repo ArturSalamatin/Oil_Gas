@@ -1,0 +1,13 @@
+Проверяемое дерево: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-030\numerical_solver
+ОК     колесо: report/ — ['__init__', 'closed_form', 'energy_balance', 'mass_balance', 'pipeline', 'pvt', 'relperm', 'rs', 'temperature']
+ОК     колесо: io/figures.py, cli.py, __main__.py
+ОК     колесо: точка входа gpn-solver ('[console_scripts]\ngpn-solver = gpn_multiphase_solver.cli:main')
+ОК     python -m: 06_table_corey_rp — код 0
+ОК     python -m: 06_table_corey_rp — 12 файлов побайтно равны снимку
+ОК     python -m: 06_table_corey_rp — печать равна снимку (54 строк)
+ОК     gpn-solver.exe: 07_degassing_adiabatic_only — код 0
+ОК     gpn-solver.exe: 07_degassing_adiabatic_only — 12 файлов побайтно равны снимку
+ОК     ошибка конфига: код 2, «output.n_profiles» в stderr
+ОК     --output = папка конфига: код 2, конфиг и CSV на месте
+ОК     без Inkscape: код 0, предупреждений 1, SVG 10, EMF 0
+ПРИЁМКА: ПРОЙДЕНА

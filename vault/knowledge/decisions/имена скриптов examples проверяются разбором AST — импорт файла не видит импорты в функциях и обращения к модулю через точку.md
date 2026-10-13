@@ -21,7 +21,7 @@ related: [DEBT-046, DEBT-031, DEBT-037, VAL-005]
 | (б) то же внутри функции или в блоке `__main__` | `main.py` 01–05 | ❌ | ❌ | ✅ |
 | (в) `alias.name` при `import M as alias` | `tpa.report`, `ta.single_phase_asymptote` | ❌ | ❌ (видит `tpa`, не `.report`) | ✅ |
 | (г) имя, нужное функции, но не связанное в модуле | `deepcopy` в `run_series` без строки импорта | ❌ | ✅ | ✅ — `LOAD_GLOBAL` против имён модуля по AST |
-| (д) именованный аргумент `run_example(...)` | `title` переименован | ❌ | ❌ | ✅ — `inspect.signature(...).bind` |
+| (д) именованный аргумент `run_case(...)` (до FEAT-030 — `run_example`) | `overlays` переименован | ❌ | ❌ | ✅ — `inspect.signature(...).bind` по `gpn_multiphase_solver.report.pipeline.run_case` |
 | атрибут объекта | `sim._energy._rock` | ❌ | ❌ | ❌ — только исполнение |
 
 ## Почему не импорт файла (`runpy`)

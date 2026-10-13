@@ -7,7 +7,7 @@ issue: FEAT-030
 github: 104
 branch: feat/feat-030/run-command-from-config
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-030
 audit:
   date: 2026-10-13
@@ -26,8 +26,9 @@ audit:
 3. **Каталог вывода очищается целиком (`shutil.rmtree`), как сейчас.** Плюс узкая защита: отказ **до расчёта** с кодом 2, если внутри каталога вывода лежит конфиг или его CSV-таблицы (`--output .` из папки конфига).
 4. **EMF — как сейчас**: включён по умолчанию, `GPN_EXAMPLES_EMF=0` выключает, `INKSCAPE` — путь к Inkscape; без Inkscape — предупреждение, SVG сохраняются. Флагов командной строки для EMF нет.
 5. **Форма команды** — `python -m gpn_multiphase_solver run config.json [--output DIR] [--title T] [--profiles N]` и та же команда как `gpn-solver run …` (`[project.scripts]`); одна функция `cli.main`. `--output` по умолчанию — папка `output` рядом с конфигом.
+6. **`main.py` остаются у всех 23 примеров** (2026-10-13, после аудита 1, до шага 7). У 17 примеров без собственной логики `main.py` — обёртка команды: `sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))` из `gpn_multiphase_solver.cli`. Параметров в скрипте нет (они в секции `output` конфига, решение 1) — разойтись с командой нечему. Довод: привычный запуск `python examples\NN_имя\main.py` и из редактора. У 01, 02, 03, 04, 05, 18 — своя логика после `run_case`.
 
-Из регистрации (2026-10-10, модель «Б»): пример = конфиг + README + собственные скрипты, где они есть. Отсюда: `main.py` удаляются у 17 примеров, где они только вызывают `run_example`; остаются у 01, 02, 03, 04, 05, 18 (своя логика после штатного расчёта).
+Из регистрации (2026-10-10, модель «Б»): пример = конфиг + README + собственные скрипты, где они есть. Решение 6 уточняет: у 17 примеров, где `main.py` только вызывает `run_example`, он не удаляется, а становится обёрткой команды; своя логика после штатного расчёта — только у 01, 02, 03, 04, 05, 18.
 
 Открытые пункты реестра, решённые планом (не решения пользователя — оспорить на аудите):
 - **дополнительные скрипты примеров частью команды не становятся**: асимптота и ОДУ-аналитика 01/02, `check_slopes.py` (02), `spatial_convergence.py` (01), `grid_convergence.py` (04, 04a), `plot_profiles_50k.py` (04a), `closed_form_convergence.py` (05), `energy_balance_convergence.py`, CLI `two_phase_analytics.py` — исследования отдельного сценария, у них свои прогоны (серии сеток, шагов). Меняются только их импорты;
@@ -39,8 +40,8 @@ audit:
 - **Подтип:** инфраструктура (команда, ввод/вывод, конфиг). Уровень модели — нет; новых формул нет.
 - **Суть:** конвейер `examples/example_runner.run_example` и модули рисунков/печати `examples/` переезжают в пакет (`gpn_multiphase_solver/report/`, `io/figures.py`); появляется точка входа `python -m gpn_multiphase_solver run` / `gpn-solver run`; параметры примеров уходят из `main.py` в конфиг.
 - **Критерий неизменности:** снимок вывода всех 23 примеров (печать + побайтно `output/`) до и после совпадает, кроме строки времени расчёта и файлов времени выполнения прототипа у 18.
-- **Шагов:** 10 (0–9). **Файлов:** ≈ 75 (пакет 13, тесты 8, примеры: 23 конфига, 6 `main.py` + 17 удалённых, 7 скриптов, 24 README; документы). **Оценка:** ~7–8 ч, из них ~40 мин — три снимка примеров, ~10 мин — полный прогон, ~10 мин — приёмка в чистом окружении.
-- **Тестов:** N0 → ≈ N0 − 25 (−61 параметр за удалённые скрипты `examples/`, +36 новых); точное число — по `--collect-only` после каждого шага (раздел 5). На `3f3df63` N0 = 1826; на базе после DEBT-065 и FEAT-032 — больше.
+- **Шагов:** 10 (0–9). **Файлов:** ≈ 75 (пакет 13, тесты 8, примеры: 23 конфига, 6 `main.py` + 17 `main.py`-обёрток команды, 7 скриптов, 24 README; документы). **Оценка:** ~7–8 ч, из них ~40 мин — три снимка примеров, ~10 мин — полный прогон, ~10 мин — приёмка в чистом окружении.
+- **Тестов:** N0 → ≈ N0 + 25 (−27 параметров за удалённые скрипты `examples/`, +52 новых; решение 6); точное число — по `--collect-only` после каждого шага (раздел 5). На `3f3df63` N0 = 1826; на базе после DEBT-065 и FEAT-032 — больше.
 
 ## 2. Контекст
 
@@ -129,7 +130,7 @@ numerical_solver/gpn_multiphase_solver/
 
 - `diagnostics/` — считает (без печати и рисунков); `report/` — рисует с записью файлов и печатает; `io/output.py` — рисует на осях без записи. Граница DEBT-011 сохраняется.
 - Модули пакета **не** зовут `matplotlib.use` и не трогают `sys.stdout`/`sys.path` при импорте. Это делает `cli.configure_batch_run()` — команда и скрипты примеров зовут её явно.
-- Пример = `config.json` (+ CSV) + `README.md`; `main.py` — только у 01, 02, 03, 04, 05, 18; они зовут `run_case` и получают решатель из `CaseResult`.
+- Пример = `config.json` (+ CSV) + `README.md` + `main.py`. У 17 примеров `main.py` — обёртка команды (`cli.main`, решение 6); у 01, 02, 03, 04, 05, 18 — своя логика: зовут `run_case` и получают решатель из `CaseResult`.
 
 ## 3. Как начать работу по этому плану
 
@@ -388,7 +389,7 @@ numerical_solver/gpn_multiphase_solver/
 **Цель:** конвейер — в пакете, с параметрами из конфига, защитой входных файлов и решателем в результате; все 23 `main.py` ещё работают через обёртку, и полный снимок проверяет, что `run_case` даёт тот же вывод.
 **Файлы:** новый `numerical_solver/gpn_multiphase_solver/report/pipeline.py`; `numerical_solver/examples/example_runner.py` (сжимается до обёртки); `numerical_solver/gpn_multiphase_solver/report/__init__.py`; `numerical_solver/tests/test_examples.py` (раздел H).
 
-**Контекст:** почему обёртка, а не сразу удаление: удаление `example_runner.py` требует сразу переделать 23 `main.py` и тесты, и проверить «`run_case` = `run_example`» отдельно было бы нечем. С обёрткой шаг 5 проверяется полным снимком через неизменённые `main.py`, а шаг 7 — снимком через команду. Обёртка живёт два шага и удаляется на шаге 7 (переходных псевдонимов в базе не остаётся).
+**Контекст:** почему обёртка, а не сразу удаление: удаление `example_runner.py` требует сразу переделать 23 `main.py` и тесты, и проверить «`run_case` = `run_example`» отдельно было бы нечем. С обёрткой шаг 5 проверяется полным снимком через неизменённые `main.py`, а шаг 7 — снимком через `main.py`-обёртки команды (решение 6). Обёртка живёт два шага и удаляется на шаге 7 (переходных псевдонимов в базе не остаётся).
 
 **Что сделать:**
 1. `report/pipeline.py` — из `examples/example_runner.py` (тело переносится; отличия перечислены):
@@ -710,17 +711,31 @@ numerical_solver/gpn_multiphase_solver/
 
 ---
 
-### Шаг 7: примеры на команду — удаление обёртки и 17 `main.py`, `main.py` 01–05/18 на `run_case`
+### Шаг 7: примеры на команду — удаление обёртки, 17 `main.py` — обёртки команды, `main.py` 01–05/18 на `run_case`
 
-**Цель:** пример = конфиг + README (+ свои скрипты); ни одного импорта `example_runner`; `run_all.py` запускает команду.
+**Цель:** пример = конфиг + README + `main.py` (у 17 — обёртка команды, у 01–05/18 — своя логика; решение 6); ни одного импорта `example_runner`.
 **Файлы:**
-- удалить: `numerical_solver/examples/example_runner.py`; `main.py` у 04a, 06, 07, 08, 09, 10, 11, 12, 13a, 13b, 14, 15, 16, 17, 19, 20, 21 (17 файлов);
-- правка: `main.py` 01, 02, 03, 04, 05, 18; `examples/04_table_table/grid_convergence.py`, `examples/04a_high_gas_saturation/grid_convergence.py`; `examples/run_all.py`;
+- удалить: `numerical_solver/examples/example_runner.py`;
+- правка: `main.py` у 04a, 06, 07, 08, 09, 10, 11, 12, 13a, 13b, 14, 15, 16, 17, 19, 20, 21 (17 файлов — обёртки команды); `main.py` 01, 02, 03, 04, 05, 18; `examples/04_table_table/grid_convergence.py`, `examples/04a_high_gas_saturation/grid_convergence.py`;
 - тесты: `numerical_solver/tests/test_examples.py` (`TestStructure`, `SHARED_EXAMPLE_FILES` — сам), `numerical_solver/tests/test_example_scripts.py` ((д), `BROKEN_SNIPPETS["d_run_example_keyword"]`, комментарии), `numerical_solver/tests/conftest.py`;
 - проба: снимок «после».
 
 **Что сделать:**
-1. `git rm` обёртки и 17 `main.py`. Перед удалением `main.py` 04a — перенести его докстринг (суть сценария) в README 04a, если там этого нет (`git grep -n "k_rg^max = 0.0014\|ОБРАТНЫМ" -- examples/04a_high_gas_saturation/README.md`); у прочих 16 докстринг — одна строка, повторяющая README.
+1. `git rm` обёртки `example_runner.py`. 17 `main.py` (04a, 06–17, 19–21) — переписать по образцу; докстринг каждого оставить как есть (суть сценария; README 04a не трогать):
+   ```python
+   """<докстринг примера — без изменений>"""
+
+   import sys
+   from pathlib import Path
+
+   from gpn_multiphase_solver.cli import main
+
+   if __name__ == "__main__":
+       # То же, что python -m gpn_multiphase_solver run <папка примера>\config.json:
+       # параметры примера — в секции output конфига (FEAT-030)
+       sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))
+   ```
+   Вставка `examples/` в `sys.path` не нужна: пакет установлен в venv. Заголовок (`title=...`) уже в `output.title` конфига (шаг 4), каталог вывода — умолчание команды (`output` рядом с конфигом), то же, что передавал `main.py`.
 2. `main.py` 01, 02, 03, 04, 05, 18 — общий заголовок (вместо `sys.path`-вставки `examples/` для `example_runner`, `import matplotlib; matplotlib.use("Agg")` и импорта `figure_io`):
    ```python
    from gpn_multiphase_solver.cli import configure_batch_run
@@ -736,14 +751,11 @@ numerical_solver/gpn_multiphase_solver/
    - комментарии «считает run_example» → «считает run_case (штатный набор)»; «вторым пакетом: первый конвертировал run_example» → «… первый конвертировал run_case»;
    - 18: `_, history, grid, _ = run_example(...)` → `r = run_case(here / "config.json", output)`; `prototype_input.report_and_plot(r.history, r.grid, output, r.title)`.
 3. `grid_convergence.py` 04 и 04a: `import example_runner  # noqa: E402,F401  (консоль в UTF-8…)` → `from gpn_multiphase_solver.cli import configure_batch_run` + вызов `configure_batch_run()` с комментарием `# консоль UTF-8: скрипт печатает м³ст/с`; вставку `HERE.parents[0]` (examples/) в `sys.path` оставить у 04a (там `from convergence import run_series`), у 04 — проверить, нужна ли (`git grep -n "^from\|^import" -- examples/04_table_table/grid_convergence.py`).
-4. `run_all.py`:
-   - `find_examples()` — папки `NN_имя` с `config.json` (докстринг: «с config.json; у примера со своим main.py запускается он, иначе — команда пакета»);
-   - запуск: `cmd = [sys.executable, str(example / "main.py")] if (example / "main.py").is_file() else [sys.executable, "-m", "gpn_multiphase_solver", "run", str(example / "config.json")]`; `subprocess.run(cmd, cwd=EXAMPLES_DIR.parent, ...)` — каталог запуска `numerical_solver`: команда `-m` берёт пакет этого дерева;
-   - докстринг модуля: «Каждый пример запускается отдельным процессом — командой пакета или своим main.py».
+4. `run_all.py` — без правок: `main.py` есть у всех 23 (`find_examples` ищет папки `NN_имя` с `main.py`), каждый пример запускается своим скриптом.
 5. Тесты:
-   - `TestStructure.test_required_files` → `config.json`, `README.md` у всех; новый `test_main_py_only_with_own_logic` (раздел 5); `test_runner_and_run_all_exist` → `test_run_all_and_readme_exist` (`run_all.py`, `README.md`; `example_runner.py` — **отсутствует**).
+   - `TestStructure.test_required_files` → `config.json`, `README.md`, `main.py` у всех; новый `test_thin_main_py_is_command_wrapper` (раздел 5); `test_runner_and_run_all_exist` → `test_run_all_and_readme_exist` (`run_all.py`, `README.md`; `example_runner.py` — **отсутствует**).
    - `test_example_scripts.py` (д) `:190-206`: искать вызовы `run_case`; сигнатура — `inspect.signature(gpn_multiphase_solver.report.pipeline.run_case)`; импорт модуля — `importlib.import_module("gpn_multiphase_solver.report.pipeline")`; комментарии «main.py 17 из 22 примеров — только вызов run_example» → «main.py 01–05, 18 зовут run_case; переименованный параметр ломал бы их TypeError при запуске»; докстринг модуля `:19` и `:130` — `run_case`. `BROKEN_SNIPPETS["d_run_example_keyword"]` → ключ `"d_run_case_keyword"`: `"from gpn_multiphase_solver.report.pipeline import run_case\nrun_case(config_path=1, output_dir=2, no_such_arg=4)\n"`.
-   - устаревшие комментарии (аудит): докстринг `test_example_scripts.py::test_no_private_solver_access` — «Импорт приватных имён между модулями examples/ (_resolve_example) — их внутреннее дело до FEAT-030 и не ловится» → «… (_resolve_example из two_phase_analytics.py) — их внутреннее дело и не ловится»; комментарий над `SHARED_EXAMPLE_FILES` (`test_examples.py:643-656`) описывает порядок `sys.path` в `main.py` 01–05 и «остальных main.py» — переписать: `main.py` остались у 01–05, 18; 03–05 вставляют `examples/` (для `two_phase_analytics`), папку скрипта Python кладёт первой сам — копия общего модуля в папке примера перекрыла бы общий модуль; механизм BUG-004 тот же;
+   - устаревшие комментарии (аудит): докстринг `test_example_scripts.py::test_no_private_solver_access` — «Импорт приватных имён между модулями examples/ (_resolve_example) — их внутреннее дело до FEAT-030 и не ловится» → «… (_resolve_example из two_phase_analytics.py) — их внутреннее дело и не ловится»; комментарий над `SHARED_EXAMPLE_FILES` (`test_examples.py:643-656`) описывает порядок `sys.path` в `main.py` 01–05 и «остальных main.py» — переписать: `main.py` у всех; 17 обёрток команды `sys.path` не трогают; у 01–05, 18 своя логика, 03–05 вставляют `examples/` (для `two_phase_analytics`), папку скрипта Python кладёт первой сам — копия общего модуля в папке примера перекрыла бы общий модуль; механизм BUG-004 тот же;
    - `conftest.py`: в начало (после докстринга) — `import matplotlib` + `matplotlib.use("Agg")` с комментарием: «Режим без окон на всю сессию: модули пакета (report/) больше не выбирают его при импорте (FEAT-030), а тесты рисуют — run_case, report.pvt». Сейчас его задают отдельные тестовые модули (`test_output.py:15`), и порядок сбора решает, кто первый.
 6. Снимок «после» (~12 мин) и сравнение с «до»:
    ```powershell
@@ -751,25 +763,25 @@ numerical_solver/gpn_multiphase_solver/
    & $PY -X utf8 <W>\vault\issues\feat-030\probes\snapshot_examples.py snap --tree . --out <W>\vault\issues\feat-030\probes\out\snap_after.json
    & $PY -X utf8 <W>\vault\issues\feat-030\probes\snapshot_examples.py compare <W>\vault\issues\feat-030\probes\out\snap_before.json <W>\vault\issues\feat-030\probes\out\snap_after.json
    ```
-   Ожидание: 17 примеров — `(command)`, 6 — `(main.py)`; 23 «совпадает». Совпадение stdout у командных — проверка заголовка из конфига и абсолютного пути.
+   Ожидание: 23 примера — `(main.py)`; 23 «совпадает». Совпадение stdout у 17 обёрток — проверка заголовка из конфига и абсолютного пути (тот же `cli.main`, что у команды). Форму `python -m` снимок шага 7 не проходит — её сверяют с `snap_after.json` приёмка шага 9 (06 — `-m`, 07 — `gpn-solver.exe`) и тест 2 шага 6.
 
 **Проверка после шага:**
 - Тест: `$PY -m pytest tests/test_examples.py tests/test_example_scripts.py tests/test_packaging.py tests/test_public_api.py -m "not slow" -q`.
 - Регресс: **полный** — шаг меняет `tests/conftest.py`, удаляет обёртку, которой пользовались тяжёлые тесты, и меняет параметры фикстур; ошибки ловят тесты `slow`. `$PY -m pytest tests/ -q`, ~10 мин.
 
 **Подводные камни:**
-- `test_packaging.py::test_code_does_not_insert_prototype_path` требует `found > 10` вставок `sys.path` (сейчас 73; уйдут ≈ 40: 17 `main.py`, вставки у 01/02/18, модули шага 2, тестовые вставки `examples/`). Останется ≈ 30 — с запасом; число записать в журнал.
+- `test_packaging.py::test_code_does_not_insert_prototype_path` требует `found > 10` вставок `sys.path` (сейчас 73; уйдут ≈ 40: вставки 17 `main.py` — обёртки их не делают, вставки у 01/02/18, модули шага 2, тестовые вставки `examples/`). Останется ≈ 30 — с запасом; число записать в журнал.
 - `test_no_duplicate_helper_scripts` параметризован по `examples/*.py` с диска — 16 → 7 параметров, правок не требует.
-- `EXAMPLE_SCRIPTS` в `test_example_scripts.py` — 46 → 20 скриптов (−52 параметра двух тестов) — ожидаемо.
-- Удалённый `main.py` у 04a: README 04a (`:448-459`) называет его — правится на шаге 8.
+- `EXAMPLE_SCRIPTS` в `test_example_scripts.py` — 46 → 37 скриптов (−18 параметров двух тестов: уходят 9 модулей `examples/`, 17 `main.py` остаются) — ожидаемо.
+- Обёртку запускают без `PYTHONPATH` — в worktree она возьмёт пакет основного каталога, как любой скрипт примера (снимок задаёт `PYTHONPATH` сам).
 **Зависимости:** требует шаги 5, 6; блокирует шаги 8, 9.
-**Оценка:** −700 строк, ~150 строк правок, ~90 мин + 12 мин снимок + 10 мин полный прогон.
+**Оценка:** ≈ −500 строк, ~150 строк правок, ~90 мин + 12 мин снимок + 10 мин полный прогон.
 
 ---
 
 ### Шаг 8: документы — README примеров, `examples/README.md`, `.claude/commands/run.md`, CLAUDE.md
 
-**Цель:** инструкции запуска — команда; упоминания `main.py`/`example_runner`/модулей `examples/` соответствуют коду.
+**Цель:** инструкции запуска — `main.py` примера и команда (решение 6); упоминания `main.py`/`example_runner`/модулей `examples/` соответствуют коду.
 **Файлы:** `numerical_solver/examples/README.md`; `numerical_solver/examples/*/README.md` (23); `.claude/commands/run.md`; `CLAUDE.md` (раздел «numerical_solver (PDE-солвер)»).
 
 **Что сделать:**
@@ -779,20 +791,20 @@ numerical_solver/gpn_multiphase_solver/
    git grep -n -E "main\.py|example_runner|run_example|energy_balance\.py|mass_balance\.py|pvt_plot|relperm_plot|rs_analytics|closed_form\.py|temperature_asymptotics|figure_io|n_profiles|steady_state|overlays=" -- examples/README.md "examples/*/README.md"
    ```
    Правила замены:
-   - «Запуск» примера без своего `main.py`: `.venv\Scripts\python examples\NN_имя\main.py` → `.venv\Scripts\python -m gpn_multiphase_solver run examples\NN_имя\config.json` (из `numerical_solver`; результаты — `examples\NN_имя\output\`);
+   - «Запуск» 17 примеров с обёрткой: строку `.venv\Scripts\python examples\NN_имя\main.py` оставить и дописать: «То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\NN_имя\config.json` (из `numerical_solver`; результаты — `examples\NN_имя\output\`; флаги `--output`, `--title`, `--profiles` — в `examples/README.md`).»;
    - «Запуск» 01–05, 18: оставить `main.py` и дописать строку: «Штатный набор без собственной части примера — `python -m gpn_multiphase_solver run examples\NN_имя\config.json`.»;
    - `examples\energy_balance.py NN`, `mass_balance.py NN`, `temperature_asymptotics.py NN` (01 `:215`, 02 `:300`, 03 `:432`) — удалить: баланс печатает и рисует команда; ссылки `[../energy_balance.py](../energy_balance.py)` → `gpn_multiphase_solver/report/energy_balance.py` (ссылка `../../gpn_multiphase_solver/report/energy_balance.py`), аналогично `pvt_plot.py` → `report/pvt.py`, `rs_analytics.py` → `report/rs.py`, `closed_form.py` (печать/наложения) → `report/closed_form.py`;
    - «`n_profiles` в `main.py`», «`steady_state=False` в `main.py`», «`overlays={...}` в `main.py`» (13a `:153`, `:225`; 13b `:190`, `:249`, `:252`; 14 `:213`; 15 `:208`; 16 `:199`, `:279`; 17 `:204`, `:276`) → «`output.n_profiles` в конфиге», «`output.steady_state = false` в конфиге», «`output.closed_form_overlays = ["p"]` / `[]` в конфиге»;
    - «подключает `example_runner`» (03 `:339`, 04 `:369`, 04a `:469`, 05 `:153`) → «ставит штатный набор `run_case` (`gpn_multiphase_solver/report/`)»;
-   - таблицы «Файлы примера» (`| main.py | … |`) у примеров без `main.py` — строку удалить, у 01–05/18 — оставить.
+   - таблицы «Файлы примера» (`| main.py | … |`): у 17 примеров с обёрткой — описание строки «запуск штатного расчёта (обёртка команды пакета)», у 01–05/18 — оставить.
 2. `examples/README.md`:
-   - строка 4: «Каждая подпапка самодостаточна — конфиг, нужные CSV, `main.py` и README» → «… конфиг, нужные CSV и README; у 01–05 и 18 — ещё `main.py` с собственной частью примера»;
-   - «Запуск» (`:226-247`): команда для одного примера, `run_all.py` для всех, `gpn-solver run …` как короткая форма (после установки, venv активирован); коды возврата; **предупреждение**: «каталог `--output` после расчёта очищается целиком — не указывайте папку с другими файлами; папку с конфигом или его таблицами команда отвергает»; поля `output` конфига (`title`, `n_profiles`, `steady_state`, `closed_form_overlays`) с умолчаниями и смыслом; что `steady_state` по умолчанию `false` и почему;
+   - строка 4 («Каждая подпапка самодостаточна — конфиг, нужные CSV, `main.py` и README») — без изменений; после неё: «У 17 примеров `main.py` — обёртка команды пакета; у 01–05 и 18 — ещё собственная часть примера после штатного расчёта.»;
+   - «Запуск» (`:226-247`): `main.py` и команда для одного примера (у 17 примеров равнозначны), `run_all.py` для всех, `gpn-solver run …` как короткая форма (после установки, venv активирован); коды возврата; **предупреждение**: «каталог `--output` после расчёта очищается целиком — не указывайте папку с другими файлами; папку с конфигом или его таблицами команда отвергает»; поля `output` конфига (`title`, `n_profiles`, `steady_state`, `closed_form_overlays`) с умолчаниями и смыслом; что `steady_state` по умолчанию `false` и почему;
    - EMF (`:293-305`): «в конце скрипта» → «в конце расчёта»; остальное без изменений (решение 4);
    - `:436` «отключено флагом `run_example(steady_state=False)`» → «`output.steady_state = false` в конфиге»;
    - «Общие модули проверок» (`:782-822`): таблица — модули пакета `report/` (что рисует/печатает) и оставшиеся `examples/` (`run_all.py`, `two_phase_analytics.py`, `convergence.py`, `energy_balance_convergence.py`, `check_energy_balance_all.py`, `verify_balance_vs_solver.py`, `compare_script_copies.py`); строки «автономный запуск» для `energy_balance.py`, `mass_balance.py`, `temperature_asymptotics.py` — удалить (их заменяет команда);
    - «Автоматические тесты» (`:838-843`): «именованные аргументы `run_example`» → «`run_case`»; добавить `tests/test_cli.py` (команда) одной фразой.
-3. `.claude/commands/run.md:35-38`: «Если в `examples/` есть готовый сценарий — предпочесть его» → команда `.venv\Scripts\python -m gpn_multiphase_solver run examples\<сценарий>\config.json`; для 01–05 и 18 — их `main.py`.
+3. `.claude/commands/run.md:35-38`: «Если в `examples/` есть готовый сценарий — предпочесть его» → `.venv\Scripts\python examples\<сценарий>\main.py` или команда `.venv\Scripts\python -m gpn_multiphase_solver run examples\<сценарий>\config.json`; у 01–05 и 18 собственную часть примера даёт только `main.py`.
 4. `CLAUDE.md`, раздел «numerical_solver (PDE-солвер)», после строки «Код: …»: «Расчёт по конфигу: `python -m gpn_multiphase_solver run <config.json>` (или `gpn-solver run …`), результаты — `output/` рядом с конфигом (FEAT-030).»
 
 **Проверка после шага:** `$PY -m pytest tests/ --collect-only -q` (число как после шага 7); `$PY -m pytest tests/test_examples.py -q -k Readme` (обязательные разделы README на месте); `$PY -m pytest tests/test_eq_references.py -q` (ссылки на метки в README примеров).
@@ -810,7 +822,7 @@ numerical_solver/gpn_multiphase_solver/
 **Что сделать:**
 1. Проба `clean_env_command.py` — по образцу `vault/issues/debt-059/probes/clean_env_acceptance.py` (сборка колёс `pip wheel`, зависимости `pip download` с ограничениями версий общего venv, `venv_wheels` с `--no-index`). Каталог работы — `<solver>\build\feat030_acceptance\` (`build/` игнорируется git). Проверки (строка «ОК»/«ОШИБКА» на каждую):
    1. колесо `gpn-multiphase-solver` содержит `gpn_multiphase_solver/report/` (8 модулей), `io/figures.py`, `cli.py`, `__main__.py`, а `entry_points.txt` в `*.dist-info` — `gpn-solver = gpn_multiphase_solver.cli:main`;
-   Сравнивать с снимком можно только примеры **без своего `main.py`**: у 01–05 и 18 снимок «после» снят их `main.py` (у 03 — наложение $T$ на `temperature_profiles.png` и печать `tpa.report`), а команда даёт штатный набор без этой части. Проверки 2–5 — с `GPN_EXAMPLES_EMF=0`, как снимок.
+   Сравнивать со снимком можно только примеры, чей `main.py` — **обёртка команды**: у 01–05 и 18 снимок «после» снят их `main.py` (у 03 — наложение $T$ на `temperature_profiles.png` и печать `tpa.report`), а команда даёт штатный набор без этой части. Проверки 2–5 — с `GPN_EXAMPLES_EMF=0`, как снимок.
    2. в `venv_wheels`: копии папок `examples/06_table_corey_rp` и `examples/07_degassing_adiabatic_only` (с CSV; имя папки сохранить — по нему подписан рисунок баланса энергии) в `<work>\cases\`; из `<work>` (посторонний каталог) — `venv_wheels\Scripts\python -I -m gpn_multiphase_solver run cases\06_table_corey_rp\config.json` → код 0; хеши всех 12 файлов `output` равны хешам `06_table_corey_rp` в `snap_after.json` (`files`) — при тех же numpy/matplotlib (ограничения версий) PNG тоже побайтно; если PNG разошлись при равных CSV — записать, это не дефект команды; печать (stdout) после замены пути копии на `<TREE>\examples` равна снимку, кроме строки времени;
    3. `venv_wheels\Scripts\gpn-solver.exe run cases\07_degassing_adiabatic_only\config.json` → код 0, хеши файлов равны снимку `07`;
    4. конфиг с `"output": {"n_profiles": 1}` → код 2, в stderr `output.n_profiles`;
@@ -824,8 +836,8 @@ numerical_solver/gpn_multiphase_solver/
    Вывод — в `clean_env_command.out.txt` рядом (коммитится, как у DEBT-059).
 2. Полный прогон — если после шага 7 менялся код (шаг 8 — только документы, повторять не нужно): `$PY -m pytest tests/ -q`.
 3. Vault:
-   - `vault/knowledge/decisions/архитектура библиотеки numerical_solver.md`: в дереве «Модульная структура» — `__main__.py`, `cli.py`, `io/figures.py`, `report/` (8 модулей) с однострочными пояснениями; раздел «Диагностика и граница пакет / examples (DEBT-011)» → «… (DEBT-011, FEAT-030)»: абзац «В `examples/` до FEAT-030 …» заменить на «Рисунки с записью файлов, печать и конвейер — `report/` (FEAT-030); в `examples/` — конфиги, README, `main.py` 01–05/18 со своей частью, исследования сходимости и средства разработки»; раздел «Структура JSON-конфига» — секция `output` с четырьмя полями;
-   - **новая заметка** `vault/knowledge/decisions/пример — это конфиг и README, штатный набор рисунков и проверок даёт команда пакета.md`: решение модели «Б» (2026-10-10), решения 1–5 этого плана с обоснованием (почему `steady_state` по умолчанию `false`; почему `rmtree` + узкая защита; почему параметры в конфиге, а не флагами), граница `diagnostics/` / `report/` / `io/output.py`, коды возврата, побочные эффекты импорта → `configure_batch_run`; ссылки на [[FEAT-030]], [[DEBT-011]], [[FEAT-031]];
+   - `vault/knowledge/decisions/архитектура библиотеки numerical_solver.md`: в дереве «Модульная структура» — `__main__.py`, `cli.py`, `io/figures.py`, `report/` (8 модулей) с однострочными пояснениями; раздел «Диагностика и граница пакет / examples (DEBT-011)» → «… (DEBT-011, FEAT-030)»: абзац «В `examples/` до FEAT-030 …» заменить на «Рисунки с записью файлов, печать и конвейер — `report/` (FEAT-030); в `examples/` — конфиги, README, `main.py` (17 — обёртки команды, 01–05/18 — со своей частью), исследования сходимости и средства разработки»; раздел «Структура JSON-конфига» — секция `output` с четырьмя полями;
+   - **новая заметка** `vault/knowledge/decisions/пример — это конфиг и README, штатный набор рисунков и проверок даёт команда пакета.md`: решение модели «Б» (2026-10-10), решения 1–6 этого плана с обоснованием (почему `steady_state` по умолчанию `false`; почему `rmtree` + узкая защита; почему параметры в конфиге, а не флагами; почему `main.py` остаётся обёрткой команды, а не удаляется), граница `diagnostics/` / `report/` / `io/output.py`, коды возврата, побочные эффекты импорта → `configure_batch_run`; ссылки на [[FEAT-030]], [[DEBT-011]], [[FEAT-031]];
    - `vault/knowledge/decisions/проверка выносится в общий модуль если не зависит от комбинации PVT и ОФП.md` — дописать: с FEAT-030 общий модуль — `gpn_multiphase_solver/report/`, подключение — `run_case`;
    - `vault/knowledge/decisions/рисунки примеров дублируются в SVG и EMF через Inkscape.md` — путь `examples/figure_io.py` → `gpn_multiphase_solver/io/figures.py`; поведение без Inkscape проверено тестом `test_figures.py`;
    - `vault/knowledge/decisions/имена скриптов examples проверяются разбором AST — импорт файла не видит импорты в функциях и обращения к модулю через точку.md` — (д): `run_case`;
@@ -880,14 +892,14 @@ numerical_solver/gpn_multiphase_solver/
 Допущения тестов 12, 13 и шага 2 о matplotlib 3.11.1 проверены пробой аудита `vault/issues/feat-030/probes/audit_mpl_console.py`: импорт pyplot режим не выбирает (`None`), `use("Agg")` после импорта pyplot работает (`FigureCanvasAgg`), режим `svg`, заданный до импорта модулей ядра, сохраняется; `PYTHONIOENCODING=cp1251` → `cp1251`, `reconfigure` → `utf-8`. Тест 2 (сценарий команды) проверен пробой `audit_key_scenario.py` через `run_example` из постороннего каталога: код 0, 12 файлов, 7.7 с.
 
 **Шаг 7 — `tests/test_examples.py`, `tests/test_example_scripts.py`:**
-- `TestStructure.test_required_files` (23) — `config.json`, `README.md`.
-- `TestStructure.test_main_py_only_with_own_logic` (+1) — множество папок с `main.py` = `{01, 02, 03, 04, 05, 18}`. Предотвращает: возврат однострочных `main.py` — копий запуска, расходящихся с командой.
+- `TestStructure.test_required_files` (23) — `config.json`, `README.md`, `main.py`.
+- `TestStructure.test_thin_main_py_is_command_wrapper` (+17, параметризован по примерам вне `OWN_LOGIC = {01, 02, 03, 04, 05, 18}`) — `ast.parse(main.py)` без первого узла-докстринга, `ast.dump` равен `ast.dump` образца шага 7 (комментарии и оформление не сравниваются). Предотвращает: в обёртку возвращаются параметры примера (заголовок, `n_profiles`) — копия, расходящаяся с конфигом и командой; в обёртке появляется своя логика без перевода примера в `OWN_LOGIC`.
 - `test_run_all_and_readme_exist` — `run_all.py`, `README.md` есть; `example_runner.py` нет.
 - (д) `test_example_scripts.py` — `run_case`; `BROKEN_SNIPPETS["d_run_case_keyword"]` ловится.
 
 **Категории:** unit — `test_figures`, проверки полей конфига, `_profile_times`, `_pick_overlay`; граничные — `n_profiles` = 1, пустой список наложений, отсутствие Inkscape, каталог вывода = папка конфига; согласованность — снимки (23 примера побайтно), конфиг ↔ ожидания тестов; интеграционные — `run_case` на 05/10/01, команда в подпроцессе; валидационные — нет (новых расчётов нет); регрессия — быстрый уровень после шагов, полный после шага 7.
 
-**Число тестов** (N0 — на базе шага 0): +3 (ш. 1) +14 (ш. 3) +1 (ш. 4) +4 (ш. 5) +13 (ш. 6) +1 (ш. 7) = +36; −52 (`EXAMPLE_SCRIPTS` 46 → 20, два теста) −9 (`SHARED_EXAMPLE_FILES` 16 → 7) = −61. Итог ≈ N0 − 25. Записывать `--collect-only` после каждого шага; отклонение больше чем на 3 — разобрать.
+**Число тестов** (N0 — на базе шага 0): +3 (ш. 1) +14 (ш. 3) +1 (ш. 4) +4 (ш. 5) +13 (ш. 6) +17 (ш. 7) = +52; −18 (`EXAMPLE_SCRIPTS` 46 → 37, два теста) −9 (`SHARED_EXAMPLE_FILES` 16 → 7) = −27. Итог ≈ N0 + 25 (решение 6). Записывать `--collect-only` после каждого шага; отклонение больше чем на 3 — разобрать.
 
 ## 6. Подводные камни (чеклист 2.5)
 
@@ -896,7 +908,7 @@ numerical_solver/gpn_multiphase_solver/
 | Размерности, формулы | ✅ | новых формул нет; код проверок переносится без правок вычислений |
 | Граничные случаи | ⚠️ | однофазные 01/02 (нет `rs_profiles.png` — как прежде), `steady_state` при $R_{s,0} = 0$ (наложений нет, асимптотика печатается — как прежде); `n_profiles` < 2 — отказ в конфиге и в `--profiles`; пустой `closed_form_overlays` (15) |
 | Численная устойчивость | ✅ | не затрагивается |
-| Обратная совместимость | ⚠️ | **умолчание `steady_state` меняется** (true → false): все 23 примера задают поле явно (шаг 4, тест `test_output_explicit`); внешних пользователей `run_example` нет (только `examples/`); API ядра не меняется |
+| Обратная совместимость | ⚠️ | **умолчание `steady_state` меняется** (true → false): все 23 примера задают поле явно (шаг 4, тест `test_output_explicit`); внешних пользователей `run_example` нет (только `examples/`); API ядра не меняется; запуск `python examples\NN_имя\main.py` сохраняется у всех 23 (решение 6) |
 | Состояние при ошибке | ✅ | ошибки конфига — до печати и расчёта; отказ решателя — до очистки каталога вывода (прежние результаты целы); защита входных файлов — до расчёта |
 | Цепочки импорта | ✅ | `report/` импортирует ядро, ядро `report/` не импортирует; `cli` импортирует конвейер внутри `main` |
 | Побочные эффекты импорта | ⚠️ | `matplotlib.use`/`reconfigure` — только в `configure_batch_run`; тест 12 шага 6; `conftest.py` задаёт Agg на сессию |
@@ -910,6 +922,7 @@ numerical_solver/gpn_multiphase_solver/
 ## 7. Варианты (итог issue и планирования)
 
 - **Параметры примера:** конфиг (принят) / только флаги / `main.py` у всех — решение 1.
+- **`main.py` 17 примеров без своей логики:** удалить (модель «Б», исходный план) / обёртка команды без параметров (принят — решение 6).
 - **Каталог вывода:** только свои файлы / метка + отказ / `rmtree` (принят, + защита входных файлов) — решение 3.
 - **Проверка переноса конвейера:** сразу удалить `example_runner` и переписать `main.py` (одна проверка в конце, нельзя отделить ошибку переноса от ошибки перехода на команду) / **временная обёртка на два шага** (принят: шаг 5 проверяется снимком через неизменённые `main.py`, шаг 7 — через команду).
 - **Имена модулей:** по одному модулю пакета на модуль `examples/` (`git mv`, история сохраняется) против слияния в 2–3 модуля (меньше файлов, но правка всего текста и потеря истории) — принят первый.
@@ -918,11 +931,11 @@ numerical_solver/gpn_multiphase_solver/
 
 - [ ] `python -m gpn_multiphase_solver run <конфиг>` и `gpn-solver run <конфиг>` работают в чистом окружении из постороннего каталога (проба шага 9); коды 0/1/2.
 - [ ] Снимки: шаг 5 и шаг 7 — 23 «совпадает» с «до».
-- [ ] В `examples/` нет `example_runner.py`, `figure_io.py`, 7 модулей печати/рисунков, 17 однострочных `main.py`; `main.py` 01–05/18 без второго `Simulator`.
+- [ ] В `examples/` нет `example_runner.py`, `figure_io.py`, 7 модулей печати/рисунков; 17 `main.py` — обёртки команды (тест `test_thin_main_py_is_command_wrapper`); `main.py` 01–05/18 без второго `Simulator`.
 - [ ] Модули пакета без побочных эффектов импорта (тест).
 - [ ] Быстрый уровень зелёный после каждого шага; полный — после шага 7 (и в конце, если код менялся).
 - [ ] Каждая новая функция — однострочный докстринг с «FEAT-030» (формул нет — ссылок на метки `.tex` не требуется; `test_eq_references.py` зелёный).
-- [ ] README примеров, `examples/README.md`, `run.md`, CLAUDE.md — команда.
+- [ ] README примеров, `examples/README.md`, `run.md`, CLAUDE.md — `main.py` примера и команда.
 - [ ] Vault: архитектура, новая заметка решения, три заметки, реестр FEAT-030/031, индекс, комментарий #104.
 
 ## 9. После влития (для пользователя)

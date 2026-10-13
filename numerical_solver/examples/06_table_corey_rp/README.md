@@ -117,6 +117,8 @@ cd numerical_solver
 .venv\Scripts\python examples\06_table_corey_rp\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json` (из `numerical_solver`; результаты — `examples\06_table_corey_rp\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 ## Дальше
 
 Обзор всех примеров и рекомендации, с какого начать, — в

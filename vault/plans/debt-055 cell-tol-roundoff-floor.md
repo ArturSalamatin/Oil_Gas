@@ -6,7 +6,7 @@ date: 2026-10-13
 issue: DEBT-055
 github: 107
 branch: refactor/debt-055/cell-tol-roundoff-floor
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-055
 audit:
   date: 2026-10-13

@@ -29,6 +29,19 @@ class PressureControl(WellControl):
         """Забойное давление, Па."""
         return self._p_wf
 
+    def __eq__(self, other):
+        # Управление — значение (FEAT-032): смену управления между интервалами
+        # TimeSchedule ищет сравнением граничных условий, а фабрика создаёт на
+        # каждый интервал новый объект — без __eq__ сравнение шло бы по
+        # тождеству, и сменой считался бы каждый интервал.
+        if not isinstance(other, PressureControl):
+            return NotImplemented
+        return self._p_wf == other._p_wf
+
+    def __hash__(self):
+        # Согласован с __eq__: равные управления — равные хеши
+        return hash((PressureControl, self._p_wf))
+
 
 class RateControl(WellControl):
     """Задан дебит нефти q_oil (м³ст/с) при p_wf >= min_bhp (Па). Ур. (eq:bc_rate_well)."""
@@ -55,3 +68,13 @@ class RateControl(WellControl):
     def min_bhp(self) -> float:
         """Минимальное забойное давление, Па."""
         return self._min_bhp
+
+    def __eq__(self, other):
+        # Как у PressureControl (FEAT-032). min_bhp входит в значение: при
+        # недостижимом дебите оно и есть управление.
+        if not isinstance(other, RateControl):
+            return NotImplemented
+        return (self._q_oil, self._min_bhp) == (other._q_oil, other._min_bhp)
+
+    def __hash__(self):
+        return hash((RateControl, self._q_oil, self._min_bhp))

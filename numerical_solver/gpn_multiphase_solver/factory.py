@@ -652,6 +652,7 @@ def _create_schedule(config: SimulationConfig) -> TimeSchedule:
     return TimeSchedule(
         dt_integration=config.time.dt_integration,
         intervals=intervals,
+        dt_after_control_change=config.time.dt_after_control_change,
     )
 
 

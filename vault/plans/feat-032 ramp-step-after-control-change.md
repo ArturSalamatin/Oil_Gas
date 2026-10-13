@@ -7,7 +7,7 @@ issue: FEAT-032
 github: 103
 branch: feat/feat-032/ramp-step-after-control-change
 base: 7f8d879
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-032
 audit:
   date: 2026-10-13

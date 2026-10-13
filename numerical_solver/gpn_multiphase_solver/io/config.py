@@ -134,6 +134,12 @@ class TimeConfig:
     """Временна́я сетка и история."""
     dt_integration: float                  # шаг интегрирования, с
     history: list[HistoryInterval]         # список интервалов
+    # Первый подшаг после смены управления скважиной, с (FEAT-032); null —
+    # первый шаг интервала полный. Шаг интервала делится на 2**m до подшага
+    # не длиннее этого значения и дальше удваивается (Simulator._advance).
+    # Рекомендуется 2 с: мельче ~0.5 с подшаг может не сойтись из-за
+    # округления невязки (BUG-025).
+    dt_after_control_change: Optional[float] = None
 
 
 # ── Секция numerics ──────────────────────────────────────────
@@ -590,6 +596,15 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(f"dt_integration должен быть > 0, получено {cfg.time.dt_integration}")
     if len(cfg.time.history) == 0:
         raise ValueError("history должна содержать хотя бы один интервал")
+
+    # dt_after_control_change — первый подшаг после смены управления (FEAT-032);
+    # None — выключено. Тип и конечность проверил _check_numeric_fields (DEBT-051):
+    # здесь только знак. Верхней границы нет — h0 >= dt выключает нарастание.
+    h0 = cfg.time.dt_after_control_change
+    if h0 is not None and not h0 > 0.0:
+        raise ValueError(
+            f"time.dt_after_control_change должен быть положительным числом или null, "
+            f"получено {h0!r}")
 
     # Интервалы проверены при разворачивании (_expand_history, FEAT-018):
     # только там известен номер объекта в JSON — после разворачивания

@@ -255,7 +255,7 @@ $2\pi h \lambda_{\text{eff}}\, dT/d\xi$. Асимптота линейна по 
 
 ### 8. Баланс энергии
 
-Общий модуль [`../energy_balance.py`](../energy_balance.py) считает
+Модуль пакета [`report/energy_balance.py`](../../gpn_multiphase_solver/report/energy_balance.py) считает
 покомпонентный баланс:
 
 | Компонент | Значение (финал) |
@@ -317,12 +317,12 @@ $\sim\varepsilon\,\text{cap}\,T$ копились с числом подшаго
 - `energy_balance_convergence.png` — та же невязка, но при трёх $\Delta t$ сразу (слева) и её уровень против порога в log-log (справа).
 - `mass_balance.png` — баланс массы компонентов (нефть, газ) и его невязка.
 - `relperm.png` — $k_{ro}(S_g)$, $k_{rg}(S_g)$ и рабочий диапазон расчёта;
-  строится сам при запуске `main.py` общим модулем
-  [relperm_plot.py](../relperm_plot.py).
+  строится штатным набором — модулем пакета
+  [report/relperm.py](../../gpn_multiphase_solver/report/relperm.py).
 - `pvt.png` — свойства PVT по давлению: $\mu_o$, $R_s$, $B_o$, $\rho_o$ как
   таблица PVTO (насыщенная кривая и ветви $R_s$ = 40, 60, …, 120 и
-  $R_{s,0} = 50$ м³ст/м³ст), $\mu_g$, $B_g$, $\rho_g$. Строится сам при запуске
-  `main.py` общим модулем [pvt_plot.py](../pvt_plot.py). У этого примера
+  $R_{s,0} = 50$ м³ст/м³ст), $\mu_g$, $B_g$, $\rho_g$. Строится штатным набором —
+  модулем пакета [report/pvt.py](../../gpn_multiphase_solver/report/pvt.py). У этого примера
   $c_o = 0$, поэтому при фиксированном $R_s$ свойства от давления не
   зависят — ветви строго горизонтальны.
 
@@ -336,8 +336,8 @@ $\sim\varepsilon\,\text{cap}\,T$ копились с числом подшаго
 Своих проверочных скриптов у примера нет. Аналитика $p$, $S_g$ и $R_s$
 живёт в пакете — [diagnostics/closed_form.py](../../gpn_multiphase_solver/diagnostics/closed_form.py) и
 [diagnostics/rs.py](../../gpn_multiphase_solver/diagnostics/rs.py): эти выводы не зависят ни от вида
-PVT, ни от вида ОФП, и подключаются самим `example_runner`. Температурная асимптотика и баланс
-энергии — тоже общие модули `examples/`.
+PVT, ни от вида ОФП, и подключаются штатным набором `run_case` (`gpn_multiphase_solver/report/`). Температурная асимптотика и баланс
+энергии — тоже он.
 
 ## Сходимость по сетке
 
@@ -425,11 +425,12 @@ cd numerical_solver
 .venv\Scripts\python examples\03_standing_corey\main.py
 ```
 
+Штатный набор без собственной части примера — `.venv\Scripts\python -m gpn_multiphase_solver run examples\03_standing_corey\config.json`.
+
 Автономный запуск отдельных скриптов:
 
 ```powershell
 .venv\Scripts\python examples\two_phase_analytics.py 03
-.venv\Scripts\python examples\energy_balance.py 03
 .venv\Scripts\python examples\energy_balance_convergence.py 03
 ```
 

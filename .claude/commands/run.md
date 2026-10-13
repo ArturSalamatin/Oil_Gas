@@ -32,10 +32,12 @@ print("шагов:", hist.n_saved)
 
 ⚠️ `radial_blackoil` — установленный дистрибутив `radial-blackoil` (DEBT-059). `ModuleNotFoundError: radial_blackoil` — не выполнена установка: `.venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"` из `numerical_solver`.
 
-Если в `examples/` есть готовый сценарий — предпочесть его:
+Если в `examples/` есть готовый сценарий — предпочесть его (`main.py` примера или команду пакета по его конфигу, FEAT-030):
 ```powershell
 .venv\Scripts\python examples\<сценарий>\main.py
+.venv\Scripts\python -m gpn_multiphase_solver run examples\<сценарий>\config.json
 ```
+У 01–05 и 18 собственную часть примера (аналитика, сверка с прототипом) даёт только `main.py`; у остальных `main.py` — обёртка команды. Свой конфиг — той же командой: `python -m gpn_multiphase_solver run <config.json> [--output DIR]` (каталог вывода очищается целиком).
 
 ### Проверка результата
 

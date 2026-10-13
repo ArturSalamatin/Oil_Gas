@@ -150,7 +150,7 @@ $2.9\cdot10^{-12}$ / $6.8\cdot10^{-12}$). Невязка отнесена к с�
 | `closed_form_convergence.py` | сходимость расчёта к замкнутому решению по сетке |
 
 Общие проверки (замкнутое решение, $R_s$, асимптотика, баланс энергии)
-живут в модулях `examples/` и подключаются `example_runner`.
+живут в пакете (`gpn_multiphase_solver/report/`) и подключаются `run_case`.
 `closed_form_convergence.py` запускается отдельно: он делает свои прогоны
 на мелких сетках и потому небыстр.
 
@@ -197,6 +197,8 @@ $2.9\cdot10^{-12}$ / $6.8\cdot10^{-12}$). Невязка отнесена к с�
 cd numerical_solver
 .venv\Scripts\python examples\05_standing_table_rp\main.py
 ```
+
+Штатный набор без собственной части примера — `.venv\Scripts\python -m gpn_multiphase_solver run examples\05_standing_table_rp\config.json`.
 
 Дополнительные проверки (делают свои прогоны, потому небыстрые):
 

@@ -122,7 +122,7 @@ $\Phi_\alpha$ берётся из ячейки выше по потоку. Да�
 
 ### Баланс энергии
 
-Общий модуль [`../energy_balance.py`](../energy_balance.py) считает
+Модуль пакета [`report/energy_balance.py`](../../gpn_multiphase_solver/report/energy_balance.py) считает
 покомпонентный баланс:
 
 | Компонент | Значение (финал) | Комментарий |
@@ -176,8 +176,9 @@ $\Delta t$.
 | `spatial_convergence.py` | Пространственная сходимость $T$: $N = 50, 200, 800$ (автономный) |
 | `config.json` | Конфигурация задачи |
 
-Баланс энергии и его сходимость считают общие модули
-[`../energy_balance.py`](../energy_balance.py) и
+Баланс энергии считает модуль пакета
+[`report/energy_balance.py`](../../gpn_multiphase_solver/report/energy_balance.py), сходимость —
+общий модуль
 [`../energy_balance_convergence.py`](../energy_balance_convergence.py) —
 формулы живут в одном месте для всех примеров.
 
@@ -207,12 +208,13 @@ cd numerical_solver
 .venv\Scripts\python examples\01_single_phase_no_jt\main.py
 ```
 
+Штатный набор без собственной части примера — `.venv\Scripts\python -m gpn_multiphase_solver run examples\01_single_phase_no_jt\config.json`.
+
 Результаты — в `output/` (в `.gitignore`, в репозиторий не попадают).
 
 Автономный запуск отдельных скриптов:
 
 ```powershell
-.venv\Scripts\python examples\energy_balance.py 01
 .venv\Scripts\python examples\energy_balance_convergence.py 01
 .venv\Scripts\python examples\01_single_phase_no_jt\spatial_convergence.py
 ```

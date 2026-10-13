@@ -205,9 +205,9 @@ $T(r_w)$ при `dt_integration` = 3600, 600 и 120 с расходится не
 ## Стационарное решение
 
 На профилях давления и газонасыщенности стационарное решение **не
-рисуется** (`overlays={"p": None, "Sg": None}` в `main.py`): на 15 сут
+рисуется** (`output.closed_form_overlays = []` в конфиге): на 15 сут
 расчёт далёк от него, и расхождение на графике выглядело бы как ошибка
-расчёта. Числа сверки `closed_form.py` печатает в консоли.
+расчёта. Числа сверки `report/closed_form.py` печатает в консоли.
 
 Стационар здесь — предел $t \to \infty$ при удержании **последнего**
 режима, дебита 270 м³ст/сут. Забойное давление такого стационара
@@ -306,6 +306,8 @@ $N = 100$ он 33 кПа, первый порядок.
 cd numerical_solver
 .venv\Scripts\python examples\15_oil_rate_ramp_up\main.py
 ```
+
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\15_oil_rate_ramp_up\config.json` (из `numerical_solver`; результаты — `examples\15_oil_rate_ramp_up\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
 
 Около 25 с (расчёт — 13 с). Результаты — в `output/`.
 

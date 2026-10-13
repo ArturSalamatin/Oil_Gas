@@ -137,6 +137,8 @@ cd numerical_solver
 .venv\Scripts\python examples\11_degassing_at_boundary\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\11_degassing_at_boundary\config.json` (из `numerical_solver`; результаты — `examples\11_degassing_at_boundary\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 Результаты — в `output/`.
 
 ## Дальше

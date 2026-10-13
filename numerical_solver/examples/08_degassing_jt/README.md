@@ -111,6 +111,8 @@ cd numerical_solver
 .venv\Scripts\python examples\08_degassing_jt\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\08_degassing_jt\config.json` (из `numerical_solver`; результаты — `examples\08_degassing_jt\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 ## Дальше
 
 Обзор всех примеров и рекомендации, с какого начать, — в

@@ -355,6 +355,8 @@ cd numerical_solver
 .venv\Scripts\python examples\energy_balance_convergence.py 04_table_table
 ```
 
+Штатный набор без собственной части примера — `.venv\Scripts\python -m gpn_multiphase_solver run examples\04_table_table\config.json`.
+
 Имя примера для общих скриптов — полное: префикс `04` неоднозначен
 (совпадает с `04a_high_gas_saturation`).
 
@@ -366,7 +368,7 @@ cd numerical_solver
 
 Аналитика $p$, $S_g$, $R_s$ и баланс энергии — в пакете ([diagnostics/](../../gpn_multiphase_solver/diagnostics/),
 ряды баланса — [energy/balance.py](../../gpn_multiphase_solver/energy/balance.py)); печать
-и рисунки — общие модули `examples/`, их подключает `example_runner`.
+и рисунки — модули пакета [report/](../../gpn_multiphase_solver/report/), их подключает `run_case`.
 
 ## Дальше
 

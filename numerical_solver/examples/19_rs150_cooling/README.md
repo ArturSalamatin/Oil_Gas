@@ -143,7 +143,7 @@ $R_s(p)$ Стендинга:
 (0.44) задаёт форма Кори над порогом: на забойной грани
 $k_{rg}/k_{ro}(S_g) = (\mathrm{GOR} - R_s)\,\mu_g B_g/(\mu_o B_o)$.
 
-Стационарная аналитика отключена (`steady_state=False`): замкнутое
+Стационарная аналитика отключена (`output.steady_state = false` в конфиге): замкнутое
 решение строится по условию GOR $= R_{s,0}$, а за 30 сут оно ещё не
 выполнено. Проверка $R_s = \min(R_s^{eq}(p), R_{s,0})$ и баланс энергии
 остаются.
@@ -210,5 +210,7 @@ BUG-018 исправлен).
 cd numerical_solver
 .venv\Scripts\python examples\19_rs150_cooling\main.py
 ```
+
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\19_rs150_cooling\config.json` (из `numerical_solver`; результаты — `examples\19_rs150_cooling\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
 
 Расчёт — около 6 с, `main.py` целиком — около 13 с.

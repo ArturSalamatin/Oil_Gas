@@ -2,7 +2,9 @@
 
 Набор готовых сценариев: JSON-конфиг → Factory → расчёт → графики и таблицы.
 Каждая подпапка самодостаточна — конфиг, нужные CSV, `main.py` и README
-с описанием физики и эталонными числами.
+с описанием физики и эталонными числами. У 17 примеров `main.py` — обёртка
+команды пакета; у 01–05 и 18 — ещё собственная часть примера после
+штатного расчёта.
 
 **Главная задача примеров** — показать, как комбинировать конкретные
 реализации модулей библиотеки. Возьмите ближайший к вашей задаче пример
@@ -128,7 +130,7 @@ $p_0 = 15.5$ МПа. Каждая ступень — новое разгазир
 растворяется обратно. Газа не хватает, нефть остаётся недонасыщенной.
 Профили — на семи моментах: 0, 5, …, 30 сут (5, 15, 25 — при 6 МПа, 10,
 20, 30 — при 10.75 МПа); стационарная аналитика отключена
-(`steady_state=False`).
+(`output.steady_state = false`).
 
 ### Высокий газовый фактор
 
@@ -172,7 +174,7 @@ $p_0 = 15.5$ МПа. Каждая ступень — новое разгазир
 $R_{s,0} = 30$). Забой за первый час нагревается на 0.32 К — сжатие при росте
 давления — и остывает теплопроводностью. $R_{ext} = 200$ м,
 $p_0 = 15.5$ МПа; профили — на семи моментах: 0, 5, …, 30 сут;
-стационарная аналитика отключена (`steady_state=False`). Здесь
+стационарная аналитика отключена (`output.steady_state = false`). Здесь
 табличная ОФП с малой $S_g$; останов из развитой газовой зоны ($S_g$ у
 забоя 0.2 и выше) после BUG-020 и DEBT-015 считается и при суточном
 `dt_integration` — пример 17.
@@ -201,7 +203,7 @@ $N$ = 100. Теплофизики в книге нет — значения пр
 расчёта запускает прототип на той же книге и сверяет с ним (max|Δp| =
 0.005 бар) и с CMG IMEX, кейс T07 (на уровне приёмки прототипа авторами:
 0.137 бар). `dt_integration` = DTMAX книги = 3600 с; стационарная
-аналитика отключена (`steady_state=False`).
+аналитика отключена (`output.steady_state = false`).
 
 ### Охлаждение забоя на корреляциях (Standing + Corey)
 
@@ -224,7 +226,7 @@ $(\rho c_p)_s = 2.1\cdot10^6$ Дж/(м³·К), $\lambda_s/\lambda_o/\lambda_g
 = 2.5/0.13/0.05$ Вт/(м·К); $N = 350$, $R_{ext} = 200$ м. Забой
 охлаждается, газовый фактор ниже $R_{s,0}$ и растёт — газ неподвижен до
 $S_g = 0.1$ и копится в пласте. Стационарная аналитика отключена
-(`steady_state=False`).
+(`output.steady_state = false`).
 
 ## Запуск
 
@@ -233,8 +235,9 @@ cd numerical_solver
 # один раз: прототип гидродинамики и решатель, оба с правкой исходников
 .venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
 
-# Один пример
-.venv\Scripts\python examples\01_single_phase_no_jt\main.py
+# Один пример — его main.py или командой пакета по конфигу (то же самое)
+.venv\Scripts\python examples\06_table_corey_rp\main.py
+.venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json
 
 # Все примеры последовательно
 .venv\Scripts\python examples\run_all.py
@@ -245,6 +248,49 @@ cd numerical_solver
 Ставить оба одной командой, как выше: решатель требует ровно версию `1.0.3+gpn.1`,
 и `pip install -e .` без прототипа завершится ошибкой «No matching distribution
 found for radial-blackoil». `PYTHONPATH` задавать не нужно.
+
+### Команда расчёта по конфигу (FEAT-030)
+
+Свой сценарий считается командой установленного пакета из любого каталога —
+код примеров для этого не нужен:
+
+```powershell
+.venv\Scripts\python -m gpn_multiphase_solver run путь\к\config.json [--output КАТАЛОГ] [--title ЗАГОЛОВОК] [--profiles N]
+gpn-solver run путь\к\config.json          # то же, при активированном venv
+.venv\Scripts\python -m gpn_multiphase_solver run --help
+```
+
+Команда делает штатный набор (`run_case`, модули пакета
+[gpn_multiphase_solver/report/](../gpn_multiphase_solver/report/)): расчёт,
+`well_history.csv` и `profiles.csv`, рисунки и печать проверок (раздел
+«Что получается на выходе»). Результаты — в `--output`, по умолчанию в папку
+`output` рядом с конфигом. **Каталог вывода после расчёта очищается
+целиком** — не указывайте папку с другими файлами; папку, внутри которой
+лежит сам конфиг или его CSV-таблицы, команда отвергает до расчёта. Коды
+возврата: 0 — расчёт завершён; 1 — решатель отказал на шаге по времени
+(сообщение решателя в консоли, прежние результаты не тронуты); 2 — ошибка
+аргументов или конфига, расчёт не начат.
+
+У 17 примеров `main.py` — обёртка этой команды (решение FEAT-030): запуск
+`main.py` и команды даёт одно и то же. У 01–05 и 18 `main.py` после штатного
+набора делает ещё собственную часть примера (аналитика Дюпюи и ОДУ для $T$,
+сводка проверок стационара, сверка с прототипом) — её даёт только `main.py`.
+
+Состав вывода задаёт секция `output` конфига; флаги `--title`, `--profiles`
+её переопределяют:
+
+| поле | умолчание | что задаёт |
+|---|---|---|
+| `title` | имя папки конфига | заголовок рисунков и печати |
+| `n_profiles` | 4 опорных момента по номеру записи | число моментов на профильных графиках, равномерно по времени (не меньше 2) |
+| `steady_state` | `false` | стационарная аналитика: замкнутое решение на профилях $p$, $S_g$, его сверка в консоли и асимптотика температуры |
+| `closed_form_overlays` | `["p", "Sg"]` | на каких профилях рисовать замкнутое решение при `steady_state = true` |
+
+Замкнутое решение (GOR $= R_{s,0}$) и асимптотика температуры — пределы
+$t \to \infty$ при одном режиме скважины. В сценарии, где стационар не
+достигнут (режим меняется, газ ещё копится), сверка показала бы
+расхождение, не связанное с точностью расчёта, — поэтому по умолчанию
+`steady_state = false`; все примеры задают поле явно.
 
 `run_all.py` не останавливается на первой ошибке — прогоняет все примеры,
 печатает сводку и возвращает ненулевой код, если что-то упало.
@@ -296,7 +342,7 @@ found for radial-blackoil». `PYTHONPATH` задавать не нужно.
 **Векторные копии рисунков (FEAT-026).** Каждый PNG дублируется в
 `output/emf/` в двух векторных форматах: `<имя>.svg` и `<имя>.emf` (EMF — для
 вставки в Word). matplotlib EMF не пишет, поэтому рисунок сохраняется в SVG,
-а в конце скрипта один запуск Inkscape переводит в EMF все SVG папки, у
+а в конце расчёта один запуск Inkscape переводит в EMF все SVG папки, у
 которых ещё нет EMF. Inkscape ищется так: переменная
 `INKSCAPE` (путь к `inkscape.com`), PATH, `C:\Program Files\Inkscape\bin\`.
 Без Inkscape печатается предупреждение, PNG и SVG создаются, EMF нет.
@@ -307,7 +353,7 @@ found for radial-blackoil». `PYTHONPATH` задавать не нужно.
 9 рисунков: Inkscape 6.4 с, сохранение SVG около 3 с), у 01, 02 и 05 — ещё
 около 3 с на второй пакет перестроенных рисунков.
 
-`relperm.png` строится общим модулем [relperm_plot.py](relperm_plot.py) для
+`relperm.png` строится модулем пакета [report/relperm.py](../gpn_multiphase_solver/report/relperm.py) для
 любой модели ОФП — аналитической (Corey) и табличной; для табличной
 дополнительно отмечаются узлы. Вторая панель увеличивает рабочий диапазон:
 расчёты набора, кроме 04a, 14, 17 и 19–21, используют лишь малую часть кривой
@@ -324,7 +370,7 @@ found for radial-blackoil». `PYTHONPATH` задавать не нужно.
 
 ### Свойства PVT — во всех примерах
 
-`pvt.png` строится общим модулем [pvt_plot.py](pvt_plot.py) для любой
+`pvt.png` строится модулем пакета [report/pvt.py](../gpn_multiphase_solver/report/pvt.py) для любой
 PVT-модели. Смысл тот же, что у `relperm.png`: замыкающие свойства в
 штатных графиках не видны, хотя определяют результат сильнее ОФП — смена
 флюида в паре 05↔04 (модель PVT вместе с $R_{s,0}$ при одинаковых ОФП и
@@ -391,7 +437,7 @@ $$q_o = \frac{2\pi k h}{\ln(R_e/r_w)}\int_{p_{wf}}^{p_e}\frac{k_{ro}(S_g(p))}{\m
 
 Вывод не зависит ни от источника PVT, ни от вида ОФП, поэтому решение
 ([diagnostics/closed_form.py](../gpn_multiphase_solver/diagnostics/closed_form.py); наложения на профили —
-[closed_form.py](closed_form.py)) подключается ко всем сценариям с
+[report/closed_form.py](../gpn_multiphase_solver/report/closed_form.py)) подключается ко всем сценариям с
 $R_{s,0}>0$:
 
 | пример | PVT / ОФП | $q_o$ расчёт | $q_o$ аналитика | расхождение |
@@ -406,15 +452,15 @@ $R_{s,0}>0$:
 | 11 | таблицы / таблицы | $3.7692\cdot10^{-3}$ | $3.7625\cdot10^{-3}$ | 0.18 % |
 | 12 | таблицы / таблицы | $3.2365\cdot10^{-3}$ | $3.2827\cdot10^{-3}$ | 1.43 % |
 | 13a | таблицы / таблицы | $3.1571\cdot10^{-3}$ | $3.2827\cdot10^{-3}$ | 3.98 % |
-| 13b | таблицы / таблицы | — | — | не строится (`steady_state=False`) |
-| 14 | таблицы / таблицы | — | — | не строится (`steady_state=False`) |
+| 13b | таблицы / таблицы | — | — | не строится (`output.steady_state = false`) |
+| 14 | таблицы / таблицы | — | — | не строится (`output.steady_state = false`) |
 | 15 | таблицы / таблицы | $3.1250\cdot10^{-3}$ | $3.1250\cdot10^{-3}$ | 0 — по построению |
-| 16 | таблицы / таблицы | — | — | не строится (`steady_state=False`) |
-| 17 | Standing / Corey | — | — | не строится (`steady_state=False`) |
-| 18 | таблицы / таблицы | — | — | не строится (`steady_state=False`) |
-| 19 | Standing / Corey | — | — | не строится (`steady_state=False`) |
-| 20 | Standing / Corey | — | — | не строится (`steady_state=False`) |
-| 21 | Standing / Corey | — | — | не строится (`steady_state=False`) |
+| 16 | таблицы / таблицы | — | — | не строится (`output.steady_state = false`) |
+| 17 | Standing / Corey | — | — | не строится (`output.steady_state = false`) |
+| 18 | таблицы / таблицы | — | — | не строится (`output.steady_state = false`) |
+| 19 | Standing / Corey | — | — | не строится (`output.steady_state = false`) |
+| 20 | Standing / Corey | — | — | не строится (`output.steady_state = false`) |
+| 21 | Standing / Corey | — | — | не строится (`output.steady_state = false`) |
 
 Расхождение 0.07–0.6 % — погрешность конечных объёмов ($N = 50$, у 03 и
 04a — 150); она убывает первым порядком при измельчении сетки
@@ -436,7 +482,7 @@ $p_{wf}$ это то же значение, что у первого интер�
 зоны, GOR = 58.1 вместо 30, $S_g$ у забоя вдвое выше стационарной, $k_{ro}$
 ниже (подробнее — в README примера 15). У 13b режим скважины меняется
 каждые сутки, предела $t \to \infty$ у записей нет, и замкнутое решение
-отключено флагом `run_example(steady_state=False)` — вместе с асимптотикой
+отключено полем конфига `output.steady_state = false` — вместе с асимптотикой
 температуры. У 14 тот же флаг: за 360 сут стационар не достигнут (газ у
 фронта ещё копится до порога $S_{gc}$, GOR = 146.4 при $R_{s,0} = 150$).
 У 19–21 тот же флаг: за 30 сут газ ещё копится (GOR = 128.7 / 278.6 / 85.8
@@ -481,7 +527,7 @@ $R_s = \min(R_s^{eq}(p), R_{s,0})$ верна только при монотон
 давлении.
 
 Модуль [diagnostics/rs.py](../gpn_multiphase_solver/diagnostics/rs.py) проверяет оба условия на
-последней записи у всех сценариев с $R_{s,0} > 0$, а [rs_analytics.py](rs_analytics.py) печатает в консоль
+последней записи у всех сценариев с $R_{s,0} > 0$, а [report/rs.py](../gpn_multiphase_solver/report/rs.py) печатает в консоль
 расхождение в ячейках с газом, число пересыщенных ячеек без газа и число
 ячеек без газа ниже $p_b$. Ячейкой с газом считается $S_g > 10^{-8}$. Ячейки,
 которые решатель после растворения газа ещё числит двухфазными
@@ -555,7 +601,7 @@ $R_s > R_{s,0}$ — не нарушение.
 
 $$\Delta E = E_{\text{адиаб}} + E_{\text{конв}} + E_{\text{JT}} + E_{\text{дегаз}} + E_{\text{конд}}$$
 
-Модуль [energy_balance.py](energy_balance.py) подключён к **каждому**
+Модуль [report/energy_balance.py](../gpn_multiphase_solver/report/energy_balance.py) подключён к **каждому**
 примеру, включая однофазные: там часть членов тождественно нулевая, и это
 видно на графике — кривая лежит на нуле. Условного включения по признаку
 конфига («этот член нужен только если $\lambda \neq 0$») нет: каждый член
@@ -643,7 +689,7 @@ $$\Delta M_\alpha = Q^\alpha_{\text{приток}} - Q^\alpha_{\text{добыч�
 \qquad M_o = \sum \phi V \frac{S_o}{B_o},\quad
 M_g = \sum \phi V \Big(\frac{S_o R_s}{B_o} + \frac{S_g}{B_g}\Big),\ \text{м³ст}.$$
 
-Модуль [mass_balance.py](mass_balance.py) подключён к каждому примеру,
+Модуль [report/mass_balance.py](../gpn_multiphase_solver/report/mass_balance.py) подключён к каждому примеру,
 рисунок — `mass_balance.png`. Потоки через забой и контур решатель
 интегрирует по всем принятым шагам (при дроблении шага — по подшагам),
 запас на записях отдаёт прототип — с теми же $\phi$, $B_o$, $B_g$, что в
@@ -686,7 +732,7 @@ $5.6\cdot10^{-9}$) и 10 (газ, $4.9\cdot10^{-9}$). До BUG-022 выше вс
 ### Асимптотика температуры — только однофазная зона
 
 Модуль [diagnostics/temperature.py](../gpn_multiphase_solver/diagnostics/temperature.py) (печать —
-[temperature_asymptotics.py](temperature_asymptotics.py)) проверяет
+[report/temperature.py](../gpn_multiphase_solver/report/temperature.py)) проверяет
 одно утверждение:
 
 $$T(r) = T_{\text{ext}} + \mu_{JT,o}\,[p(r) - p_{\text{ext}}]$$
@@ -700,7 +746,7 @@ $$T(r) = T_{\text{ext}} + \mu_{JT,o}\,[p(r) - p_{\text{ext}}]$$
 адиабатический импульс первого шага охлаждает, а асимптотика при
 $\mu_{JT,o} < 0$ лежит выше $T_{ext}$. У 11
 однофазной зоны нет, и проверка не выполняется. У 13b, 14, 16, 17, 18 и 19–21 она
-отключена (`steady_state=False`): у 13b режим скважины меняется каждые
+отключена (`output.steady_state = false`): у 13b режим скважины меняется каждые
 сутки, у 18 — на 5 и 15 сут, у 14 и 19–21 стационар не достигнут, у 16 и
 17 последний интервал — останов.
 
@@ -786,31 +832,37 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 
 ## Общие модули проверок
 
-Проверка, не зависящая от комбинации PVT × ОФП, живёт в одном модуле в
-`examples/` и подключается ко всем примерам через
-[example_runner.py](example_runner.py) — а не копируется по папкам: копии
-со временем расходятся.
+Проверка, не зависящая от комбинации PVT × ОФП, живёт в одном модуле и
+подключается ко всем расчётам штатным набором `run_case` — а не копируется
+по папкам: копии со временем расходятся.
 
 С DEBT-011 вычислительная часть проверок — в пакете `gpn_multiphase_solver`:
 [diagnostics/](../gpn_multiphase_solver/diagnostics/) (замкнутое решение, двухфазный стационар, $R_s$,
 асимптотика $T$), ряды балансов — `energy/balance.py`, `mass_balance.py`,
-рисунки ОФП и балансов, узлы таблиц — `io/output.py`. Модули ниже — печать,
-наложения на профили и запись рисунков; их перенос в пакет — FEAT-030.
+рисунки ОФП и балансов, узлы таблиц — `io/output.py`. С FEAT-030 там же
+печать, наложения на профили, запись рисунков и сам конвейер —
+[report/](../gpn_multiphase_solver/report/), и команда расчёта `python -m gpn_multiphase_solver run`.
 
-| модуль | что проверяет | автономный запуск |
+| модуль пакета | что делает |
+|---|---|
+| [report/pipeline.py](../gpn_multiphase_solver/report/pipeline.py) | `run_case`: конфиг → расчёт → CSV + PNG + печать проверок (штатный набор команды) |
+| [report/relperm.py](../gpn_multiphase_solver/report/relperm.py) | кривые ОФП и рабочий диапазон за весь расчёт |
+| [report/pvt.py](../gpn_multiphase_solver/report/pvt.py) | PVT-свойства и рабочий диапазон давления за весь расчёт |
+| [report/closed_form.py](../gpn_multiphase_solver/report/closed_form.py) | наложения и сверка замкнутого решения (решение — `diagnostics/closed_form.py`) |
+| [report/rs.py](../gpn_multiphase_solver/report/rs.py) | наложение и печать проверки `diagnostics/rs.py`: $R_s = R_s^{eq}(p)$ в ячейках с газом, $R_s \le R_s^{eq}(p)$ в остальных |
+| [report/energy_balance.py](../gpn_multiphase_solver/report/energy_balance.py) | баланс энергии, все пять членов безусловно |
+| [report/mass_balance.py](../gpn_multiphase_solver/report/mass_balance.py) | баланс массы нефтяного и газового компонентов |
+| [report/temperature.py](../gpn_multiphase_solver/report/temperature.py) | печать проверки `diagnostics/temperature.py`: однофазная асимптотика $T = T_{ext} + \mu_{JT}(p-p_{ext})$ |
+| [io/figures.py](../gpn_multiphase_solver/io/figures.py) | сохранение рисунков: PNG + SVG и EMF в `output/emf/` (Inkscape) |
+
+В `examples/` остались средства разработки и исследования, не входящие в
+штатный набор:
+
+| модуль | что делает | автономный запуск |
 |---|---|---|
-| [example_runner.py](example_runner.py) | единый pipeline: конфиг → расчёт → CSV + PNG + проверки | — |
 | [run_all.py](run_all.py) | последовательный прогон всех примеров (~10 мин) | `python examples\run_all.py` |
-| [relperm_plot.py](relperm_plot.py) | кривые ОФП и рабочий диапазон за весь расчёт | — |
-| [pvt_plot.py](pvt_plot.py) | PVT-свойства и рабочий диапазон давления за весь расчёт | — |
-| [figure_io.py](figure_io.py) | сохранение рисунков: PNG + SVG и EMF в `output/emf/` (Inkscape) | — |
-| [closed_form.py](closed_form.py) | наложения и сверка замкнутого решения (решение — `diagnostics/closed_form.py`) | — |
-| [rs_analytics.py](rs_analytics.py) | наложение и печать проверки `diagnostics/rs.py`: $R_s = R_s^{eq}(p)$ в ячейках с газом, $R_s \le R_s^{eq}(p)$ в остальных | — |
-| [energy_balance.py](energy_balance.py) | баланс энергии, все пять членов безусловно | `python examples\energy_balance.py 03` |
-| [energy_balance_convergence.py](energy_balance_convergence.py) | уровень невязки баланса на серии $\Delta t$ | `python examples\energy_balance_convergence.py 03` |
-| [mass_balance.py](mass_balance.py) | баланс массы нефтяного и газового компонентов | `python examples\mass_balance.py 16` |
-| [temperature_asymptotics.py](temperature_asymptotics.py) | печать проверки `diagnostics/temperature.py`: однофазная асимптотика $T = T_{ext} + \mu_{JT}(p-p_{ext})$ | `python examples\temperature_asymptotics.py 02` |
 | [two_phase_analytics.py](two_phase_analytics.py) | печать проверок `diagnostics/two_phase.py`: GOR $= R_{s,0}$, $S_g$ из замыкания, фронт, Дюпюи | `python examples\two_phase_analytics.py 03` |
+| [energy_balance_convergence.py](energy_balance_convergence.py) | уровень невязки баланса на серии $\Delta t$ | `python examples\energy_balance_convergence.py 03` |
 | [convergence.py](convergence.py) | прогон серии по $\Delta t$ или $N$ с измерением метрики (эталон и обработка серии — у вызывающего скрипта) | — |
 | [check_energy_balance_all.py](check_energy_balance_all.py) | баланс энергии всех примеров, единый порог невязки $10^{-12}$ | `python examples\check_energy_balance_all.py` |
 | [verify_balance_vs_solver.py](verify_balance_vs_solver.py) | сверка диагностики с решателем через инструментирование СЛАУ | `python examples\verify_balance_vs_solver.py` |
@@ -844,5 +896,9 @@ $k_{rg}\sim(S_g-S_{gc})^2$ вырождается у порога подвижн
 общие модули — проверяет `tests/test_example_scripts.py`: всё, что скрипт
 берёт из общих модулей, решателя и прототипа, существует — импорты, в том
 числе внутри функций и в блоке `__main__`, обращения вида `tpa.report`,
-именованные аргументы `run_example`. Скрипты при этом не исполняются: текст
+именованные аргументы `run_case`. Скрипты при этом не исполняются: текст
 разбирается модулем `ast`, расчёты не запускаются.
+
+Команду расчёта проверяет `tests/test_cli.py`: запуск из постороннего
+каталога, коды возврата 0 / 1 / 2, флаги, отказ при каталоге вывода с
+конфигом внутри.

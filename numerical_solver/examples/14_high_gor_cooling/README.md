@@ -210,7 +210,7 @@ $p_b(0) < 0$. На ветках $R_s = 0$ и 10 отношение $p/p_b$ ве�
 
 ## Стационарная аналитика отключена
 
-В `main.py` задано `steady_state=False`: замкнутое стационарное решение
+В конфиге задано `output.steady_state = false`: замкнутое стационарное решение
 (GOR $= R_{s,0}$) не рисуется ни на `pressure_profiles.png`, ни на
 `saturation_profiles.png`, сверка с ним и асимптотика температуры в консоль
 не печатаются. Все они — предел $t \to \infty$, а за 360 сут стационар не
@@ -272,6 +272,8 @@ $S_g = 0.26$ — там, где $k_{rg}/k_{ro}$ достигает ≈ 0.019 (т
 cd numerical_solver
 .venv\Scripts\python examples\14_high_gor_cooling\main.py
 ```
+
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\14_high_gor_cooling\config.json` (из `numerical_solver`; результаты — `examples\14_high_gor_cooling\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
 
 Около 68 с (расчёт — 61 с). Результаты — в `output/`.
 

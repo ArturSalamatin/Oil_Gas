@@ -113,6 +113,8 @@ cd numerical_solver
 .venv\Scripts\python examples\09_degassing_latent_heat\main.py
 ```
 
+То же — командой пакета: `.venv\Scripts\python -m gpn_multiphase_solver run examples\09_degassing_latent_heat\config.json` (из `numerical_solver`; результаты — `examples\09_degassing_latent_heat\output\`; флаги `--output`, `--title`, `--profiles` — в [README папки examples](../README.md)).
+
 ## Дальше
 
 Обзор всех примеров и рекомендации, с какого начать, — в

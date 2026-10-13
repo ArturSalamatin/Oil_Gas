@@ -5,6 +5,7 @@
   B. Фабрика: конфиг с control = "rate" → RateControl → расчёт.
   C. Согласованность двух управлений: прогон по дебиту, которому подали
      дебиты прогона по давлению, повторяет его траекторию.
+  D. Равенство управлений по значению (FEAT-032).
 
 Физика (problem_statement.tex, eq:bc_rate_well, eq:bc_rate_pwf): при заданном
 дебите нефти q_o,ст забойное давление выражается из уравнения притока,
@@ -66,6 +67,37 @@ class TestRateControlClass:
         HydroResult у него нет (решение 8 плана FEAT-020)."""
         assert not hasattr(PressureControl(1e7), "boundary_pressure")
         assert not hasattr(RateControl(1e-3, ATM), "boundary_pressure")
+
+
+class TestControlValueEquality:
+    """FEAT-032: управления сравниваются по значению — смену управления ищет TimeSchedule."""
+
+    def test_pressure_equal_by_value(self):
+        """Два объекта с одним p_wf равны и хешируются одинаково; другой p_wf — не равен."""
+        # Фабрика создаёт новый объект на каждый интервал: без равенства по
+        # значению сменой управления был бы каждый интервал истории
+        a, b = PressureControl(1.0e7), PressureControl(1.0e7)
+        assert a is not b and a == b and hash(a) == hash(b)
+        assert a != PressureControl(1.1e7)
+
+    def test_rate_equal_by_value(self):
+        """RateControl равны при равных q_oil и min_bhp; отличие любого — не равны."""
+        a = RateControl(1e-3, 1e6)
+        assert a == RateControl(1e-3, 1e6) and hash(a) == hash(RateControl(1e-3, 1e6))
+        assert a != RateControl(2e-3, 1e6)
+        assert a != RateControl(1e-3, 2e6)   # min_bhp — часть управления
+
+    def test_different_types_not_equal(self):
+        """Давление и дебит не равны ни в одну сторону (NotImplemented → тождество)."""
+        p, r = PressureControl(1e6), RateControl(0.0, 1e6)
+        assert p != r and r != p
+
+    def test_boundary_conditions_compare_controls_by_value(self):
+        """BoundaryConditions (dataclass) равны, если равны управления и условия на контуре."""
+        from gpn_multiphase_solver.state import BoundaryConditions
+        bc = lambda w: BoundaryConditions(well=w, p_ext=15.5e6, T_ext=350.0, Rs_ext=30.0)
+        assert bc(PressureControl(6e6)) == bc(PressureControl(6e6))
+        assert bc(PressureControl(6e6)) != bc(RateControl(0.0, ATM))
 
 
 # ═══════════════════════════════════════════════════════════

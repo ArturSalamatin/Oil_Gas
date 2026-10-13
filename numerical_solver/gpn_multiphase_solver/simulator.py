@@ -8,7 +8,8 @@ Simulator координирует гидродинамику и теплопе�
   Внешний: по интервалам schedule.intervals (смена BC)
   Внутренний: шаги dt_integration; шаг, на котором гидродинамика не
   сошлась, дробится локально (DEBT-015): подшаг × (hydro.solve →
-  energy.solve → обновить state)
+  energy.solve → обновить state). Первый шаг интервала со сменой
+  управления начинается с подшага dt/2**m и растёт ×2 (FEAT-032)
 """
 
 from __future__ import annotations
@@ -213,16 +214,24 @@ class Simulator:
         # ── Внешний цикл: по интервалам истории ──
         for k, interval in enumerate(self._schedule.intervals):
             n_sub, dt = self._schedule.substeps(k)
+            # Первый шаг интервала со сменой управления начинается с подшага
+            # dt/2**depth и растёт ×2 (FEAT-032): сразу после смены — самый
+            # быстрый переходный процесс, а схема первого порядка по времени.
+            # depth = 0 — полный шаг, как у остальных шагов интервала.
+            depth = self._schedule.first_substep_depth(k)
+            ramp = (f", первый шаг от {dt / 2 ** depth:.3g} с (смена управления)"
+                    if depth else "")
 
             user_log.info(
                 f"  Интервал {k+1}/{self._schedule.n_intervals}: "
                 f"dt_hist={interval.dt:.0f} с, {n_sub} подшагов, "
-                f"dt_actual={dt:.1f} с")
+                f"dt_actual={dt:.1f} с{ramp}")
 
             # ── Внутренний цикл: подшаги интегрирования ──
             for step in range(n_sub):
                 state, hydro_result = self._advance(
-                    state, dt, interval.bc, balance, mass)
+                    state, dt, interval.bc, balance, mass,
+                    depth if step == 0 else 0)
 
                 # 4. Сохранить состояние на конце интервала истории.
                 # Единственный механизм отбора: моменты записи задаёт
@@ -254,9 +263,10 @@ class Simulator:
     def _advance(self, state: SimulationState, dt: float,
                  bc: BoundaryConditions,
                  balance: EnergyBalanceAccumulator,
-                 mass: MassBalanceAccumulator | None
+                 mass: MassBalanceAccumulator | None,
+                 depth: int = 0
                  ) -> tuple[SimulationState, HydroResult]:
-        """Шаг dt: подшаги гидро → энергия; не сошедшийся подшаг делится пополам (DEBT-015)."""
+        """Шаг dt: подшаги гидро → энергия; не сошедшийся подшаг делится пополам (DEBT-015), первый — dt/2**depth (FEAT-032)."""
         # ── Локальное дробление (DEBT-015) ──
         # Подшаг, на котором гидродинамика не сошлась (HydroConvergenceError),
         # делится пополам и повторяется из того же состояния; принятый сразу
@@ -283,11 +293,15 @@ class Simulator:
         # 1 сут не проходил. Локальное дробление выбирает подшаг на каждом
         # участке отдельно.
 
-        # Шаг dt в единицах наименьшего подшага: пройденная часть и
-        # текущий подшаг — целые, ошибка округления не копится.
-        n_units = 2 ** self._max_retries
+        # Шаг dt в единицах наименьшего подшага dt/2**(max_retries + depth):
+        # пройденная часть и текущий подшаг — целые, ошибка округления не
+        # копится. Начальный подшаг — dt/2**depth (FEAT-032: первый шаг после
+        # смены управления; depth = 0 — весь шаг, и код побитово прежний),
+        # дробление отказа идёт на max_retries уровней ниже него. Рост ×2 с
+        # выравниванием (ниже) доводит нарастание до dt/2: h, h, 2h, …, dt/2.
+        n_units = 2 ** (self._max_retries + depth)
         done = 0              # пройдено единиц
-        size = n_units        # текущий подшаг, единиц; всегда степень двойки
+        size = 2 ** self._max_retries   # текущий подшаг, единиц; всегда степень двойки
         n_ok = n_fail = 0
         h_min_ok = dt
         while done < n_units:
@@ -304,7 +318,8 @@ class Simulator:
                 n_fail += 1
                 dev_log.debug(f"  подшаг {h:.3e} с не сошёлся: {exc}")
                 if size == 1:
-                    raise RuntimeError(self._failure_message(state, dt, exc)) from exc
+                    raise RuntimeError(
+                        self._failure_message(state, dt, exc, depth)) from exc
                 size //= 2
                 continue
 
@@ -360,8 +375,8 @@ class Simulator:
         return state, hydro_result
 
     def _failure_message(self, state: SimulationState, dt: float,
-                         exc: HydroConvergenceError) -> str:
-        """Текст отказа: факты подшага, на котором исчерпано дробление, и его отказ гидродинамики (BUG-018, DEBT-015, DEBT-054)."""
+                         exc: HydroConvergenceError, depth: int = 0) -> str:
+        """Текст отказа: факты подшага, на котором исчерпано дробление, и его отказ гидродинамики (BUG-018, DEBT-015, DEBT-054, FEAT-032)."""
         # Факты, а не догадка о причине: отказ бывает из-за величины шага
         # (DEBT-007, BUG-003 — помогает дробление глубже) и не из-за неё
         # (BUG-017, BUG-018 до исправления, BUG-019 — шаг не сходится и при
@@ -372,8 +387,17 @@ class Simulator:
         # прототипа там допуск, мера условия по ячейке, причина выхода Ньютона и
         # какое условие сходимости не выполнено. Прежде он был виден только в
         # цепочке traceback и в отладочном журнале.
-        n_units = 2 ** self._max_retries
+        n_units = 2 ** (self._max_retries + depth)
         n_two = int(np.count_nonzero(state.regime == 1))
+        # Первый шаг после смены управления (FEAT-032) начат с dt/2**depth:
+        # наименьший подшаг на depth уровней мельче, чем у остальных шагов, а у
+        # короткого подшага свой предел — пол округления невязки (BUG-025).
+        ramp = (f"Шаг — первый после смены управления: начат с подшага "
+                f"dt/{2 ** depth} = {dt / 2 ** depth:.3g} с "
+                f"(time.dt_after_control_change); короткий подшаг может не "
+                f"сойтись из-за округления невязки — увеличьте "
+                f"time.dt_after_control_change или задайте null. "
+                if depth else "")
         return (
             f"HydroSolver не сошёлся при дроблении шага до dt/{n_units} = "
             f"{dt / n_units:.2e} с на подшаге с t = {state.t / DAY_TO_S:.4f} сут: "
@@ -384,7 +408,7 @@ class Simulator:
             f"Если отказ вызван величиной шага, поможет больший "
             f"numerics.max_retries или меньший time.dt_integration; если шаг "
             f"не сходится и при мелких подшагах, причина не в его величине. "
-            f"Последний отказ гидродинамики: {exc}")
+            f"{ramp}Последний отказ гидродинамики: {exc}")
 
     def _check_temperature(self, T: np.ndarray, dt: float, t: float) -> None:
         """Отказ, если после шага энергии T ≤ 0 или не конечна (DEBT-047)."""

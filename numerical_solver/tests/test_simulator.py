@@ -691,6 +691,90 @@ class TestEnergySubstepsUnderRetry:
         assert hydro.dt_calls == [3600.0]
 
 
+def _ramp_run(p_wfs, h0, fails=lambda s, dt: False, dt_hists=None, max_retries=None):
+    """Simulator на двойнике: интервалы с забойными давлениями p_wfs, нарастание h0 (FEAT-032)."""
+    # Только PressureControl: LogProfileHydroStub берёт p из bc.well.p_wf (П3 плана)
+    grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+    hydro = FailingHydroStub(inner_hydro, fails)
+    energy = _CountingEnergySolver(inner_energy)
+    schedule = _schedule([PressureControl(p) for p in p_wfs], dt_hists=dt_hists, h0=h0)
+    kw = {} if max_retries is None else {"max_retries": max_retries}
+    return Simulator(grid, hydro, energy, pvt, schedule, **kw), hydro, energy
+
+
+class TestRampAfterControlChange:
+    """FEAT-032: первый шаг интервала со сменой управления — от подшага dt/2**m с удвоением."""
+
+    def test_ramp_sequence_after_change(self):
+        """Скачок p_wf, h0 = 900 с: второй интервал — 900, 900, 1800 с; энергия — по тем же подшагам.
+
+        m = 2 (3600/4 = 900 <= h0). Единица — 3600/2**11 с, начальный подшаг 512 единиц:
+        пройдено 512 — рост запрещён (512 % 1024 ≠ 0); 1024 — рост до 1024 (1800 с);
+        2048 — конец. Первый интервал — не смена: один шаг 3600 с.
+        """
+        sim, hydro, energy = _ramp_run([15e6, 10e6], h0=900.0)
+        sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0, 900.0, 900.0, 1800.0]
+        assert energy.dt_calls == [3600.0, 900.0, 900.0, 1800.0]
+
+    def test_no_ramp_without_change(self):
+        """То же p_wf в соседних интервалах (разные объекты) — оба шага полные."""
+        sim, hydro, _ = _ramp_run([15e6, 15e6], h0=900.0)
+        sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0, 3600.0]
+
+    def test_ramp_only_on_first_step_of_interval(self):
+        """Интервал 7200 с из двух шагов: нарастает только первый, второй — полный 3600 с."""
+        sim, hydro, _ = _ramp_run([15e6, 10e6], h0=900.0, dt_hists=[3600.0, 7200.0])
+        sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0, 900.0, 900.0, 1800.0, 3600.0]
+
+    def test_h0_not_less_than_step_keeps_path(self):
+        """h0 = шагу: m = 0, путь как без поля — регрессия на штатный путь."""
+        sim, hydro, energy = _ramp_run([15e6, 10e6], h0=3600.0)
+        sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0, 3600.0]
+        assert energy.dt_calls == [3600.0, 3600.0]
+
+    def test_failure_inside_ramp_refined_locally(self):
+        """Отказ начального подшага нарастания делится пополам, рост продолжается с выравниванием.
+
+        Двойник отказывает на шагах > 450 с только в момент смены (t = 3600 с):
+        900 ✗ → 450 ✓ (256 ед., рост запрещён) → 450 ✓ (512, рост) → 900 ✓ (1024, рост) → 1800 ✓.
+        """
+        sim, hydro, energy = _ramp_run(
+            [15e6, 10e6], h0=900.0, fails=lambda s, dt: s.t == 3600.0 and dt > 450.0)
+        sim.run(_initial_state())
+        assert hydro.dt_calls == [3600.0, 900.0, 450.0, 450.0, 900.0, 1800.0]
+        assert energy.dt_calls == [3600.0, 450.0, 450.0, 900.0, 1800.0]
+
+    def test_exhausted_below_h0_raises(self):
+        """Дробление идёт на max_retries уровней ниже начального подшага; текст называет поле.
+
+        max_retries = 2, h0 = 900 с, все подшаги второго интервала отказывают:
+        900, 450, 225 с — RuntimeError «до dt/16 = 2.25e+02 с». Конец текста — отказ
+        гидродинамики последнего подшага (DEBT-054), перед ним — фраза о нарастании.
+        """
+        sim, hydro, energy = _ramp_run(
+            [15e6, 10e6], h0=900.0, fails=lambda s, dt: s.t >= 3600.0, max_retries=2)
+        with pytest.raises(RuntimeError) as exc:
+            sim.run(_initial_state())
+        msg = str(exc.value)
+        assert msg.startswith("HydroSolver не сошёлся при дроблении шага до dt/16 = 2.25e+02 с")
+        assert "time.dt_after_control_change" in msg
+        assert msg.endswith(
+            "Последний отказ гидродинамики: двойник: отказ при dt = 225 с, t = 3600 с")
+        assert hydro.dt_calls == [3600.0, 900.0, 450.0, 225.0]
+        assert energy.dt_calls == [3600.0]
+
+    def test_ramp_does_not_change_history_composition(self):
+        """Подшаги нарастания в историю не попадают: записи — на концах интервалов (DEBT-013)."""
+        sim, _, _ = _ramp_run([15e6, 10e6], h0=900.0)
+        history = sim.run(_initial_state())
+        assert history.n_saved == 3
+        np.testing.assert_allclose(history.times, [0.0, 3600.0, 7200.0])
+
+
 # ═══════════════════════════════════════════════════════════
 # G. Отказ при нефизичной температуре (DEBT-047)
 # ═══════════════════════════════════════════════════════════

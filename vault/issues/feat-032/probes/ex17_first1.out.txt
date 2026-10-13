@@ -1,0 +1,4 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+17_shut_in_strong_cooling orig: записей 54, отпечаток 1e8bae2b00632c26, счёт 21.9 с
+17_shut_in_strong_cooling h0=0.44 first=1: записей 54, отпечаток dc4358d29c5f3d08, счёт 27.5 с, подшагов 755, отказов 9, нарастаний 2 (m, h0: [(13, 0.4395)])
+  17_shut_in_strong_cooling h0=0.44 first=1 против штатного: max|ΔT(r_w)| = 0.4816 К (t = 15.0417 сут, 368.7791 → 369.2607); max|ΔRs(r_w)| = 7.46 (t = 15.0417 сут, 79.33 → 86.79); max|Δp(r_w)| = 8.855 бар (t = 15.0417 сут); на конце: ΔT = +0.0415 К

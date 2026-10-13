@@ -1,0 +1,75 @@
+﻿копия: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-032\probes\tree\numerical_solver
+блоков python в плане: 41
+  [ 0] def __eq__(self, other):
+  [ 1] def __eq__(self, other):
+  [ 2] class TestControlValueEquality:
+  [ 3] @dataclass
+  [ 4] @dataclass
+  [ 5] # dt_after_control_change — первый подшаг после смены управления (FEAT-032);
+  [ 6] class TestDtAfterControlChange:
+  [ 7] def __init__(self, dt_integration: float,
+  [ 8] def __init__(self, dt_integration: float,
+  [ 9] def first_substep_depth(self, interval_idx: int) -> int:
+  [10] return TimeSchedule(
+  [11] return TimeSchedule(
+  [12] def _schedule(controls, dt_hists=None, dt_int=DT_INT, h0=None):
+  [13] class TestFirstSubstepDepth:
+  [14] def test_dt_after_control_change_reaches_schedule(self):
+  [15] for k, interval in enumerate(self._schedule.intervals):
+  [16] for k, interval in enumerate(self._schedule.intervals):
+  [17] def _advance(self, state: SimulationState, dt: float,
+  [18] def _advance(self, state: SimulationState, dt: float,
+  [19] # Шаг dt в единицах наименьшего подшага: пройденная часть и
+  [20] # Шаг dt в единицах наименьшего подшага dt/2**(max_retries + depth):
+  [21] if size == 1:
+  [22] if size == 1:
+  [23] def _failure_message(self, state: SimulationState, dt: float,
+  [24] def _failure_message(self, state: SimulationState, dt: float,
+  [25] n_units = 2 ** self._max_retries
+  [26] n_units = 2 ** (self._max_retries + depth)
+  [27] f"не сходится и при мелких подшагах, причина не в его величине. "
+  [28] f"не сходится и при мелких подшагах, причина не в его величине. "
+  [29] def _ramp_run(p_wfs, h0, fails=lambda s, dt: False, dt_hists=None, max_retries=None):
+  [30] # Шаги серии задаёт история; нарастание после смены управления (FEAT-032)
+  [31] def _run_1h_shutin(h0):
+  [32] @pytest.fixture(scope="module")
+  [33] # FEAT-032 (решение пользователя 2026-10-11): первый час останова — от
+  [34] def test_wellbore_heats_then_relaxes(self, results):
+  [35] # FEAT-032 (решение пользователя 2026-10-11): первый час останова — от 1.76 с с удвоением
+  [36] # BUG-022: 79.5367; при тесных допусках Ньютона 79.5364–79.5368 (atol = 1e-14,
+  [37] # FEAT-032: 79.5875 — первый час останова от подшага 1.76 с; одним шагом
+  [38] def test_wellbore_warms_monotonically(self, results):
+  [39] # 16_well_shut_in не дробится: 2 × 1800 с на третьем часу останова сняты
+  [40] # 16_well_shut_in не дробится: 2 × 1800 с на третьем часу останова сняты
+  ок: gpn_multiphase_solver/bc.py — """Забойное давление, Па."""
+  ок: gpn_multiphase_solver/bc.py — """Минимальное забойное давление, Па."""
+  ок: tests/test_rate_control.py — # ═══════════════════════════════════════════════════════════
+  ок: tests/test_rate_control.py — дебиты прогона по давлению, повторяет его траекторию.
+  ок: gpn_multiphase_solver/io/config.py — @dataclass
+  ок: gpn_multiphase_solver/io/config.py — raise ValueError("history должна содержать хотя бы один интервал")
+  ок: tests/test_config.py — class TestValidationThermal:
+  ок: gpn_multiphase_solver/simulator.py — def __init__(self, dt_integration: float,
+  ок: gpn_multiphase_solver/simulator.py — dt_actual = dt_hist / n_sub
+  ок: gpn_multiphase_solver/simulator.py — Гарантия: n_sub · dt_actual = dt_hist точно (нет накопления ошибки окр
+  ок: gpn_multiphase_solver/factory.py — return TimeSchedule(
+  ок: tests/test_simulator.py — from gpn_multiphase_solver.bc import PressureControl
+  ок: tests/test_simulator.py — return TimeSchedule(dt_int, [ScheduleInterval(dt=dt_hist, bc=bc)])
+  ок: tests/test_simulator.py — # ═══════════════════════════════════════════════════════════
+  ок: tests/test_simulator.py — assert history.well_data[-1].q_o_std > 0
+  ок: gpn_multiphase_solver/simulator.py — energy.solve → обновить state)
+  ок: gpn_multiphase_solver/simulator.py — for k, interval in enumerate(self._schedule.intervals):
+  ок: gpn_multiphase_solver/simulator.py — def _advance(self, state: SimulationState, dt: float,
+  ок: gpn_multiphase_solver/simulator.py — # Шаг dt в единицах наименьшего подшага: пройденная часть и
+  ок: gpn_multiphase_solver/simulator.py — if size == 1:
+  ок: gpn_multiphase_solver/simulator.py — def _failure_message(self, state: SimulationState, dt: float,
+  ок: gpn_multiphase_solver/simulator.py — n_units = 2 ** self._max_retries
+  ок: gpn_multiphase_solver/simulator.py — f"не сходится и при мелких подшагах, причина не в его величине. "
+  ок: tests/test_simulator.py — # ═══════════════════════════════════════════════════════════
+  ок: tests/test_val004.py — cfg.time.history = _shutin_history(cfg, k)
+  ок: tests/test_val004.py — return {"end": hist.states[-1], "n_forced": len(forced), "n_records": 
+  ок: tests/test_val004.py — фикстура и класс в конец
+  ок: examples/16_well_shut_in/config.json — "dt_integration": 3600,
+  ок: examples/17_shut_in_strong_cooling/config.json — "dt_integration": 3600,
+  ок: tests/test_examples.py — 16 и 17
+  ок: tests/test_energy_matrix_examples.py — # 16_well_shut_in не дробится: 2 × 1800 с на третьем часу останова сня
+ГОТОВО

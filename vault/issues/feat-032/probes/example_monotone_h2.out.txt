@@ -1,0 +1,2 @@
+﻿16_well_shut_in k = 16 max diff T после k = -0.002219734466450518 | diff T после E: min -0.0617161407204776 max 0.32160494517086136
+17_shut_in_strong_cooling k = 53 max diff T после k = None | diff T после E: min 0.06453004906956039 max 4.241612177453362

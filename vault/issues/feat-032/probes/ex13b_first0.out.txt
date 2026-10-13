@@ -1,0 +1,4 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+13b_pwf_alternating orig: записей 61, отпечаток 041bc876f88d8cd1, счёт 25.9 с
+13b_pwf_alternating h0=0.44 first=0: записей 61, отпечаток 7551ba45d679a11b, счёт 38.0 с, подшагов 1097, отказов 0, нарастаний 29 (m, h0: [(13, 0.4395)])
+  13b_pwf_alternating h0=0.44 first=0 против штатного: max|ΔT(r_w)| = 0.0090 К (t = 8.0000 сут, 350.2568 → 350.2658); max|ΔRs(r_w)| = 0.00 (t = 16.5000 сут, 3.40 → 3.39); max|Δp(r_w)| = 0.001 бар (t = 16.5000 сут); на конце: ΔT = +0.0015 К

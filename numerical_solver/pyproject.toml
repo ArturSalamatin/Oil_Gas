@@ -25,6 +25,13 @@ dev = [
     "pytest>=7.0",
 ]
 
+[project.scripts]
+# Команда расчёта по конфигу (FEAT-030) — то же, что
+# python -m gpn_multiphase_solver run config.json. На Windows gpn-solver.exe
+# ложится в Scripts\ окружения: без активации venv её нет в PATH, тогда —
+# форма python -m.
+gpn-solver = "gpn_multiphase_solver.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["gpn_multiphase_solver*"]

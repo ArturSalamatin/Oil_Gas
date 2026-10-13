@@ -7,7 +7,8 @@ issue: DEBT-011
 github: 91
 branch: refactor/debt-011/diagnostics-into-package
 status: реализован
-worktree: .worktrees/debt-011
+worktree: .worktrees/debt-011; удалён после влития
+merged: 7f8d879 (2026-10-13)
 audit:
   date: 2026-10-11
   found: 5

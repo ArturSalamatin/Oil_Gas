@@ -7,7 +7,8 @@ issue: BUG-025
 github: 105
 branch: fix/bug-025/short-step-residual-floor
 status: реализован
-worktree: .worktrees/bug-025
+worktree: .worktrees/bug-025; удалён после влития
+merged: b159a5d (2026-10-13)
 audit:
   date: 2026-10-13
   round: 2

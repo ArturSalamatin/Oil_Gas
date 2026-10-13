@@ -11,5 +11,6 @@ rs              — наложение R_s^eq(p) на rs_profiles.png, печа�
 closed_form     — наложения и сверка замкнутого решения стационара;
 energy_balance  — energy_balance.png и печать членов баланса энергии;
 mass_balance    — mass_balance.png и печать баланса массы компонентов;
-temperature     — печать однофазной асимптотики температуры.
+temperature     — печать однофазной асимптотики температуры;
+pipeline        — run_case: конфиг → расчёт → CSV + рисунки + проверки.
 """

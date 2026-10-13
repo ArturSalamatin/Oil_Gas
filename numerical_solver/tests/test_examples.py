@@ -528,27 +528,46 @@ class TestReadme:
 # H. Вывод: файлы создаются
 # ═══════════════════════════════════════════════════════════
 
+def _copy_case(name: str, dst: Path) -> Path:
+    """Конфиг и CSV примера name — в dst (без output/, скриптов, README); путь к копии конфига."""
+    import shutil
+    shutil.copytree(EXAMPLES_DIR / name, dst, ignore=shutil.ignore_patterns(
+        "output", "*.py", "README.md", "__pycache__"))
+    return dst / "config.json"
+
+
+def _set_output(config_path: Path, **fields) -> None:
+    """Дописать поля секции output в JSON-конфиг копии."""
+    raw = json.loads(config_path.read_text(encoding="utf-8"))
+    raw.setdefault("output", {}).update(fields)
+    config_path.write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def test_pipeline_writes_output(tmp_path):
-    """Полный pipeline example_runner создаёт все CSV и PNG.
+    """Штатный набор run_case (report/pipeline.py) создаёт все CSV и PNG и возвращает решатель.
 
     Проверяется на самом быстром сценарии (01), выходные файлы пишутся
-    во временную папку, чтобы не трогать examples/*/output/.
+    во временную папку, чтобы не трогать examples/*/output/. CaseResult
+    несёт решатель, которым считалась задача (FEAT-030: main.py 01–05 больше
+    не собирают второй Simulator ради PVT), и заголовок — здесь аргумент.
     """
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    from example_runner import run_example
+    from gpn_multiphase_solver.report.pipeline import run_case
 
-    run_example(
-        config_path=EXAMPLES_DIR / "01_single_phase_no_jt" / "config.json",
-        output_dir=tmp_path,
+    r = run_case(
+        EXAMPLES_DIR / "01_single_phase_no_jt" / "config.json",
+        tmp_path,
         title="тест pipeline",
     )
+    assert r.simulator.pvt is not None
+    assert r.title == "тест pipeline"
+    assert r.output_dir == tmp_path
+    assert r.history.n_saved > 0
 
     expected = [
         "well_history.csv", "profiles.csv",
         "pressure_profiles.png", "temperature_profiles.png",
         "saturation_profiles.png", "well_rates.png", "wellbore_dynamics.png",
-        # FEAT-016: баланс энергии подключён к run_example для всех примеров
+        # FEAT-016: баланс энергии подключён к штатному набору всех расчётов
         "energy_balance.png",
         # DEBT-039: баланс массы компонентов — общий модуль для всех примеров
         "mass_balance.png",
@@ -571,9 +590,7 @@ def test_profile_times_default_and_uniform():
     2026-09-29 для 13a). N больше числа записей даёт каждую запись по
     одному разу; N = 1 эволюции не показывает — ValueError.
     """
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    from example_runner import _profile_times
+    from gpn_multiphase_solver.report.pipeline import _profile_times
 
     day = 86400.0
     times = [43200.0 * n for n in range(31)]
@@ -595,9 +612,7 @@ def test_pick_overlay_none_disables_default():
     пользователя 2026-09-29): стационарное замыкание GOR = R_s0 при
     GOR = 54.9 на 15 сут вводит в заблуждение.
     """
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    from example_runner import _pick_overlay
+    from gpn_multiphase_solver.report.pipeline import _pick_overlay
 
     default, own = object(), object()
     assert _pick_overlay({}, "Sg", default) is default
@@ -610,7 +625,8 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
     """steady_state=False снимает стационарную аналитику, проверку R_s — нет.
 
     Решения пользователя: 2026-09-29 (FEAT-022, реш. 7) — стационарные
-    наложения и сверки отключаются флагом run_example; 2026-09-30
+    наложения и сверки отключаются флагом (с FEAT-030 — аргумент run_case
+    или output.steady_state конфига); 2026-09-30
     (FEAT-023) — проверка R_s остаётся. Стационар и асимптотика
     температуры — пределы t -> inf при удержании одного режима; у 13b
     режим меняется каждые сутки, и сверки печатали бы 7085 % и 0.94 К.
@@ -625,9 +641,7 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
     """
     import contextlib
     import io
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import example_runner
+    import gpn_multiphase_solver.report.pipeline as pipeline
 
     called = []
 
@@ -640,19 +654,115 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
 
     for name in ("make_overlay_pressure", "make_overlay_saturation",
                  "report_closed", "report_asymptotics", "report_rs"):
-        monkeypatch.setattr(example_runner, name, spy(name))
+        monkeypatch.setattr(pipeline, name, spy(name))
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        example_runner.run_example(
-            config_path=EXAMPLES_DIR / "05_standing_table_rp" / "config.json",
-            output_dir=tmp_path,
+        pipeline.run_case(
+            EXAMPLES_DIR / "05_standing_table_rp" / "config.json",
+            tmp_path,
             title="тест steady_state",
             steady_state=False,
         )
 
     assert called == ["report_rs"], f"вызваны: {called}"
     assert "Стационарная аналитика отключена" in buf.getvalue()
+
+
+def test_run_case_reads_output_section(tmp_path, monkeypatch):
+    """run_case берёт заголовок, число профилей и состав наложений из output конфига (FEAT-030).
+
+    Копия примера 05 (самый быстрый двухфазный, ~5 с) с output = {title "X",
+    n_profiles 5, steady_state true, closed_form_overlays ["p"]} — как у 13a:
+    замкнутое решение только на профилях p. Шпионы: make_overlay_* (None —
+    без наложения) и _profile_times (пропускает в оригинал). Ловит: поля
+    конфига не доходят до конвейера, наложение S_g рисуется вопреки списку.
+    """
+    import contextlib
+    import io
+    import gpn_multiphase_solver.report.pipeline as pipeline
+
+    cfg = _copy_case("05_standing_table_rp", tmp_path / "case")
+    _set_output(cfg, title="X", n_profiles=5, steady_state=True,
+                closed_form_overlays=["p"])
+
+    called, seen_n = [], []
+    for name in ("make_overlay_pressure", "make_overlay_saturation"):
+        monkeypatch.setattr(pipeline, name,
+                            lambda config, _n=name: called.append(_n))
+    original = pipeline._profile_times
+
+    def profile_times(times, n_profiles):
+        seen_n.append(n_profiles)
+        return original(times, n_profiles)
+    monkeypatch.setattr(pipeline, "_profile_times", profile_times)
+
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        r = pipeline.run_case(cfg, tmp_path / "out")
+
+    assert called == ["make_overlay_pressure"], f"вызваны: {called}"
+    assert seen_n == [5]
+    assert r.title == "X"
+    assert buf.getvalue().startswith("=== X ===")
+    # steady_state = true из конфига: сверка замкнутого решения напечатана
+    assert "Замкнутое решение" in buf.getvalue()
+
+
+def test_run_case_refuses_output_containing_inputs(tmp_path, monkeypatch):
+    """Каталог вывода с конфигом или его CSV внутри — отказ до расчёта, файлы целы (FEAT-030).
+
+    Каталог вывода очищается целиком после расчёта (решение пользователя
+    2026-10-13); --output . из папки конфига стёр бы конфиг и таблицы.
+    Simulator.run подменён на падение: отказ обязан прийти раньше расчёта.
+    """
+    import gpn_multiphase_solver.report.pipeline as pipeline
+    from gpn_multiphase_solver.simulator import Simulator
+
+    def must_not_run(self, *args, **kwargs):
+        raise AssertionError("расчёт начат при каталоге вывода с входными файлами")
+    monkeypatch.setattr(Simulator, "run", must_not_run)
+
+    cfg = _copy_case("05_standing_table_rp", tmp_path / "case")
+    for out in (cfg.parent, tmp_path):        # сама папка конфига и её родитель
+        with pytest.raises(pipeline.CaseConfigError, match="содержит входной файл"):
+            pipeline.run_case(cfg, out)
+    assert cfg.is_file() and (cfg.parent / "relperm.csv").is_file()
+
+
+def test_run_case_config_errors(tmp_path, capsys):
+    """Нет файла, лишний ключ — CaseConfigError (подкласс ValueError) до печати заголовка (FEAT-030)."""
+    import gpn_multiphase_solver.report.pipeline as pipeline
+
+    with pytest.raises(pipeline.CaseConfigError, match="нет.json"):
+        pipeline.run_case(tmp_path / "нет.json")
+
+    cfg = _copy_case("05_standing_table_rp", tmp_path / "case")
+    raw = json.loads(cfg.read_text(encoding="utf-8"))
+    raw["geometry"]["foo"] = 1.0              # строгая распаковка dataclass — TypeError
+    cfg.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError):           # CaseConfigError — подкласс ValueError
+        pipeline.run_case(cfg)
+    assert capsys.readouterr().out == ""
+
+
+def test_run_case_run_failure(tmp_path, monkeypatch):
+    """Отказ решателя — CaseRunError с его текстом; прежние результаты в каталоге вывода целы (FEAT-030)."""
+    import gpn_multiphase_solver.report.pipeline as pipeline
+    from gpn_multiphase_solver.simulator import Simulator
+
+    def fail(self, *args, **kwargs):
+        raise RuntimeError("шаг не сошёлся")
+    monkeypatch.setattr(Simulator, "run", fail)
+
+    cfg = _copy_case("05_standing_table_rp", tmp_path / "case")
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "прошлый.csv").write_text("1", encoding="utf-8")
+    with pytest.raises(pipeline.CaseRunError, match="шаг не сошёлся"):
+        pipeline.run_case(cfg, out)
+    # Очистка каталога — после расчёта: при отказе прошлый вывод не тронут
+    assert (out / "прошлый.csv").is_file()
 
 
 # ═══════════════════════════════════════════════════════════
@@ -834,10 +944,10 @@ class TestSharedChecks:
     # Он заменил тест импорта convergence.py и его пользователей (DEBT-031).
 
     def test_energy_balance_reported_for_all_examples(self, tmp_path):
-        """run_example печатает баланс энергии — проверка подключения.
+        """run_case печатает баланс энергии — проверка подключения.
 
         Отличается от test_energy_balance_all_examples: тот проверяет, что
-        баланс СХОДИТСЯ, а этот — что он вообще ВЫЗЫВАЕТСЯ из run_example.
+        баланс СХОДИТСЯ, а этот — что он вообще ВЫЗЫВАЕТСЯ из run_case.
         Без этого общий модуль мог бы существовать, но не быть подключён, и
         примеры 06-10 снова остались бы без проверки.
 
@@ -847,30 +957,29 @@ class TestSharedChecks:
         """
         import contextlib
         import io
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
-        from example_runner import run_example
+        from gpn_multiphase_solver.report.pipeline import run_case
 
+        # steady_state — из конфига 10 (true): асимптотика температуры печатается
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            run_example(
-                config_path=EXAMPLES_DIR / "10_deep_degassing" / "config.json",
-                output_dir=tmp_path,
+            run_case(
+                EXAMPLES_DIR / "10_deep_degassing" / "config.json",
+                tmp_path,
                 title="тест подключения баланса",
             )
         out = buf.getvalue()
 
         assert "Невязка финал" in out, (
-            "run_example не печатает невязку баланса энергии")
+            "run_case не печатает невязку баланса энергии")
         assert "Теплопроводность" in out, (
             "в выводе баланса нет кондуктивного члена")
         assert (tmp_path / "energy_balance.png").is_file(), (
-            "run_example не сохранил график баланса")
-        # DEBT-039: баланс массы подключён к тому же run_example
+            "run_case не сохранил график баланса")
+        # DEBT-039: баланс массы подключён к тому же run_case
         assert "Баланс массы компонентов" in out, (
-            "run_example не печатает баланс массы")
+            "run_case не печатает баланс массы")
         assert (tmp_path / "mass_balance.png").is_file(), (
-            "run_example не сохранил график баланса массы")
+            "run_case не сохранил график баланса массы")
         # Асимптотика подключена и печатает заголовок. Прежде здесь
         # проверялось сообщение «не проверяется» при lambda != 0: условие
         # относилось к ТЕЛЕСКОПИЧЕСКОЙ формуле, которая удалена вместе со
@@ -878,7 +987,7 @@ class TestSharedChecks:
         # T = T_ext + mu_JT·(p - p_ext) от теплопроводности не зависит и
         # считается при любом lambda.
         assert "Асимптотика температуры" in out, (
-            "run_example не вызывает report_asymptotics")
+            "run_case не вызывает report_asymptotics")
         assert "двухфазная зона: аналитической проверки нет" in out, (
             "у примера 10 есть газ — отчёт должен сообщить, что "
             "двухфазной аналитики больше нет")

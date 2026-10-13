@@ -3,12 +3,12 @@
 import sys
 from pathlib import Path
 
-# examples/ в sys.path — для импорта example_runner и figure_io. Папка
+# examples/ в sys.path — для импорта example_runner. Папка
 # скрипта уже в sys.path (её кладёт Python) — оттуда prototype_input.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from example_runner import run_example  # noqa: E402
-from figure_io import export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import export_emf  # noqa: E402
 import prototype_input  # noqa: E402
 
 if __name__ == "__main__":

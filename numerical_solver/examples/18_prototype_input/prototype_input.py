@@ -354,7 +354,7 @@ def plot_comparison(history, grid, proto: dict, imex: dict | None, output_dir: P
     """prototype_profiles.png (p, S_g, R_s по r) и prototype_rates.png (q_o, q_g, GOR по t): расчёт, прототип, IMEX."""
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    from figure_io import save_figure
+    from gpn_multiphase_solver.io.figures import save_figure
 
     # Все источники — по номеру ячейки; абсцисса — центры ячеек: у нашей
     # сетки и у прототипа они одни (DEBT-063)

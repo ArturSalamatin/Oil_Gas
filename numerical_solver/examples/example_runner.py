@@ -61,7 +61,7 @@ from energy_balance import plot_energy_balance  # noqa: E402
 from mass_balance import plot_mass_balance  # noqa: E402
 from temperature_asymptotics import report_asymptotics  # noqa: E402
 from pvt_plot import plot_pvt, report_pvt  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 
 
 def run_example(config_path: str | Path, output_dir: str | Path,

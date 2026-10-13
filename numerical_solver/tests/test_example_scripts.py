@@ -222,7 +222,7 @@ def test_script_names_resolve(script):
 # не-ASCII в именах тестов (а…), имя упавшего случая было бы нечитаемо.
 # Первая буква — класс из docstring: a, b, v, g, d = (а), (б), (в), (г), (д).
 BROKEN_SNIPPETS = {
-    "a_top_level_import": "from figure_io import no_such_name\n",
+    "a_top_level_import": "from two_phase_analytics import no_such_name\n",
     "b_import_in_function": (
         "def f():\n"
         "    from gpn_multiphase_solver.factory import no_such_factory\n"),

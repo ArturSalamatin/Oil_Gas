@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from example_runner import run_example  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 
 # Папка примера — в sys.path для импорта соседних модулей.

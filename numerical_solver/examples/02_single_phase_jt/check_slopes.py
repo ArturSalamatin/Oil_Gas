@@ -37,8 +37,6 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 SOLVER_ROOT = HERE.parents[1]
 sys.path.insert(0, str(SOLVER_ROOT))
-# examples/ — для figure_io (FEAT-026).
-sys.path.insert(0, str(SOLVER_ROOT / "examples"))
 
 warnings.filterwarnings("ignore")
 
@@ -48,7 +46,7 @@ import matplotlib.pyplot as plt
 
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
-from figure_io import save_figure, export_emf
+from gpn_multiphase_solver.io.figures import save_figure, export_emf
 
 # Множители mu_JT относительно конфига. 1.0 — базовый вариант.
 MU_FACTORS = [1.0, 2.0]

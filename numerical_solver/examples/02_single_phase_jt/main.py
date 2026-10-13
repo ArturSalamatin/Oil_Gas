@@ -42,7 +42,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from example_runner import run_example  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_profiles  # noqa: E402
 from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote  # noqa: E402
 

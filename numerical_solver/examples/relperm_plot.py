@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 # PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
-from figure_io import save_figure  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_relperm_curves  # noqa: E402
 
 

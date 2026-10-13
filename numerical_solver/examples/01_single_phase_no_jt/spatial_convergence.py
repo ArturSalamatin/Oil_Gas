@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
-from figure_io import save_figure, export_emf
+from gpn_multiphase_solver.io.figures import save_figure, export_emf
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.units import S_TO_DAY

@@ -60,7 +60,7 @@ from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa:
 # «СМЫСЛ ПРОВЕРКИ»).
 from convergence import run_series  # noqa: E402
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 
 # Шаги по времени, с. Диапазон в 10 раз: проверяем, что уровень невязки
 # держится и при штатном шаге, и при десятикратно меньшем.

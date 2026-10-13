@@ -10,7 +10,6 @@ output/profiles.csv (865 записей × 150 ячеек, шаг 300 с). Чи�
 берётся из самого файла, поэтому скрипт работает при любой сетке.
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -20,10 +19,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 HERE = Path(__file__).parent
-# examples/ — для figure_io (FEAT-026).
-sys.path.insert(0, str(HERE.resolve().parent))
 
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 
 CSV = HERE / "output" / "profiles.csv"
 OUT = HERE / "output"

@@ -48,7 +48,7 @@ for _p in (str(_ROOT), str(_EXAMPLES)):
 
 from gpn_multiphase_solver.io.output import plot_mass_balance_series  # noqa: E402
 from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 # Одна копия правила разбора имени примера («16» → 16_well_shut_in)
 from energy_balance import _resolve_example  # noqa: E402
 

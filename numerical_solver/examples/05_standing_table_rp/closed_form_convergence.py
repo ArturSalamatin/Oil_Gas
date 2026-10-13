@@ -42,7 +42,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
-from figure_io import save_figure, export_emf  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
 
 from gpn_multiphase_solver.diagnostics.closed_form import solve_closed  # noqa: E402
 

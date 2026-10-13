@@ -72,7 +72,7 @@ import numpy as np  # noqa: E402
 from gpn_multiphase_solver.io.output import plot_pvt_properties, pvt_table_nodes  # noqa: E402
 
 # PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
-from figure_io import save_figure  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure  # noqa: E402
 
 
 def _get_pvt(config, simulator):

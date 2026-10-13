@@ -35,6 +35,9 @@ DEBT-054: the Newton report says why a solve stopped (exit_reason), with the abs
 tolerance of its test (residual_tol) and the per-cell measure (cell_measure) on the
 residual it reports; a failed fourth-stage Newton reports the iterations it ran,
 not max_iter (DEBT-061).
+BUG-025: the absolute Newton tolerance is not below the round-off floor of the storage
+term, max(atol, ROUNDOFF_KAPPA*eps*M_max/dt) (_absolute_tol): a shut-in step shorter than
+~0.05 s after production with a developed gas zone failed every stage of advance.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -43,6 +46,11 @@ from scipy.sparse import coo_matrix, csc_matrix, issparse
 from scipy.sparse.linalg import splu
 from .state import BlackOilState
 from .units import BAR_TO_PA, CP_TO_PA_S
+
+# BUG-025: machine epsilon and the factor of the round-off floor of the absolute Newton
+# tolerance (_absolute_tol)
+_EPS=float(np.finfo(float).eps)
+ROUNDOFF_KAPPA=4.0
 
 @dataclass
 class BlackOilNewtonReport:
@@ -57,7 +65,8 @@ class BlackOilNewtonReport:
     globalized: bool = False  # advance's third stage ran (||F||_2 line search, Sg step limit), BUG-016
     phase_switching: bool = False  # advance's fourth stage ran (phase switches inside Newton), BUG-020
     # DEBT-054: why the Newton stopped and how far it was from each convergence test, on
-    # the residual of residual_inf.  residual_tol -- atol + rtol*scale of the absolute test
+    # the residual of residual_inf.  residual_tol -- max(atol, round-off floor) + rtol*scale of
+    # the absolute test (BUG-025)
     # (None: exit 'active_set', the residual of a guess no Newton solved); cell_measure --
     # max_c |F_c,i|*dt/PV_i of the per-cell test, BUG-022 (None: the test is off);
     # exit_reason -- 'converged', 'line_search', 'linear_solver', 'max_iter', 'nonfinite',
@@ -279,6 +288,25 @@ class RadialBlackOilModel:
         return BlackOilNewtonReport(converged,iterations,float(nrm),
                                     residual_tol=None if tol is None else float(tol),
                                     cell_measure=self._cell_measure(f,w),exit_reason=reason,**fields)
+    def _absolute_tol(self,state_old,dt_s,atol_sm3s):
+        """BUG-025: atol of the absolute Newton test, not below the round-off floor ROUNDOFF_KAPPA*eps*M_max/dt of the storage term."""
+        # The storage term of the residual is (M_new - M_old)/dt in m3st/s, each inventory
+        # carries a round-off error ~eps*M, and the residual does not go below ~eps*M_max/dt
+        # (the largest cell of state_old; oil rows, gas rows / gas_residual_scale as in
+        # residual).  At short steps this is above atol = 1e-11, the bound grows with the
+        # largest cell: GPN bug020_rs150 (N = 350, r_e = 200 m, M_max = 7.2e3 m3st), shut-in
+        # after 10 days of production -- the line search stalled at |F|*dt = 5-7e-13 m3st for
+        # dt = 1e-2...1e-4 s and no stage of advance converged at any split; GPN example 15
+        # (N = 50, M_max = 5.5e4) -- a production substep of 0.44 s failed the same way.
+        # The measured stall is (0.07-0.7)*eps*M_max (R_ext = 800...50 m): cells
+        # whose state did not change carry no round-off, so eps*M_max is an upper estimate.
+        # ROUNDOFF_KAPPA = 4 keeps a margin of 6 over it.  Where the floor is below atol, max
+        # returns atol itself and the solve is bitwise the former one: so in every GPN example
+        # and every regression case (smallest atol*dt/(eps*M_max): 34, T05S_N200_DT5m; 63,
+        # GPN example 18).  A solve accepted at the floor errs by at most ROUNDOFF_KAPPA*eps*M_max m3st.
+        oi0,gi0=self._old_inventories(state_old)
+        m=max(float(np.max(np.abs(oi0))),float(np.max(np.abs(gi0)))/self.gas_residual_scale)
+        return max(atol_sm3s,ROUNDOFF_KAPPA*_EPS*m/float(dt_s))
     def _pressure_fd_step(self,p_bar,gas_active,p_rel_step=1e-6,p_abs_step=1e-4):
         """One-sided pressure perturbation that stays on the same PVTO-saturation segment.
 
@@ -370,7 +398,8 @@ class RadialBlackOilModel:
         return True
     def _newton_fixed_active_set(self,z0,state_old,dt_s,gas_active,max_iter=15,rtol=1e-8,atol_sm3s=1e-11):
         z=np.asarray(z0,float).copy(); f=self.residual(z,state_old,dt_s,gas_active); nrm=np.linalg.norm(f,np.inf)
-        scale=max(nrm,1e-9); tol=atol_sm3s+rtol*scale
+        # BUG-025: atol not below the round-off floor of the storage term (_absolute_tol)
+        scale=max(nrm,1e-9); tol=self._absolute_tol(state_old,dt_s,atol_sm3s)+rtol*scale
         # BUG-022: dt/PV_i of the per-cell test (None when it is off); a solve converges only
         # when every cell meets it too, else it fails and advance tries its next stage
         w=self._cell_weights(state_old,dt_s)
@@ -593,7 +622,8 @@ class RadialBlackOilModel:
         # original upwind scheme.
         state_old=state_old.copy(); n=self.grid.n; nf=max(n-1,0)
         mask=state_old.gas_active.copy(); z=self.pack(state_old,mask)
-        scale=max(np.linalg.norm(self.residual(z,state_old,dt_s,mask),np.inf),1e-9); tol=atol_sm3s+rtol*scale
+        # BUG-025: atol not below the round-off floor of the storage term (_absolute_tol)
+        scale=max(np.linalg.norm(self.residual(z,state_old,dt_s,mask),np.inf),1e-9); tol=self._absolute_tol(state_old,dt_s,atol_sm3s)+rtol*scale
         # BUG-022: dt/PV_i of the per-cell test, None when it is off
         w=self._cell_weights(state_old,dt_s)
         switched=total=0; flips=np.zeros(nf,int); prev=None; polish=False

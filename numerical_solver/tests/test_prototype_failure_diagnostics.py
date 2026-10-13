@@ -1,7 +1,8 @@
 """DEBT-054: отчёт Ньютона прототипа называет причину отказа, текст отказа — какое условие не выполнено.
 
 После BUG-022 решение Ньютона принимается, только если выполнены абсолютный критерий
-||F||_inf <= atol + rtol*max(||F_0||_inf, 1e-9) и условие по ячейке
+||F||_inf <= atol + rtol*max(||F_0||_inf, 1e-9) (с BUG-025 atol не ниже предела округления
+κ·ε·M_max/Δt, Ур. (eq:newton_abs_tol) problem_statement.tex) и условие по ячейке
 max_c |F_c,i|*dt/PV_i <= cell_tol. Решение, отвергнутое только условием ячейки, выглядело
 в отчёте как «итераций 4, невязка 6.51e-15, не сошлось» (BUG-018 при N = 350, шаг
 86400 с): ни допуска, ни меры ячеек, ни причины выхода (линейный поиск встал на пределе
@@ -22,6 +23,7 @@ import pytest
 from gpn_multiphase_solver.hydro.base import HydroConvergenceError
 from gpn_multiphase_solver.hydro.prototype_adapter import _failure_details
 from gpn_multiphase_solver.units import BAR_TO_PA
+from radial_blackoil import blackoil
 from radial_blackoil.blackoil import BlackOilNewtonReport
 from radial_blackoil.state import BlackOilState
 
@@ -35,9 +37,14 @@ ATOL, RTOL = 1e-11, 1e-8      # умолчания обоих Ньютонов �
 
 
 def _tol(model, z0, s_old, dt, mask):
-    """Абсолютный допуск Ньютона: atol + rtol*max(||F(z0)||_inf, 1e-9) — те же операции, что в прототипе."""
+    """Абсолютный допуск Ньютона по Ур. (eq:newton_abs_tol) — те же операции, что в прототипе."""
+    # max(atol, κ·ε·M_max/Δt) + rtol·max(‖F(z0)‖∞, 1e-9); M_max — запасы старого слоя
+    # (нефть; газ / s_g). Во всех вызовах ниже предел ниже atol, и max возвращает atol
     f0 = model.residual(z0, s_old, dt, mask)
-    return ATOL + RTOL * max(float(np.linalg.norm(f0, np.inf)), 1e-9)
+    oi0, gi0 = model._old_inventories(s_old)
+    m = max(float(np.max(np.abs(oi0))), float(np.max(np.abs(gi0))) / model.gas_residual_scale)
+    floor = max(ATOL, blackoil.ROUNDOFF_KAPPA * float(np.finfo(float).eps) * m / float(dt))
+    return floor + RTOL * max(float(np.linalg.norm(f0, np.inf)), 1e-9)
 
 
 def _bug018_model(N=350):

@@ -1,4 +1,4 @@
-"""Баланс массы компонентов во времени — общая проверка для всех примеров (DEBT-039).
+"""Баланс массы компонентов во времени — штатная проверка любого расчёта (DEBT-039; FEAT-030: из examples/mass_balance.py).
 
 Схема гидродинамики консервативна: невязки eq:residual_oil, eq:residual_gas
 (problem_statement.tex) — изменение запаса компонента в ячейке плюс разность
@@ -24,33 +24,20 @@
 ФИЗИКА ЖИВЁТ В ЯДРЕ: интегралы потоков копит gpn_multiphase_solver/
 mass_balance.py по всем принятым шагам, запас на записях отдаёт решатель,
 ряды собирает там же compute_mass_balance (DEBT-011). Здесь — график и печать.
-
-Запуск для конкретного примера:
-    cd numerical_solver
-    .venv\\Scripts\\python examples\\mass_balance.py 16
+Входит в штатный набор run_case (report/pipeline.py).
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+# Режим matplotlib модуль не выбирает: это делает команда расчёта
+# (cli.configure_batch_run) или вызывающий скрипт (FEAT-030)
+import matplotlib.pyplot as plt
 
-_EXAMPLES = Path(__file__).resolve().parent
-_ROOT = _EXAMPLES.parent
-# Прототип radial_blackoil — установленный дистрибутив (DEBT-059), путь к нему не добавляется
-for _p in (str(_ROOT), str(_EXAMPLES)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
-from gpn_multiphase_solver.io.output import plot_mass_balance_series  # noqa: E402
-from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
-from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
-# Одна копия правила разбора имени примера («16» → 16_well_shut_in)
-from energy_balance import _resolve_example  # noqa: E402
+from ..io.output import plot_mass_balance_series
+from ..mass_balance import compute_mass_balance
+from ..io.figures import save_figure
 
 
 def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
@@ -64,7 +51,7 @@ def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
         return None
     axes = plot_mass_balance_series(bal)
     fig = axes[0, 0].figure
-    # Имя примера — из пути к конфигу: модуль общий для всех примеров.
+    # Имя расчёта — из пути к конфигу (папка конфига): модуль общий для всех расчётов.
     fig.suptitle(f"Баланс массы компонентов — {Path(config.config_dir).name}")
     fig.tight_layout()
     output_dir = Path(output_dir)
@@ -86,22 +73,3 @@ def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
               f"({bal[f'rel_residual_{a}'][-1]:.2e}), max по записям "
               f"{float(np.max(bal[f'rel_residual_{a}'])):.2e}")
     return bal
-
-
-# ── Автономный запуск ──
-if __name__ == "__main__":
-    from gpn_multiphase_solver.io.config import load_config
-    from gpn_multiphase_solver.factory import SimulatorFactory
-
-    if len(sys.argv) < 2:
-        raise SystemExit(
-            "укажите пример: python examples\\mass_balance.py 16")
-
-    folder = _resolve_example(sys.argv[1])
-    config = load_config(folder / "config.json")
-    sim, initial_state = SimulatorFactory.from_config(config)
-    history = sim.run(initial_state)
-
-    plot_mass_balance(config, history, folder / "output")
-    # Автономный запуск: SVG только что сохранённого рисунка — в EMF (FEAT-026).
-    export_emf(folder / "output")

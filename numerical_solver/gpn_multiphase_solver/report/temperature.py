@@ -1,18 +1,14 @@
-"""Печать однофазной проверки температуры для run_example.
+"""Печать однофазной проверки температуры для run_case (FEAT-030: из examples/temperature_asymptotics.py).
 
 Асимптотика T = T_ext + mu_JT,o·(p − p_0) и почему двухфазной нет —
-gpn_multiphase_solver.diagnostics.temperature (DEBT-011).
-
-Запуск:
-    .venv\\Scripts\\python examples\\temperature_asymptotics.py 02
+gpn_multiphase_solver.diagnostics.temperature (DEBT-011). Входит в штатный
+набор run_case (report/pipeline.py) при стационарной аналитике
+(output.steady_state).
 """
-
-import sys
-from pathlib import Path
 
 import numpy as np
 
-from gpn_multiphase_solver.diagnostics.temperature import single_phase_asymptote
+from ..diagnostics.temperature import single_phase_asymptote
 
 # Порог, ниже которого ячейка считается однофазной
 SG_EPS = 1e-12
@@ -22,7 +18,7 @@ def report_asymptotics(config, history, grid, simulator) -> dict:
     """Печать однофазной проверки. Возвращает сводку.
 
     Двухфазной части нет — см. шапку diagnostics/temperature.py. Вызывается
-    example_runner.run_example для всех примеров.
+    run_case (report/pipeline.py) при стационарной аналитике.
     """
     Sg = history.states[-1].Sg
     T = history.states[-1].T
@@ -50,27 +46,3 @@ def report_asymptotics(config, history, grid, simulator) -> dict:
 
     return dict(applicable=True, err_1ph=err_1ph,
                 n_cells=int(mask1.sum()), T_asymptote=T_as)
-
-
-if __name__ == "__main__":
-    _HERE = Path(__file__).resolve().parent
-    sys.path.insert(0, str(_HERE))
-    sys.path.insert(0, str(_HERE.parent))
-    # radial_blackoil (прототип гидродинамики) — установленный дистрибутив (DEBT-059)
-
-    from gpn_multiphase_solver.factory import SimulatorFactory
-    from gpn_multiphase_solver.io.config import load_config
-
-    if len(sys.argv) < 2:
-        raise SystemExit(
-            "укажите пример: python examples\\temperature_asymptotics.py 02")
-
-    name = sys.argv[1]
-    root = Path(__file__).parent
-    folder = next(d for d in root.iterdir()
-                  if d.is_dir() and d.name.startswith(name))
-
-    cfg = load_config(folder / "config.json")
-    sim, init = SimulatorFactory.from_config(cfg)
-    hist = sim.run(init)
-    report_asymptotics(cfg, hist, sim.grid, sim)

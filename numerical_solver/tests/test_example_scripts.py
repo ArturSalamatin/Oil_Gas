@@ -228,7 +228,7 @@ BROKEN_SNIPPETS = {
         "    from gpn_multiphase_solver.factory import no_such_factory\n"),
     "b_import_in_main_block": (
         'if __name__ == "__main__":\n'
-        "    from closed_form import no_such_name\n"),
+        "    from convergence import no_such_name\n"),
     "v_module_alias": (
         "import two_phase_analytics as tpa\n\n"
         "def f():\n"

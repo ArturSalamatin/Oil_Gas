@@ -1,4 +1,4 @@
-"""Наложения замкнутого решения на профили и его сверка с расчётом — для run_example.
+"""Наложения замкнутого решения на профили и его сверка с расчётом — для run_case (FEAT-030: из examples/closed_form.py).
 
 Само решение (вывод, формулы (1)–(3), фронт по p = p_b) —
 gpn_multiphase_solver.diagnostics.closed_form (DEBT-011). Здесь —
@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from gpn_multiphase_solver.diagnostics.closed_form import (
-    saturation_from_numeric, solve_closed)
+# Модуль решения — diagnostics/closed_form.py, не одноимённый этот (report/)
+from ..diagnostics.closed_form import saturation_from_numeric, solve_closed
 
 
-# ── Хуки для example_runner ──────────────────────────────────────
+# ── Хуки для run_case ────────────────────────────────────────────
 
 def _prepare(history, grid, simulator, config):
     """Общая подготовка overlay: PVT, ОФП и решение на сетке примера."""

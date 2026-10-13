@@ -158,7 +158,7 @@ class NumericsConfig:
     # (DEBT-008). Газ включается в ячейке при R_s > R_s,eq(p) + rs_switch_tol
     # (м³ст/м³ст), выключается при S_g < −sg_switch_tol. rs_switch_tol — ещё и допуск
     # проверки пересыщения старта (factory._check_undersaturated_start, BUG-017) и
-    # проверки R_s примеров (examples/rs_analytics.py, DEBT-026).
+    # проверки R_s (report/rs.py, DEBT-026).
     rs_switch_tol: float = 1e-5
     sg_switch_tol: float = 1e-9
     # Якобиан и решатель СЛАУ прототипа (допустимые значения проверяет его конструктор)

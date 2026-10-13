@@ -628,16 +628,13 @@ def test_steady_state_false_skips_steady_analytics(tmp_path, monkeypatch):
 # I. Общие проверки: балансы энергии и массы у всех примеров (FEAT-016, DEBT-039)
 # ═══════════════════════════════════════════════════════════
 
-# Модули проверок, вынесенные в examples/ (FEAT-016; mass_balance.py —
-# DEBT-039). test_shared_modules_exist проверяет, что они на месте: без них
-# примеры не считают проверки.
+# Модули проверок, оставшиеся в examples/ после FEAT-030: печать и рисунки
+# общих проверок — в пакете, gpn_multiphase_solver/report/.
+# test_shared_modules_exist проверяет, что они на месте: без них примеры
+# 03–05 и исследование сходимости баланса не работают.
 SHARED_CHECK_MODULES = [
-    "energy_balance.py",
     "energy_balance_convergence.py",
-    "temperature_asymptotics.py",
     "two_phase_analytics.py",
-    "pvt_plot.py",
-    "mass_balance.py",
 ]
 
 # Все файлы верхнего уровня examples/ — общие модули и скрипты. Ни один из
@@ -687,8 +684,6 @@ class TestSharedChecks:
         Идёт по ALL_EXAMPLES, включая 04a: после DEBT-013 члены баланса
         копятся на подшагах, поэтому структура истории проверке не мешает.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         bad = {}
@@ -712,8 +707,6 @@ class TestSharedChecks:
         планировании (2026-10-06): 4.0e-13 ... 2.9e-8 (пример 15), запас к
         порогу — 35 раз; дефекты учёта дают 1e-3...1.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.mass_balance import compute_mass_balance
 
         bad = {}
@@ -738,8 +731,6 @@ class TestSharedChecks:
         Идёт по ALL_EXAMPLES: после DEBT-013 баланс считается при любой
         структуре истории, отдельного списка исключений больше нет.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         for name in ALL_EXAMPLES:
@@ -773,8 +764,6 @@ class TestSharedChecks:
         Идёт по ALL_EXAMPLES: после DEBT-013 баланс считается при любой
         структуре истории, отдельного списка исключений больше нет.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         required = {"t", "delta_E", "cum_adiab", "cum_conv", "cum_jt",
@@ -880,9 +869,7 @@ class TestSharedChecks:
         """
         import contextlib
         import io
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
-        from rs_analytics import report_rs
+        from gpn_multiphase_solver.report.rs import report_rs
 
         reps = {}
         for name in TWO_PHASE:
@@ -928,10 +915,8 @@ ANALYTIC_PVT = [n for n in ALL_EXAMPLES if n not in TABLE_PVT]
 
 
 def _pvt_module():
-    """Общий модуль examples/pvt_plot.py."""
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import pvt_plot
+    """Модуль пакета report/pvt.py (до FEAT-030 — examples/pvt_plot.py)."""
+    from gpn_multiphase_solver.report import pvt as pvt_plot
     return pvt_plot
 
 
@@ -1028,8 +1013,6 @@ class TestPvtPlot:
         которого FEAT-016 сводил четыре копии energy_balance.py, поэтому
         допуск нулевой.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.diagnostics.rs import rs_expected
         pvt_plot = _pvt_module()
 
@@ -1253,14 +1236,15 @@ class TestPvtPlot:
     def test_formatter_delegates_drawing_to_core(self):
         """Оформитель не рисует сам — всё построение в ядре.
 
-        Стоит построению расползтись обратно в examples/ — и ядерная
-        функция перестанет отражать то, что видит пользователь пакета,
-        а расслоение слоёв (FEAT-017, §4.0) потеряет смысл. Панель mu_o(r),
-        единственное, что оформитель рисовал сам, снята FEAT-028.
+        Стоит построению расползтись обратно в оформитель (report/pvt.py,
+        до FEAT-030 — examples/pvt_plot.py) — и ядерная функция перестанет
+        отражать то, что видит пользователь своих рисунков, а расслоение
+        слоёв (FEAT-017, §4.0) потеряет смысл. Панель mu_o(r), единственное,
+        что оформитель рисовал сам, снята FEAT-028.
         """
         import ast
 
-        src = EXAMPLES_DIR / "pvt_plot.py"
+        src = Path(_pvt_module().__file__)
         tree = ast.parse(src.read_text(encoding="utf-8"))
 
         drawing = {"plot", "semilogx", "loglog", "scatter"}
@@ -1362,10 +1346,8 @@ class TestPvtPlot:
 # ═══════════════════════════════════════════════════════════
 
 def _relperm_module():
-    """Общий модуль examples/relperm_plot.py."""
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import relperm_plot
+    """Модуль пакета report/relperm.py (до FEAT-030 — examples/relperm_plot.py)."""
+    from gpn_multiphase_solver.report import relperm as relperm_plot
     return relperm_plot
 
 
@@ -1571,8 +1553,6 @@ class TestHighGasSaturation:
 
         Допуск 1 % с запасом на возможное измельчение сетки.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.diagnostics.closed_form import Closure
         from gpn_multiphase_solver.factory import (
             SimulatorFactory, create_relperm)
@@ -1770,8 +1750,6 @@ class TestPwfRampDown:
         Ожидание: q_o = 3.2827e-3 м³ст/с (замер 2026-09-29: 3.282724e-3).
         Ловит: возврат к history[0].
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.diagnostics.closed_form import solve_closed
         from gpn_multiphase_solver.factory import create_relperm
 
@@ -1806,10 +1784,8 @@ class TestPwfRampDown:
 # ═══════════════════════════════════════════════════════════
 
 def _closed_form():
-    """Наложения и сверка — examples/closed_form.py."""
-    import sys
-    sys.path.insert(0, str(EXAMPLES_DIR))
-    import closed_form
+    """Наложения и сверка — модуль пакета report/closed_form.py (FEAT-030)."""
+    from gpn_multiphase_solver.report import closed_form
     return closed_form
 
 
@@ -2856,8 +2832,6 @@ class TestShutInStrongCooling:
         Ловит: смену знака члена дегазации при растворении, потерю
         адиабатического члена.
         """
-        import sys
-        sys.path.insert(0, str(EXAMPLES_DIR))
         from gpn_multiphase_solver.energy.balance import compute_energy_balance
 
         r = results[self.NAME]

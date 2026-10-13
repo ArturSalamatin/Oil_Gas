@@ -61,6 +61,9 @@ from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa:
 from convergence import run_series  # noqa: E402
 from gpn_multiphase_solver.units import S_TO_DAY  # noqa: E402
 from gpn_multiphase_solver.io.figures import save_figure, export_emf  # noqa: E402
+# Одна копия правила разбора имени примера («03» → 03_standing_corey) —
+# two_phase_analytics.py (FEAT-030)
+from two_phase_analytics import _resolve_example  # noqa: E402
 
 # Шаги по времени, с. Диапазон в 10 раз: проверяем, что уровень невязки
 # держится и при штатном шаге, и при десятикратно меньшем.
@@ -167,24 +170,6 @@ def plot_balance_convergence(results, output_dir: Path,
         print("  Баланс не замыкается: какой-то член выписан неверно либо "
               "взят не на том временном слое.")
     return worst_fin, worst_max
-
-
-def _resolve_example(name_or_prefix: str) -> Path:
-    """examples/<имя>/ по полному имени или числовому префиксу ('03').
-
-    Пользователю не нужно печатать '03_standing_corey' целиком.
-    Ошибка при отсутствии или неоднозначности префикса.
-    """
-    exact = _EXAMPLES / name_or_prefix
-    if exact.is_dir():
-        return exact
-    matches = sorted(d for d in _EXAMPLES.iterdir()
-                     if d.is_dir() and d.name.startswith(name_or_prefix))
-    if not matches:
-        raise SystemExit(f"нет примера '{name_or_prefix}'")
-    if len(matches) > 1:
-        raise SystemExit(f"неоднозначно: {[m.name for m in matches]}")
-    return matches[0]
 
 
 # ── Автономный запуск ──

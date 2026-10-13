@@ -1,4 +1,4 @@
-"""График относительных фазовых проницаемостей — общий для всех примеров.
+"""График относительных фазовых проницаемостей — штатный рисунок relperm.png (FEAT-030: из examples/relperm_plot.py).
 
 Кривые ОФП замыкают систему уравнений фильтрации, но в штатном наборе
 графиков (p, S_g, T, дебиты) их не видно. Между тем именно они объясняют,
@@ -35,14 +35,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+# Режим matplotlib модуль не выбирает: это делает команда расчёта
+# (cli.configure_batch_run) или вызывающий скрипт (FEAT-030)
+import matplotlib.pyplot as plt
+import numpy as np
 
-# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_example.
-from gpn_multiphase_solver.io.figures import save_figure  # noqa: E402
-from gpn_multiphase_solver.io.output import plot_relperm_curves  # noqa: E402
+# PNG + SVG/EMF в output/emf/ (FEAT-026); EMF делает пакетом run_case.
+from ..io.figures import save_figure
+from ..io.output import plot_relperm_curves
 
 
 def _sg_range(history) -> tuple[float, float]:
@@ -78,7 +78,7 @@ def plot_relperm(config, history, output_dir: Path, title: str,
     Возвращает путь к сохранённому PNG.
     """
     if relperm is None:
-        from gpn_multiphase_solver.factory import create_relperm
+        from ..factory import create_relperm
         relperm = create_relperm(config)
 
     axes = plot_relperm_curves(relperm, _sg_range(history),
@@ -101,7 +101,7 @@ def report_relperm(config, history, relperm=None) -> None:
     входит в замыкание GOR = Rs0 и определяет насыщенность в стационаре.
     """
     if relperm is None:
-        from gpn_multiphase_solver.factory import create_relperm
+        from ..factory import create_relperm
         relperm = create_relperm(config)
 
     Sg_lo, Sg_hi = _sg_range(history)

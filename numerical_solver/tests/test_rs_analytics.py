@@ -1,4 +1,4 @@
-"""Проверка R_s: diagnostics/rs.py (проверка) и examples/rs_analytics.py (печать, наложение); DEBT-026.
+"""Проверка R_s: diagnostics/rs.py (проверка) и report/rs.py (печать, наложение); DEBT-026.
 
 Проверка обязана быть верной при любой истории давления:
   ячейка со свободным газом (Sg > SG_GAS): Rs = Rs_eq(p);
@@ -12,7 +12,6 @@ pb = 15 МПа, Rs_eq = 30 при p >= 15 МПа) и 03 (Стендинг, Rs0 =
 Расчёта нет — быстрый уровень.
 """
 
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -26,14 +25,12 @@ from gpn_multiphase_solver.factory import create_pvt  # noqa: E402
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.state import SimulationState  # noqa: E402
 
-# Модуль примеров, не пакета: путь только до examples/ (как в
-# test_energy_balance_examples.py).
+# Конфиги примеров 03 и 04 — источник настоящего PVT
 _EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
-if str(_EXAMPLES) not in sys.path:
-    sys.path.insert(0, str(_EXAMPLES))
 
-import rs_analytics  # noqa: E402
-# Проверка R_s — в пакете (DEBT-011); печать и наложение — examples/rs_analytics.py
+# Печать и наложение — в пакете (FEAT-030), имя модуля в тестах прежнее
+from gpn_multiphase_solver.report import rs as rs_analytics  # noqa: E402
+# Проверка R_s — в пакете (DEBT-011)
 from gpn_multiphase_solver.diagnostics import rs as rs_core  # noqa: E402
 
 MPA = 1e6

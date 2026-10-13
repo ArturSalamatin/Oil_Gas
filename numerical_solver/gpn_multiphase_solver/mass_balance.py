@@ -19,7 +19,7 @@ Simulator, и интегралы копятся здесь по принятым
 проверяется не физика, а всё между невязкой Ньютона и историей (допуск,
 накопленный по шагам; знаки потоков адаптера; учёт дробления шага). Сборка
 невязки — compute_mass_balance ниже (DEBT-011); график и печать —
-examples/mass_balance.py.
+report/mass_balance.py.
 """
 
 from __future__ import annotations

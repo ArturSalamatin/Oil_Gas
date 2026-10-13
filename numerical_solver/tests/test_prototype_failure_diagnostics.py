@@ -13,6 +13,12 @@ residual_inf) и exit_reason; адаптер печатает их и какое
 
 План: vault/plans/debt-054 newton-failure-diagnostics.md; замеры —
 vault/issues/debt-054/probes/failure_census.out.txt, test_scenarios.out.txt.
+
+DEBT-055: отчёт отказа несёт ещё cell_floor — предел округления меры ячеек на том же
+приближении, меру вектора |J|·ulp(z) (eq:newton_cell_floor); текст отказа его печатает и
+говорит, если отказ «только по ячейке» стоит на пределе.
+План: vault/plans/debt-055 cell-tol-roundoff-floor.md; замеры —
+vault/issues/debt-055/probes/.
 """
 
 from types import SimpleNamespace
@@ -155,6 +161,7 @@ class TestSwitching:
         assert rep.converged and rep.exit_reason == "converged"
         assert rep.residual_tol == _tol(model, z0, ps, DT_STAGE4, ps.gas_active)
         assert rep.residual_inf <= rep.residual_tol and rep.cell_measure <= CELL_TOL
+        assert rep.cell_floor is None      # DEBT-055: предел — только у отказа
 
     def test_limit_only_cell_test(self, shutin):
         """Недостижимый порог 1e-30: 40 итераций, выход по лимиту, абсолютное условие выполнено.
@@ -247,13 +254,15 @@ class TestBranchAndTotalFailure:
         """Отказ всех ступеней: допуск, мера и выход — исходного алгоритма, как итерации и невязка (DEBT-030).
 
         У попыток запасного пути и третьей ступени поля другие: видно, чей отчёт вернул advance.
-        Ловит: подмена DEBT-030 без новых полей (допуск и мера последней попытки при невязке ступени 1).
+        Ловит: подмена DEBT-030 без новых полей (допуск и мера последней попытки при невязке ступени 1;
+        предел округления последней попытки — DEBT-055).
         """
         model = _model(150.0)
         orig = BlackOilNewtonReport(False, 4, 6.5e-15, 2, 21, residual_tol=5.4e-7,
-                                    cell_measure=2.6e-8, exit_reason="line_search")
+                                    cell_measure=2.6e-8, exit_reason="line_search",
+                                    cell_floor=6.4e-8)
         other = BlackOilNewtonReport(False, 40, 18.2, residual_tol=5.4e-7,
-                                     cell_measure=3.6e7, exit_reason="max_iter")
+                                     cell_measure=3.6e7, exit_reason="max_iter", cell_floor=2.0e-7)
         branch = BlackOilNewtonReport(True, 0, 0.0, residual_tol=1e-11, cell_measure=0.0,
                                       exit_reason="converged")
         _install_fake_reports(model, {
@@ -264,6 +273,7 @@ class TestBranchAndTotalFailure:
         assert not rep.converged
         assert (rep.iterations, rep.residual_inf) == (4, 6.5e-15)
         assert (rep.residual_tol, rep.cell_measure, rep.exit_reason) == (5.4e-7, 2.6e-8, "line_search")
+        assert rep.cell_floor == 6.4e-8      # DEBT-055: предел — тоже исходного алгоритма
 
 
 def test_real_total_failure_only_cell_test():
@@ -280,6 +290,99 @@ def test_real_total_failure_only_cell_test():
     assert not rep.converged and rep.iterations == 4 and rep.exit_reason == "line_search"
     assert rep.residual_inf <= rep.residual_tol       # абсолютное условие выполнено
     assert rep.cell_measure > CELL_TOL                 # условие по ячейке — нет
+
+
+# ═══════════════════════════════════════════════════════════
+# E2. Предел округления меры ячеек (DEBT-055)
+# ═══════════════════════════════════════════════════════════
+
+class TestRoundoffFloor:
+    """DEBT-055: отчёт отказа несёт cell_floor — меру ячеек вектора |J|·ulp(z) (eq:newton_cell_floor).
+
+    Неизвестные представимы с шагом ulp, и невязку ячейки нельзя сделать меньше доли
+    (|J|·ulp(z))_i: Ньютон встаёт на 0.1–0.4 этой меры (замеры плана —
+    vault/issues/debt-055/probes/floor_probe.out.txt, failures_floor_*.out.txt). Предел
+    растёт как Δt: дробление шага его снимает. Числа тестов — plan_check.out.txt.
+    """
+
+    def test_definition_at_linear_solver_exit(self, monkeypatch):
+        """Выход 'linear_solver' на первой итерации: якобиан построен в z0 — предел ровно мера |J(z0)|·ulp(z0).
+
+        Ловит: предел по другому приближению, другому якобиану или другим весам.
+        """
+        model, state = _nabor(12, cell_tol=CELL_TOL)
+
+        def broken(*args, **kwargs):
+            raise np.linalg.LinAlgError("вырожденная матрица (тест)")
+
+        monkeypatch.setattr(model, "_linear_solve", broken)
+        z0 = model.pack(state)
+        _, rep = model._newton_fixed_active_set(z0, state, DT, state.gas_active)
+        J0, _ = model.finite_difference_jacobian(z0, state, DT, state.gas_active)
+        expected = model._cell_measure(abs(J0) @ np.spacing(np.abs(z0)),
+                                       model._cell_weights(state, DT))
+        assert rep.exit_reason == "linear_solver"
+        assert rep.cell_floor == expected
+
+    def test_none_without_failure_or_cell_test(self):
+        """Предела нет у сошедшегося решения и при выключенном условии (собственные расчёты прототипа).
+
+        Ловит: лишнее произведение |J|·v на каждом решении; предел без условия по ячейке.
+        """
+        model, state = _nabor(12, cell_tol=CELL_TOL)
+        _, rep = model._newton_fixed_active_set(model.pack(state), state, DT, state.gas_active)
+        assert rep.converged and rep.cell_floor is None
+        # Без cell_tol: max_iter = 1 при трёх нужных итерациях — отказ, но весов нет
+        model, state = _nabor(12)
+        _, rep = model._newton_fixed_active_set(model.pack(state), state, DT, state.gas_active,
+                                                max_iter=1)
+        assert not rep.converged and rep.cell_floor is None
+
+    def test_bug018_failure_at_floor(self):
+        """BUG-018 при N = 350, шаг 86400 с: ступень 1 встала на пределе — мера 2.60e-8 > 1e-8, предел 6.42e-8.
+
+        Замер (plan_check.out.txt, B): линейный поиск после 4 итераций, мера 2.5962e-8,
+        предел 6.4200e-8, отношение 0.40. Ловит: отказ на пределе неотличим от отказа
+        недорешённого Ньютона (у того мера много выше предела).
+        """
+        model, ps, dt = _bug018_model()
+        _, rep = model._advance_phases(ps, dt)
+        assert not rep.converged and rep.exit_reason == "line_search"
+        assert CELL_TOL < rep.cell_measure <= rep.cell_floor
+        assert rep.cell_floor == pytest.approx(6.42e-8, rel=1e-3)
+
+    def test_floor_proportional_to_dt(self):
+        """Тот же старт при dt/2: предел ровно вдвое меньше — дробление шага его снимает.
+
+        Замер (plan_check.out.txt, B): 3.2100e-8 против 6.4200e-8 — 0.50000. Предел задают
+        давления в потоках через грани (eq:newton_cell_floor): вес dt/V_p, производные
+        потоков от dt не зависят. При dt/2 мера 1.17e-8 ещё выше порога — Simulator
+        отвергает и этот подшаг; dt/4 сходится (история сценария: 86400 и 43200 с —
+        отказ, 21600 с — принят; histories_save_base7d8fea7.out.txt).
+        Ловит: предел, не зависящий от шага (оценка eps_маш·V_max/V_min до DEBT-055).
+        """
+        model, ps, dt = _bug018_model()
+        _, full = model._advance_phases(ps, dt)
+        _, half = model._advance_phases(ps, dt / 2)
+        assert not half.converged and half.cell_measure > CELL_TOL
+        assert half.cell_floor / full.cell_floor == pytest.approx(0.5, rel=1e-3)
+
+    def test_switching_limit_stops_at_floor(self, shutin):
+        """Ступень 4 при недостижимом пороге 1e-30: 40 итераций, мера встала на 0.23 предела.
+
+        Замер (plan_check.out.txt, C): мера 9.77e-12, предел 4.34e-11. Отказы ступени 4
+        по памяти на суточном останове — тот же класс: мера 1.29e-8 при пределе 4.65e-8
+        (failures_floor_*.out.txt). Порог возвращается в finally: фикстура модульная.
+        """
+        model, ps = shutin
+        try:
+            model.cell_tol = 1e-30
+            _, rep = model._newton_switching(ps, DT_STAGE4)
+        finally:
+            model.cell_tol = CELL_TOL
+        assert not rep.converged and rep.exit_reason == "max_iter"
+        assert rep.cell_measure <= rep.cell_floor
+        assert rep.cell_floor == pytest.approx(4.34e-11, rel=1e-2)
 
 
 # ═══════════════════════════════════════════════════════════

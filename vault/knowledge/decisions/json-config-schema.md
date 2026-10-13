@@ -126,6 +126,7 @@ metadata:
 | Поле | Тип | Ед. | Описание |
 |---|---|---|---|
 | `dt_integration` | float | с | Желаемый шаг интегрирования |
+| `dt_after_control_change` | float или null | с | Первый подшаг после смены управления скважиной (FEAT-032); null — выключено (по умолчанию). Рекомендуется 2 с; меньше ~0.5 с — риск отказа (BUG-025) |
 | `history` | list | — | Массив интервалов истории |
 | `history[k].dt` | float | с | Длительность k-го интервала (шаг истории) |
 | `history[k].repeat` | int | — | Число одинаковых интервалов по `dt`, ≥ 1 (по умолчанию 1; FEAT-018) |
@@ -164,7 +165,7 @@ metadata:
 - n_sub · dt_actual = Δt_hist ровно (нет накопления ошибки)
 - Результаты на концах интервалов истории (не на каждом подшаге)
 
-Ограничения: `dt_integration > 0`, `history` не пуст, `dt > 0`, `p_wf > 0` для каждого элемента; `repeat` — целое ≥ 1; `duration > 0`, `dt_out > 0`, `duration` кратна `dt_out`.
+Ограничения: `dt_integration > 0`, `dt_after_control_change` — null или > 0, `history` не пуст, `dt > 0`, `p_wf > 0` для каждого элемента; `repeat` — целое ≥ 1; `duration > 0`, `dt_out > 0`, `duration` кратна `dt_out`.
 
 ### numerics
 

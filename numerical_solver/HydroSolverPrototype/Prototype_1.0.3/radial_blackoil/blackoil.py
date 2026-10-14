@@ -41,6 +41,10 @@ term, max(atol, ROUNDOFF_KAPPA*eps*M_max/dt) (_absolute_tol): a shut-in step sho
 DEBT-055: a failed Newton report also carries the rounding limit of the per-cell measure
 (cell_floor): the measure of |J| @ ulp(z), the change of the residual when every unknown
 moves by one ulp; the Newton does not get far below it, and it grows as dt.
+BUG-028: _advance_phases limits by max_active_iter only the passes that switch gas on; a pass
+that only switches gas off shrinks the two-phase set and is not counted, all passes together
+stay below max_active_iter + N.  Production from equilibrium with incompressible
+undersaturated oil (GPN examples 19, 21) failed every stage at steps up to 120 s and 5.27 s.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -578,12 +582,23 @@ class RadialBlackOilModel:
         finally:
             self._sg_lower_bound=-0.05; self._well_branch=None
     def _advance_phases(self,state_old,dt_s,max_active_iter=12,max_newton=15):
-        """Phase active-set loop (unchanged Prototype 1 logic)."""
+        """Phase active-set loop (Prototype 1 logic); max_active_iter counts the passes that switch gas on (BUG-028)."""
         # BUG-020: inside the fourth stage of advance the BUG-014 fallback (well branches)
         # runs the Newton with phase switches inside it instead of this loop
         if self._phase_switching: return self._newton_switching(state_old,dt_s)
         state_old=state_old.copy(); mask=state_old.gas_active.copy(); guess=state_old.copy(); total_switches=total_newton=0
-        for aset in range(1,max_active_iter+1):
+        # BUG-028: max_active_iter limits the passes that switch gas on in some cell.  A pass that
+        # only switches gas off shrinks the two-phase set, so at most N such passes follow in a
+        # row; all passes together stay below max_active_iter + N.  Production from equilibrium
+        # with incompressible undersaturated oil (c_o = c_r = 0, GPN examples 19, 21): the first,
+        # single-phase pass is steady at any dt and switches gas on in 342 of 350 cells; every pass
+        # after it switches gas off only at the outer edge of the set, 1-24 cells, and a step of
+        # 1 s needs 62 passes (0.01 s: 182) -- steps up to 120 s (19) and 5.27 s (21) failed
+        # every stage.  A loop that ends within max_active_iter passes runs the same passes as
+        # before, bitwise: before pass k <= max_active_iter, counted <= k-1 and aset = k-1.
+        aset=counted=0; max_passes=max_active_iter+self.grid.n
+        while counted<max_active_iter and aset<max_passes:
+            aset+=1
             z,report=self._newton_fixed_active_set(self.pack(guess,mask),state_old,dt_s,mask,max_iter=max_newton); total_newton+=report.iterations
             if not report.converged:
                 report.active_set_iterations=aset; report.phase_switches=total_switches; return guess,report
@@ -592,6 +607,7 @@ class RadialBlackOilModel:
             ns=int(np.count_nonzero(activate)+np.count_nonzero(deactivate)); total_switches+=ns
             if ns==0:
                 tiny=mask&(trial.sg<0)&(trial.sg>=-self.sg_switch_tol); trial.sg[tiny]=0.0; trial.gas_active=mask.copy(); report.iterations=total_newton; report.active_set_iterations=aset; report.phase_switches=total_switches; return trial,report
+            if np.any(activate): counted+=1   # BUG-028: only a pass that switches gas on is counted
             newmask=mask.copy(); newmask[activate]=True; newmask[deactivate]=False; guess=trial.copy(); guess.gas_active=newmask.copy()
             if np.any(activate):
                 pa=guess.pressure_bar[activate]; rtot=guess.rs_sm3_sm3[activate].copy(); rsat=self.pvt.rs_sat(pa); bo=self.pvt.bo(pa,rsat); bg=self.pvt.bg(pa); d=np.maximum(rtot-rsat,0.0)
@@ -603,9 +619,11 @@ class RadialBlackOilModel:
             if np.any(deactivate): guess.sg[deactivate]=0.0; guess.rs_sm3_sm3[deactivate]=self.pvt.rs_sat(guess.pressure_bar[deactivate])
             mask=newmask
         # DEBT-054: the phase loop ran out; r is the residual of the guess with the new phase set,
-        # which no Newton solved -- no absolute tolerance, the per-cell measure of r
+        # which no Newton solved -- no absolute tolerance, the per-cell measure of r.  BUG-028: aset
+        # passes, max_active_iter of them switched gas on (or max_active_iter + N passes in all);
+        # aset = max_active_iter where every pass switched gas on, as before
         r=self.residual(self.pack(guess,mask),state_old,dt_s,mask)
-        return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),max_active_iter,total_switches,
+        return guess,BlackOilNewtonReport(False,total_newton,float(np.linalg.norm(r,np.inf)),aset,total_switches,
                                           cell_measure=self._cell_measure(r,self._cell_weights(state_old,dt_s)),
                                           exit_reason='active_set')
     def _switch_phases(self,p,x,mask):

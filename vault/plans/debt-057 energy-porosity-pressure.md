@@ -7,7 +7,8 @@ issue: DEBT-057
 github: 108
 branch: refactor/debt-057/energy-porosity-pressure
 status: реализован
-worktree: .worktrees/debt-057
+worktree: .worktrees/debt-057; удалён после влития
+merged: 461e201 (2026-10-14)
 audit:
   date: 2026-10-13
   round: 1

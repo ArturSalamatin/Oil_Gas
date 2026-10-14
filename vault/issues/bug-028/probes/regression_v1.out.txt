@@ -1,0 +1,37 @@
+﻿[T00] running...
+[T00] PASS: golden output reproduced; QC PASS
+[T01] running...
+[T01] PASS: golden output reproduced; QC PASS
+[T02] running...
+[T02] PASS: golden output reproduced; QC PASS
+[T03] running...
+[T03] PASS: golden output reproduced; QC PASS
+[T04] running...
+[T04] PASS: golden output reproduced; QC PASS
+[T06] running...
+[T06] PASS: golden output reproduced; QC PASS
+[T07] running...
+[T07] PASS: golden output reproduced; QC PASS
+[T08c] running...
+[T08c] PASS: golden output reproduced; QC PASS
+[T09] running...
+[T09] PASS: golden output reproduced; QC PASS
+[T10] running...
+[T10] PASS: golden output reproduced; QC PASS
+[T11] running...
+[T11] PASS: golden output reproduced; QC PASS
+
+=== REGRESSION SUMMARY ===
+T00                  PASS
+T01                  PASS
+T02                  PASS
+T03                  PASS
+T04                  PASS
+T06                  PASS
+T07                  PASS
+T08c                 PASS
+T09                  PASS
+T10                  PASS
+T11                  PASS
+Passed 11/11 jobs
+Outputs: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\OUTPUT\REGRESSION_20261014_110408

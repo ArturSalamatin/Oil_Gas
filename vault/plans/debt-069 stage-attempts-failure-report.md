@@ -7,7 +7,8 @@ issue: DEBT-069
 github: 118
 branch: refactor/debt-069/stage-attempts-failure-report
 status: реализован
-worktree: .worktrees/debt-069
+worktree: .worktrees/debt-069; удалён после влития
+merged: 03c6339 (2026-10-14)
 audit:
   date: 2026-10-14
   found: 7

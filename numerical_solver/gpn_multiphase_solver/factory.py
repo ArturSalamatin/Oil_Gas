@@ -350,16 +350,16 @@ def _warn_negative_compressibility(config: SimulationConfig, pvt) -> None:
                 f"зависимость результата от шага по времени. Расчёт продолжается.")
 
 
-def _warn_initial_table_range(model, ic) -> None:
-    """Предупреждения pvt_range_warnings прототипа для начального состояния (BUG-017)."""
+def _warn_initial_table_range(adapter, ic) -> None:
+    """Выход начального состояния за таблицы (BUG-017) — проверкой адаптера, общей с расчётом (DEBT-027)."""
     from radial_blackoil.state import BlackOilState
-    from radial_blackoil.diagnostics import pvt_range_warnings
 
     # Начальное состояние однородно (p0, Rs0, S_g = 0, газ неактивен), а
     # pvt_range_warnings смотрит только min/max — одной ячейки достаточно.
+    # Через адаптер: категория, выведенная при t = 0, по ходу расчёта не
+    # повторяется (DEBT-027). Без табличной PVT адаптер не проверяет.
     state = BlackOilState.undersaturated(1, ic.p0 / BAR_TO_PA, ic.Rs0)
-    for warning in pvt_range_warnings(model, state):
-        user_log.warning(f"Начальное состояние вне таблиц: {warning}")
+    adapter.warn_table_range(state, 0.0)
 
 
 def create_relperm(config: SimulationConfig):
@@ -455,22 +455,22 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
         cell_tol=nc.newton_cell_tol,
     )
 
-    # Выход начального состояния за PVT- и ОФП-таблицы (BUG-017): прототип
-    # берёт свойства с краёв таблиц без экстраполяции и молча. Только
-    # табличная PVT: у HydroPVTtoBlackOilAdapter (Стендинг) нет газовой
-    # таблицы gp — pvt_range_warnings упал бы AttributeError.
-    if isinstance(pvt, TableFullPVT):
-        _warn_initial_table_range(model, ic)
-
     # Пересчёт потоков (Q, u, m) — тем же объектом FullPVT, что у решателя
     # энергии и Simulator (DEBT-006). Прежде табличный путь разворачивал
     # TableFullPVT до PrototypePVTAdapter проверкой поля _hydro через hasattr;
     # числа те же побитово: TableFullPVT делегирует гидро-методы без
     # арифметики, а rho_o, rho_g — общие методы HydroPVT.
-    # Лимиты Ньютона (DEBT-008): адаптер передаёт их в каждый вызов advance
-    return PrototypeHydroAdapter(model, grid, pvt,
-                                 max_newton=nc.newton_max_iter,
-                                 max_active_iter=nc.max_active_set_iter)
+    # Лимиты Ньютона (DEBT-008): адаптер передаёт их в каждый вызов advance.
+    # Выход за PVT- и ОФП-таблицы (BUG-017, DEBT-027): прототип берёт свойства с
+    # краёв таблиц без экстраполяции и молча; адаптер проверяет каждое принятое
+    # состояние. Только табличная PVT: у HydroPVTtoBlackOilAdapter (Стендинг) нет
+    # газовой таблицы gp — pvt_range_warnings упал бы AttributeError.
+    adapter = PrototypeHydroAdapter(model, grid, pvt,
+                                    max_newton=nc.newton_max_iter,
+                                    max_active_iter=nc.max_active_set_iter,
+                                    check_table_range=isinstance(pvt, TableFullPVT))
+    _warn_initial_table_range(adapter, ic)
+    return adapter
 
 
 def _get_or_create_proto_pvt(pvt, p0: float):

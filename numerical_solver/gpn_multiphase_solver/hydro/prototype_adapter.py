@@ -38,6 +38,12 @@ HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адапти�
 Баланс массы (DEBT-039): component_inventories — запас компонентов
 функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
 и контур за шаг (подшаг один — dt·G того же состояния).
+
+Выход за таблицы (DEBT-027): после каждого сошедшегося advance — pvt_range_warnings
+прототипа, категория «кривая насыщения выше таблицы» — только по свободному газу
+(FREE_GAS_SG); каждая категория — одна запись журнала за расчёт, с моментом первого
+выхода. Начальное состояние проверяет фабрика тем же методом warn_table_range.
+Только табличная PVT (check_table_range): у HydroPVTtoBlackOilAdapter нет таблицы gp.
 """
 
 from dataclasses import replace
@@ -51,6 +57,7 @@ from ..pvt.base import HydroPVT
 from ..bc import PressureControl, RateControl
 from ..units import BAR_TO_PA, DAY_TO_S
 from ..fluxes import phase_fluxes_from_components
+from ..log import user_log
 
 # Память ступени 4 (DEBT-048). Замер плана (vault/plans/debt-048
 # shutin-remember-solving-stage.md, 1.2 и 1.9): вариант m2s — после BUG-024
@@ -58,6 +65,16 @@ from ..fluxes import phase_fluxes_from_components
 # 22 примера из 23 побитово.
 STAGE4_MEMORY = 2         # принятых подряд шагов ступени 4, после которых шаг — сразу ею
 STAGE4_MAX_FAILURES = 2   # отказов подряд ступени 4 по памяти, после которых память сброшена
+
+# Свободный газ для проверки «кривая насыщения выше таблицы» (DEBT-027), доля порового
+# объёма. Выше наибольшего p_b таблицы R_s^sat обрезан на последней ветви; это меняет
+# решение только там, где есть газ, который мог бы раствориться. Ячейка фронта с флагом
+# газа держит S_g на уровне округления Ньютона: до 1.2e-11 в табличных примерах (кроме
+# 04a, где газ настоящий), до 3.6e-9 в эталонных кейсах прототипа (без условия по ячейке
+# BUG-022); замерено на шагах до 1 ч. Настоящий газ выше p_b — сразу больше 1e-3 (пример
+# 04a, 2 ч), до 0.08. Порог — в 280 раз выше шума и в 1000 раз ниже настоящего газа
+# (vault/plans/debt-027 table-range-diagnostics.md, §2.4).
+FREE_GAS_SG = 1e-6
 
 
 # Причина выхода из Ньютона прототипа — поле exit_reason отчёта (DEBT-054). Неизвестный
@@ -131,7 +148,8 @@ class PrototypeHydroAdapter(HydroSolver):
 
     def __init__(self, model, grid: Grid, pvt: HydroPVT,
                  stage4_memory: int | None = STAGE4_MEMORY,
-                 max_newton: int = 15, max_active_iter: int = 12):
+                 max_newton: int = 15, max_active_iter: int = 12,
+                 check_table_range: bool = False):
         """
         model         — RadialBlackOilModel, уже сконфигурированный
         grid          — наш Grid (LogRadialGrid)
@@ -141,6 +159,8 @@ class PrototypeHydroAdapter(HydroSolver):
         max_newton      — итераций Ньютона на одно решение при фиксированном наборе
                           фаз (numerics.newton_max_iter, DEBT-008)
         max_active_iter — проходов набора фаз с включением газа (numerics.max_active_set_iter, BUG-028)
+        check_table_range — проверять выход принятых состояний за PVT- и ОФП-таблицы
+                          (DEBT-027); фабрика включает только для табличной PVT
         """
         self._model = model
         self._grid = grid
@@ -159,6 +179,30 @@ class PrototypeHydroAdapter(HydroSolver):
         # памяти (DEBT-048) оставался побитово шагом advance после трёх отказов.
         self._max_newton = max_newton
         self._max_active_iter = max_active_iter
+        # Выход за таблицы (DEBT-027): уже выведенные категории — на весь расчёт.
+        # Адаптер живёт один расчёт (фабрика строит его заново): второй run того же
+        # симулятора выведенные категории не повторит.
+        self._check_table_range = check_table_range
+        self._range_categories: set[str] = set()
+
+    def warn_table_range(self, proto_state, t: float) -> None:
+        """Выход состояния за PVT- и ОФП-таблицы — в журнал, одна запись на категорию за расчёт (DEBT-027)."""
+        if not self._check_table_range:
+            return
+        from radial_blackoil.diagnostics import pvt_range_warnings, warning_category
+
+        # Прототип берёт свойства за краями таблиц с краёв, без экстраполяции и молча;
+        # его pvt_range_warnings называет категорию и значение. Категория — по
+        # warning_category: в тексте о ветвях давления двоеточия нет, а числа меняются.
+        for warning in pvt_range_warnings(self._model, proto_state,
+                                          free_gas_sg=FREE_GAS_SG):
+            category = warning_category(warning)
+            if category in self._range_categories:
+                continue
+            self._range_categories.add(category)
+            where = ("Начальное состояние" if t == 0.0
+                     else f"Состояние при t = {t / DAY_TO_S:.4g} сут")
+            user_log.warning(f"{where} вне таблиц: {warning}")
 
     def component_inventories(self, state: SimulationState) -> tuple[float, float]:
         """Запас компонентов функцией прототипа, м³ст. Ур. (eq:residual_oil), (eq:residual_gas)."""
@@ -252,6 +296,11 @@ class PrototypeHydroAdapter(HydroSolver):
         self._stage4_run = self._stage4_run + 1 if report.phase_switching else 0
         self._stage4_failures = 0
         self._stage4_key = (control, state.t + dt)
+
+        # Выход принятого состояния за таблицы (DEBT-027). Состояние принятое:
+        # Simulator отвергает подшаг только по HydroConvergenceError выше, а отказ
+        # проверки температуры после solve обрывает весь расчёт.
+        self.warn_table_range(new_proto, state.t + dt)
 
         # ── Шаг 4: BlackOilState (бар) → SimulationState (Па) ──
         new_state = SimulationState(

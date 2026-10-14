@@ -1,0 +1,3 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-057\numerical_solver\gpn_multiphase_solver
+18_prototype_input             9b429849070f30eb РАСХОЖДЕНИЕ, ожидалось 03f9fcb4c112bb8d
+итог: расхождений 1 из 1

@@ -7,7 +7,8 @@ issue: BUG-015
 github: 115
 branch: fix/bug-015/well-face-jt-docs
 status: реализован
-worktree: .worktrees/bug-015
+worktree: .worktrees/bug-015; удалён после влития
+merged: 12f89a4 (2026-10-14)
 audit:
   date: 2026-10-14
   base: 8e432a3

@@ -1,0 +1,5 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+Прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+Вариант base, KAPPA = 1.0
+  ex17_tol1e-10: прошёл, 94.2 с, записей 54, вызовов гидро 1145, отказов 205, якобианов 14631 (+0 варианта), приёмов по полу 0, пол не помог 0, min ΔR_s(r_w) на останове +8.109e-08

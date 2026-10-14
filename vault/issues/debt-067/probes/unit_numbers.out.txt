@@ -1,0 +1,29 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver, KAPPA = 1.0
+
+1. BUG-018 N = 350, сутки (86400 с), _advance_phases: converged=False, iterations=15, active_set=2, exit='max_iter', residual=2.030e-03 (tol 4.1286960817122675e-11), measure=45072.79232124407, cell_floor=6.231495803996184e-08, fallback=False, globalized=False, phase_switching=False
+   приёмов по полу 1: мера 2.5962e-08, предел 6.4200e-08, kappa 0.462, строки o0,o1,o13,o14,o15,o16
+   advance: converged=True, iterations=19, active_set=4, exit='converged', residual=9.967e-15 (tol 1.0518310135578524e-11), measure=8.161198372514035e-09, cell_floor=None, fallback=True, globalized=True, phase_switching=False; приёмов по полу 3
+
+1. BUG-018 N = 350, полсуток (43200 с), _advance_phases: converged=False, iterations=4, active_set=2, exit='line_search', residual=2.976e-03 (tol 4.128705028527159e-11), measure=46086.35277713089, cell_floor=6.533041932049703e-08, fallback=False, globalized=False, phase_switching=False
+   приёмов по полу 1: мера 1.1666e-08, предел 3.2100e-08, kappa 0.412, строки o0,o12,g0,g12
+   advance: converged=True, iterations=16, active_set=3, exit='converged', residual=6.322e-15 (tol 1.2423740619481057e-11), measure=3.0464258154787137e-09, cell_floor=None, fallback=True, globalized=True, phase_switching=False; приёмов по полу 3
+
+3. Nabor_1b N = 12: converged=True, iterations=3, active_set=0, exit='converged', residual=9.165e-16 (tol 1.9367912994863684e-11), measure=3.440676894137998e-12, cell_floor=None, fallback=False, globalized=False, phase_switching=False; мера 3.441e-12; приёмов по полу 0, пол не помог 1
+   advance: converged=True, iterations=7, active_set=2, exit='converged', residual=8.107e-16 (tol 1.273524265000212e-11), measure=7.50575469729787e-13, cell_floor=None, fallback=False, globalized=False, phase_switching=False; мера 7.506e-13; приёмов по полу 0
+
+3. Nabor_1b N = 50: converged=True, iterations=4, active_set=0, exit='converged', residual=6.218e-14 (tol 4.903297081193202e-11), measure=4.71676645580177e-10, cell_floor=None, fallback=False, globalized=False, phase_switching=False; мера 4.717e-10; приёмов по полу 0, пол не помог 0
+   advance: converged=True, iterations=10, active_set=2, exit='converged', residual=5.139e-16 (tol 1.0882354669218001e-11), measure=1.3843382716530512e-14, cell_floor=None, fallback=False, globalized=False, phase_switching=False; мера 1.384e-14; приёмов по полу 0
+
+4. Ступень 4, останов rs300, 168.75 с, порог 1e-30: converged=False, iterations=40, active_set=1, exit='max_iter', residual=8.068e-15 (tol 4.383637135240581e-11), measure=9.771622955555137e-12, cell_floor=4.338911618083425e-11, fallback=False, globalized=False, phase_switching=False; приёмов по полу 0, пол не помог 25
+   порог 1e-8: converged=True, iterations=16, active_set=1, exit='converged', residual=6.877e-15 (tol 4.383637135240581e-11), measure=1.2080139421591618e-11, cell_floor=None, fallback=False, globalized=False, phase_switching=False
+
+4. BUG-018 N = 350, сутки, порог 1e-30: converged=False, iterations=15, active_set=2, exit='max_iter', residual=2.030e-03 (tol 4.1286960817122675e-11), measure=45072.79232124407, cell_floor=6.231495803996184e-08, fallback=False, globalized=False, phase_switching=False; приёмов по полу 1, пол не помог 2
+
+5. BUG-018 первый Ньютон суток, base: converged=False, iterations=4, active_set=0, exit='line_search', residual=6.509e-15 (tol 5.354811816189632e-07), measure=2.5962007451177794e-08, cell_floor=6.420035053684339e-08, fallback=False, globalized=False, phase_switching=False
+   предел в возвращённой точке (якобиан в ней): 6.420035053684339e-08
+
+5. BUG-018 первый Ньютон суток, a: converged=True, iterations=3, active_set=0, exit='converged', residual=6.509e-15 (tol 5.354811816189632e-07), measure=2.5962007451177794e-08, cell_floor=None, fallback=False, globalized=False, phase_switching=False
+   приём по полу: мера 2.5962007451177794e-08, предел(J) 6.420035053677937e-08, предел(Jz) 6.420035053684339e-08, kappa 0.4617, строки o0,o1,o13,o14,o15,o16
+   предел в возвращённой точке (якобиан в ней): 6.420035053684339e-08
+
+6. Nabor_1b N = 12 после 2 итераций без условия: мера 2.325e-08, предел 7.875e-15; строк выше порога 4, max |F_r|/(|J|ulp)_r по ним 3.635e+06

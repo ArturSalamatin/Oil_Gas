@@ -13,7 +13,7 @@ DEBT-033: the grouped Jacobian is assembled vectorized, directly as a CSC matrix
 DEBT-036: component_inventories uses Bo, Bg only; the old-state inventories are
 computed once per step (_old_inventories); faces take Bo, mu_o from pvt.bo_mu_o
 where the PVT has it.
-DEBT-030: when all three stages of advance() fail, the report carries the Newton
+DEBT-030: when all stages of advance() fail, the report carries the Newton
 fields of the original algorithm, not those of the last fallback attempt.
 BUG-021: _newton_fixed_active_set tests convergence on every new iterate, the
 last one included, on the residual its line search has evaluated; no Jacobian
@@ -45,8 +45,12 @@ BUG-028: _advance_phases limits by max_active_iter only the passes that switch g
 that only switches gas off shrinks the two-phase set and is not counted, all passes together
 stay below max_active_iter + N.  Production from equilibrium with incompressible
 undersaturated oil (GPN examples 19, 21) failed every stage at steps up to 120 s and 5.27 s.
+DEBT-069: once the original algorithm fails, the report of advance() lists every attempt
+in order (attempts: StageAttempt -- stage, BHP well branch, a copy of the attempt's report),
+accepted or not; a total failure no longer hides why the fallback stages failed.
 """
 from dataclasses import dataclass, replace
+from typing import NamedTuple
 import numpy as np
 from scipy.linalg import solve as dense_solve
 from scipy.sparse import coo_matrix, csc_matrix, issparse
@@ -89,6 +93,20 @@ class BlackOilNewtonReport:
     # Only on a failed solve with the per-cell test on; None otherwise ('active_set': no Newton
     # failed; 'branch': the Newton converged).
     cell_floor: float | None = None
+    # DEBT-069: every attempt of advance() (advance_fourth_stage()) in order, StageAttempt; set
+    # on the report returned, accepted or not, once the original algorithm has failed; () when
+    # it solved the step.  The copies inside carry no attempts of their own
+    attempts: tuple = ()
+
+class StageAttempt(NamedTuple):
+    """DEBT-069: one attempt of advance() -- stage 1-4, BHP well branch ('open'/'shut', '' without one), a copy of its report as it ended."""
+    # The Newton fields of report (converged, iterations, residual_inf, active_set_iterations,
+    # phase_switches, residual_tol, cell_measure, exit_reason, cell_floor) are the attempt's; a
+    # Newton converged on an inconsistent BHP branch is recorded as failed with exit 'branch'.
+    # Its fallback/globalized/phase_switching flags are not set uniformly -- the stage is here.
+    stage: int
+    branch: str
+    report: BlackOilNewtonReport
 
 def _sg_activation_cap(relperm):
     """BUG-018: cap of the closed-flash Sg guess -- last relperm-table Sg node with kro > 0, else None."""
@@ -470,7 +488,8 @@ class RadialBlackOilModel:
         if that fails too and phase_switching_stage is on, the fallback with phase
         switches inside Newton (BUG-020) -- advance_fourth_stage.
         If all stages fail, the report carries the original algorithm's Newton (DEBT-030),
-        with its tolerance, per-cell measure and exit reason (DEBT-054)."""
+        with its tolerance, per-cell measure and exit reason (DEBT-054).
+        Once the original algorithm fails, the report lists every attempt (DEBT-069)."""
         new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
         if rep.converged:
             if self.control_mode=='BHP':
@@ -479,11 +498,15 @@ class RadialBlackOilModel:
                 rep.well_branch='shut' if p0<=float(self.p_bhp_bar) else 'open'
             return new,rep
         orig=rep  # DEBT-030: reported if the fallback and the third stage fail too
+        # DEBT-069: every attempt of this call in order -- the original algorithm, then each
+        # branch of each fallback stage (_fallback lists its own); set on the report returned
+        attempts=[StageAttempt(1,'',replace(orig))]
         # Fallback only: where the original algorithm converges, results stay
         # bitwise; with the bound removed always, deep drawdowns needed more
         # step splitting than before (BUG-014 audit).
         new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
-        if rep.converged: return new,rep
+        attempts+=rep.attempts
+        if rep.converged: rep.attempts=tuple(attempts); return new,rep
         # Third stage (BUG-016), only where the fallback fails too, so every step
         # the first two stages solve stays bitwise.  Mass phase activation with a
         # closed-flash Sg guess (0.55-0.71 at Rs0 = 150 against 0.22 in the
@@ -492,11 +515,12 @@ class RadialBlackOilModel:
         # every step example 10 got worse (plan BUG-016, 1.3).
         self._line_search_l2=True; self._sg_step_max=0.2
         try:
-            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton,stage=3)
             rep.globalized=True
         finally:
             self._line_search_l2=False; self._sg_step_max=None
-        if rep.converged: return new,rep
+        attempts+=rep.attempts
+        if rep.converged: rep.attempts=tuple(attempts); return new,rep
         if self.phase_switching_stage:
             # Fourth stage (BUG-020), only where the first three fail, so every step they
             # solve stays bitwise: the BUG-014 fallback (well branches, consistency check)
@@ -504,7 +528,8 @@ class RadialBlackOilModel:
             # with a developed gas zone (examples 19-21: Sg near the well 0.4) failed all
             # three; see _newton_switching for the mechanism.
             new,rep=self.advance_fourth_stage(state_old,dt_s,max_active_iter,max_newton)
-            if rep.converged: return new,rep
+            attempts+=rep.attempts
+            if rep.converged: rep.attempts=tuple(attempts); return new,rep
         if not rep.converged:
             # DEBT-030: the last attempt is often the BHP 'shut' branch, which
             # "converges" in 0 iterations with ||F|| = 0 on an unchanged state and
@@ -516,15 +541,18 @@ class RadialBlackOilModel:
             # DEBT-054: the absolute tolerance, the per-cell measure and the exit reason are
             # Newton fields too -- the original algorithm's, consistent with its residual; and the
             # rounding limit of the measure (DEBT-055).
+            # DEBT-069: and every attempt, so the fallback stages' failures stay visible.
             rep=replace(rep,iterations=orig.iterations,residual_inf=orig.residual_inf,
                         active_set_iterations=orig.active_set_iterations,
                         phase_switches=orig.phase_switches,
                         residual_tol=orig.residual_tol,cell_measure=orig.cell_measure,
-                        exit_reason=orig.exit_reason,cell_floor=orig.cell_floor)
+                        exit_reason=orig.exit_reason,cell_floor=orig.cell_floor,
+                        attempts=tuple(attempts))
         return new,rep
     def advance_fourth_stage(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """The fourth stage of advance alone (BUG-020, DEBT-048): the BUG-014 fallback with
-        phase switches inside Newton; its own report, also when it fails."""
+        phase switches inside Newton; its own report, also when it fails, with the attempts of
+        its branches (DEBT-069)."""
         # DEBT-048: the GPN adapter calls it directly on shut-in steps that follow two steps
         # the fourth stage solved, skipping the first three stages, which fail there.  A step
         # solved here is bitwise the step advance solves after the first three stages fail:
@@ -534,21 +562,23 @@ class RadialBlackOilModel:
         # to advance.
         self._phase_switching=True
         try:
-            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton)
+            new,rep=self._fallback(state_old,dt_s,max_active_iter,max_newton,stage=4)
             rep.globalized=True; rep.phase_switching=True
         finally:
             self._phase_switching=False
         return new,rep
-    def _fallback(self,state_old,dt_s,max_active_iter,max_newton):
+    def _fallback(self,state_old,dt_s,max_active_iter,max_newton,stage=2):
         """BUG-014 fallback: no lower bound on Sg; BHP control fixes the well branch
         (start from the old state's branch, accept a consistent result only, try the
         other branch once, 'open' only where it can be consistent, DEBT-040);
-        OIL_RATE control: a plain retry without the Sg bound."""
+        OIL_RATE control: a plain retry without the Sg bound.
+        The report lists every branch tried as StageAttempt(stage, ...) (DEBT-069)."""
         self._sg_lower_bound=None
         try:
             if self.control_mode!='BHP':
                 new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
-                rep.fallback=True; return new,rep
+                # DEBT-069: one attempt, no well branch
+                rep.fallback=True; rep.attempts=(StageAttempt(stage,'',replace(rep)),); return new,rep
             target=float(self.p_bhp_bar)
             # Start from the branch of the old state; shut-in steps start on 'shut'.
             branch='shut' if float(state_old.pressure_bar[0])<=target else 'open'
@@ -562,15 +592,21 @@ class RadialBlackOilModel:
             # it took 38 % of the shut-in time.  A wrong guess here could only reject a
             # step, never accept an inconsistent one.
             open_hopeless=self.p_outer_bar<=target and float(np.max(state_old.pressure_bar))<=target
-            tried=[]
+            tried=[]; attempts=[]
             while True:
                 tried.append(branch); self._well_branch=branch
                 new,rep=self._advance_phases(state_old,dt_s,max_active_iter,max_newton)
                 rep.fallback=True; rep.well_branch=branch; rep.well_switches=len(tried)-1
+                consistent=False
                 if rep.converged:
                     p0=float(new.pressure_bar[0])
                     # open: q = WI*lambda*(p0-target) >= 0; shut: p0 <= target
-                    if (p0>=target) if branch=='open' else (p0<=target): return new,rep
+                    consistent=(p0>=target) if branch=='open' else (p0<=target)
+                # DEBT-069: every branch tried, as it ended; a Newton converged on an inconsistent
+                # branch is recorded as failed with exit 'branch', as the report returned below
+                snap=replace(rep) if consistent or not rep.converged else replace(rep,converged=False,exit_reason='branch')
+                attempts.append(StageAttempt(stage,branch,snap)); rep.attempts=tuple(attempts)
+                if consistent: return new,rep
                 # Newton failed or the branch is inconsistent: the other branch, once
                 other='open' if branch=='shut' else 'shut'
                 if other in tried or (other=='open' and open_hopeless):

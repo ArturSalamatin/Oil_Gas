@@ -157,5 +157,11 @@ def test_bhp_shutin_step_without_open_branch(shutin_start):
     assert branches == [None, "shut", "shut", "shut"]
     assert rep.converged and rep.phase_switching and rep.well_branch == "shut"
     assert new.pressure_bar[0] == pytest.approx(174.434873, abs=1e-5)
+    # DEBT-069: принятый ступенью 4 шаг несёт все попытки — по одной на вызов
+    # _advance_phases с теми же ветками; решила последняя
+    assert [a.branch or None for a in rep.attempts] == branches
+    assert [a.stage for a in rep.attempts] == [1, 2, 3, 4]
+    assert rep.attempts[-1].report.converged
+    assert not any(a.report.converged for a in rep.attempts[:-1])
     assert int(new.gas_active.sum()) == 250
     _assert_restored(model)

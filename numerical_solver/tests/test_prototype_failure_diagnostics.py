@@ -281,7 +281,8 @@ def test_real_total_failure_only_cell_test():
 
     Замер (failure_census.out.txt, раздел 1): ступень 1 — линейный поиск после 4 итераций,
     невязка 6.51e-15 при допуске 5.36e-7, мера 2.60e-8 > 1e-8. Ступень 4 отказала иначе
-    (лимит 40, мера 3.6e7) — в отчёт не попадает (DEBT-030).
+    (лимит 40 итераций, 1101 переключение фаз): в числа отчёта не попадает (DEBT-030),
+    видна в попытках (DEBT-069; vault/issues/debt-069/probes/bug018.out.txt).
     Ловит: класс отказа сценария воспроизведения DEBT-054 не виден из отчёта.
     """
     model, ps, dt = _bug018_model()
@@ -290,6 +291,14 @@ def test_real_total_failure_only_cell_test():
     assert not rep.converged and rep.iterations == 4 and rep.exit_reason == "line_search"
     assert rep.residual_inf <= rep.residual_tol       # абсолютное условие выполнено
     assert rep.cell_measure > CELL_TOL                 # условие по ячейке — нет
+    # DEBT-069: все попытки по порядку. Ступени 2 и 3 «открыта» — побитово ступень 1
+    # (граница S_g не сработала, ветка не менялась — DEBT-072); «закрыта» на неизменном
+    # состоянии сходится за 0 итераций при p[0] = 469 > 50 бар — несогласована
+    assert [(a.stage, a.branch) for a in rep.attempts] == [
+        (1, ""), (2, "open"), (2, "shut"), (3, "open"), (3, "shut"), (4, "open"), (4, "shut")]
+    assert [a.report.exit_reason for a in rep.attempts] == [
+        "line_search", "line_search", "branch", "line_search", "branch", "max_iter", "branch"]
+    assert [a.report.iterations for a in rep.attempts] == [4, 4, 0, 4, 0, 40, 0]
 
 
 # ═══════════════════════════════════════════════════════════

@@ -1,0 +1,8 @@
+﻿..\vault\issues\debt-027\probes\emu_tests\test_table_range_warnings.py:121: AssertionError
+..\vault\issues\debt-027\probes\emu_tests\test_table_range_warnings.py:151: AssertionError
+E       AttributeError: 'PrototypeHydroAdapter' object has no attribute '_check_table_range'
+..\vault\issues\debt-027\probes\emu_tests\test_table_range_warnings.py:159: AttributeError
+FAILED test_table_range_warnings.py::TestRunWarnings::test_below_gas_table_reported_once
+FAILED test_table_range_warnings.py::TestRunWarnings::test_free_gas_above_table_reported
+FAILED test_table_range_warnings.py::TestRunWarnings::test_standing_path_not_checked
+3 failed, 5 passed in 2.97s

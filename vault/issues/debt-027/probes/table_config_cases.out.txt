@@ -1,0 +1,16 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+
+=== штатный: подшагов 24, 0.26 с, max S_g газа выше max p_b 0.000e+00 ===
+   предупреждений нет
+
+=== 8 МПа: подшагов 24, 0.32 с, max S_g газа выше max p_b 0.000e+00 ===
+     2 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table
+
+=== 2 МПа: подшагов 24, 0.34 с, max S_g газа выше max p_b 7.265e-18 ===
+    24 подшагов, впервые t = 0.04167 сут: GAS_PVT pressure below table
+    24 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus below table
+    24 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table
+
+=== p0 = 32 МПа: подшагов 24, 0.23 с, max S_g газа выше max p_b 0.000e+00 ===
+    24 подшагов, впервые t = 0.04167 сут: GAS_PVT pressure above table
+    24 подшагов, впервые t = 0.04167 сут: OIL_PVT branch pressure above supplied r

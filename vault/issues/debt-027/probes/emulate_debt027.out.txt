@@ -1,0 +1,18 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+
+=== table_pvt штатный (p_wf = 15 МПа): записей WARNING 0 ===
+
+=== table_pvt p_wf = 8 МПа: записей WARNING 0 ===
+
+=== table_pvt p_wf = 2 МПа: записей WARNING 2 ===
+   Состояние при t = 0.04167 сут вне таблиц: GAS_PVT pressure below table: min P=26.807047 bar, table min=50 bar. Endpoint value used; no extrapolation.
+   Состояние при t = 0.04167 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=26.807047 bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+
+=== table_pvt p0 = 32 МПа: записей WARNING 2 ===
+   Начальное состояние вне таблиц: GAS_PVT pressure above table: max P=320 bar, table max=300 bar. Endpoint value used; no extrapolation.
+   Начальное состояние вне таблиц: OIL_PVT branch pressure above supplied range by up to 20 bar. Endpoint branch property used; no extrapolation.
+
+=== 04a, первые 3 ч: записей WARNING 3 ===
+   Состояние при t = 0.003472 сут вне таблиц: GAS_PVT pressure below table: min P=42.334878 bar, table min=50 bar. Endpoint value used; no extrapolation.
+   Состояние при t = 0.003472 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=42.334878 bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+   Состояние при t = 0.08333 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 0.00721 at P up to 150.05581 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrapolation.

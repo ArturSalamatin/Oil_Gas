@@ -53,7 +53,7 @@ class RockConfig:
     # (φ_ref, p_ref) пересчитывается точно — porosity = φ_ref·exp(c_r·(p0 − p_ref)).
     # Энергия (energy/tridiag.py, DEBT-057): флюид — φ(p) по тому же закону,
     # скелет и λ_eff — porosity при p0 (масса скелета в ячейке постоянна).
-    compressibility: float = 0.0    # c_r, 1/Па
+    compressibility: float = 0.0    # c_r ≥ 0, 1/Па (_validate, DEBT-068)
 
 
 # ── Секция pvt ───────────────────────────────────────────────
@@ -523,6 +523,23 @@ def _validate(cfg: SimulationConfig) -> None:
         raise ValueError(f"porosity должна быть в (0, 1], получено {r.porosity}")
     if r.permeability <= 0:
         raise ValueError(f"permeability должна быть > 0, получено {r.permeability}")
+    # Сжимаемость порового пространства c_r = (1/φ)·dφ/dp ≥ 0 (DEBT-068,
+    # eq:porosity problem_statement.tex): поровый объём упругой породы с ростом
+    # давления не уменьшается; c_r < 0 — ошибка знака или другое определение.
+    # Загрузчик книги прототипа c_r < 0 отвергает (radial_blackoil/
+    # input_reader.py, «cr must be >= 0»); путь JSON → фабрика →
+    # CompressibleRock его обходил. Замер до DEBT-068 (vault/issues/debt-068/
+    # probes/red_state.out.txt; конфиг примера 18, 2 сут, c_o = 1.2e-9 1/Па):
+    # c_r = −4.5e-10 и −1e-9 — расчёт молча, дебит нефти на 1 сут на 6 и 14 %
+    # ниже, чем при +4.5e-10; c_r < −c_o — C_p < 0 в недонасыщенной зоне
+    # (eq:Cp, механизм BUG-019): −2e-9 и ниже — отказ после дробления шага
+    # до dt/512. NaN сюда не доходит (_check_numeric_fields). Верхней границы
+    # нет: давление не выше p0, и при c_r ≥ 0 φ(p) ≤ porosity ≤ 1.
+    if r.compressibility < 0:
+        raise ValueError(
+            f"rock.compressibility = {r.compressibility} 1/Па < 0: сжимаемость "
+            f"порового пространства c_r = (1/φ)·dφ/dp должна быть ≥ 0 — поровый "
+            f"объём с ростом давления не уменьшается (вероятно, ошибка знака)")
 
     # ── Скважина: скин-фактор (DEBT-056, P8 §5) ──
     # Проводимость забойной грани прототипа (radial_blackoil/grid.py,

@@ -19,7 +19,7 @@ def _range_tol(x):
     return 1e-9*max(1.0, abs(float(x)))
 
 
-def pvt_range_warnings(model,state):
+def pvt_range_warnings(model,state,free_gas_sg=None):
     """Return warnings for ACCEPTED states only. Evaluation itself always clamps."""
     p=np.asarray(state.pressure_bar,float); rs=np.asarray(state.rs_sm3_sm3,float)
     w=[]; pvt=model.pvt; rp=model.relperm
@@ -38,8 +38,20 @@ def pvt_range_warnings(model,state):
         pg=p[ga]
         if np.min(pg) < pvt.pb[0]-_range_tol(pvt.pb[0]):
             w.append(f'OIL_PVT saturated locus below table: gas-active min P={np.min(pg):.8g} bar, min Pb={pvt.pb[0]:.8g} bar. Endpoint Rs used; no extrapolation.')
-        if np.max(pg) > pvt.pb[-1]+_range_tol(pvt.pb[-1]):
-            w.append(f'OIL_PVT saturated locus above table: gas-active max P={np.max(pg):.8g} bar, max Pb={pvt.pb[-1]:.8g} bar. Endpoint Rs used; no extrapolation.')
+        top=pvt.pb[-1]+_range_tol(pvt.pb[-1])
+        if free_gas_sg is None:
+            if np.max(pg) > top:
+                w.append(f'OIL_PVT saturated locus above table: gas-active max P={np.max(pg):.8g} bar, max Pb={pvt.pb[-1]:.8g} bar. Endpoint Rs used; no extrapolation.')
+        else:
+            # DEBT-027 (GPN project): above the last Pb the endpoint Rs matters only where free gas
+            # could dissolve. A cell switched to gas-active at the saturation front keeps Sg at Newton
+            # round-off (up to 3.6e-9 in the regression cases) with Rs = max Rs: nothing is clamped
+            # there, yet the plain test above reports it. With free_gas_sg the test counts only
+            # gas-active cells with Sg > free_gas_sg. Default None: the former test, bitwise.
+            sgc=np.asarray(state.sg,float)
+            hot=ga&(sgc>free_gas_sg)&(p>top)
+            if np.any(hot):
+                w.append(f'OIL_PVT saturated locus above table: free gas Sg up to {np.max(sgc[hot]):.3g} at P up to {np.max(p[hot]):.8g} bar, max Pb={pvt.pb[-1]:.8g} bar. Endpoint Rs used, the gas cannot dissolve; no extrapolation.')
     # Check fixed-Rs branch high-pressure coverage for accepted oil states.
     pmax_branch=pvt.max_pressure_of_rs(rs)
     if np.any(p > pmax_branch + 1e-9*np.maximum(1.0,np.abs(pmax_branch))):
@@ -53,16 +65,25 @@ def pvt_range_warnings(model,state):
     return w
 
 
+# Leading words of every pvt_range_warnings text. A text is grouped by them, not by its numbers
+# (the branch-pressure text has no colon); the GPN adapter reports each category once per run (DEBT-027).
+WARNING_CATEGORIES=(
+    'GAS_PVT pressure below table','GAS_PVT pressure above table',
+    'OIL_PVT Rs below table','OIL_PVT Rs above table',
+    'OIL_PVT saturated locus below table','OIL_PVT saturated locus above table',
+    'OIL_PVT branch pressure above supplied range',
+    'RELPERM Sg below table','RELPERM Sg above table')
+
+
+def warning_category(s):
+    """Category of a pvt_range_warnings text: its leading words from WARNING_CATEGORIES."""
+    return next((c for c in WARNING_CATEGORIES if s.startswith(c)),s.split(':',1)[0])
+
+
 def unique_warnings(items):
     # Keep one representative per warning category to prevent run_summary flooding.
-    categories=(
-        'GAS_PVT pressure below table','GAS_PVT pressure above table',
-        'OIL_PVT Rs below table','OIL_PVT Rs above table',
-        'OIL_PVT saturated locus below table','OIL_PVT saturated locus above table',
-        'OIL_PVT branch pressure above supplied range',
-        'RELPERM Sg below table','RELPERM Sg above table')
     out=[]; seen=set()
     for s in items:
-        key=next((c for c in categories if s.startswith(c)),s.split(':',1)[0])
+        key=warning_category(s)
         if key not in seen: seen.add(key); out.append(s)
     return out

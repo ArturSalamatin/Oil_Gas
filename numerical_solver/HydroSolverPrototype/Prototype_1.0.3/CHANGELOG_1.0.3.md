@@ -176,3 +176,12 @@
 - Physics, residual equations, convergence tests, switching thresholds, the other stages and well semantics are unchanged. The distribution version stays `1.0.3+gpn.1`. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
 - Tests: `numerical_solver/tests/test_prototype_phase_set_passes.py` of the GPN project (10).
 - Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/117; plan: `vault/plans/bug-028 first-step-phase-set.md` of the GPN project.
+
+## Local changes — GPN project (DEBT-027): free-gas test of the saturated locus above the table (off by default)
+- Problem: `pvt_range_warnings` reports 'OIL_PVT saturated locus above table' for any gas-active cell above the last Pb. A cell switched to gas-active at the saturation front keeps Sg at Newton round-off with Rs = max Rs: nothing is clamped there, no free gas could dissolve. The golden outputs record this warning for 16 of the 17 regression cases; in 15 of them the gas-active cells above the last Pb have Sg <= 3.6e-9 (T10 has free gas there, Sg up to 2.6e-3). In GPN it fires in 12 of the 15 tabular examples, Sg <= 1.2e-11.
+- `pvt_range_warnings(model, state, free_gas_sg=None)`: with a number the test counts only gas-active cells with Sg > free_gas_sg, and the text names the free gas ('free gas Sg up to ... at P up to ...'). With the default `None` the test and the text are the former ones.
+- New `WARNING_CATEGORIES` and `warning_category(text)`: the categories `unique_warnings` listed inside it; `unique_warnings` calls the function, its output is unchanged.
+- The prototype's own runs call `pvt_range_warnings` without the argument: tests 105 passed, regression 17/17 PASS bitwise, golden warnings unchanged. The GPN adapter calls it after every converged `advance` with free_gas_sg = 1e-6 and reports each category once per run.
+- Physics, residual equations, Newton and well semantics are unchanged. The distribution version stays `1.0.3+gpn.1`. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
+- Tests: `tests/test_pvt_clamp.py` (+4); `numerical_solver/tests/test_table_range_warnings.py` of the GPN project (8).
+- Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/116; plan: `vault/plans/debt-027 table-range-diagnostics.md` of the GPN project.

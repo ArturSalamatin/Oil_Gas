@@ -23,6 +23,7 @@ import pytest
 
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import load_config
+from radial_blackoil import blackoil
 from radial_blackoil.blackoil import RadialBlackOilModel
 from radial_blackoil.grid import RadialGrid
 from radial_blackoil.input_reader import load_input
@@ -180,7 +181,7 @@ def shutin():
 
 
 class TestSwitching:
-    def test_switching_meets_cell_tol(self, shutin):
+    def test_switching_meets_cell_tol(self, shutin, monkeypatch):
         """Шаг останова 168.75 с ступенью 4: условие по ячейке стоит в _newton_switching.
 
         Недостижимый порог 1e-30 — отказ (40 итераций), без условия — сходится; с порогом
@@ -192,6 +193,9 @@ class TestSwitching:
         Модель фабрики: cell_tol меняется на экземпляре и возвращается в finally.
         Ловит: условие не стоит в _newton_switching.
         """
+        # DEBT-067: предел выключен — с ним отказ при 1e-30 тоже есть (8 строк у контура
+        # на округлении накопления, tiny_tol.out.txt), но случайно
+        monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
         model, ps = shutin
         assert model.cell_tol == CELL_TOL               # фабрика включила (шаг 3)
         try:

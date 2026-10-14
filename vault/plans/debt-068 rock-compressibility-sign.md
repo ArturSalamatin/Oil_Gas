@@ -7,7 +7,8 @@ issue: DEBT-068
 github: 111
 branch: refactor/debt-068/rock-compressibility-sign
 status: реализован
-worktree: .worktrees/debt-068
+worktree: .worktrees/debt-068; удалён после влития
+merged: b7d1ba4 (2026-10-14)
 audit:
   date: 2026-10-14
   round: 1

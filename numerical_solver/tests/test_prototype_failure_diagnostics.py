@@ -19,6 +19,11 @@ DEBT-055: отчёт отказа несёт ещё cell_floor — предел 
 говорит, если отказ «только по ячейке» стоит на пределе.
 План: vault/plans/debt-055 cell-tol-roundoff-floor.md; замеры —
 vault/issues/debt-055/probes/.
+
+DEBT-067: строка выше порога проходит, если её невязка не выше её предела
+(eq:newton_cell_tol_floor, CELL_FLOOR_KAPPA = 1): сутки BUG-018 при N = 350 сходятся.
+Тесты отказа на пределе выключают предел (monkeypatch CELL_FLOOR_KAPPA = 0) — проверяют
+отчёт и текст отказа, а не сходимость. План: vault/plans/debt-067 accept-at-cell-floor.md.
 """
 
 from types import SimpleNamespace
@@ -163,7 +168,7 @@ class TestSwitching:
         assert rep.residual_inf <= rep.residual_tol and rep.cell_measure <= CELL_TOL
         assert rep.cell_floor is None      # DEBT-055: предел — только у отказа
 
-    def test_limit_only_cell_test(self, shutin):
+    def test_limit_only_cell_test(self, shutin, monkeypatch):
         """Недостижимый порог 1e-30: 40 итераций, выход по лимиту, абсолютное условие выполнено.
 
         Тот же класс, что у отказов ступени 4 по памяти на суточном останове
@@ -171,6 +176,9 @@ class TestSwitching:
         Замер (п. 5): невязка 8.1e-15 при допуске 4.38e-11. Порог возвращается в finally:
         фикстура модульная.
         """
+        # DEBT-067: предел выключен — с ним отказ при 1e-30 тоже есть (8 строк у контура
+        # на округлении накопления, tiny_tol.out.txt), но случайно
+        monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
         model, ps = shutin
         try:
             model.cell_tol = 1e-30
@@ -276,7 +284,7 @@ class TestBranchAndTotalFailure:
         assert rep.cell_floor == 6.4e-8      # DEBT-055: предел — тоже исходного алгоритма
 
 
-def test_real_total_failure_only_cell_test():
+def test_real_total_failure_only_cell_test(monkeypatch):
     """BUG-018 при N = 350, шаг 86400 с: все ступени отказали, отчёт — ступени 1, «только по ячейке».
 
     Замер (failure_census.out.txt, раздел 1): ступень 1 — линейный поиск после 4 итераций,
@@ -284,6 +292,9 @@ def test_real_total_failure_only_cell_test():
     (лимит 40, мера 3.6e7) — в отчёт не попадает (DEBT-030).
     Ловит: класс отказа сценария воспроизведения DEBT-054 не виден из отчёта.
     """
+    # DEBT-067: отказ на пределе округления — предел в условии выключен (строгое условие
+    # BUG-022); тест проверяет отчёт и текст отказа, а не сходимость
+    monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
     model, ps, dt = _bug018_model()
     assert model.cell_tol == CELL_TOL                  # фабрика включила условие по ячейке
     _, rep = model.advance(ps, dt)
@@ -338,20 +349,23 @@ class TestRoundoffFloor:
                                                 max_iter=1)
         assert not rep.converged and rep.cell_floor is None
 
-    def test_bug018_failure_at_floor(self):
+    def test_bug018_failure_at_floor(self, monkeypatch):
         """BUG-018 при N = 350, шаг 86400 с: ступень 1 встала на пределе — мера 2.60e-8 > 1e-8, предел 6.42e-8.
 
         Замер (plan_check.out.txt, B): линейный поиск после 4 итераций, мера 2.5962e-8,
         предел 6.4200e-8, отношение 0.40. Ловит: отказ на пределе неотличим от отказа
         недорешённого Ньютона (у того мера много выше предела).
         """
+        # DEBT-067: отказ на пределе округления — предел в условии выключен (строгое условие
+        # BUG-022); тест проверяет отчёт и текст отказа, а не сходимость
+        monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
         model, ps, dt = _bug018_model()
         _, rep = model._advance_phases(ps, dt)
         assert not rep.converged and rep.exit_reason == "line_search"
         assert CELL_TOL < rep.cell_measure <= rep.cell_floor
         assert rep.cell_floor == pytest.approx(6.42e-8, rel=1e-3)
 
-    def test_floor_proportional_to_dt(self):
+    def test_floor_proportional_to_dt(self, monkeypatch):
         """Тот же старт при dt/2: предел ровно вдвое меньше — дробление шага его снимает.
 
         Замер (plan_check.out.txt, B): 3.2100e-8 против 6.4200e-8 — 0.50000. Предел задают
@@ -361,19 +375,25 @@ class TestRoundoffFloor:
         отказ, 21600 с — принят; histories_save_base7d8fea7.out.txt).
         Ловит: предел, не зависящий от шага (оценка eps_маш·V_max/V_min до DEBT-055).
         """
+        # DEBT-067: отказ на пределе округления — предел в условии выключен (строгое условие
+        # BUG-022); тест проверяет отчёт и текст отказа, а не сходимость
+        monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
         model, ps, dt = _bug018_model()
         _, full = model._advance_phases(ps, dt)
         _, half = model._advance_phases(ps, dt / 2)
         assert not half.converged and half.cell_measure > CELL_TOL
         assert half.cell_floor / full.cell_floor == pytest.approx(0.5, rel=1e-3)
 
-    def test_switching_limit_stops_at_floor(self, shutin):
+    def test_switching_limit_stops_at_floor(self, shutin, monkeypatch):
         """Ступень 4 при недостижимом пороге 1e-30: 40 итераций, мера встала на 0.23 предела.
 
         Замер (plan_check.out.txt, C): мера 9.77e-12, предел 4.34e-11. Отказы ступени 4
         по памяти на суточном останове — тот же класс: мера 1.29e-8 при пределе 4.65e-8
         (failures_floor_*.out.txt). Порог возвращается в finally: фикстура модульная.
         """
+        # DEBT-067: предел выключен — с ним отказ при 1e-30 тоже есть (8 строк у контура
+        # на округлении накопления, tiny_tol.out.txt), но случайно
+        monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
         model, ps = shutin
         try:
             model.cell_tol = 1e-30
@@ -389,11 +409,14 @@ class TestRoundoffFloor:
 # F. Текст отказа адаптера
 # ═══════════════════════════════════════════════════════════
 
-def test_adapter_message_cell_test_only():
+def test_adapter_message_cell_test_only(monkeypatch):
     """Тот же шаг через адаптер: прежний текст и хвост — допуск, мера, предел округления (DEBT-055), выход, невыполненное условие.
 
     Прежний текст (до DEBT-054) — начало нового: тесты и журналы, искавшие его, совпадают.
     """
+    # DEBT-067: отказ на пределе округления — предел в условии выключен (строгое условие
+    # BUG-022); тест проверяет отчёт и текст отказа, а не сходимость
+    monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
     sim, init, dt = _sim(N=350)
     with pytest.raises(HydroConvergenceError) as exc:
         sim._hydro.solve(init, dt, sim._schedule.intervals[0].bc)
@@ -480,11 +503,14 @@ def test_failure_details(report, cell_tol, stage, expected):
 # G. Текст отказа Simulator
 # ═══════════════════════════════════════════════════════════
 
-def test_simulator_message_ends_with_adapter_text():
+def test_simulator_message_ends_with_adapter_text(monkeypatch):
     """max_retries = 0: первый же отказ — RuntimeError Simulator; конец текста — текст адаптера.
 
     До DEBT-054 класс отказа был виден только в цепочке traceback (__cause__).
     """
+    # DEBT-067: отказ на пределе округления — предел в условии выключен (строгое условие
+    # BUG-022); тест проверяет отчёт и текст отказа, а не сходимость
+    monkeypatch.setattr(blackoil, "CELL_FLOOR_KAPPA", 0.0)
     sim, init, _ = _sim(N=350, retries=0)
     with pytest.raises(RuntimeError) as exc:
         sim.run(init)

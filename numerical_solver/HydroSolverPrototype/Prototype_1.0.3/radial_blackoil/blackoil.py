@@ -45,6 +45,9 @@ BUG-028: _advance_phases limits by max_active_iter only the passes that switch g
 that only switches gas off shrinks the two-phase set and is not counted, all passes together
 stay below max_active_iter + N.  Production from equilibrium with incompressible
 undersaturated oil (GPN examples 19, 21) failed every stage at steps up to 120 s and 5.27 s.
+DEBT-067: a row of the per-cell test above cell_tol passes at its rounding limit,
+|F_r| <= CELL_FLOOR_KAPPA*(|J| @ ulp(z))_r (J -- the last Jacobian of the solve): a solve the
+round-off does not let below cell_tol is accepted, not split.
 """
 from dataclasses import dataclass, replace
 import numpy as np
@@ -58,6 +61,9 @@ from .units import BAR_TO_PA, CP_TO_PA_S
 # tolerance (_absolute_tol)
 _EPS=float(np.finfo(float).eps)
 ROUNDOFF_KAPPA=4.0
+# DEBT-067: factor of the rounding limit in the per-cell test (_cells_converged): a row above
+# cell_tol passes when |F_r| <= CELL_FLOOR_KAPPA*(|J| @ ulp(z))_r; 0 -- the strict test of BUG-022
+CELL_FLOOR_KAPPA=1.0
 
 @dataclass
 class BlackOilNewtonReport:
@@ -84,10 +90,11 @@ class BlackOilNewtonReport:
     exit_reason: str = ''
     # DEBT-055: rounding limit of cell_measure on the same iterate -- the per-cell measure of
     # |J| @ ulp(z): the unknowns are representable to ulp(z) only, and the Newton stops at
-    # 0.1-0.4 of it (GPN probes).  J is the last Jacobian of the solve; for the 'max_iter' exit
-    # of _newton_fixed_active_set it is the Jacobian of the iterate before the last update.
-    # Only on a failed solve with the per-cell test on; None otherwise ('active_set': no Newton
-    # failed; 'branch': the Newton converged).
+    # 0.1-0.46 of it (GPN probes).  J is the last Jacobian of the solve; for the 'max_iter' exit
+    # of _newton_fixed_active_set and for its solve accepted after an update it is the Jacobian
+    # of the iterate before the last update.  Only with the per-cell test on, on a failed solve
+    # or (DEBT-067) on a solve accepted at the limit (converged with cell_measure > cell_tol);
+    # None otherwise ('active_set': no Newton failed; 'branch': the Newton converged).
     cell_floor: float | None = None
 
 def _sg_activation_cap(relperm):
@@ -158,9 +165,12 @@ class RadialBlackOilModel:
         # (cell_floor of a failed report; the Newton stops at 0.1-0.4 of it).  It is the
         # pressure term of the face fluxes, ~eps_mach*p*T*lambda*dt/PV_i: it grows as dt and,
         # near the well of the log grid, as N^2/ln^2(r_e/r_w) -- not as PV_max/PV_min, as
-        # BUG-022 assumed.  A step below it fails and is split until the limit drops (GPN
-        # example 17 at cell_tol = 1e-10: 214 rejected steps against 47; at 1e-8 only N = 350
-        # with daily steps meets it).
+        # BUG-022 assumed.  DEBT-067: a row above cell_tol passes when |F_r| is not above its
+        # own limit (_cells_converged, CELL_FLOOR_KAPPA), so such a step is accepted, not split
+        # until the limit drops: GPN example 17 at cell_tol = 1e-10 -- 7 rejected steps against
+        # 205, Jacobians /3.1; at 1e-8 the limit is above cell_tol only at N = 350 with daily
+        # steps.  The storage round-off ~eps*M/dt is not in the limit: cell_tol below ~1e-15
+        # stays unreachable.
         if cell_tol is not None and not 0.0<float(cell_tol)<np.inf:
             raise ValueError('cell_tol must be a positive finite number or None')
         self.cell_tol=None if cell_tol is None else float(cell_tol)
@@ -301,17 +311,28 @@ class RadialBlackOilModel:
         """DEBT-055: rounding limit of the per-cell measure -- _cell_measure of |J| @ ulp(z); None when the test is off or there is no Jacobian."""
         if w is None or J is None: return None
         return self._cell_measure(abs(J)@np.spacing(np.abs(z)),w)
-    def _cells_converged(self,f,w):
-        """BUG-022: max_c |f_c,i|*dt/PV_i <= cell_tol over the oil and gas rows of f = residual(); True when the test is off."""
+    def _cells_converged(self,f,w,J=None,z=None):
+        """BUG-022: max_c |f_c,i|*dt/PV_i <= cell_tol over the oil and gas rows of f = residual(); True when the test is off; DEBT-067: a row above cell_tol passes when |f_r| <= CELL_FLOOR_KAPPA*(|J| @ ulp(z))_r."""
         # the same operations as before DEBT-054, so the test is bitwise unchanged
         m=self._cell_measure(f,w)
-        return m is None or m<=self.cell_tol
+        if m is None or m<=self.cell_tol: return True
+        # DEBT-067: every row above cell_tol against its own rounding limit -- the Newton does
+        # not get below 0.28-0.46 of it (GPN probes).  Row by row: with maxima over the grid a
+        # row would pass at the limit of another cell (BUG-018: measure in o16, limit in g13).
+        # No Jacobian (the test before the first iteration) or CELL_FLOOR_KAPPA = 0: strict.
+        if J is None or z is None or not CELL_FLOOR_KAPPA>0.0: return False
+        # ~(<=): a NaN row counts as above cell_tol and fails below (np.all of an empty selection is True)
+        a=np.abs(f); bad=~(a*np.concatenate([w,w])<=self.cell_tol)
+        return bool(np.all(a[bad]<=CELL_FLOOR_KAPPA*(abs(J)@np.spacing(np.abs(z)))[bad]))
     def _newton_report(self,converged,iterations,nrm,tol,f,w,reason,J=None,z=None,**fields):
-        """DEBT-054: report of a Newton solve -- ||F||_inf, its absolute tolerance, the per-cell measure of the same f, the exit reason; DEBT-055: on a failure the rounding limit of the measure at (J, z)."""
+        """DEBT-054: report of a Newton solve -- ||F||_inf, its absolute tolerance, the per-cell measure of the same f, the exit reason; DEBT-055: on a failure the rounding limit of the measure at (J, z); DEBT-067: also on a solve accepted at the limit."""
+        m=self._cell_measure(f,w)
+        # DEBT-067: converged with the measure above cell_tol -- accepted at the rounding limit
+        at_limit=converged and m is not None and m>self.cell_tol
         return BlackOilNewtonReport(converged,iterations,float(nrm),
                                     residual_tol=None if tol is None else float(tol),
-                                    cell_measure=self._cell_measure(f,w),exit_reason=reason,
-                                    cell_floor=None if converged else self._cell_floor(J,z,w),**fields)
+                                    cell_measure=m,exit_reason=reason,
+                                    cell_floor=self._cell_floor(J,z,w) if (not converged or at_limit) else None,**fields)
     def _absolute_tol(self,state_old,dt_s,atol_sm3s):
         """BUG-025: atol of the absolute Newton test, not below the round-off floor ROUNDOFF_KAPPA*eps*M_max/dt of the storage term."""
         # The storage term of the residual is (M_new - M_old)/dt in m3st/s, each inventory
@@ -440,8 +461,12 @@ class RadialBlackOilModel:
         # (the residual of the z it returns: the Jacobian call returns residual(z) at the same
         # z, see BUG-021 above; a rejected trial leaves f untouched) and why the solve stopped.
         # A failure at iteration it reports it (the failed iteration counted), as before.
+        # DEBT-067: no Jacobian before the first iteration -- the strict per-cell test
         if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,0,nrm,tol,f,w,'converged')
         # DEBT-055: the last Jacobian goes into a failure report (rounding limit of the measure)
+        # and (DEBT-067) into the per-cell test after an update: the Jacobian of the iterate
+        # before it; its limit and that of the Jacobian at the new iterate agreed within 0.1 %
+        # in 325 GPN acceptances
         J=None
         for it in range(1,max_iter+1):
             J,f=self.finite_difference_jacobian(z,state_old,dt_s,gas_active)
@@ -461,7 +486,7 @@ class RadialBlackOilModel:
                 alpha*=0.5
             if not accepted: return z,self._newton_report(False,it,nrm,tol,f,w,'line_search',J=J,z=z)
             nrm=np.linalg.norm(f,np.inf)
-            if nrm<=tol and self._cells_converged(f,w): return z,self._newton_report(True,it,nrm,tol,f,w,'converged')
+            if nrm<=tol and self._cells_converged(f,w,J,z): return z,self._newton_report(True,it,nrm,tol,f,w,'converged',J=J,z=z)
         return z,self._newton_report(False,max_iter,nrm,tol,f,w,'max_iter',J=J,z=z)
     def advance(self,state_old,dt_s,max_active_iter=12,max_newton=15):
         """One implicit step: the original algorithm; on failure a fallback with the
@@ -685,8 +710,9 @@ class RadialBlackOilModel:
                 if nrm<=tol and switched==0:
                     fz=self._upwind_frozen
                     if fz is None or np.array_equal(self._upwind_left[fz],left[fz]):
-                        # BUG-022: and the per-cell test; not met -- iterate on (up to max_iter)
-                        if self._cells_converged(f,w):
+                        # BUG-022: and the per-cell test; not met -- iterate on (up to max_iter);
+                        # DEBT-067: a row above cell_tol at its rounding limit passes (J built at z)
+                        if self._cells_converged(f,w,J,z):
                             new=self.unpack(z,mask); new.sg[mask&(new.sg<0)]=0.0
                             # same bound as _trial_is_reasonable: no root with Sg > 0.98
                             ok=not np.any(new.sg[mask]>0.98)

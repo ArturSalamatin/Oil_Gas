@@ -539,7 +539,7 @@ class TestRsStepLimit:
 
 class TestDailyShutin:
     def test_daily_shutin_passes_default_retries(self):
-        """10 сут добычи + 3 сут останова (q_oil = 0) при dt_integration = 1 сут и max_retries = 9 (~6 с).
+        """10 сут добычи + 3 сут останова (q_oil = 0) при dt_integration = 1 сут и max_retries = 9 (~4 с).
 
         До BUG-024: отказ «не сошёлся при дроблении шага до dt/512» на подшаге
         t = 10.0781 сут — ступень 4 не сходилась ни на одном подшаге от 1 сут до 169 с
@@ -548,6 +548,12 @@ class TestDailyShutin:
         Замер плана BUG-024: на останове 17 вызовов гидро, 7 отказов, принято 10
         подшагов, наименьший 5400 с; p(r_w) = 327.2428 бар, T(r_w) = 375.3667 К.
         Давление ниже, чем при шаге 1 ч (328.10 бар), — погрешность суточного шага.
+        DEBT-067 (решение на пределе округления принимается): 9 вызовов, 3 отказа, принято 6
+        подшагов, наименьший 21600 с; p(r_w) = 326.7378 бар, T(r_w) = 375.3124 К (замер плана,
+        variants.py, daily_shutin). Ушли 4 отказа второго дня: суточный шаг, отвергнутый
+        ступенью 4 по памяти на пределе (мера 1.29e-8, предел 4.67e-8), и три его дробления.
+        Давление дальше от шага 1 ч: дробление от отказа уменьшало погрешность суточного шага,
+        теперь шаг — тот, что задан конфигом.
         Ловит: возврат к неограниченному шагу R_s в ступени 4 (BUG-024).
         """
         cfg = load_config(RS300)
@@ -580,8 +586,8 @@ class TestDailyShutin:
         st = sim.run(init).states[-1]
         ok = [dt for dt, conv in calls if conv]
         failed = [dt for dt, conv in calls if not conv]
-        assert len(ok) == 10 and len(failed) == 7
+        assert len(ok) == 6 and len(failed) == 3
         assert sum(ok) == pytest.approx(3 * DAY, rel=1e-12)   # трое суток пройдены ровно один раз
-        assert min(ok) == 5400.0
-        assert st.p[0] / BAR == pytest.approx(327.2428, abs=1e-3)
-        assert st.T[0] == pytest.approx(375.3667, abs=1e-3)
+        assert min(ok) == 21600.0
+        assert st.p[0] / BAR == pytest.approx(326.7378, abs=1e-3)
+        assert st.T[0] == pytest.approx(375.3124, abs=1e-3)

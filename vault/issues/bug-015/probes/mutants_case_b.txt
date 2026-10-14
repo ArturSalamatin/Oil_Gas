@@ -1,0 +1,11 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-015\numerical_solver
+тесты из: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-015\numerical_solver\tests\test_val002.py
+[код как есть]
+  test_T_profile_matches_analytical: passed
+  test_cell0_is_center_not_wellbore: passed
+[+ полуячейка]
+  test_T_profile_matches_analytical: FAILED (err = 1.500e-02 К)
+  test_cell0_is_center_not_wellbore: FAILED (без сообщения)
+[JT выключен]
+  test_T_profile_matches_analytical: FAILED (err = 1.485e+00 К)
+  test_cell0_is_center_not_wellbore: FAILED (без сообщения)

@@ -140,7 +140,7 @@ class PrototypeHydroAdapter(HydroSolver):
                         сразу ею (DEBT-048); None — память выключена
         max_newton      — итераций Ньютона на одно решение при фиксированном наборе
                           фаз (numerics.newton_max_iter, DEBT-008)
-        max_active_iter — проходов уточнения набора фаз (numerics.max_active_set_iter)
+        max_active_iter — проходов набора фаз с включением газа (numerics.max_active_set_iter, BUG-028)
         """
         self._model = model
         self._grid = grid

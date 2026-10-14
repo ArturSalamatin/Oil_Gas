@@ -6,7 +6,7 @@ date: 2026-10-13
 issue: BUG-026
 github: 109
 branch: fix/bug-026/shutin-first-substep-rs
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-026
 audit:
   date: 2026-10-14
@@ -31,7 +31,7 @@ audit:
 ## Как начать работу по этому плану
 
 1. Прочитай этот файл целиком.
-2. Прочитай запись BUG-026 в `vault/roadmap/известные баги и технический долг.md` и заметку-решение FEAT-032 `vault/knowledge/decisions/нарастающий шаг после смены управления с 2 с вчетверо уменьшает ошибку температуры у забоя за первый час — R_s не исправляет, мельче 0.5 с не сходится.md`. Механизм нарастания описан в `vault/knowledge/decisions/P4-адаптивный-шаг.md` (раздел о FEAT-032).
+2. Прочитай запись BUG-026 в `vault/roadmap/известные баги и технический долг.md` и заметку-решение FEAT-032 `vault/knowledge/decisions/нарастающий шаг после смены управления с 2 с вчетверо уменьшает ошибку температуры у забоя за первый час — R_s не исправляет, мельче 0.5 с не сходится.md` (шаг 7 переименовывает её в `нарастающий шаг после смены управления — от 0.11 с, удвоение вчетверо уменьшает ошибку температуры у забоя за первый час.md`). Механизм нарастания описан в `vault/knowledge/decisions/P4-адаптивный-шаг.md` (раздел о FEAT-032).
 3. **Материалы задачи — в базу до worktree.** Пробы `vault/issues/bug-026/probes/` (скрипты и `*.out.txt`), тексты issue `vault/issues/bug-026/01-…`, `02-…`, `03-…` и этот план в git на `eb904eb` не внесены. `/implement` коммитит их первым коммитом в базовую ветку. Проверка:
    ```powershell
    git ls-tree -r --name-only numerical_scheme/implementation -- vault/issues/bug-026/probes | Select-String "h0_series.py|readme_numbers_h0.py|main_console_h0.py|fingerprint_bug026.py|shutin_n25_check.py|rs_details.py"

@@ -7,7 +7,8 @@ issue: BUG-026
 github: 109
 branch: fix/bug-026/shutin-first-substep-rs
 status: реализован
-worktree: .worktrees/bug-026
+worktree: .worktrees/bug-026; удалён после влития
+merged: 209326d (2026-10-14)
 audit:
   date: 2026-10-14
   round: 1

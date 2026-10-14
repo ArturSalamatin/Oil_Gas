@@ -13,9 +13,15 @@
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]          # numerical_solver/
 TEX = ROOT / "doc" / "problem_statement.tex"
 SELF = Path(__file__).resolve()
+
+# Описание формы «метка (N)» — ключ в FORBIDDEN, по нему же берёт шаблон
+# test_label_number_form.
+LABEL_NUMBER = "номер после метки «eq:имя (N)»"
 
 # Запрещённые формы ссылки на постановку. Уравнение чужой статьи называется
 # словами («формула (5) у Coats 1999»), а не «eq. 5» — иначе его не отличить
@@ -26,6 +32,13 @@ FORBIDDEN = {
     "метка без двоеточия «eq. имя»": re.compile(r"\b[Ee]q\.\s*`?[A-Za-z_]"),
     "номер строки «.tex:N»": re.compile(r"\.tex:\s*\d"),
     "номер строки «.tex, строки N»": re.compile(r"\.tex,?\s*строк"),
+    # Номер рядом с меткой (DEBT-062): метка проверяема, а число уезжает —
+    # в «eq:bc_props_ext (74)» номер устарел, на 6d27358 эта метка — (80).
+    # Префиксы — как в LABEL_REF; между меткой и номером — закрывающие ` ) }
+    # и пробелы.
+    # Строгая форма: номер целиком в скобках, иначе задело бы «eq:x (3 ячейки)».
+    LABEL_NUMBER: re.compile(
+        r"(?<![A-Za-z])(?:eq|sec|ssec|sssec|app):[A-Za-z0-9_]+[`)}]*\s*\(\d+\)"),
 }
 
 # Ссылка на метку постановки — уравнения (eq:) или раздела (sec:, ssec:,
@@ -56,6 +69,8 @@ def test_no_numeric_equation_or_line_references():
     """Ни одной ссылки номером уравнения или номером строки .tex.
 
     До DEBT-010 (c0ec060) — 42 нарушения в 14 файлах, после — ни одного.
+    Форма «метка (N)» добавлена DEBT-062: 3 нарушения в
+    test_energy_matrix_examples.py («eq:bc_props_ext (74)»), после — ни одного.
     """
     bad = [f"{rel}:{n}: {what}: {line.strip()}"
            for rel, n, line in _lines()
@@ -63,6 +78,27 @@ def test_no_numeric_equation_or_line_references():
     assert not bad, ("Ссылка на постановку не меткой (DEBT-010; пишите "
                      "«Ур. (eq:<метка>) problem_statement.tex»):\n"
                      + "\n".join(bad))
+
+
+# Граница строгого шаблона «метка (N)» (DEBT-062, решение пользователя):
+# ловит номер, стоящий в скобках целиком сразу после метки, — в том числе
+# после `метки`, (метки) и \eqref{метки}; пропускает законный текст в скобках
+# после метки — другую метку, пояснение, «3 ячейки». Диапазон «(74–75)» и
+# квадратные скобки сознательно не ловятся: широкий шаблон задел бы «(3 ячейки)».
+# Если шаблон расширят, упадут случаи False — решение не уйдёт молча.
+@pytest.mark.parametrize("text, caught", [
+    ("# ── Контур (f=N) ── eq:bc_props_ext (74)", True),   # форма до DEBT-062
+    ("Ур. (eq:bc_props_ext) (80) problem_statement.tex", True),
+    ("`eq:bc_props_ext` (80)", True),
+    (r"\eqref{eq:bc_props_ext} (80)", True),
+    ("ssec:bc_disc (5)", True),                            # метка раздела
+    ("eq:residual_oil (eq:residual_gas)", False),          # mass_balance.py
+    ("eq:QJT_disc (АДВЕКТИВНАЯ форма, BUG-012)", False),   # test_energy_matrix_examples.py
+    ("eq:bc_props_ext (3 ячейки)", False),
+])
+def test_label_number_form(text, caught):
+    """Шаблон «метка (N)» ловит номер в скобках после метки и пропускает пояснения (DEBT-062)."""
+    assert bool(FORBIDDEN[LABEL_NUMBER].search(text)) is caught
 
 
 def test_label_references_exist_in_problem_statement():

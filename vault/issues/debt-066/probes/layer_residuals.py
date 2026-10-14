@@ -186,6 +186,13 @@ def analyse(name, windows):
         # Проба 1: сдвиг T
         dT = np.array([hv.states[i].T - hb.states[i].T for i in range(i_end + 1)])
         cool = T_init[0] - hb.states[i_end].T[0]
+        # Относительный сдвиг забоя по всем записям окна: |ΔT_w| к изменению T_w
+        # от начального в тот же момент (запись t = 0 исключена — там оба нуля)
+        cool_all = np.array([T_init[0] - hb.states[i].T[0] for i in range(1, i_end + 1)])
+        rel = np.abs(dT[1:, 0]) / np.abs(cool_all)
+        k = int(np.argmax(rel))
+        log(f"   T: max |сдвиг забоя| / |изменение T забоя| по записям 0…{w} сут = {rel[k]:.3e} "
+            f"при t = {tb[k + 1] / 3600:.4g} ч (сдвиг {dT[k + 1, 0]:+.3e} K, изменение {cool_all[k]:+.4e} K)")
         log(f"   T: охлаждение забоя (n+1) {cool:+.4e} K; сдвиг n − (n+1) на {w} сут: забой "
             f"{dT[-1, 0]:+.3e} K, max|·| по сетке {np.abs(dT[-1]).max():.3e} K; "
             f"max по записям 0…{w} сут: забой {np.abs(dT[:, 0]).max():.3e} K, "

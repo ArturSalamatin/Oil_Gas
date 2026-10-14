@@ -7,7 +7,8 @@ issue: DEBT-027
 github: 116
 branch: refactor/debt-027/table-range-diagnostics
 status: реализован
-worktree: .worktrees/debt-027
+worktree: .worktrees/debt-027; удалён после влития
+merged: 24689d0 (2026-10-14)
 audit:
   date: 2026-10-14
   round: 1

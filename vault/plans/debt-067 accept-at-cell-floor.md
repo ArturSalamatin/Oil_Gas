@@ -7,7 +7,8 @@ issue: DEBT-067
 github: 113
 branch: refactor/debt-067/accept-at-cell-floor
 status: реализован
-worktree: .worktrees/debt-067
+worktree: .worktrees/debt-067; удалён после влития
+merged: 8c045d7 (2026-10-14)
 audit:
   date: 2026-10-14
   found: 8

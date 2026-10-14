@@ -93,6 +93,9 @@ def report(m, log, final, target):
     if att is not None:
         seen = [(s, b, "branch" if (b and r.converged and not ((p >= target) if b == "open" else (p <= target)))
                  else r.exit_reason, r.iterations) for s, b, r, p in log]
+        # Шаг решила ступень 1 (один вызов, сошёлся) — попыток нет по решению пользователя (план, 1)
+        if len(log) == 1 and log[0][2].converged:
+            seen = []
         got = [(a.stage, a.branch, a.report.exit_reason, a.report.iterations) for a in att]
         print(f"  attempts отчёта ({len(got)}) = перехват ({len(seen)}): {got == seen}")
     text = "попытки: " + "; ".join(parts)

@@ -1,0 +1,14 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-069\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-069\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+19_rs150_cooling dt = 1 с, p_wf = 30.00 бар, p_ext = 247.00 бар
+    ступень 1 -     сошлась=True  выход=converged    итераций 131 проходов  62 переключений  586 невязка 3.55e-16 мера 3.45e-14 p[0] = 38.38
+  итог advance: сошлась=True выход=converged итераций 131 невязка 3.55e-16 ветка='open' смен=0 fallback=False globalized=False phase_switching=False
+  attempts отчёта (0) = перехват (0): True
+  черновик (30 симв.): попытки: 1 — сошлась (131 ит.)
+  без «закрыта» за 0 ит. (30 симв.): попытки: 1 — сошлась (131 ит.)
+19_rs150_cooling dt = 120 с, p_wf = 30.00 бар, p_ext = 247.00 бар
+    ступень 1 -     сошлась=True  выход=converged    итераций  36 проходов  16 переключений  494 невязка 3.13e-12 мера 3.52e-11 p[0] = 32.24
+  итог advance: сошлась=True выход=converged итераций 36 невязка 3.13e-12 ветка='open' смен=0 fallback=False globalized=False phase_switching=False
+  attempts отчёта (0) = перехват (0): True
+  черновик (29 симв.): попытки: 1 — сошлась (36 ит.)
+  без «закрыта» за 0 ит. (29 симв.): попытки: 1 — сошлась (36 ит.)

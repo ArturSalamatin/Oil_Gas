@@ -28,6 +28,7 @@ Internal accepted/rejected timestep/Newton information, one row per `advance()` 
 - `newton_iterations`, `active_set_iterations`, `phase_switches`, `residual_inf` — from the `advance()` report.
   - Accepted row: Newton iterations summed over the phase active-set loop; `residual_inf` — ||F||_inf of the accepted state (the next step size is chosen from `newton_iterations`).
   - Rejected row (all stages of `advance()` failed): the original algorithm's Newton — iterations of its failed Newton solve (the sum over the loop if the active-set loop ran out, `active_set_iterations` = 12) and its ||F||_inf; not the last fallback attempt (GPN project, DEBT-030).
+  - The attempts of the fallback stages (`attempts` of the report: stage, BHP branch, a copy of each attempt's report; GPN project, DEBT-069) are not written to `step_log.csv` or `run_summary.json`.
 
 ### `material_balance.csv`
 Oil- and gas-component inventories, well production, outer-boundary net flux and component-balance errors at report times. Gas current inventory is separated into dissolved and free gas.

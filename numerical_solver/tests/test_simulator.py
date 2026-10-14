@@ -155,7 +155,7 @@ class TestFirstSubstepDepth:
         assert s.first_substep_depth(1) == 0
 
     def test_first_interval_not_a_change(self):
-        """Интервал 0 — не смена (BUG-028: мелкий первый шаг добычи из равновесия не сходится)."""
+        """Интервал 0 — не смена (решение пользователя 2026-10-11; причина — BUG-028, исправлен)."""
         s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=2.0)
         assert s.first_substep_depth(0) == 0
 

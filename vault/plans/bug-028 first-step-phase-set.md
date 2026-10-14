@@ -6,7 +6,7 @@ date: 2026-10-14
 issue: BUG-028
 github: 117
 branch: fix/bug-028/first-step-phase-set
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-028
 audit:
   date: 2026-10-14

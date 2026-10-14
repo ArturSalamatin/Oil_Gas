@@ -7,8 +7,9 @@ issue: DEBT-062
 github: 112
 branch: refactor/debt-062/label-number-guard
 status: реализован
-worktree: .worktrees/debt-062
+worktree: .worktrees/debt-062; удалён после влития
 implemented: 2026-10-14 (bb5e24d, 0cc7e22; 1946 passed)
+merged: aecd1e4 (2026-10-14)
 audit:
   date: 2026-10-14
   found: 6

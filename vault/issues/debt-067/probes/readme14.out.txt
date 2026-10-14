@@ -1,4 +1,4 @@
-SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver, KAPPA = 1.0
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-067\numerical_solver, KAPPA = 1.0
 
 === base: вызовов гидро 362, отказов 1 [(0.0, 86400.0)]; первые вызовы [(86400.0, False), (43200.0, True), (43200.0, True), (86400.0, True), (86400.0, True)]
 | сут | q_o | GOR | T(r_w), К | ΔT, К | S_g(r_w) | двухфазных | фронт, м |

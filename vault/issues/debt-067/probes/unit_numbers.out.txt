@@ -1,4 +1,4 @@
-SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver, KAPPA = 1.0
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-067\numerical_solver, KAPPA = 1.0
 
 1. BUG-018 N = 350, сутки (86400 с), _advance_phases: converged=False, iterations=15, active_set=2, exit='max_iter', residual=2.030e-03 (tol 4.1286960817122675e-11), measure=45072.79232124407, cell_floor=6.231495803996184e-08, fallback=False, globalized=False, phase_switching=False
    приёмов по полу 1: мера 2.5962e-08, предел 6.4200e-08, kappa 0.462, строки o0,o1,o13,o14,o15,o16

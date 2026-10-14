@@ -7,7 +7,8 @@ issue: DEBT-055
 github: 107
 branch: refactor/debt-055/cell-tol-roundoff-floor
 status: реализован
-worktree: .worktrees/debt-055
+worktree: .worktrees/debt-055; удалён после влития
+merged: 0fc309d (2026-10-14)
 audit:
   date: 2026-10-13
   found: 9

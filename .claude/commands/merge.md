@@ -90,15 +90,24 @@ cd <W>\numerical_solver; <PY> -m pytest tests/ -m "not slow" -q
 
 ## Фаза 4: Удаление worktree
 
+**Сначала вывести сессию из worktree.** Фаза 3 оставляет сессию в `<W>\numerical_solver` (`cd`). Инструменты PowerShell и Bash начинают каждую команду в каталоге, где закончилась предыдущая. Windows не удаляет каталог, который служит текущим каталогом процесса, и `git worktree remove` падает с «Permission denied». `Set-Location` этого не исправляет: он меняет путь внутри PowerShell, а не текущий каталог процесса. Каталог процесса меняет `[System.IO.Directory]::SetCurrentDirectory`. Сбои: DEBT-006, DEBT-023, DEBT-011, DEBT-065, FEAT-030, DEBT-068.
+
 ```powershell
-git -C <КОРЕНЬ> worktree remove .worktrees/<id-lowercase>
+[System.IO.Directory]::SetCurrentDirectory("<КОРЕНЬ>"); Set-Location <КОРЕНЬ>; git -C <W> status --porcelain; git -C <КОРЕНЬ> worktree remove .worktrees/<id-lowercase>
 git -C <КОРЕНЬ> worktree prune
 git -C <КОРЕНЬ> branch --list <branch>   # ветка на месте
 ```
 
+`status --porcelain` перед удалением должен быть пуст — по нему решается, можно ли удалять остаток при сбое (ниже). Если в сессии вызывался инструмент Bash, перед удалением — отдельным вызовом `cd "/d/Lessons/Grants/2026/GPN/Oil_Gas"`: его каталог тоже сохраняется между командами.
+
 - Без `--force`. Отказ — покажи причину и жди пользователя:
   - неотслеживаемые или изменённые файлы — что это, решает пользователь;
   - Windows: файл занят процессом (терминал VS Code в каталоге worktree, python, открытый в редакторе файл) — попроси закрыть, повтори.
+- **Сбой «Permission denied» с уже снятой регистрацией.** Git снимает регистрацию worktree до удаления файлов: `git worktree list` его не показывает, а каталог остаётся с частью дерева. Если `status --porcelain` перед удалением был пуст — в остатке только закоммиченное и игнорируемое, удалить остаток:
+  ```powershell
+  [System.IO.Directory]::SetCurrentDirectory("<КОРЕНЬ>"); Set-Location <КОРЕНЬ>; Remove-Item -LiteralPath "\\?\<КОРЕНЬ>\.worktrees\<id-lowercase>" -Recurse -Force; git -C <КОРЕНЬ> worktree prune
+  ```
+  Префикс `\\?\` — для путей длиннее 260 символов (FEAT-030: файлы vault с длинными именами без него не удалились). Не удаляется и так — каталог держит другой процесс (терминал VS Code, python): попроси закрыть, повтори. `status` был непуст — не удалять, решает пользователь.
 - Игнорируемые файлы worktree (истории `.npz` и графики проб, `OUTPUT/` прототипа, `__pycache__`, `.pytest_cache`) удаляются вместе с ним — они воспроизводимы.
 - **Ветку задачи не удалять** (`git branch -d` не выполнять): она остаётся для истории и ссылок из vault.
 - `ExitWorktree` не использовать: он удаляет ветку.

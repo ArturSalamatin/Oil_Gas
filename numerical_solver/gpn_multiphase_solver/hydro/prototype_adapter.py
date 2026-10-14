@@ -34,6 +34,8 @@ HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адапти�
 и её предел округления (DEBT-055), причина выхода, какое условие сходимости не выполнено
 (отказ на пределе округления — отдельной оговоркой) и чья это статистика (ступень 1
 после подмены DEBT-030 или ступень 4 по памяти).
+В конце (DEBT-069) — попытки ступеней advance по порядку из поля attempts отчёта:
+ступень, ветка, причина выхода, итерации, проходы набора фаз, переключения, невязка.
 
 Баланс массы (DEBT-039): component_inventories — запас компонентов
 функцией прототипа; HydroResult.int_G_* — интегралы потоков через забой
@@ -89,6 +91,9 @@ _EXIT_REASONS = {
     "branch": "ветвь скважины несогласована",
 }
 
+# Ветка скважины попытки ступени (DEBT-069) — поле branch записи StageAttempt прототипа
+_BRANCHES = {"open": "открыта", "shut": "закрыта"}
+
 
 def _failure_details(report, cell_tol: float | None, stage: int) -> str:
     """Хвост текста отказа: допуск, мера ячеек, предел округления, причина выхода, невыполненное условие (DEBT-054, DEBT-055)."""
@@ -141,6 +146,34 @@ def _failure_details(report, cell_tol: float | None, stage: int) -> str:
     # Чьи числа: при отказе advance — исходного алгоритма (подмена DEBT-030), у ступени 4
     # по памяти (DEBT-048) — её собственные
     return text + f"; числа — Ньютона ступени {stage}"
+
+
+def _attempts_text(report) -> str:
+    """Строка попыток ступеней advance по порядку: ступень, ветка, причина выхода, итерации, проходы, переключения, невязка (DEBT-069)."""
+    # Поле attempts несёт BlackOilNewtonReport с DEBT-069: пусто, если шаг решила ступень 1.
+    # Подставные отчёты тестов (SimpleNamespace) его не имеют — строки нет, текст прежний
+    attempts = getattr(report, "attempts", ())
+    if not attempts:
+        return ""
+    items = []
+    for a in attempts:
+        r = a.report
+        head = f"{a.stage} {_BRANCHES.get(a.branch, a.branch)}" if a.branch else f"{a.stage}"
+        if r.converged:
+            # только у шага, принятого ступенями 2–4: последняя попытка
+            items.append(f"{head} — сошлась (итераций {r.iterations})")
+        elif r.exit_reason == "branch":
+            # Ньютон сошёлся, но p[0] противоречит ветке: проходы, переключения и невязка
+            # сошедшегося решения причину не объясняют; на старте добычи «закрыта»
+            # «сходится» за 0 итераций на неизменном состоянии (DEBT-030)
+            items.append(f"{head} — {_EXIT_REASONS['branch']} (итераций {r.iterations})")
+        else:
+            # Пустая причина — у подставных отчётов тестов; настоящий отказ её всегда имеет (DEBT-054)
+            reason = _EXIT_REASONS.get(r.exit_reason, r.exit_reason) or "отказ"
+            items.append(f"{head} — {reason} (итераций {r.iterations}, "
+                         f"проходов {r.active_set_iterations}, "
+                         f"переключений {r.phase_switches}, невязка {r.residual_inf:.2e})")
+    return "; попытки ступеней: [" + "; ".join(items) + "]"
 
 
 class PrototypeHydroAdapter(HydroSolver):
@@ -287,12 +320,15 @@ class PrototypeHydroAdapter(HydroSolver):
             # отказа для журнала; текст для пользователя — в Simulator, он
             # дописывает этот текст в конец своего (DEBT-054). Хвост
             # _failure_details — после прежнего текста: тот остаётся началом.
+            # Строка попыток ступеней (DEBT-069) — последней: прежний текст
+            # и хвост DEBT-054 остаются началом.
             raise HydroConvergenceError(
                 f"advance не сошёлся{' (ступень 4 по памяти)' if by_memory else ''}: "
                 f"dt = {dt:.3e} с, "
                 f"t = {state.t / DAY_TO_S:.4f} сут, итераций {report.iterations}, "
                 f"невязка {report.residual_inf:.2e}"
-                f"{_failure_details(report, m.cell_tol, 4 if by_memory else 1)}")
+                f"{_failure_details(report, m.cell_tol, 4 if by_memory else 1)}"
+                f"{_attempts_text(report)}")
         self._stage4_run = self._stage4_run + 1 if report.phase_switching else 0
         self._stage4_failures = 0
         self._stage4_key = (control, state.t + dt)

@@ -73,9 +73,9 @@ def run_instrumented(config_path):
             self.compute_convective_coefficients(
                 Q_o, Q_g, props['rho_o'], props['rho_g'],
                 props['c_p_o'], props['c_p_g'], N, ext)
-        # p_wf — давление на забойной грани: в адвективной форме JT-вклад
-        # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без него не считается
-        # (BUG-012). Берётся так же, как в solve: из HydroResult (FEAT-020).
+        # p_wf — давление на забойной грани, аргумент compute_jt. Вклад
+        # грани μ_JT·Φ⁺·(p[0] − p_wf) при добыче нулевой (BUG-015), но
+        # p_wf передаётся тот же, что в solve: из HydroResult (FEAT-020).
         p_wf = hydro_result.p_wf
         J_jt = self.compute_jt(Q_o, Q_g, Phi_o, Phi_g,
                                props['mu_JT_o'], props['mu_JT_g'], p, N, ext,

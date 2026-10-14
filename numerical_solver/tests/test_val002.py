@@ -165,10 +165,9 @@ def check_energy_balance(solver, hydro, state_prev, dt, T_ext, T_new):
         hydro.Q_o, hydro.Q_g, props['rho_o'], props['rho_g'],
         props['c_p_o'], props['c_p_g'], N, ext)
     Q_T = solver.compute_conductive_transmissibility(props['lambda_eff'], N)
-    # p_wf — давление на забойной грани: в адвективной форме JT-вклад
-    # этой грани равен μ_JT·Φ⁻·(p[0] − p_wf) и без p_wf не считается
-    # (BUG-012). Берётся из HydroResult — тот же источник, что у решателя
-    # (FEAT-020).
+    # p_wf — давление на забойной грани, аргумент compute_jt. Вклад грани
+    # μ_JT·Φ⁺·(p[0] − p_wf) при добыче нулевой (BUG-015), но p_wf
+    # берётся из HydroResult — тот же источник, что у решателя (FEAT-020).
     p_wf = hydro.p_wf
     J_jt = solver.compute_jt(
         hydro.Q_o, hydro.Q_g, Phi_o, Phi_g,
@@ -376,15 +375,39 @@ class TestCaseB_PureJT:
                     solver=solver, hydro=hydro, state=state, history=history)
 
     def test_T_profile_matches_analytical(self, result):
-        """max|T_num − T_exact| / |ΔT_w| < 1%."""
-        delta_Tw = abs(self.MU_JT * (P_WF - P_EXT))  # 1.5 К
-        err = np.max(np.abs(result['T_final'] - result['T_exact']))
-        assert err / delta_Tw < 0.01, f"err={err:.6f} К, ΔT_w={delta_Tw:.2f} К"
+        """Схема точна в центрах: max_j |T_j − T(r_j)| < 1e-4 К (BUG-015).
 
-    def test_wellbore_temperature(self, result):
-        """T(r_w) ≈ T_ext + μ_JT·(p_wf − p_ext)."""
-        T_w_exact = T_EXT + self.MU_JT * (P_WF - P_EXT)
-        np.testing.assert_allclose(result['T_final'][0], T_w_exact, rtol=0.01)
+        T_exact — эталон в центрах ячеек r_j. В стационаре чистого JT
+        уравнение ячейки сводится к T_{j+1} − T_j = μ_JT·(p_{j+1} − p_j),
+        сумма от контура даёт T_j = T_ext + μ_JT·(p_j − p_ext) точно
+        (ssec:bc_disc). Остаток — от λ = 0.001 и останова по сходимости:
+        замер 1.95e-6 К (ячейка 0), в остальных 9e-8 К.
+        Порог много меньше сдвига «центр ↔ грань» на полъячейки,
+        μ_JT·(p[0] − p_wf) = 0.015 К при N = 50; прежний порог 1 % ΔT_w
+        равнялся этому сдвигу и его не различал.
+        Ловит: сдвиг JT-источника или конвекции на полъячейки.
+        """
+        err = np.max(np.abs(result['T_final'] - result['T_exact']))
+        assert err < 1e-4, f"err = {err:.3e} К"
+
+    def test_cell0_is_center_not_wellbore(self, result):
+        """T[0] = T(r_0): от T(r_w) отличается на μ_JT·(p[0] − p_wf) (BUG-015).
+
+        Перепад p[0] − p_wf на полуячейке [r_w, r_0] не получает ни одна
+        ячейка: вклад забойной грани в eq:QJT_disc входит с весом Φ⁺,
+        а при добыче Φ⁺ = 0. При N = 50: p[0] − p_wf = 50 кПа,
+        T[0] − T(r_w) = −0.015 К (1 % ΔT_w), замер −0.015002 К.
+        Прежняя проверка (T[0] ≈ T(r_w) с rtol = 0.01 от абсолютной T:
+        допуск 3.5 К при ΔT_w = 1.5 К) проходила бы и без JT.
+        Ловит: T[0] = T_ext (JT не работает); перепад p[0] − p_wf,
+        добавленный в уравнение ячейки 0 (тогда T[0] = T(r_w)).
+        """
+        p0 = result['hydro'].state.p[0]
+        T_w = T_EXT + self.MU_JT * (P_WF - P_EXT)   # эталон на забое r_w
+        half = self.MU_JT * (p0 - P_WF)             # JT полуячейки: −0.015 К
+        # Полуячейка различима: допуск ниже в 150 раз меньше |half|
+        assert abs(half) > 1e-2
+        assert abs(result['T_final'][0] - (T_w + half)) < 1e-4
 
     def test_T_monotone_with_radius(self, result):
         """T(r) монотонна. При μ_JT < 0: T убывает от r_w к R_ext."""

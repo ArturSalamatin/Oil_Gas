@@ -1,0 +1,28 @@
+﻿блоков python: шаг 1 — 5, шаг 2 — 6
+
+== база
+  итог: 2 passed in 0.73s
+  нарушений «номер после метки»: 0
+
+== шаг 1
+  «До» в test_eq_references.py: вхождений 1
+  «До» в test_eq_references.py: вхождений 1
+  «До» в test_eq_references.py: вхождений 1
+  итог: 1 failed, 9 passed in 1.07s
+  нарушений «номер после метки»: 3
+    tests\test_energy_matrix_examples.py:254: номер после метки «eq:имя (N)»: # ── Контур (f=N) ── eq:bc_props_ext (74)
+    tests\test_energy_matrix_examples.py:383: номер после метки «eq:имя (N)»: """Свойства фаз при условиях контура. eq:bc_props_ext (74).
+    tests\test_energy_matrix_examples.py:799: номер после метки «eq:имя (N)»: # Свойства контура — выше по потоку при притоке, eq:bc_props_ext (74)
+  строк длиннее 100 в test_eq_references.py: []
+
+== шаг 2
+  «До» в test_energy_matrix_examples.py: вхождений 1
+  «До» в test_energy_matrix_examples.py: вхождений 1
+  «До» в test_energy_matrix_examples.py: вхождений 1
+  итог: 10 passed in 0.80s
+  нарушений «номер после метки»: 0
+  AST test_energy_matrix_examples.py без докстрингов совпадает с базой: True
+  код возврата pytest: 0
+
+== шаг 3
+  «До» в CLAUDE.md: вхождений 1; «После» уже есть: 0

@@ -67,7 +67,11 @@ class SimulatorFactory:
         hydro = _create_prototype_hydro(config, grid, pvt, relperm)
 
         # 5. EnergySolver
-        energy = TridiagEnergySolver(grid, pvt, config.rock)
+        # p_ref = p0: пористость конфига задана при начальном давлении — так же
+        # фабрика строит породу прототипа (_create_prototype_hydro): поровый
+        # объём энергии и гидродинамики один (DEBT-057)
+        energy = TridiagEnergySolver(grid, pvt, config.rock,
+                                     p_ref=config.initial_conditions.p0)
 
         # 6. TimeSchedule (runtime-расписание с BoundaryConditions)
         schedule = _create_schedule(config)

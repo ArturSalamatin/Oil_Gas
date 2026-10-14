@@ -130,17 +130,32 @@ def test_coverage_matches_disk():
 # Эталонная сборка: формулы problem_statement.tex
 # ═══════════════════════════════════════════════════════════
 
-def _ref_cell_properties(pvt, rock, p, Sg, Rs, T_old):
+def _ref_porosity(rock, p, p_ref):
+    """Пористость в ячейках. eq:porosity.
+
+    φ(p) = φ0·exp(c_r·(p − p0)), φ0 = rock.porosity задана при начальном
+    давлении p0 = p_ref — так же фабрика строит породу прототипа (DEBT-057).
+    При c_r = 0 — φ0 в каждой ячейке, p_ref не нужен.
+    """
+    if rock.compressibility == 0.0:
+        return np.full(np.shape(p), rock.porosity)
+    return rock.porosity * np.exp(rock.compressibility * (p - p_ref))
+
+
+def _ref_cell_properties(pvt, rock, phi, p, Sg, Rs, T_old):
     """Эффективные свойства в ячейках. eq:main_rhocpeff, eq:lambda_eff.
 
-    (ρcp)_eff = (1-φ)·(ρcp)_s + φ·Σ_α S_α·ρ_α·c_pα   [Дж/(м³·К)]
-    λ_eff     = (1-φ)·λ_s     + φ·Σ_α S_α·λ_α        [Вт/(м·К)]
+    (ρcp)_eff = (1-φ0)·(ρcp)_s + φ(p)·Σ_α S_α·ρ_α·c_pα   [Дж/(м³·К)]
+    λ_eff     = (1-φ0)·λ_s     + φ0·Σ_α S_α·λ_α          [Вт/(м·К)]
+
+    φ0 = rock.porosity — скелет (масса в ячейке постоянна) и замыкание λ_eff;
+    φ = φ(p^{n+1}) (_ref_porosity) — флюид (DEBT-057).
 
     So берётся как 1 - Sg, как в ядре: тождество So + Sg = 1 обязано
     выполняться точно.
     """
     So = 1.0 - Sg
-    phi = rock.porosity
+    phi0 = rock.porosity
 
     # PVT берём из ядра — воспроизводить корреляции здесь бессмысленно,
     # тест проверяет сборку матрицы, а не PVT-модель.
@@ -155,12 +170,12 @@ def _ref_cell_properties(pvt, rock, p, Sg, Rs, T_old):
         L=pvt.L_degas(p, T_old),
         So=So,
     )
-    props['rho_cp_eff'] = ((1.0 - phi) * rock.rho_cp_solid
+    props['rho_cp_eff'] = ((1.0 - phi0) * rock.rho_cp_solid
                            + phi * (So * props['rho_o'] * props['c_p_o']
                                     + Sg * props['rho_g'] * props['c_p_g']))
-    props['lambda_eff'] = ((1.0 - phi) * rock.lambda_solid
-                           + phi * (So * rock.lambda_oil
-                                    + Sg * rock.lambda_gas))
+    props['lambda_eff'] = ((1.0 - phi0) * rock.lambda_solid
+                           + phi0 * (So * rock.lambda_oil
+                                     + Sg * rock.lambda_gas))
     return props
 
 
@@ -554,11 +569,11 @@ def test_ref_jt_outflow_matches_hand_formula():
     np.testing.assert_array_equal(J_solver, J_hand, err_msg="решатель compute_jt")
 
 
-def _ref_adiabatic(rock, So, Sg, rho_o, rho_g, c_p_o, c_p_g,
+def _ref_adiabatic(phi, So, Sg, rho_o, rho_g, c_p_o, c_p_g,
                    mu_JT_o, mu_JT_g, p, p_old, dt):
-    """Адиабатический эффект. eq:Qad_disc (при c_r = 0).
+    """Адиабатический эффект. eq:Qad_disc.
 
-    ФОРМА ДОКУМЕНТА — единица ВНЕ суммы:
+    ФОРМА ДОКУМЕНТА — единица ВНЕ суммы, φ = φ(p^{n+1}) (DEBT-057):
         Q_ad = φ·[1 + Σ_α S_α·ρ_α·c_pα·μ_JT,α]·(p^{n+1} - p^n)/Δt   [Вт/м³]
 
     Ядро пишет единицу ВНУТРИ суммы: φ·Σ_α S_α·(1 + ρ_α·c_pα·μ_JT,α)·dp/dt.
@@ -567,12 +582,12 @@ def _ref_adiabatic(rock, So, Sg, rho_o, rho_g, c_p_o, c_p_g,
     Поэтому So здесь обязан приходить как 1 - Sg, а не из другого источника.
     """
     dp_dt = (p - p_old) / dt
-    return rock.porosity * (1.0
-                            + So * rho_o * c_p_o * mu_JT_o
-                            + Sg * rho_g * c_p_g * mu_JT_g) * dp_dt
+    return phi * (1.0
+                  + So * rho_o * c_p_o * mu_JT_o
+                  + Sg * rho_g * c_p_g * mu_JT_g) * dp_dt
 
 
-def _ref_degassing(grid, pvt, rock, So, Sg, Rs, Rs_old, Bo, G_o, L,
+def _ref_degassing(grid, pvt, phi, So, Sg, Rs, Rs_old, Bo, G_o, L,
                    dt, N, Rs_ext):
     """Теплота дегазации. eq:Qdeg_disc, eq:mdot_disc, eq:mdot_conv_face.
 
@@ -614,7 +629,8 @@ def _ref_degassing(grid, pvt, rock, So, Sg, Rs, Rs_old, Bo, G_o, L,
         Брать Rs[N-1] нельзя — при p_{N-1} < p_b это состав
         дегазированной нефти вместо состава притока (DEBT-009).
     """
-    phi = rock.porosity
+    # phi — φ(p^{n+1}) (_ref_porosity): запас нефти временной части — с тем же
+    # поровым объёмом, что у гидродинамики (DEBT-057)
     V = grid.volumes
     rho_g_std = pvt.rho_g_std
 
@@ -756,7 +772,7 @@ def _ref_d_scale(grid, N, dt, T_old, T_ext, rho_cp_eff, Q_T_ext, Phi_minus,
 
 
 def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
-                    T_ref=0.0, with_scale=False):
+                    T_ref=0.0, with_scale=False, p_ref=None):
     """Собрать эталонные a, b, c, d для одного вызова solve.
 
     dt — фактический шаг вызова, НЕ шаг расписания: при локальном дроблении
@@ -769,11 +785,16 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
 
     with_scale=True — пятым элементом масштаб слагаемых d (_ref_d_scale),
     для допуска сверки d.
+
+    p_ref — давление, при котором задана rock.porosity (начальное p0);
+    нужно при c_r ≠ 0 (DEBT-057).
     """
     N = grid.N
     st = hydro_result.state
 
-    props = _ref_cell_properties(pvt, rock, st.p, st.Sg, st.Rs, state_prev.T)
+    # Пористость φ(p^{n+1}): флюид в (ρc_p)_eff, Q_ad и временной части ṁ
+    phi = _ref_porosity(rock, st.p, p_ref)
+    props = _ref_cell_properties(pvt, rock, phi, st.p, st.Sg, st.Rs, state_prev.T)
 
     # Свойства контура — выше по потоку при притоке, eq:bc_props_ext (74)
     ext = _ref_ext_properties(pvt, bc)
@@ -794,13 +815,13 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
     J_jt = _ref_jt(Phi_o, Phi_g, props['mu_JT_o'], props['mu_JT_g'],
                    hydro_result.Q_o, hydro_result.Q_g, st.p, N, ext, p_wf)
 
-    Q_ad = _ref_adiabatic(rock, props['So'], st.Sg,
+    Q_ad = _ref_adiabatic(phi, props['So'], st.Sg,
                           props['rho_o'], props['rho_g'],
                           props['c_p_o'], props['c_p_g'],
                           props['mu_JT_o'], props['mu_JT_g'],
                           st.p, state_prev.p, dt)
 
-    Q_deg = _ref_degassing(grid, pvt, rock, props['So'], st.Sg,
+    Q_deg = _ref_degassing(grid, pvt, phi, props['So'], st.Sg,
                            st.Rs, state_prev.Rs, props['Bo'],
                            hydro_result.G_o, props['L'], dt, N, bc.Rs_ext)
 
@@ -853,7 +874,8 @@ def test_matrix_matches_reference(example):
     def probe(a, b, c, d, dt, T_old, T_ref, hydro_result, state_prev, bc):
         ref_a, ref_b, ref_c, ref_d, d_scale = build_reference(
             simulator.grid, simulator.pvt, cfg.rock,
-            hydro_result, state_prev, dt, bc, T_ref=T_ref, with_scale=True)
+            hydro_result, state_prev, dt, bc, T_ref=T_ref, with_scale=True,
+            p_ref=cfg.initial_conditions.p0)
 
         where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"
         np.testing.assert_allclose(a, ref_a, rtol=RTOL, atol=0.0,

@@ -232,7 +232,7 @@ class EnergyBalanceAccumulator:
         self.cum_jt += np.sum(J_jt) * dt
 
         # ── Адиабатика (обе фазы) ──
-        # Q_ad = φ Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt, Вт/м³ (eq:Qad_disc, c_r = 0).
+        # Q_ad = φ(p) Σ_α S_α (1 + ρ_α cp_α μ_JT,α) dp/dt, Вт/м³ (eq:Qad_disc, DEBT-057).
         # Решатель ставит V[j]·Q_ad[j] в правую часть — суммируем то же.
         self.cum_adiab += np.sum(V * Q_ad) * dt
 

@@ -84,8 +84,10 @@ def run_instrumented(config_path):
             So, Sg, props['rho_o'], props['rho_g'],
             props['c_p_o'], props['c_p_g'],
             props['mu_JT_o'], props['mu_JT_g'], p, p_old, dt)
+        # p — как в solve: пористость временной части ṁ φ(p) (DEBT-057)
         Q_deg = self.compute_degassing(
-            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext)
+            So, Sg, Rs, Rs_old, props['Bo'], G_o, props['L'], dt, N, Rs_ext,
+            p=p)
 
         T_new = orig_solve(self, hydro_result, state_prev, dt, bc, collect)
 

@@ -251,7 +251,7 @@ def _ref_convective(Q_o, Q_g, rho_o, rho_g, c_p_o, c_p_g, N, ext):
     Phi_o[0] = rho_o[0] * c_p_o[0] * Q_o[0]
     Phi_g[0] = rho_g[0] * c_p_g[0] * Q_g[0]
 
-    # ── Контур (f=N) ── eq:bc_props_ext (74)
+    # ── Контур (f=N) ── eq:bc_props_ext
     # По знаку расхода, раздельно по фазам: отток наружу — свойства
     # из ячейки N-1, приток — при условиях контура (p_0, T_0, Rs^0).
     # Газовая ветвь при Sg|ext = 0 умножается на Q_g = 0, поэтому
@@ -380,7 +380,7 @@ def test_ref_conductive_matches_annulus_solution():
 
 
 def _ref_ext_properties(pvt, bc):
-    """Свойства фаз при условиях контура. eq:bc_props_ext (74).
+    """Свойства фаз при условиях контура. eq:bc_props_ext.
 
     Считается ЗДЕСЬ, а не вызовом TridiagEnergySolver._ext_properties:
     эталон обязан быть независимым от ядра, иначе он зафиксирует
@@ -802,7 +802,7 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
     phi = _ref_porosity(rock, st.p, p_ref)
     props = _ref_cell_properties(pvt, rock, phi, st.p, st.Sg, st.Rs, state_prev.T)
 
-    # Свойства контура — выше по потоку при притоке, eq:bc_props_ext (74)
+    # Свойства контура — выше по потоку при притоке, eq:bc_props_ext
     ext = _ref_ext_properties(pvt, bc)
 
     Phi_o, Phi_g, Phi_plus, Phi_minus = _ref_convective(

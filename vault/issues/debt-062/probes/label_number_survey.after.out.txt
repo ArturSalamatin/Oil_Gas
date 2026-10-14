@@ -1,0 +1,11 @@
+﻿ROOT = D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-062\numerical_solver
+источников: 152, строк: 38600
+
+== кандидат «строгий»: 0 срабатываний
+
+== кандидат «широкий»: 0 срабатываний
+
+== обзор «метка, затем скобка»: 3
+  gpn_multiphase_solver\mass_balance.py:97: eq:residual_oil (eq:residual_gas)
+  tests\test_energy_matrix_examples.py:442: eq:QJT_disc (АДВЕКТИВНАЯ форма, BUG-012)
+  tests\test_energy_matrix_examples.py:493: eq:QJT_disc (знак Σ_α стоит снаружи)

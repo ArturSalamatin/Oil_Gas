@@ -216,7 +216,7 @@ Schedule прототипа — более общий формат (абсолю
 | `load_config` | `io/config.py`: `_drop_removed_keys` (до разбора секций) | удалённые поля ([[DEBT-008]]): ключ убирается, предупреждение — после `_validate` |
 | | `_check_numeric_fields`, `_require_finite_number` | тип и конечность всех чисел ([[DEBT-051]]) |
 | | `_expand_history`, `_validate_interval` | формы `time.history` (FEAT-018); `control`, `p_wf > 0`, `q_oil ≥ 0`, `min_bhp > 0`, неиспользуемые поля (DEBT-008) |
-| | `_validate` | геометрия, сетка, порода, тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin`, `grid.type`, `output.log_level`, лимиты и допуски Ньютона (DEBT-008) |
+| | `_validate` | геометрия, сетка, порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin`, `grid.type`, `output.log_level`, лимиты и допуски Ньютона (DEBT-008) |
 | | предупреждения об удалённых полях, `_warn_large_skin`, `_warn_well_shut` (после `_validate`) | предупреждения: удалённые поля (DEBT-008); `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
 | `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO (DEBT-042, DEBT-044, DEBT-038) |
 | | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход за таблицы (BUG-017) |
@@ -224,6 +224,8 @@ Schedule прототипа — более общий формат (абсолю
 | прототип | `radial_blackoil/grid.py`, `pvt.py`, `relperm.py`, `blackoil.py` | повтор геометрии; монотонность таблиц; режимы якобиана и решателя СЛАУ; $q \ge 0$. `skin` прототип не проверяет |
 
 Проверки — только на пути JSON → `load_config` → `from_config`. Конфиг, собранный в коде, и прототип, вызванный напрямую, их не получают.
+
+Порода — наш config (`_validate`, `io/config.py`): `porosity` ∈ (0, 1], `permeability` > 0, `compressibility` ≥ 0 ([[DEBT-068]]). $c_r = (1/\varphi)\,d\varphi/dp < 0$ — ошибка знака: загрузчик книги прототипа такое отвергает (`radial_blackoil/input_reader.py`), путь JSON его обходил. Замер на конфиге примера 18 ($c_o = 1.2\cdot10^{-9}$ 1/Па): $c_r = -4.5\cdot10^{-10}$ и $-10^{-9}$ проходили молча с дебитом на 6 и 14 % ниже; при $c_r < -c_o$ — $C_p < 0$ в недонасыщенной зоне (BUG-019) и отказ шага. Верхней границы нет: давление не выше $p_0$, при $c_r \ge 0$ $\varphi(p) \le$ `porosity`.
 
 Тепловые параметры — наш config (`_validate`, `io/config.py`; DEBT-047, DEBT-049):
 - `thermal.c_p_oil`, `thermal.c_p_gas`, `rock.rho_cp_solid` — конечные и > 0

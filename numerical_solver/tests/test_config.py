@@ -12,6 +12,7 @@
 - История: несколько интервалов, control type, p_wf.
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
   и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056).
+- Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).
 - Минимальный конфиг: только обязательные секции.
 - Мёртвые поля (DEBT-008): удалённые ключи — предупреждение и пропуск; grid.type,
   output.log_level, лимиты и допуски Ньютона — проверка; умолчания = умолчаниям прототипа.
@@ -367,6 +368,45 @@ class TestValidationRock:
         raw["rock"]["permeability"] = -1e-13
         with pytest.raises(ValueError, match="permeability"):
             load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("c_r", [
+        # ошибка знака у значения примера 18: расчёт шёл молча, дебит нефти
+        # на 1 сут на 6 % ниже, чем при +4.5e-10
+        -4.5e-10,
+        # между −c_o и 0 (c_o = 1.2e-9 у PVT примера 18): C_p ≥ 0, расчёт
+        # шёл молча, дебит на 14 % ниже
+        -1e-9,
+        # c_r < −c_o: C_p < 0 в недонасыщенной зоне — отказ после дробления
+        # шага до dt/512 с советом увеличить max_retries, без имени параметра
+        -2e-9,
+        # наименьшее по модулю отрицательное число: проверка — по знаку, без допуска
+        -5e-324,
+    ], ids=["sign_error_example18", "above_minus_c_o", "below_minus_c_o", "tiny"])
+    def test_negative_compressibility_rejected(self, tmp_path, c_r):
+        """c_r < 0 → ValueError с полным именем поля и значением (DEBT-068).
+
+        c_r = (1/φ)·dφ/dp ≥ 0 (eq:porosity): поровый объём с ростом давления не
+        уменьшается; загрузчик книги прототипа c_r < 0 тоже отвергает. Комментарии
+        к случаям — замер до DEBT-068 на конфиге примера 18, 2 сут
+        (vault/issues/debt-068/probes/red_state.out.txt).
+        """
+        raw = _minimal_raw()
+        raw["rock"]["compressibility"] = c_r
+        with pytest.raises(ValueError, match="rock.compressibility") as exc:
+            load_config(_write_json(tmp_path, raw))
+        # значение — как в конфиге: по нему пользователь найдёт ошибку
+        assert f"= {c_r} 1/Па" in str(exc.value)
+
+    @pytest.mark.parametrize("c_r", [0.0, 4.5e-10], ids=["zero_default", "example18"])
+    def test_nonnegative_compressibility_accepted(self, tmp_path, c_r):
+        """c_r = 0 и 4.5e-10 1/Па проходят: умолчание и значение примера 18.
+
+        Пример 18 — единственный из 31 конфига проекта, где c_r задано.
+        """
+        raw = _minimal_raw()
+        raw["rock"]["compressibility"] = c_r
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.rock.compressibility == c_r
 
 
 class TestValidationInitial:

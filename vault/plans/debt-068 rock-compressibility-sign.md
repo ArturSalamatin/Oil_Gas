@@ -6,7 +6,7 @@ date: 2026-10-14
 issue: DEBT-068
 github: 111
 branch: refactor/debt-068/rock-compressibility-sign
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-068
 audit:
   date: 2026-10-14

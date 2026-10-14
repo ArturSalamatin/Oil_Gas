@@ -219,7 +219,8 @@ Schedule прототипа — более общий формат (абсолю
 | | `_validate` | геометрия, сетка, порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin`, `grid.type`, `output.log_level`, лимиты и допуски Ньютона (DEBT-008) |
 | | предупреждения об удалённых полях, `_warn_large_skin`, `_warn_well_shut` (после `_validate`) | предупреждения: удалённые поля (DEBT-008); `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
 | `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO (DEBT-042, DEBT-044, DEBT-038) |
-| | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход за таблицы (BUG-017) |
+| | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход начального состояния за таблицы (BUG-017) |
+| расчёт | `hydro/prototype_adapter.py`: `PrototypeHydroAdapter.warn_table_range` | предупреждение: выход принятого состояния за PVT- и ОФП-таблицы на каждом шаге — одна запись на категорию за расчёт, с моментом первого выхода; начальное состояние — тем же методом (`_warn_initial_table_range`), категория при $t = 0$ не повторяется; «кривая насыщения выше таблицы» — только при свободном газе $S_g > 10^{-6}$. Только табличная PVT (DEBT-027) |
 | сетка GPN | `grid/log_radial.py` (`LogRadialGrid`) | повтор проверок геометрии |
 | прототип | `radial_blackoil/grid.py`, `pvt.py`, `relperm.py`, `blackoil.py` | повтор геометрии; монотонность таблиц; режимы якобиана и решателя СЛАУ; $q \ge 0$. `skin` прототип не проверяет |
 

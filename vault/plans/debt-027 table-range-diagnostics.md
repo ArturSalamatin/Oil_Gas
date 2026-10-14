@@ -6,7 +6,7 @@ date: 2026-10-14
 issue: DEBT-027
 github: 116
 branch: refactor/debt-027/table-range-diagnostics
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-027
 audit:
   date: 2026-10-14

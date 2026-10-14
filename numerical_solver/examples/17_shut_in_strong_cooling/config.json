@@ -45,7 +45,7 @@
   },
   "time": {
     "dt_integration": 3600,
-    "dt_after_control_change": 2.0,
+    "dt_after_control_change": 0.11,
     "history": [
       {
         "duration": 1296000.0,

@@ -6,7 +6,7 @@ date: 2026-10-14
 issue: DEBT-070
 github: 119
 branch: refactor/debt-070/statement-boundary-notation
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-070
 audit:
   date: 2026-10-15

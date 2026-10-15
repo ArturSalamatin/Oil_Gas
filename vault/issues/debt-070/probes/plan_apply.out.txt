@@ -1,4 +1,4 @@
-Проба плана DEBT-070 на a7b0dc0 (a7b0dc0); план: vault\plans\debt-070 statement-boundary-notation.md
+Проба плана DEBT-070 на HEAD (7420ab2); план: vault\plans\debt-070 statement-boundary-notation.md
 Правок в плане: 74 (T: 44, C: 13, V: 17)
 Каждая «До» найдена ровно один раз: да
 Изменено файлов: 12
@@ -37,4 +37,4 @@ PDF: страниц 40, undefined 0, LaTeX Warning 0, Overfull 17
   numerical_solver/tests/test_energy.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
   numerical_solver/tests/test_energy_matrix_examples.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
   numerical_solver/tests/test_rate_control.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
-Сторож меток: 10 passed in 0.86s
+Сторож меток: 10 passed in 0.78s

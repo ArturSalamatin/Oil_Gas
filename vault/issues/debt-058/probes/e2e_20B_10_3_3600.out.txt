@@ -1,0 +1,13 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver, D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+=== 20_rs300_cooling: 10 сут добычи + 3 сут останова (B); dt_integration = 3600 с, max_retries = 9, dt_after_control_change = None ===
+итог: ✓; счёт 13 с
+  [добыча] попыток solve 240, отказов 0 (0 %); время solve 7.7 с, из них на отказы 0.0 с (0 %); шагов dt 240, из них с дроблением 0
+    вид    | попыток | отказов | время отказов, с
+    first  |     240 |       0 |      0.0
+    принятые подшаги, с: {'3600': 240}
+    отказы (вид, подшаг с): {}
+  [останов] попыток solve 72, отказов 0 (0 %); время solve 4.8 с, из них на отказы 0.0 с (0 %); шагов dt 72, из них с дроблением 0
+    вид    | попыток | отказов | время отказов, с
+    first  |      72 |       0 |      0.0
+    принятые подшаги, с: {'3600': 72}
+    отказы (вид, подшаг с): {}

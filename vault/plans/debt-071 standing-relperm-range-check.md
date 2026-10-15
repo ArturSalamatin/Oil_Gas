@@ -7,7 +7,8 @@ issue: DEBT-071
 github: 122
 branch: refactor/debt-071/standing-relperm-range-check
 status: реализован
-worktree: .worktrees/debt-071
+worktree: .worktrees/debt-071; удалён после влития
+merged: a180d88 (2026-10-15)
 audit:
   date: 2026-10-15
   round: 1

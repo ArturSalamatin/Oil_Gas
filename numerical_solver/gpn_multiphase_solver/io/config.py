@@ -150,7 +150,10 @@ class TimeConfig:
 @dataclass
 class NumericsConfig:
     """Параметры численного метода — фабрике, адаптеру прототипа и Simulator (DEBT-008)."""
-    skin: float = 0.0                      # скин-фактор: ≥ 0, > 50 — предупреждение (DEBT-056)
+    # Скин-фактор: ≥ 0 (DEBT-056). Входит только в гидродинамику — сопротивлением
+    # забойной грани; в уравнение энергии не входит (BUG-029). Предупреждения:
+    # s > 0 — о температуре (BUG-029), s > 50 — о доле притока (DEBT-056)
+    skin: float = 0.0
     # Лимиты Ньютона прототипа: адаптер передаёт их в каждый advance (DEBT-008).
     # Умолчания — умолчания RadialBlackOilModel.advance (тест test_defaults_match_prototype).
     # Ступень 4 advance (BUG-020, _newton_switching) их не читает: у неё свой предел
@@ -450,6 +453,7 @@ def load_config(path: str | Path) -> SimulationConfig:
     for message in removed:
         user_log.warning(message)
     _warn_large_skin(config)
+    _warn_skin_not_in_energy(config)
     # p0 к этому моменту проверен в _validate: число, конечное, > 0
     _warn_well_shut(history_blocks, config.initial_conditions.p0)
     return config
@@ -776,6 +780,35 @@ def _warn_large_skin(cfg: SimulationConfig) -> None:
             f"при той же депрессии — {ratio:.1%} от притока без скина "
             f"(ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = {ln_re_rw:.3g}). "
             f"Проверьте значение.")
+
+
+def _warn_skin_not_in_energy(cfg: SimulationConfig) -> None:
+    """Предупреждение при s > 0: скин не входит в уравнение энергии (BUG-029). Ур. (eq:QJT_disc)."""
+    # Скин в модели — только сопротивление забойной грани в гидродинамике:
+    # проводимость 2πkh/(ln(r_1/r_w) + s) (прототип, well_transmissibility_m3).
+    # В уравнении энергии забойная грань при добыче вклада не даёт: JT — с весом
+    # Φ⁺ = 0 (eq:QJT_disc), перенос R_s — без состава за гранью (eq:mdot_disc).
+    # Поэтому JT-нагрев нефти, охлаждение газа и теплота разгазирования на
+    # перепаде скин-зоны в T не входят ни при каком N, и T_wf = T[0] их не
+    # содержит (ssec:bc_disc). Знак потери без расчёта не известен: на
+    # полуячейке у забоя примера 12 JT (+0.033 К) и дегазация (−0.032 К) почти
+    # гасят друг друга (BUG-015). Модель не меняется — только предупреждение
+    # (решение пользователя, BUG-029).
+    # Доля депрессии на скин-зоне в установившемся однофазном притоке:
+    # p_e − p_wf = qμ/(2πkh)·(ln(R_ext/r_w) + s), из них qμ/(2πkh)·s — на скин-зоне.
+    s = cfg.numerics.skin
+    if s > 0:
+        g = cfg.geometry
+        ln_re_rw = np.log(g.R_ext / g.r_well)
+        share = s / (ln_re_rw + s)
+        user_log.warning(
+            f"numerics.skin = {s} > 0: скин учитывается только в гидродинамике "
+            f"(сопротивление забойной грани). В уравнении энергии его нет: "
+            f"дросселирование (эффект Джоуля–Томсона) и разгазирование на перепаде "
+            f"давления скин-зоны в температуру не входят, и температура забоя T_wf "
+            f"их не содержит. В установившемся однофазном притоке на скин-зону "
+            f"приходится {share:.1%} депрессии (s / (ln(R_ext/r_w) + s), "
+            f"ln(R_ext/r_w) = {ln_re_rw:.3g}).")
 
 
 def _warn_well_shut(blocks: list[tuple[str, HistoryInterval]], p0: float) -> None:

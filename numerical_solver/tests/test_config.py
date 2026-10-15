@@ -11,7 +11,8 @@
 - Опциональные секции: numerics, output — defaults при отсутствии.
 - История: несколько интервалов, control type, p_wf.
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
-  и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056).
+  и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056); при skin > 0 —
+  скин не входит в уравнение энергии (BUG-029).
 - Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).
 - Минимальный конфиг: только обязательные секции.
 - Мёртвые поля (DEBT-008): удалённые ключи — предупреждение и пропуск; grid.type,
@@ -885,8 +886,15 @@ def _history_raw(second):
     return raw
 
 
+# Признаки двух предупреждений о скине — фрагменты, которых нет в другом
+# сообщении: доля притока при s > 50 (DEBT-056) и скин вне уравнения
+# энергии при s > 0 (BUG-029)
+_INFLOW = "от притока без скина"
+_ENERGY = "В уравнении энергии его нет"
+
+
 class TestValidationWell:
-    """Скин ≥ 0; предупреждения при skin > 50 и при p_wf, min_bhp ≥ p0 (DEBT-056)."""
+    """Скин ≥ 0; предупреждения при skin > 0 (BUG-029), > 50 и p_wf, min_bhp ≥ p0 (DEBT-056)."""
 
     # −0.01 — внутри окна T_w > 0 (у _minimal_raw ln(r_1/r_w) = ln 500 / 20 = 0.31),
     # но отрицательный скин в проекте не предусмотрен (решение пользователя)
@@ -920,28 +928,59 @@ class TestValidationWell:
         with pytest.raises(ValueError, match="неприменим"):
             load_config(_write_json(tmp_path, raw))
 
-    # 50 — граница: предупреждение строго при s > 50 (решение пользователя)
-    @pytest.mark.parametrize("skin", [0.0, 5.0, 50.0],
-                             ids=["zero", "damaged", "threshold"])
-    def test_skin_up_to_threshold_silent(self, tmp_path, caplog, skin):
-        """0 ≤ s ≤ 50 — без отказа и без предупреждения."""
+    def test_zero_skin_silent(self, tmp_path, caplog):
+        """s = 0 (все конфиги проекта) — без отказа и без предупреждений."""
         raw = _minimal_raw()
-        raw["numerics"] = {"skin": skin}
+        raw["numerics"] = {"skin": 0.0}
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             cfg = load_config(_write_json(tmp_path, raw))
-        assert cfg.numerics.skin == skin
+        assert cfg.numerics.skin == 0.0
         assert _warning_messages(caplog) == []
 
-    @pytest.mark.parametrize("skin", [50.5, 1e3, 1e6], ids=["above", "1e3", "1e6"])
-    def test_large_skin_warns(self, tmp_path, caplog, skin):
-        """s > 50 — предупреждение с именем поля; расчёт допускается."""
+    # Скин входит только в гидродинамику (проводимость забойной грани); в
+    # уравнении энергии забойная грань при добыче вклада не даёт (eq:QJT_disc,
+    # eq:mdot_disc). Решение пользователя (BUG-029): предупреждать при любом
+    # s > 0. О доле притока — строго при s > 50 (DEBT-056): здесь его нет
+    @pytest.mark.parametrize("skin", [0.01, 5.0, 50.0],
+                             ids=["small", "damaged", "threshold"])
+    def test_positive_skin_warns_energy(self, tmp_path, caplog, skin):
+        """0 < s ≤ 50 — одно предупреждение: скин не входит в уравнение энергии."""
         raw = _minimal_raw()
         raw["numerics"] = {"skin": skin}
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.numerics.skin == skin
         msgs = _warning_messages(caplog)
-        assert len(msgs) == 1 and "numerics.skin" in msgs[0]
+        assert len(msgs) == 1
+        assert _ENERGY in msgs[0]
+        assert "numerics.skin" in msgs[0] and "T_wf" in msgs[0]
+
+    # Установившийся однофазный приток: p_e − p_wf = qμ/(2πkh)·(ln(R_ext/r_w) + s),
+    # из них qμ/(2πkh)·s — на скин-зоне; эта часть перепада в T не входит.
+    # У _minimal_raw R_ext/r_w = 50/0.1 = 500, ln 500 = 6.2146
+    def test_skin_energy_warning_gives_drawdown_share(self, tmp_path, caplog):
+        """s = 2: доля депрессии на скин-зоне 2 / (ln 500 + 2) = 24.3 %."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": 2.0}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            load_config(_write_json(tmp_path, raw))
+        energy = [m for m in _warning_messages(caplog) if _ENERGY in m]
+        assert len(energy) == 1 and "24.3%" in energy[0]
+
+    @pytest.mark.parametrize("skin", [50.5, 1e3, 1e6], ids=["above", "1e3", "1e6"])
+    def test_large_skin_warns(self, tmp_path, caplog, skin):
+        """s > 50 — два предупреждения: о доле притока (DEBT-056) и о температуре (BUG-029)."""
+        raw = _minimal_raw()
+        raw["numerics"] = {"skin": skin}
+        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
+            cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.numerics.skin == skin
+        msgs = _warning_messages(caplog)
+        # По одному каждого вида, оба называют поле
+        assert len(msgs) == 2
+        assert sum(_INFLOW in m for m in msgs) == 1
+        assert sum(_ENERGY in m for m in msgs) == 1
+        assert all("numerics.skin" in m for m in msgs)
 
     def test_large_skin_warning_gives_inflow_ratio(self, tmp_path, caplog):
         """s = 1000, R_ext/r_w = 500: доля притока ln 500 / (ln 500 + 1000) = 0.6 %."""
@@ -949,7 +988,9 @@ class TestValidationWell:
         raw["numerics"] = {"skin": 1000.0}
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             load_config(_write_json(tmp_path, raw))
-        assert "0.6%" in _warning_messages(caplog)[0]
+        # Сообщение о притоке — по признаку, не по порядку: при s > 0 есть и второе
+        inflow = [m for m in _warning_messages(caplog) if _INFLOW in m]
+        assert len(inflow) == 1 and "0.6%" in inflow[0]
 
     @pytest.mark.parametrize("p_wf", [20e6, 25e6], ids=["equal_p0", "above_p0"])
     def test_pwf_not_below_p0_warns(self, tmp_path, caplog, p_wf):

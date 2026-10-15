@@ -173,7 +173,7 @@ metadata:
 |---|---|---|
 | `newton_cell_tol` | float или null | Порог условия сходимости Ньютона по ячейке, $\max_c |F_c|\Delta t/V_p$ (BUG-022), по умолчанию 1e-8; null — выключено |
 | `max_retries` | int | Глубина дробления шага в `Simulator`, 0…20 (DEBT-007, DEBT-015) |
-| `skin`, `jacobian_mode`, `linear_solver` | float, str, str | Передаются прототипу |
+| `skin`, `jacobian_mode`, `linear_solver` | float, str, str | Передаются прототипу; `skin` ≥ 0 входит только в гидродинамику (сопротивление забойной грани), в уравнение энергии — нет: при `skin` > 0 — предупреждение (BUG-029), при > 50 — о доле притока (DEBT-056) |
 | `newton_max_iter`, `max_active_set_iter` | int, int | Лимиты Ньютона ступеней 1–3 `advance`, целые ≥ 1; адаптер передаёт в каждый вызов (DEBT-008). `max_active_set_iter` — проходов набора фаз с включением газа; проходы, где газ только снимается, не считаются, всего не больше `max_active_set_iter` + $N$ (BUG-028) |
 | `rs_switch_tol`, `sg_switch_tol` | float, float | Допуски переключения фаз, > 0; фабрика передаёт в конструктор модели; `rs_switch_tol` — и допуск проверки старта (DEBT-008) |
 | `dt_min`, `dt_max`, `newton_atol`, `newton_rtol` | — | Удалены (DEBT-008): в старом конфиге — предупреждение и пропуск |

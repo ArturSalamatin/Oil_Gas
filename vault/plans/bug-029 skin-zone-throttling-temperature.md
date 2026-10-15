@@ -6,7 +6,7 @@ date: 2026-10-15
 issue: BUG-029
 github: 120
 branch: fix/bug-029/skin-zone-throttling-temperature
-status: в процессе
+status: реализован
 worktree: .worktrees/bug-029
 audit:
   date: 2026-10-15

@@ -7,7 +7,8 @@
 удаление или переименование ловит второй тест.
 
 Обход: .py ядра, тестов и примеров и README примеров. Этот файл исключён —
-в нём записаны сами запрещённые формы.
+в нём записаны сами запрещённые формы. Заметки vault/knowledge/ без
+literature/ проверяются теми же шаблонами отдельными тестами (DEBT-074).
 """
 
 import re
@@ -65,6 +66,26 @@ def _lines():
             yield rel, n, line
 
 
+# Заметки vault (DEBT-074) ссылаются на постановку, как код, — метками.
+# literature/ не проверяется: номера уравнений обозреваемых статей — предмет
+# этих заметок. vault/plans/, vault/issues/, реестры vault/roadmap/ — снимки
+# на дату, не проверяются. В поставке заказчику vault/ нет (FEAT-031) —
+# проверки заметок пропускаются, а не падают.
+VAULT = ROOT.parent / "vault" / "knowledge"
+
+
+def _vault_lines():
+    """(путь от vault/knowledge/, номер строки, текст) по заметкам без literature/."""
+    if not VAULT.is_dir():
+        pytest.skip("нет vault/knowledge/ — копия без vault (поставка, FEAT-031)")
+    for f in sorted(VAULT.rglob("*.md")):
+        rel = f.relative_to(VAULT)
+        if rel.parts[0] == "literature":
+            continue
+        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            yield rel, n, line
+
+
 def test_no_numeric_equation_or_line_references():
     """Ни одной ссылки номером уравнения или номером строки .tex.
 
@@ -116,3 +137,51 @@ def test_label_references_exist_in_problem_statement():
                for m in LABEL_REF.finditer(line) if m.group() not in labels]
     assert not missing, ("Метки нет в doc/problem_statement.tex — переименована "
                          "или удалена; поправьте ссылку:\n" + "\n".join(missing))
+
+
+def test_vault_notes_no_numeric_equation_references():
+    """Заметки vault/knowledge/ (без literature/) ссылаются на постановку не номером.
+
+    До DEBT-074 (0d5c491) — 27 нарушений в 9 заметках: номера ранних редакций
+    постановки, ни один не указывал на имеющееся в виду уравнение. После — ни
+    одного. Номер чужого документа — словами: «формула (23) у Peszyńska 2006».
+    Не ловятся (решение пользователя, DEBT-074), правлены вручную: «уравнение N»
+    и «Ур. (N)» — задели бы местную нумерацию («уравнения (1)», «Ур. (3)» в
+    diagnostics/closed_form.py, «уравнение (1)» в заметке о пороге Кори);
+    «формула (N)» — так пишется номер чужого документа; «стр. N» — страницы
+    статей; «§N» — разделы планов и заметок. Параграф постановки пишется
+    меткой ssec:, её проверяет test_vault_notes_label_references_exist.
+    """
+    lines = list(_vault_lines())
+    # Обход не пуст: заметок вне literature/ на 0d5c491 — 93.
+    assert len({rel for rel, _, _ in lines}) > 50
+    bad = [f"{rel}:{n}: {what}: {line.strip()}"
+           for rel, n, line in lines
+           for what, rx in FORBIDDEN.items() if rx.search(line)]
+    assert not bad, ("Ссылка в заметке не меткой (DEBT-074; постановка — "
+                     "`eq:<метка>`, параграф — `ssec:<метка>`; чужой документ — "
+                     "«формула (N) у Автор Год»):\n" + "\n".join(bad))
+
+
+def test_vault_notes_label_references_exist():
+    """Каждая метка в заметках vault/knowledge/ (без literature/) объявлена в постановке.
+
+    Ловит переименование или удаление метки в problem_statement.tex: заметка
+    ссылается на уравнение, которого больше нет. На 0d5c491 — ни одной
+    отсутствующей. Метку другого .tex (two_phase_energy.tex и др.) шаблон
+    не отличит — такая ссылка упадёт; сейчас их нет.
+    """
+    labels = set(LABEL_DEF.findall(TEX.read_text(encoding="utf-8")))
+    missing = [f"{rel}:{n}: {m.group()}"
+               for rel, n, line in _vault_lines()
+               for m in LABEL_REF.finditer(line) if m.group() not in labels]
+    assert not missing, ("Метки нет в doc/problem_statement.tex — переименована "
+                         "или удалена; поправьте заметку:\n" + "\n".join(missing))
+
+
+def test_vault_checks_skip_without_vault(monkeypatch, tmp_path):
+    """Без vault/knowledge/ (поставка заказчику, FEAT-031) проверки заметок пропускаются."""
+    # VAULT читается из глобалов модуля при каждом вызове _vault_lines.
+    monkeypatch.setitem(globals(), "VAULT", tmp_path / "нет")
+    with pytest.raises(pytest.skip.Exception):
+        list(_vault_lines())

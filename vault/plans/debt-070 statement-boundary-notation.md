@@ -7,7 +7,8 @@ issue: DEBT-070
 github: 119
 branch: refactor/debt-070/statement-boundary-notation
 status: реализован
-worktree: .worktrees/debt-070
+worktree: .worktrees/debt-070; удалён после влития
+merged: e0b7fe0 (2026-10-15)
 audit:
   date: 2026-10-15
   found: 7

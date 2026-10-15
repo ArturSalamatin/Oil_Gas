@@ -7,7 +7,8 @@ issue: DEBT-075
 github: 124
 branch: refactor/debt-075/saturation-bounds-check
 status: реализован
-worktree: .worktrees/debt-075
+worktree: .worktrees/debt-075; удалён после влития
+merged: 9a7b8e2 (2026-10-15)
 audit:
   date: 2026-10-15
   round: 2

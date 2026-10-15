@@ -953,11 +953,13 @@ $S_g^{n+1}$, $u^{n+1}$ и~$T^n$.
 \begin{equation}\label{eq:log_grid}
   \ln\frac{r_{j+\half}}{r_{j-\half}} = \mathrm{const},
   \qquad
-  r_{j+\half} = \rw \cdot \left(\frac{\Rext}{\rw}\right)^{j/N},
+  r_{j-\half} = \rw \cdot \left(\frac{\Rext}{\rw}\right)^{j/N},
   \quad j = 0, 1, \ldots, N.
 \end{equation}
-Крайние грани совпадают с~границами области:
-$r_{\half} = \rw$, $r_{N+\half} = \Rext$.
+Ячейка~$j$ ($j = 0, \ldots, N-1$) лежит между гранями ${j-\half}$ (ближе
+к~скважине) и~${j+\half}$. Крайние грани совпадают с~границами области:
+$r_{-\half} = \rw$ (забой), $r_{N-\half} = \Rext$ (контур). В~коде грани
+нумеруются $f = 0, \ldots, N$: грань ${j-\half}$ имеет номер $f = j$.
 
 \paragraph{Центры ячеек}
 --- середина ячейки по~$\ln r$, то~есть среднее геометрическое
@@ -1015,8 +1017,9 @@ $r_{\half} = \rw$, $r_{N+\half} = \Rext$.
 увеличения радиальной координаты~$r$. При типичном режиме
 добычи все потоки направлены к~скважине и~отрицательны.
 
-\paragraph{Геометрическая проводимость} грани~$j+\half$
-в~логарифмической радиальной сетке:
+\paragraph{Геометрическая проводимость} внутренней грани~$j+\half$
+($j = 0, \ldots, N-2$) в~логарифмической радиальной сетке
+(граничные грани $-\half$ и~$N-\half$~--- в~разделе~\ref{ssec:bc_disc}):
 \begin{equation}\label{eq:transmissibility}
   \mathcal{T}_{j+\half} = \frac{2\pi\,h\,k}{\ln(r_{j+1}/r_j)}.
 \end{equation}

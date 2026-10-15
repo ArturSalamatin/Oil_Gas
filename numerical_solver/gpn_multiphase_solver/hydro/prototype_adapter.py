@@ -45,7 +45,8 @@ HydroConvergenceError; шаг дробит Simulator (DEBT-015, P4-адапти�
 прототипа, категория «кривая насыщения выше таблицы» — только по свободному газу
 (FREE_GAS_SG); каждая категория — одна запись журнала за расчёт, с моментом первого
 выхода. Начальное состояние проверяет фабрика тем же методом warn_table_range.
-Только табличная PVT (check_table_range): у HydroPVTtoBlackOilAdapter нет таблицы gp.
+PVT Стендинга (table_pvt=False, DEBT-071) — только таблица ОФП, relperm_range_warnings:
+свойства по формулам, краёв нет, а у HydroPVTtoBlackOilAdapter нет газовой таблицы gp.
 """
 
 from dataclasses import replace
@@ -184,7 +185,7 @@ class PrototypeHydroAdapter(HydroSolver):
     def __init__(self, model, grid: Grid, pvt: HydroPVT,
                  stage4_memory: int | None = STAGE4_MEMORY,
                  max_newton: int = 15, max_active_iter: int = 12,
-                 check_table_range: bool = False):
+                 check_table_range: bool = False, table_pvt: bool = True):
         """
         model         — RadialBlackOilModel, уже сконфигурированный
         grid          — наш Grid (LogRadialGrid)
@@ -194,8 +195,10 @@ class PrototypeHydroAdapter(HydroSolver):
         max_newton      — итераций Ньютона на одно решение при фиксированном наборе
                           фаз (numerics.newton_max_iter, DEBT-008)
         max_active_iter — проходов набора фаз с включением газа (numerics.max_active_set_iter, BUG-028)
-        check_table_range — проверять выход принятых состояний за PVT- и ОФП-таблицы
-                          (DEBT-027); фабрика включает только для табличной PVT
+        check_table_range — проверять выход принятых состояний за таблицы (DEBT-027);
+                          фабрика включает всегда, адаптеры тестов — без проверки
+        table_pvt       — PVT задана таблицами: проверять PVT- и ОФП-таблицы; False —
+                          PVT Стендинга, только таблица ОФП (DEBT-071)
         """
         self._model = model
         self._grid = grid
@@ -218,19 +221,27 @@ class PrototypeHydroAdapter(HydroSolver):
         # Адаптер живёт один расчёт (фабрика строит его заново): второй run того же
         # симулятора выведенные категории не повторит.
         self._check_table_range = check_table_range
+        self._table_pvt = table_pvt
         self._range_categories: set[str] = set()
 
     def warn_table_range(self, proto_state, t: float) -> None:
         """Выход состояния за PVT- и ОФП-таблицы — в журнал, одна запись на категорию за расчёт (DEBT-027)."""
         if not self._check_table_range:
             return
-        from radial_blackoil.diagnostics import pvt_range_warnings, warning_category
+        from radial_blackoil.diagnostics import (pvt_range_warnings, relperm_range_warnings,
+                                                 warning_category)
 
         # Прототип берёт свойства за краями таблиц с краёв, без экстраполяции и молча;
         # его pvt_range_warnings называет категорию и значение. Категория — по
         # warning_category: в тексте о ветвях давления двоеточия нет, а числа меняются.
-        for warning in pvt_range_warnings(self._model, proto_state,
-                                          free_gas_sg=FREE_GAS_SG):
+        if self._table_pvt:
+            warnings = pvt_range_warnings(self._model, proto_state, free_gas_sg=FREE_GAS_SG)
+        else:
+            # PVT Стендинга (DEBT-071): свойства по формулам, краёв нет — только таблица
+            # ОФП, та же, что на табличном пути. pvt_range_warnings здесь упала бы на
+            # газовой таблице gp, которой у HydroPVTtoBlackOilAdapter нет.
+            warnings = relperm_range_warnings(self._model, proto_state)
+        for warning in warnings:
             category = warning_category(warning)
             if category in self._range_categories:
                 continue

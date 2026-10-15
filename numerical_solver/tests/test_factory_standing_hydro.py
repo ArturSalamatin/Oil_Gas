@@ -258,7 +258,7 @@ class TestStandingInitialState:
         SimulatorFactory.from_config(config)
 
     def test_no_range_warnings(self, caplog):
-        """Путь Стендинга не зовёт pvt_range_warnings (у адаптера нет газовой таблицы gp)."""
+        """Стендинг + Кори: PVT не проверяется, ОФП (DEBT-071) молчит — Кори на S_g ∈ [0, 1]."""
         config = load_config(BASELINE)
         with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
             SimulatorFactory.from_config(config)

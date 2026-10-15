@@ -22,14 +22,15 @@ class HydroPVTtoBlackOilAdapter:
         """
         hydro_pvt  — наш HydroPVT (StandingFullPVT, PrototypePVTAdapter и т.д.)
         p_max_pa   — верхнее давление (Па), определяет max_rs и диапазон rs_values
-        n_knots    — число узлов для rs_values/pb (для FD-якобиана и диагностики)
+        n_knots    — число узлов для rs_values/pb (для FD-якобиана)
         """
         self._hydro = hydro_pvt
 
         # Протабулировать кривую насыщения для атрибутов BlackOilPVT.
         # _pressure_fd_step в blackoil.py использует searchsorted по self.pb
-        # для выбора направления FD-шага; diagnostics.py — rs_values и pb
-        # для предупреждений о выходе за таблицу.
+        # для выбора направления FD-шага. PVT-проверку выхода за таблицы
+        # (pvt_range_warnings) на этом пути адаптер не зовёт (DEBT-071): свойства
+        # по формулам, краёв нет; rs_values — для полноты интерфейса BlackOilPVT.
         self.max_rs = float(hydro_pvt.Rs_eq(np.array([p_max_pa]))[0])
         rs_grid = np.linspace(0.0, self.max_rs, n_knots)
         self.rs_values = rs_grid

@@ -8,8 +8,9 @@ Simulator координирует гидродинамику и теплопе�
   Внешний: по интервалам schedule.intervals (смена BC)
   Внутренний: шаги dt_integration; шаг, на котором гидродинамика не
   сошлась, дробится локально (DEBT-015): подшаг × (hydro.solve →
-  energy.solve → обновить state). Первый шаг интервала со сменой
-  управления начинается с подшага dt/2**m и растёт ×2 (FEAT-032)
+  проверка состояния → energy.solve → проверка T → обновить state;
+  DEBT-075, DEBT-047). Первый шаг интервала со сменой управления
+  начинается с подшага dt/2**m и растёт ×2 (FEAT-032)
 """
 
 from __future__ import annotations
@@ -326,6 +327,19 @@ class Simulator:
                 size //= 2
                 continue
 
+            # 1a. Нефизичное состояние гидродинамики — отказ (DEBT-075). От
+            # S_g > 1 (S_o < 0) прототип защищает только порог S_g <= 0.98 в
+            # своём Ньютоне (blackoil.py: _trial_is_reasonable, _newton_switching);
+            # без порога пример 05 с таблицей ОФП до S_g = 0.01 дошёл до
+            # S_g[0] = 311 без отказа (замер DEBT-073), а NaN в состоянии давал
+            # ValueError scipy в шаге энергии без ячейки и величины
+            # (vault/issues/debt-075/probes/red_state.out.txt). Проверка здесь,
+            # а не в адаптере: одна на любой HydroSolver, до баланса массы и
+            # энергии. RuntimeError, не HydroConvergenceError: дробление не
+            # поможет (у DEBT-073 корень выше 1 при любом подшаге), а адаптер
+            # уже записал шаг как принятый (память ступени 4, DEBT-048).
+            self._check_hydro_state(hydro_result.state, h)
+
             # Баланс массы (DEBT-039): только принятый подшаг.
             if mass is not None:
                 mass.add_step(hydro_result)
@@ -430,6 +444,46 @@ class Simulator:
             f"t = {t / DAY_TO_S:.4f} сут: в ячейке {j} (r = {r:.4g} м) "
             f"T = {T[j]:.6g} К; ячеек с T ≤ 0 или не конечной T — "
             f"{int(np.count_nonzero(bad))} из {T.size}.")
+
+    def _check_hydro_state(self, state: SimulationState, dt: float) -> None:
+        """Отказ, если после шага гидродинамики S_g вне [0, 1], p ≤ 0, R_s < 0 или не конечны (DEBT-075)."""
+        # Те же величины и пределы, что у state_sanity прототипа
+        # (radial_blackoil/diagnostics.py; GPN её не вызывает), но без
+        # допуска (решение пользователя): прототип сам обнуляет малые
+        # отрицательные S_g двухфазных ячеек (blackoil.py: _advance_phases,
+        # _newton_switching), у однофазных S_g = 0 точно (unpack). R_s
+        # однофазных ячеек прототип не исправляет (пробная точка
+        # принимается при R_s >= -1e-8, _trial_is_reasonable): для R_s
+        # точность держится на замере; при R_s0 = 0 R_s остаётся нулём
+        # точно (примеры 01, 02). Замер: 23 примера, 6161 принятый подшаг —
+        # ни одного значения за пределами, min S_g = min R_s = 0 ровно
+        # (vault/issues/debt-075/probes/sg_range_scan.out.txt). Граница —
+        # S_o >= 0, не S_o >= S_or: нефть усаживается при разгазировании.
+        # Порядок S_g, p, R_s: отказ называет первую нарушенную величину.
+        # NaN и ±inf отсекает isfinite (сравнение с NaN ложно, inf > 0
+        # истинно). Значение — repr: при .6g 1 + 2e-16 печаталось бы как 1.
+        checks = (
+            ("S_g", state.Sg, (state.Sg >= 0.0) & (state.Sg <= 1.0), "",
+             "газонасыщенность вне [0, 1] или не конечна"),
+            ("p", state.p, state.p > 0.0, " Па",
+             "давление ≤ 0 или не конечно"),
+            ("R_s", state.Rs, state.Rs >= 0.0, " м³ст/м³ст",
+             "газосодержание < 0 или не конечно"),
+        )
+        for name, x, in_range, unit, condition in checks:
+            bad = ~(np.isfinite(x) & in_range)
+            if not bad.any():
+                continue
+            # Факты, как у _check_temperature: первая от забоя плохая ячейка,
+            # её r и значение, число таких ячеек; t — конец подшага, dt — его
+            # длина (при локальном дроблении — подшаг, а не шаг расписания).
+            j = int(np.argmax(bad))
+            r = float(self._grid.r_centers[j])
+            raise RuntimeError(
+                f"Нефизичное состояние после шага гидродинамики dt = {dt:g} с к "
+                f"t = {state.t / DAY_TO_S:.4f} сут: в ячейке {j} (r = {r:.4g} м) "
+                f"{name} = {float(x[j])!r}{unit}; ячеек, где {condition}, — "
+                f"{int(np.count_nonzero(bad))} из {x.size}.")
 
     def _mass_snapshot(self, mass: MassBalanceAccumulator | None,
                        state: SimulationState) -> dict | None:

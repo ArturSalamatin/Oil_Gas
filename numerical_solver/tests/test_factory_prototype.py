@@ -9,7 +9,7 @@
 - Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
 - Ветви PVTO-таблицы: не меньше двух строк, давление и p_b(R_s) растут (DEBT-038)
 - Строгий разбор CSV: заголовок, число полей, конечные числа (DEBT-042)
-- Допустимость значений CSV: пределы столбцов, число строк, рост p и S_g, ветви R_s (DEBT-044)
+- Допустимость значений CSV: пределы столбцов, число строк, рост p и S_g, ветви R_s (DEBT-044); k_ro = 0 в последней строке ОФП (DEBT-073)
 """
 
 import logging
@@ -22,7 +22,7 @@ import pytest
 from gpn_multiphase_solver.io.config import load_config, SimulationConfig
 from gpn_multiphase_solver.factory import (
     SimulatorFactory,
-    _read_oil_pvt_csv, _read_gas_pvt_csv, _read_relperm_csv,
+    _read_oil_pvt_csv, _read_gas_pvt_csv, _read_relperm_csv, _check_relperm_table,
     create_pvt, create_relperm, _get_or_create_proto_pvt, _get_or_create_proto_rp,
 )
 from gpn_multiphase_solver.hydro.prototype_adapter import PrototypeHydroAdapter
@@ -1033,6 +1033,51 @@ class TestCSVValueChecks:
         config = _table_config_with_csv(tmp_path, "relperm.csv", RP_HEADER + "".join(swapped))
         with pytest.raises(ValueError, match="relperm.csv: S_g не растёт строго: 0.2 после 0.4"):
             SimulatorFactory.from_config(config)
+
+    # ── Последняя строка ОФП: k_ro = 0 (DEBT-073) ──
+
+    def test_relperm_mobile_oil_at_edge_raises(self, tmp_path):
+        """k_ro = 0.05 в последней строке (S_g = 0.8) → ValueError: файл, S_g, k_ro.
+
+        Выше последней строки ОФП берутся из неё (np.interp прототипа): при k_ro > 0
+        нефть подвижна при любой S_o. До правки пример 05 с таблицей до S_g = 0.01
+        (k_ro = 0.98 на краю) отказывал на первом часе с советом про шаг по времени,
+        а корень разностной задачи — S_g у забоя 1.02–1.73 (vault/issues/debt-073/
+        probes/sg_bound_roots.out.txt). Ловит пропуск проверки и сравнение не с
+        последней строкой: k_ro = 0.05 стоит только в ней.
+        """
+        config = _table_config_with_csv(
+            tmp_path, "relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 5, "0.8,0.05,0.8\n"))
+        with pytest.raises(ValueError, match=r"relperm\.csv: k_ro в последней строке "
+                                             r"\(S_g = 0\.8\) = 0\.05, нужно 0"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_rounding_noise_at_edge_raises(self, tmp_path):
+        """k_ro = 1e-30 в последней строке — тоже отказ: сравнение строгое.
+
+        Решение пользователя 2026-10-15: табличный Кори без обрезки может дать в
+        последнем узле шум округления, но допуск был бы ещё одним эвристическим
+        числом; значение видно в тексте отказа. Ловит замену `> 0` допуском.
+        """
+        config = _table_config_with_csv(
+            tmp_path, "relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 5, "0.8,1e-30,0.8\n"))
+        with pytest.raises(ValueError, match=r"= 1e-30, нужно 0"):
+            SimulatorFactory.from_config(config)
+
+    def test_project_relperm_tables_accepted(self):
+        """Все таблицы ОФП проекта кончаются строкой k_ro = 0 — проверка DEBT-073 их принимает.
+
+        На 2026-10-15 — 16 файлов: configs/table_pvt, 14 примеров (04, 05, 07–16,
+        18), tests/data/bug016_example14. Без этого теста таблицу проекта, которую
+        правило отвергло бы, поймали бы только медленные тесты примеров.
+        """
+        root = TABLE_CONFIG.parent.parent.parent
+        files = [path for folder in ("configs", "examples", "tests/data")
+                 for path in sorted((root / folder).glob("*/relperm.csv"))]
+        assert len(files) >= 16
+        for path in files:
+            Sg, kro, _ = _read_relperm_csv(path)
+            _check_relperm_table(Sg, kro, path.name)
 
     def test_oil_one_branch_raises(self, tmp_path):
         """Одна ветвь R_s = 30: до правки — «OIL_PVT needs >=2 Rs branches, got 1» (pvt.py:46)."""

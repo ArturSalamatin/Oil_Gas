@@ -36,7 +36,6 @@ BASELINE = ROOT / "configs" / "baseline.json"
 EXAMPLE_04A = ROOT / "examples" / "04a_high_gas_saturation" / "config.json"
 ABOVE = "OIL_PVT saturated locus above table"
 EXAMPLE_05 = ROOT / "examples" / "05_standing_table_rp" / "config.json"
-RELPERM_ABOVE = "RELPERM Sg above table"
 
 
 def _table_config(p_wf=None, p0=None):
@@ -200,24 +199,23 @@ class TestStandingRelperm:
         assert messages == ["Состояние при t = 0.04167 сут вне таблиц: RELPERM Sg above table: "
                             "max Sg=0.85, table max=0.8. Endpoint value used; no extrapolation."]
 
-    def test_relperm_above_table_before_failure(self, tmp_path, caplog):
-        """Таблица до S_g = 0.01 (k_ro = 0.98 на краю): запись с 56 с, затем отказ первого часа.
+    def test_mobile_oil_edge_rejected_before_run(self, tmp_path):
+        """Таблица до S_g = 0.01 (k_ro = 0.98 на краю) отвергается фабрикой до расчёта (DEBT-073).
 
-        Выше края k_ro и k_rg постоянны: нефть подвижна при любой S_o и уходит, газ
-        остаётся — у забоя S_g = 0.917 на принятом подшаге 3600/64 = 56.25 с. Затем
-        подшаг не сходится и при dt/512 (DEBT-073: отказ — свойство таблицы, текст
-        отказа её не называет). Запись «вне таблиц» — единственное указание на таблицу.
+        До DEBT-073 расчёт с ней принимал подшаг 56.25 с с S_g = 0.917 у забоя,
+        писал запись «вне таблиц» и не сходился при dt/512: выше края нефть
+        подвижна при любой S_o, и у разностной задачи только корни с S_o < 0
+        (vault/issues/debt-073/probes/sg_bound_scan.out.txt). С допустимой
+        таблицей — последняя строка k_ro = 0 — S_g у забоя остаётся ниже края, и
+        записи «вне таблиц» в настоящем расчёте нет (edge_zero_scan.out.txt).
+        Выход за таблицу ОФП держат test_relperm_above_table_reported_alone
+        (текст записи) и test_checked_after_every_accepted_step (вызов после
+        каждого шага).
         """
         config = _standing_config(tmp_path, ["0.0,1.0,0.0", "0.01,0.98,0.001"], hours=1)
-        with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"):
-            simulator, state0 = SimulatorFactory.from_config(config)
-            with pytest.raises(RuntimeError, match="не сошёлся"):
-                simulator.run(state0)
-        messages = [r.getMessage() for r in caplog.records
-                    if r.levelno >= logging.WARNING and "вне таблиц" in r.getMessage()]
-        assert len(messages) == 1
-        assert messages[0].startswith(
-            f"Состояние при t = 0.000651 сут вне таблиц: {RELPERM_ABOVE}: max Sg=0.917")
+        with pytest.raises(ValueError, match=r"relperm\.csv: k_ro в последней строке "
+                                             r"\(S_g = 0\.01\) = 0\.98, нужно 0"):
+            SimulatorFactory.from_config(config)
 
     def test_initial_below_table_not_repeated(self, tmp_path, caplog):
         """Таблица ОФП с S_g = 0.05: S_g = 0 ниже таблицы — одна запись, при t = 0.

@@ -262,8 +262,8 @@ def _check_gas_pvt_table(gas_rows: list[tuple], gas_pvt_file: str) -> None:
                 f"Строки — по возрастанию давления.")
 
 
-def _check_relperm_table(Sg: list, relperm_file: str) -> None:
-    """Таблица ОФП: ≥ 2 строк, S_g строго растёт, иначе ValueError (DEBT-044)."""
+def _check_relperm_table(Sg: list, kro: list, relperm_file: str) -> None:
+    """Таблица ОФП: ≥ 2 строк, S_g строго растёт, k_ro последней строки = 0, иначе ValueError (DEBT-044, DEBT-073)."""
     # Правила SGOF (OPM Flow Manual, табл. 8.165). Их же проверяет
     # TabulatedRelPerm (relperm.py:5) — без имени файла; k_ro(S_g), k_rg(S_g)
     # интерполируются np.interp по S_g. Пределы S_g, k_r в [0, 1] проверены
@@ -278,6 +278,26 @@ def _check_relperm_table(Sg: list, relperm_file: str) -> None:
             raise ValueError(
                 f"{relperm_file}: S_g не растёт строго: {Sg[k]:g} после {Sg[k - 1]:g}. "
                 f"Строки — по возрастанию S_g.")
+    # DEBT-073: выше последней строки TabulatedRelPerm берёт k_ro, k_rg из неё
+    # (np.interp). При k_ro > 0 нефть подвижна при любой S_o: у забоя она
+    # уходит, газ остаётся, и ничто не держит S_o >= 0. Пример 05 с таблицей
+    # до S_g = 0.01 (k_ro = 0.98 на краю): корень разностной задачи — S_g у
+    # забоя 1.02-1.73, расчёт отказывал с советом про шаг по времени, хотя
+    # дробление не помогает (vault/issues/debt-073/probes/sg_bound_roots.out.txt).
+    # С последней строкой k_ro = 0 в замерах примера 05 S_g у забоя оставалась
+    # ниже неё (edge_zero_scan.out.txt). Все таблицы проекта ею кончаются.
+    # Отвергается и таблица, с которой расчёт прошёл бы (S_g края не достигает)
+    # — решение пользователя 2026-10-15: обрезанную таблицу пользователь сам не
+    # распознает. Сравнение строгое: шум округления — тоже отказ, значение видно
+    # в тексте. Проверка последняя: на пустой таблице kro[-1] нет, а одну строку
+    # отвергает проверка числа строк.
+    if kro[-1] > 0:
+        raise ValueError(
+            f"{relperm_file}: k_ro в последней строке (S_g = {Sg[-1]:g}) = {kro[-1]:g}, "
+            f"нужно 0. Выше последней строки k_ro и k_rg берутся из неё: при k_ro > 0 "
+            f"нефть подвижна при любой S_o, и у забоя S_o ничто не удерживает от "
+            f"ухода ниже нуля. Таблица кончается строкой с k_ro = 0 — при "
+            f"S_g = 1 - S_or (S_or — остаточная нефтенасыщенность) или выше.")
 
 
 def _check_undersaturated_start(ic, pvt, rs_tol: float) -> None:
@@ -375,8 +395,9 @@ def create_relperm(config: SimulationConfig):
     elif rc.model == "table":
         # CSV → TabulatedRelPerm (прототип) → PrototypeRPAdapter
         Sg, kro, krg = _read_relperm_csv(config.config_dir / rc.file)
-        # DEBT-044: те же правила проверяет TabulatedRelPerm, но без имени файла
-        _check_relperm_table(Sg, rc.file)
+        # DEBT-044: число строк и рост S_g проверяет и TabulatedRelPerm, но без
+        # имени файла; k_ro = 0 в последней строке (DEBT-073) — только здесь
+        _check_relperm_table(Sg, kro, rc.file)
 
         from radial_blackoil.relperm import TabulatedRelPerm
         proto_rp = TabulatedRelPerm(Sg, kro, krg)

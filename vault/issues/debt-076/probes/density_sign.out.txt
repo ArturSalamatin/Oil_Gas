@@ -1,0 +1,6 @@
+каталог решателя: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+исходный конфиг: t = 2 сут, T(r_w) = 349.7666 K, min T = 349.7653, max T = 350.0000
+pvt.rho_o_std = -850.0: t = 2 сут, T(r_w) = 346.9775 K, min T = 346.9775, max T = 350.0000
+pvt.rho_o_std = 0.0: t = 2 сут, T(r_w) = 348.8449 K, min T = 348.8449, max T = 350.0000
+pvt.rho_g_std = -0.85: t = 2 сут, T(r_w) = 350.5597 K, min T = 349.8765, max T = 350.5597
+pvt.rho_g_std = 0.0: t = 2 сут, T(r_w) = 350.1567 K, min T = 349.8708, max T = 350.1567

@@ -6,8 +6,9 @@ date: 2026-10-15
 issue: DEBT-074
 github: 125
 branch: refactor/debt-074/vault-notes-eq-labels
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-074
+implemented: 2026-10-15 (4aaa39d, c8f263e, 23acd23; 1999 passed — база 1996 после DEBT-073, не 1993)
 audit:
   date: 2026-10-15
   found: 6

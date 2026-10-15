@@ -1,0 +1,290 @@
+
+== d9a33ab 2026-08-20 14:23
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=free_gas_rate  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=mdot  15=first_law_open  16=flow_work  17=conv_flux_alpha  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 7507ddd 2026-08-20 14:38
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=free_gas_rate  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=mdot  15=first_law_open  16=flow_work  17=conv_flux_alpha  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 4795bc5 2026-08-20 15:03
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=free_gas_rate  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=mdot  15=first_law_open  16=flow_work  17=conv_flux_alpha  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 9054b09 2026-08-20 15:11
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=free_gas_rate  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=mdot  15=first_law_open  16=flow_work  17=conv_flux_alpha  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 0857969 2026-08-20 15:11
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=free_gas_rate  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=mdot  15=first_law_open  16=flow_work  17=conv_flux_alpha  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== a059bee 2026-08-20 15:27
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=energy_cons  21=F_total
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=flow_work  22=oil_enthalpy_components  27=L_def  28=dh_oil  29=dh_gas
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=rho_oil  24=H_fluids  32=phip_dt
+  вопрос (кондуктивный поток 25): 25=F_components
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=rho_oil  28=dh_oil  31=rock_dt  33=T_accum  36=QJT_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== f1a9d42 2026-08-20 16:08
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=energy_cons  21=F_total
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=flow_work  22=oil_enthalpy_components  27=L_def  28=dh_oil  29=dh_gas
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=rho_oil  24=H_fluids  32=phip_dt
+  вопрос (кондуктивный поток 25): 25=F_components
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=rho_oil  28=dh_oil  31=rock_dt  33=T_accum  36=QJT_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 241f87d 2026-08-21 11:20
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=energy_cons  21=F_total
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=flow_work  22=oil_enthalpy_components  27=L_def  28=dh_oil  29=dh_gas
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=rho_oil  24=H_fluids  32=phip_dt
+  вопрос (кондуктивный поток 25): 25=F_components
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=rho_oil  28=dh_oil  31=rock_dt  33=T_accum  36=QJT_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== a8b01be 2026-08-21 11:45
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=dh_oil  28=dh_gas  29=smooth_oil_p
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=T_accum
+  вопрос (кондуктивный поток 25): 25=phase_change_heat
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=dh_gas  31=phip_dt  33=T_conv  36=Qdeg_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== acbc94f 2026-08-21 14:49
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=phase_change_heat  28=L_def  29=dh_oil
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=rock_dt
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=L_def  31=smooth_oil_p  33=phip_dt  36=Qad_assembly
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 0bed44f 2026-08-21 15:19
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=dh_gas
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=dh_oil  33=smooth_oil_p  36=T_accum
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 6def972 2026-08-21 17:15
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=rock_dt
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 0a77d76 2026-08-21 18:32
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=dh_oil
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 3c1a98c 2026-08-21 18:47
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=dh_oil
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 7652d8d 2026-08-21 18:56
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=dh_oil
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 3d63fab 2026-08-23 09:55
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=energy_cons_derived2
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== d0c63e3 2026-08-23 10:29
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=gas_minus_Rs_oil  19=E_expanded  21=oil_enthalpy_components
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=free_gas_rate  15=mdot  16=first_law_open  17=energy_cons  22=rho_oil  27=hg_components_der  28=hg_components_derived  29=phase_change_heat
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=H_fluids  24=F_components  32=hoo_remainder
+  вопрос (кондуктивный поток 25): 25=F_components_der
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=H_fluids  28=hg_components_derived  31=hoo_terms  33=energy_cons_der  36=energy_cons_derived2
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== d63f0c0 2026-08-23 17:25
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=unknowns_3  13=main_free_gas_rate  19=main_QJT  21=main_muJT_def
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_energy_final  16=main_rhocpeff  17=main_rhocpconv  22=main_alpha_via_muJT  27=beta_o_full  28=thermal_expansion  29=corey
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=mass_gas  23=main_QJT_muJT  24=main_Qad_muJT  32=bc_p_well
+  вопрос (кондуктивный поток 25): 25=co_cg
+  P8 (центр масс кольца 12): 12=regime2
+  Кори (уравнение на S_g 8-9): 8=mass_oil  9=mass_gas
+  накопление (5, 23, 28-31, 33-36): 5=cr  23=main_QJT_muJT  28=thermal_expansion  31=ic  33=pwf_history  36=bc_T_well
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== b653df8 2026-08-23 23:38
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=log_grid  36=flux
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== b4fc6bd 2026-08-23 23:45
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== d95dc9a 2026-08-24 10:30
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 78ce115 2026-08-24 11:40
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 97aeefd 2026-08-24 16:29
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== c097155 2026-08-24 20:48
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== b9e2e41 2026-08-25 09:21
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== ec7e8dd 2026-08-25 09:38
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 0da3ddf 2026-08-25 11:23
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=beta_o_g  21=thermal_expansion
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=main_muJT_def  16=main_QJT_muJT  17=main_Qad_muJT  22=corey  27=bc_p_ext  28=bc_T_ext  29=bc_T_well
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=lambda_eff  24=ic  32=mass_gas_simplified
+  вопрос (кондуктивный поток 25): 25=bc_p_well
+  P8 (центр масс кольца 12): 12=main_QJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=lambda_eff  28=bc_T_ext  31=mass_oil_simplified  33=energy_linear  36=coeff_f
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== 6136edb 2026-08-26 09:18
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=corey  21=ic
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=co_cg  16=beta_o_g  17=beta_o_full  22=bc_p_well  27=bc_Sg_ext  28=mass_oil_simplified  29=mass_gas_simplified
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=pwf_history  24=bc_p_ext  32=coeff_B
+  вопрос (кондуктивный поток 25): 25=bc_T_ext
+  P8 (центр масс кольца 12): 12=main_Qad_muJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=pwf_history  28=mass_oil_simplified  31=coeff_A  33=coeff_f  36=volume
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—
+
+== f4fb8c4 2026-09-20 11:04
+  grid (Грани 10, Объёмы 13, Проводимости 19, Лог. веса 21): 10=main_rhocpconv  13=main_Qdeg  19=corey  21=ic
+  hydro (Невязки 14, 15, 16-17; накопл. 22-27; режимы 28, 29): 14=main_mdot  15=co_cg  16=beta_o_g  17=beta_o_full  22=bc_p_well  27=bc_Sg_ext  28=mass_oil_simplified  29=mass_gas_simplified
+  грабли (газ. поток 9, конв. энергии 23, Q_o 24, ṁ 32): 9=main_rhocpeff  23=pwf_history  24=bc_p_ext  32=coeff_B
+  вопрос (кондуктивный поток 25): 25=bc_T_ext
+  P8 (центр масс кольца 12): 12=main_Qad_muJT
+  Кори (уравнение на S_g 8-9): 8=main_energy_final  9=main_rhocpeff
+  накопление (5, 23, 28-31, 33-36): 5=mass_gas  23=pwf_history  28=mass_oil_simplified  31=coeff_A  33=coeff_f  36=volume
+  разделы: §2.1=T_independent  §3=darcy/discretization  §4.1=time_scheme  §4.2.4=—  §5.2=—

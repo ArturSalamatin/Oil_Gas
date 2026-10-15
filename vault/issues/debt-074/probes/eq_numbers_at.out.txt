@@ -1,0 +1,13 @@
+Проверка по .aux: меток 161, расхождений 0
+
+== 0da3ddf (2026-08-25 11:23): меток 158
+  уравнения: 5=eq:mass_gas  8=eq:main_energy_final  9=eq:main_rhocpeff  10=eq:main_rhocpconv  12=eq:main_QJT  13=eq:main_Qdeg  14=eq:main_mdot  15=eq:main_muJT_def  16=eq:main_QJT_muJT  17=eq:main_Qad_muJT  19=eq:beta_o_g  21=eq:thermal_expansion  22=eq:corey  23=eq:lambda_eff  24=eq:ic  25=eq:bc_p_well  26=eq:pwf_history  27=eq:bc_p_ext  28=eq:bc_T_ext  29=eq:bc_T_well  30=eq:bc_Sg_ext  31=eq:mass_oil_simplified  32=eq:mass_gas_simplified  33=eq:energy_linear  34=eq:coeff_A  35=eq:coeff_B  36=eq:coeff_f  74=eq:bc_flux_well_gas
+  разделы:   §2=sec:splitting  §2.1=ssec:T_independent  §3=sec:discretization  §4=sec:time  §4.1=ssec:time_scheme  §4.2=ssec:algorithm  §4.2.4=—  §5=  §5.2=—
+
+== 6136edb (2026-08-26 09:18): меток 150
+  уравнения: 5=eq:mass_gas  8=eq:main_energy_final  9=eq:main_rhocpeff  10=eq:main_rhocpconv  12=eq:main_Qad_muJT  13=eq:main_Qdeg  14=eq:main_mdot  15=eq:co_cg  16=eq:beta_o_g  17=eq:beta_o_full  19=eq:corey  21=eq:ic  22=eq:bc_p_well  23=eq:pwf_history  24=eq:bc_p_ext  25=eq:bc_T_ext  26=eq:bc_T_well  27=eq:bc_Sg_ext  28=eq:mass_oil_simplified  29=eq:mass_gas_simplified  30=eq:energy_linear  31=eq:coeff_A  32=eq:coeff_B  33=eq:coeff_f  34=eq:log_grid  35=eq:cell_center  36=eq:volume  74=eq:gas_minus_Rs_oil
+  разделы:   §2=sec:splitting  §2.1=ssec:T_independent  §3=sec:discretization  §4=sec:time  §4.1=ssec:time_scheme  §4.2=ssec:algorithm  §4.2.4=—  §5=  §5.2=—
+
+== f4fb8c4 (2026-09-20 11:04): меток 151
+  уравнения: 5=eq:mass_gas  8=eq:main_energy_final  9=eq:main_rhocpeff  10=eq:main_rhocpconv  12=eq:main_Qad_muJT  13=eq:main_Qdeg  14=eq:main_mdot  15=eq:co_cg  16=eq:beta_o_g  17=eq:beta_o_full  19=eq:corey  21=eq:ic  22=eq:bc_p_well  23=eq:pwf_history  24=eq:bc_p_ext  25=eq:bc_T_ext  26=eq:bc_T_well  27=eq:bc_Sg_ext  28=eq:mass_oil_simplified  29=eq:mass_gas_simplified  30=eq:energy_linear  31=eq:coeff_A  32=eq:coeff_B  33=eq:coeff_f  34=eq:log_grid  35=eq:cell_center  36=eq:volume  74=eq:bc_props_ext
+  разделы:   §2=sec:splitting  §2.1=ssec:T_independent  §3=sec:discretization  §4=sec:time  §4.1=ssec:time_scheme  §4.2=ssec:algorithm  §4.2.4=—  §5=  §5.2=—

@@ -1,0 +1,19 @@
+Блок 1: «До» встречается 1 раз
+Блок 2: «До» встречается 1 раз
+Блок 3: «До» встречается 1 раз
+CRLF в исходном: True; строк длиннее 100: нет
+--after: VAULT — копия с заменами (12 заметок изменено)
+PASSED test_eq_references.py::test_no_numeric_equation_or_line_references
+PASSED test_eq_references.py::test_label_number_form[# \u2500\u2500 \u041a\u043e\u043d\u0442\u0443\u0440 (f=N) \u2500\u2500 eq:bc_props_ext (74)-True]
+PASSED test_eq_references.py::test_label_number_form[\u0423\u0440. (eq:bc_props_ext) (80) problem_statement.tex-True]
+PASSED test_eq_references.py::test_label_number_form[`eq:bc_props_ext` (80)-True]
+PASSED test_eq_references.py::test_label_number_form[\\eqref{eq:bc_props_ext} (80)-True]
+PASSED test_eq_references.py::test_label_number_form[ssec:bc_disc (5)-True]
+PASSED test_eq_references.py::test_label_number_form[eq:residual_oil (eq:residual_gas)-False]
+PASSED test_eq_references.py::test_label_number_form[eq:QJT_disc (\u0410\u0414\u0412\u0415\u041a\u0422\u0418\u0412\u041d\u0410\u042f \u0444\u043e\u0440\u043c\u0430, BUG-012)-False]
+PASSED test_eq_references.py::test_label_number_form[eq:bc_props_ext (3 \u044f\u0447\u0435\u0439\u043a\u0438)-False]
+PASSED test_eq_references.py::test_label_references_exist_in_problem_statement
+PASSED test_eq_references.py::test_vault_notes_no_numeric_equation_references
+PASSED test_eq_references.py::test_vault_notes_label_references_exist
+PASSED test_eq_references.py::test_vault_checks_skip_without_vault
+13 passed in 1.43s

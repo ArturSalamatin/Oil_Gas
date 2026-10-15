@@ -1,6 +1,7 @@
 import unittest, numpy as np
+from types import SimpleNamespace
 from tests.helpers import model_and_state
-from radial_blackoil.diagnostics import pvt_range_warnings, warning_category, unique_warnings
+from radial_blackoil.diagnostics import pvt_range_warnings, relperm_range_warnings, warning_category, unique_warnings
 
 class PVTClampTests(unittest.TestCase):
     def test_oil_rs_above_max_uses_endpoint_branch_not_extrapolation(self):
@@ -30,5 +31,15 @@ class PVTClampTests(unittest.TestCase):
     def test_warning_category_ignores_numbers(self):
         a='OIL_PVT branch pressure above supplied range by up to 1 bar. Endpoint branch property used; no extrapolation.'; b=a.replace('up to 1 bar','up to 2 bar')
         self.assertEqual(warning_category(a),'OIL_PVT branch pressure above supplied range'); self.assertEqual(warning_category(b),warning_category(a)); self.assertEqual(unique_warnings([a,b]),[a])
+    # DEBT-071 (GPN project): the relperm part of the range check is callable alone -- the GPN
+    # adapter on the Standing correlation path has a relperm table but no PVT tables (no gp).
+    def test_relperm_warnings_close_pvt_range_warnings(self):
+        _,m,s=model_and_state(p0=350); s.sg[0]=0.9; w=pvt_range_warnings(m,s); r=relperm_range_warnings(m,s)
+        self.assertEqual(r,['RELPERM Sg above table: max Sg=0.9, table max=0.85. Endpoint value used; no extrapolation.'])
+        self.assertEqual(w[-1:],r); self.assertTrue(any(x.startswith('GAS_PVT pressure above') for x in w))
+    def test_relperm_warnings_need_no_pvt(self):
+        _,m,s=model_and_state(); s.sg[0]=-0.01; stub=SimpleNamespace(relperm=m.relperm)
+        self.assertEqual([warning_category(x) for x in relperm_range_warnings(stub,s)],['RELPERM Sg below table'])
+        with self.assertRaises(AttributeError): pvt_range_warnings(stub,s)
 
 if __name__=='__main__': unittest.main()

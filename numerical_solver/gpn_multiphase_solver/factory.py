@@ -357,7 +357,7 @@ def _warn_initial_table_range(adapter, ic) -> None:
     # Начальное состояние однородно (p0, Rs0, S_g = 0, газ неактивен), а
     # pvt_range_warnings смотрит только min/max — одной ячейки достаточно.
     # Через адаптер: категория, выведенная при t = 0, по ходу расчёта не
-    # повторяется (DEBT-027). Без табличной PVT адаптер не проверяет.
+    # повторяется (DEBT-027). На PVT Стендинга — только таблица ОФП (DEBT-071).
     state = BlackOilState.undersaturated(1, ic.p0 / BAR_TO_PA, ic.Rs0)
     adapter.warn_table_range(state, 0.0)
 
@@ -463,12 +463,14 @@ def _create_prototype_hydro(config: SimulationConfig, grid, pvt, relperm):
     # Лимиты Ньютона (DEBT-008): адаптер передаёт их в каждый вызов advance.
     # Выход за PVT- и ОФП-таблицы (BUG-017, DEBT-027): прототип берёт свойства с
     # краёв таблиц без экстраполяции и молча; адаптер проверяет каждое принятое
-    # состояние. Только табличная PVT: у HydroPVTtoBlackOilAdapter (Стендинг) нет
-    # газовой таблицы gp — pvt_range_warnings упал бы AttributeError.
+    # состояние. PVT Стендинга (DEBT-071) — только таблица ОФП: свойства по формулам,
+    # краёв нет, а у HydroPVTtoBlackOilAdapter нет газовой таблицы gp. Кори
+    # протабулирована на S_g ∈ [0, 1] (_get_or_create_proto_rp) — на ней проверка молчит.
     adapter = PrototypeHydroAdapter(model, grid, pvt,
                                     max_newton=nc.newton_max_iter,
                                     max_active_iter=nc.max_active_set_iter,
-                                    check_table_range=isinstance(pvt, TableFullPVT))
+                                    check_table_range=True,
+                                    table_pvt=isinstance(pvt, TableFullPVT))
     _warn_initial_table_range(adapter, ic)
     return adapter
 

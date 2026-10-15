@@ -201,3 +201,11 @@
 - With the default `cell_tol=None` nothing changes: tests 101 passed, regression 11/11 PASS quick and 17/17 PASS full, bitwise. In GPN 22 of 23 examples are bitwise; example 14 solves its first day in one step (its README table, measured before BUG-022, holds again); BUG-018 at N = 350 -- 1 call instead of 5; the daily shut-in -- 9 calls instead of 17; example 17 at 1e-10 -- 7 rejected steps instead of 205, Jacobians /3.1.
 - Tests: `numerical_solver/tests/test_prototype_cell_floor.py` of the GPN project (9); failure-report tests of DEBT-054/055 switch the limit off (CELL_FLOOR_KAPPA = 0). Physics, residual equations, the absolute test, line searches and well semantics are unchanged. The distribution version stays `1.0.3+gpn.1`. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
 - Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/113; plan: `vault/plans/debt-067 accept-at-cell-floor.md` of the GPN project.
+
+## Local changes — GPN project (DEBT-071): relperm part of the range check callable alone
+- Problem: `pvt_range_warnings` checks the PVT tables and the RELPERM table in one call and reads the gas table `model.pvt.gp` first. On the Standing correlation path the GPN adapter wraps the correlations in a PVT object without tables (no `gp`): the call would fail with `AttributeError`, so GPN did not call it there, and Sg outside a user RELPERM table went unreported (GPN example 05: Standing PVT + RELPERM table up to Sg = 0.8).
+- New `relperm_range_warnings(model, state)`: the two RELPERM categories; reads only `model.relperm` and `state.sg`. `pvt_range_warnings` calls it last: its texts and their order are the former ones.
+- The prototype's own runs are unchanged: tests 109 passed, regression 11/11 quick and 17/17 full PASS bitwise, golden warnings unchanged. The GPN adapter calls `relperm_range_warnings` alone on the Standing path, `pvt_range_warnings` on tabular PVT as before.
+- Physics, residual equations, Newton and well semantics are unchanged. The distribution version stays `1.0.3+gpn.1`. `PACKAGE_MANIFEST_SHA256.txt` is not updated.
+- Tests: `tests/test_pvt_clamp.py` (+2); `numerical_solver/tests/test_table_range_warnings.py` of the GPN project (+5, −1).
+- Issue: https://github.com/ArturSalamatin/Oil_Gas/issues/122; plan: `vault/plans/debt-071 standing-relperm-range-check.md` of the GPN project.

@@ -6,7 +6,7 @@ date: 2026-10-14
 issue: DEBT-071
 github: 122
 branch: refactor/debt-071/standing-relperm-range-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-071
 audit:
   date: 2026-10-15

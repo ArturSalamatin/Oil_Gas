@@ -6,7 +6,7 @@ date: 2026-10-15
 issue: DEBT-073
 github: 123
 branch: refactor/debt-073/relperm-mobile-oil-edge
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-073
 audit:
   date: 2026-10-15

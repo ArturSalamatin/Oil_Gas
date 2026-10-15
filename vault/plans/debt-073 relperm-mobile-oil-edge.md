@@ -7,7 +7,8 @@ issue: DEBT-073
 github: 123
 branch: refactor/debt-073/relperm-mobile-oil-edge
 status: реализован
-worktree: .worktrees/debt-073
+worktree: .worktrees/debt-073; удалён после влития
+merged: 1ee0ab6 (2026-10-15)
 audit:
   date: 2026-10-15
   round: 1

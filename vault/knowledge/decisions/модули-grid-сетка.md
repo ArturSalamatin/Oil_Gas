@@ -1,6 +1,6 @@
 ---
 name: модули-grid-сетка
-description: Модуль Grid — ABC и LogRadialGrid, формулы из problem_statement.tex §4.1, проводимости, интерполяция
+description: Модуль Grid — ABC и LogRadialGrid, формулы из problem_statement.tex (ssec:grid), проводимости, интерполяция
 metadata:
   type: project
 ---
@@ -76,9 +76,9 @@ class Grid(ABC):
 
 ## Конкретная реализация: LogRadialGrid
 
-Формулы из problem_statement.tex §4.1.
+Формулы из problem_statement.tex, `ssec:grid`.
 
-### Грани (eq. 10)
+### Грани (`eq:log_grid`)
 
 ```
 r_{j-1/2} = r_w · (R_ext / r_w)^{j/N},   j = 0, 1, ..., N
@@ -97,13 +97,13 @@ r_j = √(r_{j-1/2} · r_{j+1/2})        (середина ячейки по ln 
 
 На логарифмической сетке логарифмические веса интерполяции равны: w_L = w_R = ½ ln(r_{j+1}/r_j).
 
-### Объёмы (eq. 13)
+### Объёмы (`eq:volume`)
 
 ```
 V_j = π · h · (r_{j+1/2}² - r_{j-1/2}²)
 ```
 
-### Проводимости внутренних граней (eq. 19)
+### Проводимости внутренних граней (`eq:transmissibility`)
 
 ```
 T_{j+1/2} = 2π · h · k / ln(r_{j+1}/r_j)
@@ -120,7 +120,7 @@ T_{N-1/2} = 2π · h · k / ln(R_ext / r_{N-1})
 
 Расстояние от центра граничной ячейки до границы области.
 
-### Логарифмические веса для интерполяции (eq. 21)
+### Логарифмические веса для интерполяции (`eq:face_interp`)
 
 ```
 w_left[j] = ln(r_{j+1/2} / r_j)

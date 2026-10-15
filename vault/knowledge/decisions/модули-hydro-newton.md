@@ -136,7 +136,7 @@ class LogProfileHydroStub(HydroSolver):   # было AnalyticalHydroSolver
 Выход: HydroResult
 ```
 
-## Невязки (problem_statement.tex eq. 14, 15, 16-17)
+## Невязки (problem_statement.tex: `eq:residual_oil`, `eq:residual_gas`, `eq:residual_eq_r1`, `eq:residual_eq_r2`)
 
 ### Потоки через внутреннюю грань f (между ячейками f-1 и f)
 
@@ -181,16 +181,16 @@ G_g[N] = T_ext * (Rs0*kro[N-1]/(mu_o[N-1]*Bo[N-1])) * (p[N-1] - p_ext)
 Конвенция: G > 0 = от скважины. Невязка: accum + G[j+1] − G[j].
 
 ```python
-# Баланс нефтяного компонента (eq. 14)
+# Баланс нефтяного компонента (eq:residual_oil)
 F_oil[j] = V[j] * phi * ((1-Sg[j])/Bo[j] - (1-Sg_n[j])/Bo_n[j]) / dt
            + G_o[j+1] - G_o[j]
 
-# Баланс газового компонента (eq. 15)
+# Баланс газового компонента (eq:residual_gas)
 F_gas[j] = V[j] * phi * ((Rs[j]*(1-Sg[j])/Bo[j] + Sg[j]/Bg[j])
                         - (Rs_n[j]*(1-Sg_n[j])/Bo_n[j] + Sg_n[j]/Bg_n[j])) / dt
            + G_g[j+1] - G_g[j]
 
-# Замыкающее уравнение (eq. 16-17)
+# Замыкающее уравнение (eq:residual_eq_r1, eq:residual_eq_r2)
 if regime[j] == 1:  # двухфазная
     F_eq[j] = Rs[j] - Rs_eq(p[j])
 else:               # однофазная
@@ -203,12 +203,12 @@ else:               # однофазная
 
 Первые две строки — производные F_oil, F_gas по (p_j, Sg_j, Rs_j).
 Содержат:
-- производные членов накопления (eq. 22-27)
+- производные членов накопления (`eq:daccum_oil_dp` … `eq:daccum_gas_dRs`)
 - производные потоков через обе грани ячейки j
 
 Третья строка зависит от режима:
-- Режим 1 (eq. 28): [-dRs_eq/dp, 0, 1]
-- Режим 2 (eq. 29): [0, 1, 0]
+- Режим 1 (`eq:deq_r1`): [-dRs_eq/dp, 0, 1]
+- Режим 2 (`eq:deq_r2`): [0, 1, 0]
 
 ### Внедиагональные блоки L_j, U_j
 
@@ -248,7 +248,7 @@ for j in range(N-2, -1, -1):
 
 Для N=100..500 — цикл Python приемлем. Для N>1000 — numba/Cython.
 
-## Переключение режимов (problem_statement.tex §4.2.4)
+## Переключение режимов (problem_statement.tex, `sssec:switching_disc`)
 
 После каждой итерации Ньютона:
 ```python
@@ -273,7 +273,7 @@ for j in range(N):
 
 Нарушение → dt *= cut_factor, рестарт итераций с U^n. Если dt < dt_min → ошибка.
 
-Критерий сходимости — покомпонентный (§5.2):
+Критерий сходимости — покомпонентный (problem_statement.tex, `ssec:convergence`):
 ```python
 converged = all(
     (abs(F_oil[j]) < tol_abs and abs(F_gas[j]) < tol_abs)

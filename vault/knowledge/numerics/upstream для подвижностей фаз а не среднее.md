@@ -38,4 +38,4 @@ Upstream-взвешивание — аналог схемы против пот�
 
 ## Стандарт отрасли
 
-Upstream-взвешивание подвижностей — стандарт в коммерческих и открытых симуляторах пластов (ECLIPSE, OPM Flow, MRST/SINTEF). OPM Flow Reference Manual (2025-10), §1.2, eq. (1.16)–(1.20): upstream cell определяется по знаку потенциала $\Delta\Phi_{\alpha,ij}$.
+Upstream-взвешивание подвижностей — стандарт в коммерческих и открытых симуляторах пластов (ECLIPSE, OPM Flow, MRST/SINTEF). OPM Flow Reference Manual (2025-10), §1.2, формулы (1.16)–(1.20): upstream cell определяется по знаку потенциала $\Delta\Phi_{\alpha,ij}$.

@@ -135,7 +135,7 @@ numerical_solver/
 
 ### 1. PVTModel — свойства фаз
 
-Контракт из problem_statement.tex §2.1 (таблица требований к PVT-модели):
+Контракт из problem_statement.tex — таблица «Требования к PVT-модели» в `ssec:closures`:
 
 | Метод | Аргументы | Возврат |
 |---|---|---|

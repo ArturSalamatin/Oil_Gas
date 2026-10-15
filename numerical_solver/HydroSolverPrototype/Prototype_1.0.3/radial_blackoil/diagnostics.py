@@ -19,10 +19,22 @@ def _range_tol(x):
     return 1e-9*max(1.0, abs(float(x)))
 
 
+def relperm_range_warnings(model,state):
+    """Relperm part of pvt_range_warnings: Sg outside the RELPERM table, ACCEPTED states only."""
+    # DEBT-071 (GPN project): callable alone -- the GPN adapter on the Standing correlation
+    # path has a RELPERM table but no PVT tables (its PVT object has no gp).
+    sg=np.asarray(state.sg,float); rp=model.relperm; w=[]
+    if np.min(sg) < rp.sg[0]-_range_tol(rp.sg[0]):
+        w.append(f'RELPERM Sg below table: min Sg={np.min(sg):.8g}, table min={rp.sg[0]:.8g}. Endpoint value used; no extrapolation.')
+    if np.max(sg) > rp.sg[-1]+_range_tol(rp.sg[-1]):
+        w.append(f'RELPERM Sg above table: max Sg={np.max(sg):.8g}, table max={rp.sg[-1]:.8g}. Endpoint value used; no extrapolation.')
+    return w
+
+
 def pvt_range_warnings(model,state,free_gas_sg=None):
     """Return warnings for ACCEPTED states only. Evaluation itself always clamps."""
     p=np.asarray(state.pressure_bar,float); rs=np.asarray(state.rs_sm3_sm3,float)
-    w=[]; pvt=model.pvt; rp=model.relperm
+    w=[]; pvt=model.pvt
     pmin=float(np.min(p)); pmax=float(np.max(p)); rmin=float(np.min(rs)); rmax=float(np.max(rs))
     if pmin < pvt.gp[0]-_range_tol(pvt.gp[0]):
         w.append(f'GAS_PVT pressure below table: min P={pmin:.8g} bar, table min={pvt.gp[0]:.8g} bar. Endpoint value used; no extrapolation.')
@@ -57,11 +69,8 @@ def pvt_range_warnings(model,state,free_gas_sg=None):
     if np.any(p > pmax_branch + 1e-9*np.maximum(1.0,np.abs(pmax_branch))):
         excess=np.max(p-pmax_branch)
         w.append(f'OIL_PVT branch pressure above supplied range by up to {excess:.8g} bar. Endpoint branch property used; no extrapolation.')
-    sg=np.asarray(state.sg,float)
-    if np.min(sg) < rp.sg[0]-_range_tol(rp.sg[0]):
-        w.append(f'RELPERM Sg below table: min Sg={np.min(sg):.8g}, table min={rp.sg[0]:.8g}. Endpoint value used; no extrapolation.')
-    if np.max(sg) > rp.sg[-1]+_range_tol(rp.sg[-1]):
-        w.append(f'RELPERM Sg above table: max Sg={np.max(sg):.8g}, table max={rp.sg[-1]:.8g}. Endpoint value used; no extrapolation.')
+    # DEBT-071 (GPN project): the relperm part is a function of its own -- same texts, same order (last).
+    w.extend(relperm_range_warnings(model,state))
     return w
 
 

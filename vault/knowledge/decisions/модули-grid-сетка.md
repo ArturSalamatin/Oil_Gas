@@ -51,13 +51,13 @@ class Grid(ABC):
     @property
     @abstractmethod
     def trans_well(self) -> float:
-        """Проводимость левой граничной грани T_{1/2}."""
+        """Проводимость левой граничной грани T_{-1/2}."""
         ...
 
     @property
     @abstractmethod
     def trans_ext(self) -> float:
-        """Проводимость правой граничной грани T_{N+1/2}."""
+        """Проводимость правой граничной грани T_{N-1/2}."""
         ...
 
     @abstractmethod
@@ -81,9 +81,9 @@ class Grid(ABC):
 ### Грани (eq. 10)
 
 ```
-r_{j+1/2} = r_w · (R_ext / r_w)^{j/N},   j = 0, 1, ..., N
+r_{j-1/2} = r_w · (R_ext / r_w)^{j/N},   j = 0, 1, ..., N
 ```
-r_faces[0] = r_w, r_faces[N] = R_ext.
+r_faces[f] = r_{f-1/2}: r_faces[0] = r_{-1/2} = r_w, r_faces[N] = r_{N-1/2} = R_ext ([[DEBT-070]]).
 
 Логарифмический шаг: `ln(r_{j+1/2}/r_{j-1/2}) = const = ln(R_ext/r_w)/N`.
 
@@ -114,8 +114,8 @@ T_{j+1/2} = 2π · h · k / ln(r_{j+1}/r_j)
 ### Проводимости граничных граней
 
 ```
-T_{1/2} = 2π · h · k / ln(r_0 / r_w)
-T_{N+1/2} = 2π · h · k / ln(R_ext / r_{N-1})
+T_{-1/2} = 2π · h · k / ln(r_0 / r_w)
+T_{N-1/2} = 2π · h · k / ln(R_ext / r_{N-1})
 ```
 
 Расстояние от центра граничной ячейки до границы области.

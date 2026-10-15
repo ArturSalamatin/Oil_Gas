@@ -119,7 +119,7 @@ Sg,kro,krg
 
 Безразмерные — конвертация не нужна.
 
-Не меньше двух строк, $S_g$ строго растёт (`_check_relperm_table`, DEBT-044). Монотонность $k_{rg}$ (не убывает) и $k_{ro}$ (не возрастает), которой требует SGOF (OPM Flow Manual, табл. 8.165), не проверяется.
+Не меньше двух строк, $S_g$ строго растёт (`_check_relperm_table`, DEBT-044). Последняя строка — $k_{ro} = 0$, строго (`_check_relperm_table`, [[DEBT-073]]): выше неё ОФП берутся из неё, и при $k_{ro} > 0$ нефть подвижна при любой $S_o$ — у забоя $S_o$ уходит ниже нуля. Монотонность $k_{rg}$ (не убывает) и $k_{ro}$ (не возрастает), которой требует SGOF (OPM Flow Manual, табл. 8.165), не проверяется.
 
 ## 3. TimeSchedule → Schedule прототипа
 
@@ -218,7 +218,7 @@ Schedule прототипа — более общий формат (абсолю
 | | `_expand_history`, `_validate_interval` | формы `time.history` (FEAT-018); `control`, `p_wf > 0`, `q_oil ≥ 0`, `min_bhp > 0`, неиспользуемые поля (DEBT-008) |
 | | `_validate` | геометрия, сетка, порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметры, начальные условия, `dt_integration`, `max_retries`, `skin`, `grid.type`, `output.log_level`, лимиты и допуски Ньютона (DEBT-008) |
 | | предупреждения об удалённых полях, `_warn_large_skin`, `_warn_skin_not_in_energy`, `_warn_well_shut` (после `_validate`) | предупреждения: удалённые поля (DEBT-008); `skin` > 0 — скин не входит в уравнение энергии ([[BUG-029]]); `skin` > 50; `p_wf`, `min_bhp` $\ge p_0$ (DEBT-056) |
-| `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO (DEBT-042, DEBT-044, DEBT-038) |
+| `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO, $k_{ro} = 0$ в последней строке ОФП (DEBT-042, DEBT-044, DEBT-038, DEBT-073) |
 | | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход начального состояния за таблицы (BUG-017) |
 | расчёт | `hydro/prototype_adapter.py`: `PrototypeHydroAdapter.warn_table_range` | предупреждение: выход принятого состояния за PVT- и ОФП-таблицы на каждом шаге — одна запись на категорию за расчёт, с моментом первого выхода; начальное состояние — тем же методом (`_warn_initial_table_range`), категория при $t = 0$ не повторяется; «кривая насыщения выше таблицы» — только при свободном газе $S_g > 10^{-6}$ (DEBT-027). PVT Стендинга — только таблица ОФП (DEBT-071) |
 | сетка GPN | `grid/log_radial.py` (`LogRadialGrid`) | повтор проверок геометрии |

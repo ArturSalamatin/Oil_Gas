@@ -11,7 +11,7 @@ metadata:
 
 ## Обоснование разделения
 
-Из problem_statement.tex, splitting (§3):
+Из problem_statement.tex, разделение задачи (`sec:splitting`):
 - **Гидродинамика**: PVT зависят только от p (T = T_пл = const). Нужны значения И производные по p (для якобиана Ньютона).
 - **Теплоперенос**: PVT зависят от p и T. Нужны только значения (коэффициенты замораживаются на T^n, итерации не нужны).
 
@@ -41,7 +41,7 @@ class HydroPVT(ABC):
     # --- Газосодержание ---
     @abstractmethod
     def Rs_eq(self, p: np.ndarray) -> np.ndarray:
-        """Равновесное газосодержание Rs_eq(p). Ур. (3) problem_statement.tex."""
+        """Равновесное газосодержание Rs_eq(p). Таблица «Требования к PVT-модели» (ssec:closures) problem_statement.tex."""
         ...
 
     @abstractmethod
@@ -52,7 +52,7 @@ class HydroPVT(ABC):
     # --- Объёмный коэффициент нефти ---
     @abstractmethod
     def Bo(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray:
-        """Bo(p, Rs). Ур. (8) problem_statement.tex."""
+        """Bo(p, Rs). Таблица «Требования к PVT-модели» (ssec:closures) problem_statement.tex."""
         ...
 
     @abstractmethod
@@ -105,7 +105,7 @@ class HydroPVT(ABC):
 
     # --- Вычисляемые (не абстрактные) ---
     def rho_o(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray:
-        """ρ_o = (ρ_o_ст + Rs·ρ_g_ст) / Bo. Ур. (51) problem_statement.tex."""
+        """ρ_o = (ρ_o_ст + Rs·ρ_g_ст) / Bo. Ур. (eq:rho_oil) problem_statement.tex."""
         return (self.rho_o_std + Rs * self.rho_g_std) / self.Bo(p, Rs)
 
     def rho_g(self, p: np.ndarray) -> np.ndarray:
@@ -179,7 +179,7 @@ class RelPermModel(ABC):
 
     @abstractmethod
     def kro(self, Sg: np.ndarray) -> np.ndarray:
-        """k_ro(Sg). Ур. (6) problem_statement.tex."""
+        """k_ro(Sg). «Требования к модели ОФП» (ssec:closures) problem_statement.tex."""
         ...
 
     @abstractmethod

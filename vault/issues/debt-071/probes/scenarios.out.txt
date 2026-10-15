@@ -1,0 +1,19 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+эмуляция кода плана (install)
+
+=== 05, 6 ч, таблица до S_g = 0.01: отказ, 2.62 с; записей WARNING до отказа 1 ===
+   HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0007 сут: двухфазных ячеек 6 из 50, max S_g = 0.917. Наименьший подшаг — tim
+   Состояние при t = 0.000651 сут вне таблиц: RELPERM Sg above table: max Sg=0.91716189, table max=0.01. Endpoint value used; no extrapolation.
+
+=== 05, R_s0 = 100, 6 ч, таблица до S_g = 0.1: отказ, 2.20 с; записей WARNING до отказа 0 ===
+   HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 50, max S_g = 0.000. Наименьший подшаг — tim
+
+=== 05, R_s0 = 100, 6 ч, таблица примера: записей WARNING 0, 0.30 с ===
+
+=== 05, 6 ч, таблица с S_g = 0.05: записей WARNING 1, 0.20 с ===
+   Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. Endpoint value used; no extrapolation.
+
+=== 05, 6 ч, таблица примера: записей WARNING 0, 0.04 с ===
+
+=== baseline (Стендинг + Кори), полностью: записей WARNING 0, 0.23 с ===

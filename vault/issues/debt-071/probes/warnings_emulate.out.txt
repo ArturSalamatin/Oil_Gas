@@ -1,0 +1,30 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+эмуляция кода плана (install)
+01_single_phase_no_jt          «вне таблиц»: 0, прочих WARNING: 0
+02_single_phase_jt             «вне таблиц»: 0, прочих WARNING: 0
+03_standing_corey              «вне таблиц»: 0, прочих WARNING: 0
+04_table_table                 «вне таблиц»: 0, прочих WARNING: 0
+04a_high_gas_saturation        «вне таблиц»: 3, прочих WARNING: 0
+    Состояние при t = 0.003472 сут вне таблиц: GAS_PVT pressure below table: min P=42.334878 bar, table min=50 bar. Endpoint value used; no extrapolation.
+    Состояние при t = 0.003472 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=42.334878 bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+    Состояние при t = 0.08333 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 0.00721 at P up to 150.05581 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrapolation.
+05_standing_table_rp           «вне таблиц»: 0, прочих WARNING: 0
+06_table_corey_rp              «вне таблиц»: 0, прочих WARNING: 0
+07_degassing_adiabatic_only    «вне таблиц»: 0, прочих WARNING: 0
+08_degassing_jt                «вне таблиц»: 0, прочих WARNING: 0
+09_degassing_latent_heat       «вне таблиц»: 0, прочих WARNING: 0
+10_deep_degassing              «вне таблиц»: 0, прочих WARNING: 0
+11_degassing_at_boundary       «вне таблиц»: 0, прочих WARNING: 0
+12_large_drainage_radius       «вне таблиц»: 0, прочих WARNING: 0
+13a_pwf_ramp_down              «вне таблиц»: 0, прочих WARNING: 0
+13b_pwf_alternating            «вне таблиц»: 0, прочих WARNING: 0
+14_high_gor_cooling            «вне таблиц»: 0, прочих WARNING: 0
+15_oil_rate_ramp_up            «вне таблиц»: 0, прочих WARNING: 0
+16_well_shut_in                «вне таблиц»: 0, прочих WARNING: 0
+17_shut_in_strong_cooling      «вне таблиц»: 0, прочих WARNING: 0
+18_prototype_input             «вне таблиц»: 0, прочих WARNING: 0
+19_rs150_cooling               «вне таблиц»: 0, прочих WARNING: 0
+20_rs300_cooling               «вне таблиц»: 0, прочих WARNING: 0
+21_rs100_cooling               «вне таблиц»: 0, прочих WARNING: 0
+итог: записей «вне таблиц» 3 в 23 примерах

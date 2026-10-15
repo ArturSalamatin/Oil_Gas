@@ -1,0 +1,6 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-075\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-075\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+режим: real; ОФП: relperm_to_001.csv; интервалов 6
+отказ (RuntimeError): Нефизичное состояние после шага гидродинамики dt = 450 с к t = 0.0052 сут: в ячейке 0 (r = 0.1064 м) S_g = 6.585189352105805; ячеек, где газонасыщенность вне [0, 1] или не конечна, — 2 из 50.
+принятых подшагов: 1
+  t =    450.00 с, dt =   450.00 с, S_g[0] = 6.585189, max S_g = 6.585189

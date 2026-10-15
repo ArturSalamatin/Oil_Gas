@@ -13,8 +13,10 @@ F. Синхронное дробление шага энергии: подшаг
 G. Отказ при нефизичной температуре: T ≤ 0 или не конечна (DEBT-047)
 H. Глубина первого подшага после смены управления (FEAT-032)
 I. Нарастание шага после смены управления (FEAT-032)
+J. Отказ при нефизичном состоянии гидродинамики: S_g вне [0, 1], p ≤ 0, R_s < 0 или не конечны (DEBT-075)
 """
 
+from dataclasses import replace
 from pathlib import Path
 import numpy as np
 import pytest
@@ -883,3 +885,168 @@ class TestNonphysicalTemperature:
         assert "в ячейке 0" in msg
         assert hydro.dt_calls == [3600.0, 1800.0]
         assert energy.n_calls == 1
+
+
+# ═══════════════════════════════════════════════════════════
+# J. Отказ при нефизичном состоянии гидродинамики (DEBT-075)
+# ═══════════════════════════════════════════════════════════
+#
+# От S_g > 1 (S_o < 0) прототип защищает только порог S_g <= 0.98 в своём
+# Ньютоне; без него пример 05 с таблицей ОФП до S_g = 0.01 дошёл до
+# S_g[0] = 311 без отказа (замер DEBT-073). До DEBT-075 S_g вне [0, 1],
+# p <= 0 и R_s < 0 проходили молча, а NaN и inf давали ValueError scipy в
+# шаге энергии без ячейки и величины (vault/issues/debt-075/probes/
+# red_state.out.txt). Тесты портят результат гидродинамики обёрткой: отказ
+# обязан дать сам Simulator, какой бы HydroSolver ни вернул такое состояние.
+
+
+class _CorruptingHydroSolver:
+    """Обёртка гидродинамики: на вызове on_call ставит state.<поле>[ячейка] = значение.
+
+    Физику не подменяет — делегирует внутреннему двойнику и портит только
+    состояние его результата; потоки остаются прежними.
+    """
+
+    def __init__(self, inner, changes, on_call=2):
+        # changes — список (поле SimulationState, ячейка, значение)
+        self._inner = inner
+        self._changes = changes
+        self._on_call = on_call
+        self.n_calls = 0
+
+    def solve(self, state, dt, bc):
+        result = self._inner.solve(state, dt, bc)
+        self.n_calls += 1
+        if self.n_calls != self._on_call:
+            return result
+        fields = {}
+        for field, cell, value in self._changes:
+            x = fields.get(field, getattr(result.state, field).copy())
+            x[cell] = value
+            fields[field] = x
+        return replace(result, state=replace(result.state, **fields))
+
+    def component_inventories(self, state):
+        """Запас — у внутреннего двойника (DEBT-039)."""
+        # Simulator.run спрашивает запас начального состояния у любой
+        # гидродинамики (simulator.py, run): без метода — AttributeError до
+        # первого шага. FailingHydroStub тоже зовёт его у обёрнутого.
+        return self._inner.component_inventories(state)
+
+
+class TestNonphysicalHydroState:
+    """Simulator останавливает расчёт, если после шага гидродинамики S_g, p или R_s нефизичны."""
+
+    @pytest.mark.parametrize("field, value, shown", [
+        # S_g > 1 — S_o < 0; 6.585 — S_g[0] первого подшага сценария DEBT-073
+        # без порога (vault/issues/debt-075/probes/real_scenario_emulate.out.txt)
+        ("Sg", 6.585, "S_g = 6.585"),
+        ("Sg", -0.01, "S_g = -0.01"),
+        # точное сравнение (решение пользователя): соседние с границами
+        # числа с плавающей точкой — уже нарушение
+        ("Sg", np.nextafter(1.0, 2.0), "S_g = 1.0000000000000002"),
+        ("Sg", np.nextafter(0.0, -1.0), "S_g = -5e-324"),
+        ("Sg", np.nan, "S_g = nan"),
+        ("Sg", np.inf, "S_g = inf"),
+        ("p", 0.0, "p = 0.0 Па"),
+        ("p", -1e5, "p = -100000.0 Па"),
+        ("p", np.nan, "p = nan Па"),
+        ("p", np.inf, "p = inf Па"),
+        ("Rs", -1.0, "R_s = -1.0 м³ст/м³ст"),
+        ("Rs", np.nan, "R_s = nan м³ст/м³ст"),
+    ], ids=["sg_above_1", "sg_negative", "sg_1_plus_ulp", "sg_minus_tiny",
+            "sg_nan", "sg_inf", "p_zero", "p_negative", "p_nan", "p_inf",
+            "rs_negative", "rs_nan"])
+    def test_nonphysical_state_raises(self, field, value, shown):
+        """Отказ называет подшаг, время его конца, ячейку, её r, величину и значение.
+
+        24 шага по 1 ч, состояние испорчено на втором вызове гидродинамики:
+        конец шага t = 7200 с = 0.0833 сут, ячейка 3 из 10. Шаг энергии
+        испорченного подшага не вызывается: проверка стоит до него.
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        hydro = _CorruptingHydroSolver(inner_hydro, [(field, 3, value)])
+        # on_call=0 не совпадает ни с одним вызовом: обёртка только считает вызовы
+        energy = _CorruptingEnergySolver(inner_energy, 0.0, on_call=0)
+        sim = Simulator(grid, hydro, energy, pvt, _single_interval_schedule())
+
+        with pytest.raises(RuntimeError, match="Нефизичное состояние") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert "после шага гидродинамики dt = 3600 с" in msg
+        assert "t = 0.0833 сут" in msg
+        assert f"в ячейке 3 (r = {grid.r_centers[3]:.4g} м)" in msg
+        assert shown in msg
+        assert "— 1 из 10" in msg
+        assert hydro.n_calls == 2
+        assert energy.n_calls == 1
+
+    @pytest.mark.parametrize("field, value", [
+        ("Sg", 0.0),
+        ("Sg", 1.0),
+        ("p", 1.0),
+        ("Rs", 0.0),
+    ], ids=["sg_zero", "sg_one", "p_one_pa", "rs_zero"])
+    def test_bounds_pass(self, field, value):
+        """Границы включены, окна правдоподобия нет: расчёт идёт до конца.
+
+        S_g = 1 (S_o = 0) и R_s = 0 допустимы; p = 1 Па нефизично для
+        пласта, но положительно — критерий только p > 0 (как T > 0 у
+        DEBT-047). Тест ловит строгие неравенства и пороги, добавленные без
+        решения. Замер: все четыре случая до плана тоже доходят до конца
+        (red_state.out.txt).
+        """
+        grid, pvt, inner_hydro, energy, _ = _make_simulator()
+        hydro = _CorruptingHydroSolver(inner_hydro, [(field, 3, value)])
+        sim = Simulator(grid, hydro, energy, pvt, _single_interval_schedule())
+
+        history = sim.run(_initial_state())
+
+        assert hydro.n_calls == 24
+        assert history.times[-1] == pytest.approx(86400.0)
+
+    def test_first_violation_named(self):
+        """Отказ называет первую нарушенную величину и первую от забоя ячейку.
+
+        Порядок проверки — S_g, p, R_s: p испорчено в ячейке 2, S_g — в
+        ячейках 7 и 3. Отказ — по S_g (хотя ячейка p ближе к забою), ячейка 3
+        (первая от забоя среди плохих по S_g), число ячеек — 2.
+        """
+        grid, pvt, inner_hydro, energy, _ = _make_simulator()
+        hydro = _CorruptingHydroSolver(
+            inner_hydro, [("p", 2, -1.0), ("Sg", 7, 1.5), ("Sg", 3, -0.01)])
+        sim = Simulator(grid, hydro, energy, pvt, _single_interval_schedule())
+
+        with pytest.raises(RuntimeError, match="Нефизичное состояние") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert f"в ячейке 3 (r = {grid.r_centers[3]:.4g} м) S_g = -0.01" in msg
+        assert "газонасыщенность вне [0, 1] или не конечна, — 2 из 10" in msg
+        assert "p = " not in msg
+
+    def test_raises_under_subdivision(self):
+        """Проверка работает на подшагах локального дробления и сама подшаг не дробит.
+
+        Гидро отказывает на шаге 3600 с: Simulator делит его пополам.
+        Обёртка порчи стоит внутри FailingHydroStub, поэтому считает только
+        несостоявшиеся отказом вызовы: первый из них — подшаг 1800 с, он и
+        испорчен. Отказ называет dt = 1800 с; подшаг 900 с не пробуется —
+        RuntimeError не HydroConvergenceError (решение пользователя).
+        """
+        grid, pvt, inner_hydro, inner_energy, _ = _make_simulator()
+        corrupting = _CorruptingHydroSolver(inner_hydro, [("Sg", 0, 6.585)], on_call=1)
+        hydro = FailingHydroStub(corrupting, lambda s, dt: dt > 1800.0)
+        energy = _CorruptingEnergySolver(inner_energy, 0.0, on_call=0)
+        schedule = _single_interval_schedule(dt_hist=3600.0, dt_int=3600.0)
+        sim = Simulator(grid, hydro, energy, pvt, schedule)
+
+        with pytest.raises(RuntimeError, match="Нефизичное состояние") as exc:
+            sim.run(_initial_state())
+
+        msg = str(exc.value)
+        assert "dt = 1800 с" in msg
+        assert "в ячейке 0" in msg
+        assert hydro.dt_calls == [3600.0, 1800.0]
+        assert energy.n_calls == 0

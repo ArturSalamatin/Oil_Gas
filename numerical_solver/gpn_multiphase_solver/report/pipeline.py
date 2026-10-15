@@ -125,9 +125,10 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     try:
         history = simulator.run(initial_state)
     except RuntimeError as exc:
-        # Отказ шага (Simulator._failure_message) или нефизичная T —
-        # сообщения решателя написаны для пользователя. Каталог вывода не
-        # тронут: очистка — после расчёта.
+        # Отказ шага (Simulator._failure_message), нефизичное состояние
+        # гидродинамики (DEBT-075) или нефизичная T (DEBT-047) — сообщения
+        # решателя написаны для пользователя. Каталог вывода не тронут:
+        # очистка — после расчёта.
         raise CaseRunError(str(exc)) from exc
 
     elapsed = time.perf_counter() - t_start

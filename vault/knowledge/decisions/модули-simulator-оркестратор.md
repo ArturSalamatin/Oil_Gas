@@ -7,7 +7,7 @@ metadata:
 
 # Simulator — оркестратор (Mediator)
 
-> **Обновлено 2026-10-10 ([[DEBT-050]]):** цикл шага, конструктор, фабрика и `SimulationHistory` — по коду после [[DEBT-015]] (локальное дробление в `Simulator._advance`, параметр `max_retries`) и [[DEBT-047]] (`_check_temperature`).
+> **Обновлено 2026-10-10 ([[DEBT-050]]):** цикл шага, конструктор, фабрика и `SimulationHistory` — по коду после [[DEBT-015]] (локальное дробление в `Simulator._advance`, параметр `max_retries`) и [[DEBT-047]] (`_check_temperature`); [[DEBT-075]] — `_check_hydro_state`.
 
 ## Класс Simulator (реализовано: simulator.py)
 
@@ -118,6 +118,10 @@ def _advance(self, state, dt, bc, balance, mass
             size //= 2
             continue
 
+        # 1a. S_g вне [0, 1], p ≤ 0, R_s < 0 или не конечны → RuntimeError,
+        #     не дробится (DEBT-075)
+        self._check_hydro_state(hydro_result.state, h)
+
         # Баланс массы — только принятый подшаг (DEBT-039)
         if mass is not None:
             mass.add_step(hydro_result)
@@ -184,6 +188,13 @@ def _advance(self, state, dt, bc, balance, mass
   нефизичная $T$ доходила до истории молча. Проверка одна на любой
   `EnergySolver`; отказ не дробится — дробление ловит только
   `HydroConvergenceError` (DEBT-015)
+- сразу после каждого принятого `hydro.solve`, до баланса массы и
+  энергии, `_advance` проверяет состояние гидродинамики
+  (`_check_hydro_state`, DEBT-075): $S_g \notin [0, 1]$, $p \le 0$,
+  $R_s < 0$ или не конечное значение → `RuntimeError` с $\Delta t$
+  подшага, временем его конца, ячейкой, $r$, величиной и значением.
+  Сравнение точное. Проверка одна на любой `HydroSolver`; от $S_o < 0$
+  раньше защищал только порог 0.98 в Ньютоне прототипа ([[DEBT-073]])
 
 Подробности: [[контейнер-simulation-history]].
 

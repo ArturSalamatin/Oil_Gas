@@ -221,6 +221,7 @@ Schedule прототипа — более общий формат (абсолю
 | `from_config` | `factory.py`: `_read_numeric_csv`, `_check_pvto_branches`, `_check_gas_pvt_table`, `_check_relperm_table` | CSV-таблицы: числа, пределы, монотонность, ветви PVTO, $k_{ro} = 0$ в последней строке ОФП (DEBT-042, DEBT-044, DEBT-038, DEBT-073) |
 | | `_check_rs0_in_table`, `_check_undersaturated_start`; `_warn_negative_compressibility`, `_warn_initial_table_range` | начальное состояние против PVT (BUG-017); предупреждения: $c < 0$ (BUG-019), выход начального состояния за таблицы (BUG-017) |
 | расчёт | `hydro/prototype_adapter.py`: `PrototypeHydroAdapter.warn_table_range` | предупреждение: выход принятого состояния за PVT- и ОФП-таблицы на каждом шаге — одна запись на категорию за расчёт, с моментом первого выхода; начальное состояние — тем же методом (`_warn_initial_table_range`), категория при $t = 0$ не повторяется; «кривая насыщения выше таблицы» — только при свободном газе $S_g > 10^{-6}$ (DEBT-027). PVT Стендинга — только таблица ОФП (DEBT-071) |
+| | `simulator.py`: `Simulator._check_hydro_state`, `_check_temperature` (в `_advance`) | отказ `RuntimeError`: после шага гидродинамики $S_g \notin [0, 1]$, $p \le 0$, $R_s < 0$ или не конечные — точно, без допуска ([[DEBT-075]]); после шага энергии $T \le 0$ или не конечная ([[DEBT-047]]) |
 | сетка GPN | `grid/log_radial.py` (`LogRadialGrid`) | повтор проверок геометрии |
 | прототип | `radial_blackoil/grid.py`, `pvt.py`, `relperm.py`, `blackoil.py` | повтор геометрии; монотонность таблиц; режимы якобиана и решателя СЛАУ; $q \ge 0$. `skin` прототип не проверяет |
 
@@ -252,6 +253,8 @@ Schedule прототипа — более общий формат (абсолю
 Замер до DEBT-056 (`vault/issues/debt-056/probes/skin_range.out.txt`): $s$ = −0.5, −2 — отказ через dt/512 с советом увеличить `max_retries`; $s$ = 1e6, `p_wf` = 25 МПа, `min_bhp` = 25 МПа при $p_0$ = 20 МПа — расчёт без притока, молча.
 
 Температура в расчёте — `Simulator._advance` после каждого подшага энергии (DEBT-047): $T \le 0$ или не конечная $T$ → `RuntimeError` с $\Delta t$ подшага, временем его конца, ячейкой, $r$ и значением. Правдоподобную, но неверную $T$ эта проверка не ловит: $c_{p,o} = 0$ в обход проверки ввода даёт $T_{\min} = 11.8$ К (`vault/issues/debt-047/probes/red_state.out.txt`).
+
+Состояние гидродинамики в расчёте — `Simulator._advance` сразу после каждого принятого `hydro.solve`, до баланса массы и энергии ([[DEBT-075]]): $S_g \notin [0, 1]$, $p \le 0$, $R_s < 0$ или не конечное значение → `RuntimeError` с $\Delta t$ подшага, временем его конца, ячейкой, $r$, величиной и значением. Порядок — $S_g$, $p$, $R_s$; сравнение точное (решение пользователя: на 6161 принятом подшаге 23 примеров нарушений нет, $\min S_g = \min R_s = 0$ ровно — `vault/issues/debt-075/probes/sg_range_scan.out.txt`). От $S_o < 0$ раньше защищал только порог $S_g \le 0.98$ в Ньютоне прототипа: без него пример 05 с таблицей ОФП до $S_g$ = 0.01 доходил до $S_g[0]$ = 311 без отказа ([[DEBT-073]]). Подшаг не дробится — дробление ловит только `HydroConvergenceError`.
 
 Геометрия, сетка, порода — наш config (`_validate`); `LogRadialGrid` и `RadialGrid` прототипа повторяют:
 - rw > 0, re > rw, h > 0, N ≥ 1

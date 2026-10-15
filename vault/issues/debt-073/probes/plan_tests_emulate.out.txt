@@ -1,0 +1,9 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+PASS mobile_oil_at_edge: relperm.csv: k_ro в последней строке (S_g = 0.8) = 0.05, нужно 0. Выше последней строки k_ro и k_rg берутся из неё: при k_ro > 0 нефть подвижна при любой S_o, и у забоя S_o ничто не удерживает от уход
+PASS rounding_noise_at_edge: relperm.csv: k_ro в последней строке (S_g = 0.8) = 1e-30, нужно 0. Выше последней строки k_ro и k_rg берутся из неё: при k_ro > 0 нефть подвижна при любой S_o, и у забоя S_o ничто не удерживает от ухо
+PASS one_row (прежний текст): relperm.csv: строк данных 1, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.
+PASS header_only (прежний текст): relperm.csv: строк данных 0, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.
+PASS sg_not_increasing (прежний текст): relperm.csv: S_g не растёт строго: 0.2 после 0.4. Строки — по возрастанию S_g.
+PASS mobile_oil_edge_rejected_before_run (05, Стендинг): D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-073\probes\emulate_work\standing\relperm.csv: k_ro в последней строке (S_g = 0.01) = 0.98, нужно 0. Выше последней строки k_ro и k_rg берутся из не
+PASS project_relperm_tables_accepted: файлов 16, отвергнуто 0
+PASS configs/table_pvt: from_config прошёл (Simulator)

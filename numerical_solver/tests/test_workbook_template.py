@@ -8,6 +8,8 @@
 файл не перезаписывается (решение 58).
 """
 
+from pathlib import Path
+
 import pytest
 from xlsxwriter.utility import xl_rowcol_to_cell
 
@@ -16,6 +18,9 @@ from gpn_multiphase_solver.io.workbook_template import (
     COMMENTS, DEMO_TABLES, excel_rule, limit_text, write_template)
 
 from ._xlsx import read_book
+
+SOLVER = Path(__file__).resolve().parents[1]             # numerical_solver/
+GENERATOR_BOOK = SOLVER / "configs" / "INPUT_TEMPLATE_v1.xlsx"
 
 
 @pytest.fixture(scope="module")
@@ -218,3 +223,26 @@ def test_not_xlsx_rejected(tmp_path, name):
     with pytest.raises(ValueError):
         write_template(tmp_path / name)
     assert not (tmp_path / name).exists()
+
+
+# ── Книга генератора в git (П5) ──────────────────────────────
+
+class TestGeneratorBook:
+    """configs/INPUT_TEMPLATE_v1.xlsx — по таблице полей: листы, ключи, единицы, заголовки.
+
+    Значения не сравниваются: книгу генератора пишет gpn-solver template, а при
+    смене таблицы полей её пересоздают вручную (удалить файл — решение 58). Тест
+    ловит устаревшую книгу у нас, а не у заказчика (часть «шаблон читается» FEAT-035).
+    """
+
+    def test_matches_format(self):
+        book = read_book(GENERATOR_BOOK)
+        assert tuple(book.sheets) == wf.SHEET_ORDER
+        for name, params in wf.PARAM_SHEETS.items():
+            v = book.sheets[name].values
+            assert [(v.get(f"A{r}"), v.get(f"D{r}")) for r in range(2, len(params) + 2)] == \
+                   [(p.key, p.unit) for p in params], name
+        for name, cols in wf.TABLE_SHEETS.items():
+            v = book.sheets[name].values
+            assert [v.get(f"{_col(c)}1") for c in range(len(cols))] == \
+                   [c.header for c in cols], name

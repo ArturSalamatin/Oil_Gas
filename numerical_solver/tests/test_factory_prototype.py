@@ -9,7 +9,8 @@
 - Начальное состояние против таблиц: Rs0 в диапазоне, недонасыщенный старт, предупреждения (BUG-017)
 - Ветви PVTO-таблицы: не меньше двух строк, давление и p_b(R_s) растут (DEBT-038)
 - Строгий разбор CSV: заголовок, число полей, конечные числа (DEBT-042)
-- Допустимость значений CSV: пределы столбцов, число строк, рост p и S_g, ветви R_s (DEBT-044); k_ro = 0 в последней строке ОФП (DEBT-073)
+- Допустимость значений CSV: пределы столбцов, число строк, рост p и S_g, ветви R_s (DEBT-044)
+- Крайние строки ОФП: k_rg = 0 в первой (DEBT-079), k_ro = 0 в последней (DEBT-073)
 """
 
 import logging
@@ -1034,6 +1035,50 @@ class TestCSVValueChecks:
         with pytest.raises(ValueError, match="relperm.csv: S_g не растёт строго: 0.2 после 0.4"):
             SimulatorFactory.from_config(config)
 
+    # ── Первая строка ОФП: k_rg = 0 (DEBT-079) ──
+
+    def test_relperm_mobile_gas_at_zero_raises(self, tmp_path):
+        """k_rg = 0.005 в первой строке (S_g = 0) → ValueError: файл, S_g, k_rg.
+
+        Ниже первой строки ОФП берутся из неё (np.interp прототипа): при k_rg > 0
+        свободный газ подвижен при S_g = 0. До правки configs/table_pvt с
+        k_rg[0] = 1e-3 считался без отказа: за 24 ч свободный газ в 19 ячейках из
+        20, хотя p выше p_b, ГФ 47 вместо 30 (vault/issues/debt-079/probes/
+        krg0_scan.out.txt). Ловит пропуск проверки и сравнение не с первой
+        строкой: 0.005 стоит только в ней, и текст называет S_g = 0.
+        """
+        config = _table_config_with_csv(
+            tmp_path, "relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 0, "0.0,1.0,0.005\n"))
+        with pytest.raises(ValueError, match=r"relperm\.csv: k_rg в первой строке "
+                                             r"\(S_g = 0\) = 0\.005, нужно 0"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_rounding_noise_at_zero_raises(self, tmp_path):
+        """k_rg = 1e-30 в первой строке — тоже отказ: сравнение строгое.
+
+        Решение пользователя 2026-10-15, как для k_ro (DEBT-073): допуск был бы ещё
+        одним эвристическим числом. Замер DEBT-079: уже k_rg[0] = 1e-4 переводит
+        недонасыщенные ячейки configs/table_pvt в двухфазные — малость значения не
+        делает ошибку малой. Ловит замену `> 0` допуском.
+        """
+        config = _table_config_with_csv(
+            tmp_path, "relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 0, "0.0,1.0,1e-30\n"))
+        with pytest.raises(ValueError,
+                           match=r"k_rg в первой строке \(S_g = 0\) = 1e-30, нужно 0"):
+            SimulatorFactory.from_config(config)
+
+    def test_relperm_critical_gas_saturation_accepted(self, tmp_path):
+        """Первая строка S_g = 0.05, k_rg = 0 — принимается: S_g[0] = 0 не требуется.
+
+        Ниже первой строки k_rg = 0 — критическая газонасыщенность, газ
+        неподвижен, модель корректна. SGOF требует таблицу от S_g = 0, но такое
+        требование отвергло бы верную таблицу (вариант 2 issue #127; пользователь
+        2026-10-15 выбрал вариант 1). Ловит проверку S_g[0] вместо k_rg[0].
+        """
+        config = _table_config_with_csv(
+            tmp_path, "relperm.csv", _with_row(RP_HEADER, TABLE_RP_ROWS, 0, "0.05,1.0,0.0\n"))
+        SimulatorFactory.from_config(config)
+
     # ── Последняя строка ОФП: k_ro = 0 (DEBT-073) ──
 
     def test_relperm_mobile_oil_at_edge_raises(self, tmp_path):
@@ -1065,7 +1110,7 @@ class TestCSVValueChecks:
             SimulatorFactory.from_config(config)
 
     def test_project_relperm_tables_accepted(self):
-        """Все таблицы ОФП проекта кончаются строкой k_ro = 0 — проверка DEBT-073 их принимает.
+        """Таблицы ОФП проекта проходят проверки первой (DEBT-079) и последней (DEBT-073) строки.
 
         На 2026-10-15 — 16 файлов: configs/table_pvt, 14 примеров (04, 05, 07–16,
         18), tests/data/bug016_example14. Без этого теста таблицу проекта, которую
@@ -1076,8 +1121,8 @@ class TestCSVValueChecks:
                  for path in sorted((root / folder).glob("*/relperm.csv"))]
         assert len(files) >= 16
         for path in files:
-            Sg, kro, _ = _read_relperm_csv(path)
-            _check_relperm_table(Sg, kro, path.name)
+            Sg, kro, krg = _read_relperm_csv(path)
+            _check_relperm_table(Sg, kro, krg, path.name)
 
     def test_oil_one_branch_raises(self, tmp_path):
         """Одна ветвь R_s = 30: до правки — «OIL_PVT needs >=2 Rs branches, got 1» (pvt.py:46)."""

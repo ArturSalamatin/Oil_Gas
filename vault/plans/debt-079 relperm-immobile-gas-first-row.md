@@ -6,7 +6,7 @@ date: 2026-10-15
 issue: DEBT-079
 github: 127
 branch: refactor/debt-079/relperm-immobile-gas-first-row
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-079
 audit:
   date: 2026-10-15

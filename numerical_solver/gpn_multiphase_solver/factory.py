@@ -262,8 +262,8 @@ def _check_gas_pvt_table(gas_rows: list[tuple], gas_pvt_file: str) -> None:
                 f"Строки — по возрастанию давления.")
 
 
-def _check_relperm_table(Sg: list, kro: list, relperm_file: str) -> None:
-    """Таблица ОФП: ≥ 2 строк, S_g строго растёт, k_ro последней строки = 0, иначе ValueError (DEBT-044, DEBT-073)."""
+def _check_relperm_table(Sg: list, kro: list, krg: list, relperm_file: str) -> None:
+    """Таблица ОФП: ≥ 2 строк, S_g растёт, k_rg[0] = k_ro[-1] = 0, иначе ValueError (DEBT-044, DEBT-079, DEBT-073)."""
     # Правила SGOF (OPM Flow Manual, табл. 8.165). Их же проверяет
     # TabulatedRelPerm (relperm.py:5) — без имени файла; k_ro(S_g), k_rg(S_g)
     # интерполируются np.interp по S_g. Пределы S_g, k_r в [0, 1] проверены
@@ -278,6 +278,32 @@ def _check_relperm_table(Sg: list, kro: list, relperm_file: str) -> None:
             raise ValueError(
                 f"{relperm_file}: S_g не растёт строго: {Sg[k]:g} после {Sg[k - 1]:g}. "
                 f"Строки — по возрастанию S_g.")
+    # DEBT-079: ниже первой строки TabulatedRelPerm берёт k_ro, k_rg из неё
+    # (np.interp), то есть k_rg(S_g = 0) = k_rg[0]. Подвижность газа прототип по
+    # признаку «газ есть» не обнуляет: при k_rg[0] > 0 свободный газ течёт из
+    # недонасыщенных ячеек (S_g = 0) в скважину и в соседние ячейки и приходит
+    # с контура питания вместе с недонасыщенной нефтью. Газовый фактор у забоя
+    # завышен на λ_g/λ_o при S_g = 0 — на PVT configs/table_pvt это 1.6e4-1.8e4
+    # м³ст/м³ст на единицу k_rg[0]. Замер (vault/issues/debt-079/probes/
+    # krg0_scan.out.txt): configs/table_pvt, k_rg[0] = 1e-4 — за 24 ч свободный
+    # газ в 19 ячейках из 20, хотя p всюду выше p_b; ГФ 31.7 вместо 30; пример
+    # 05 с первой строкой 0.05,0.9,0.005 — ГФ 97 вместо 50 за 6 ч, без записей
+    # журнала. k_rg = 0 при S_g = 0 — следствие определения скорости фильтрации
+    # (поток фазы обращается в ноль вместе с её количеством), а не эмпирика; для
+    # нефти то же условие — k_ro = 0 в последней строке (ниже). Первая строка с S_g > 0 и
+    # k_rg = 0 допустима: ниже неё газ неподвижен (критическая газонасыщенность).
+    # Сравнение строгое — решение пользователя 2026-10-15: уже k_rg[0] = 1e-4
+    # переводит недонасыщенные ячейки в двухфазные. Проверка — после числа строк
+    # (на пустой таблице krg[0] нет), первая строка — раньше последней.
+    if krg[0] > 0:
+        raise ValueError(
+            f"{relperm_file}: k_rg в первой строке (S_g = {Sg[0]:g}) = {krg[0]:g}, "
+            f"нужно 0. Ниже первой строки k_ro и k_rg берутся из неё: при k_rg > 0 "
+            f"свободный газ подвижен при S_g = 0 — течёт из ячеек, где его нет, и "
+            f"приходит с контура питания вместе с недонасыщенной нефтью. Таблица "
+            f"начинается строкой с k_rg = 0 — при S_g = 0 или при критической "
+            f"газонасыщенности.")
+
     # DEBT-073: выше последней строки TabulatedRelPerm берёт k_ro, k_rg из неё
     # (np.interp). При k_ro > 0 нефть подвижна при любой S_o: у забоя она
     # уходит, газ остаётся, и ничто не держит S_o >= 0. Пример 05 с таблицей
@@ -396,8 +422,9 @@ def create_relperm(config: SimulationConfig):
         # CSV → TabulatedRelPerm (прототип) → PrototypeRPAdapter
         Sg, kro, krg = _read_relperm_csv(config.config_dir / rc.file)
         # DEBT-044: число строк и рост S_g проверяет и TabulatedRelPerm, но без
-        # имени файла; k_ro = 0 в последней строке (DEBT-073) — только здесь
-        _check_relperm_table(Sg, kro, rc.file)
+        # имени файла; k_rg = 0 в первой строке (DEBT-079) и k_ro = 0 в последней
+        # (DEBT-073) — только здесь
+        _check_relperm_table(Sg, kro, krg, rc.file)
 
         from radial_blackoil.relperm import TabulatedRelPerm
         proto_rp = TabulatedRelPerm(Sg, kro, krg)
@@ -573,8 +600,9 @@ def _read_numeric_csv(csv_path: Path, columns: list[str], limits: dict,
     #     число (float() принимает nan и inf, их отсекает np.isfinite);
     #   - значение в пределах столбца limits[col] (DEBT-044): здесь известен
     #     номер строки файла, после разбора он теряется.
-    # Правила таблицы целиком (число строк, рост давления и S_g, ветви R_s)
-    # проверяют _check_pvto_branches, _check_gas_pvt_table, _check_relperm_table.
+    # Правила таблицы целиком (число строк, рост давления и S_g, ветви R_s,
+    # крайние строки ОФП) проверяют _check_pvto_branches, _check_gas_pvt_table,
+    # _check_relperm_table.
     if not csv_path.exists():
         raise ValueError(f"Файл {kind} не найден: {csv_path}")
     name = csv_path.name

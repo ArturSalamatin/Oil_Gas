@@ -62,8 +62,8 @@ class RockConfig:
 class PVTConfig:
     """Параметры PVT-модели."""
     model: str              # "standing" или "table"
-    rho_o_std: float        # плотность нефти при ст. условиях, кг/м³
-    rho_g_std: float        # плотность газа при ст. условиях, кг/м³
+    rho_o_std: float        # плотность нефти при ст. условиях, кг/м³; > 0 (_validate, DEBT-076)
+    rho_g_std: float        # плотность газа при ст. условиях, кг/м³; > 0 (_validate, DEBT-076)
     # Для Standing
     co_undersaturated: float = 0.0   # сжимаемость нефти при p > pb, 1/Па
     mu_o_undersaturated: str = "none"  # μ_o при p > pb: "none" | "beal" (FEAT-027)
@@ -548,6 +548,30 @@ def _validate(cfg: SimulationConfig) -> None:
             f"rock.compressibility = {r.compressibility} 1/Па < 0: сжимаемость "
             f"порового пространства c_r = (1/φ)·dφ/dp должна быть ≥ 0 — поровый "
             f"объём с ростом давления не уменьшается (вероятно, ошибка знака)")
+
+    # ── PVT: плотности при стандартных условиях (DEBT-076, P8 §5) ──
+    # ρ_o,ст, ρ_g,ст входят в энергию: ρ_o = (ρ_o,ст + R_s·ρ_g,ст)/B_o
+    # (eq:rho_oil), ρ_g = ρ_g,ст/B_g (pvt/base.py), массовые потоки фаз
+    # (fluxes.py) и интенсивность разгазирования ṁ (eq:mdot,
+    # energy/tridiag.py); у Стендинга — ещё и γ_API, γ_g корреляций
+    # (pvt/standing.py). Гидродинамика табличного пути их не видит
+    # (прототип — в стандартных объёмах), отказа там нет нигде. Замер до
+    # DEBT-076 (vault/issues/debt-076/probes/density_sign.out.txt; пример 18,
+    # 2 сут): ρ_o,ст = −850 и 0 — охлаждение забоя −3.02 и −1.16 К вместо
+    # −0.23 К, ρ_g,ст = −0.85 и 0 — нагрев +0.56 и +0.16 К, молча. На PVT
+    # Стендинга (density_sign_standing.out.txt, пример 03) — отказ фабрики
+    # без имени поля: «Начальное состояние пересыщено газом», при
+    # ρ_o,ст = 0 — ZeroDivisionError. Верхней границы и предупреждений о
+    # неправдоподобных значениях нет (решение пользователя); книга Excel
+    # требует того же > 0 (FEAT-033). NaN и inf сюда не доходят
+    # (_check_numeric_fields).
+    pc = cfg.pvt
+    for name, value, phase in (("pvt.rho_o_std", pc.rho_o_std, "нефти"),
+                               ("pvt.rho_g_std", pc.rho_g_std, "газа")):
+        if value <= 0:
+            raise ValueError(
+                f"{name} = {value} кг/м³: плотность {phase} при стандартных "
+                f"условиях (не пластовая) должна быть > 0")
 
     # ── Скважина: скин-фактор (DEBT-056, P8 §5) ──
     # Проводимость забойной грани прототипа (radial_blackoil/grid.py,

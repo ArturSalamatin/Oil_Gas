@@ -14,6 +14,7 @@
   и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056); при skin > 0 —
   скин не входит в уравнение энергии (BUG-029).
 - Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).
+- PVT: плотности при ст. у. pvt.rho_o_std, pvt.rho_g_std > 0 при любой модели PVT (DEBT-076).
 - Минимальный конфиг: только обязательные секции.
 - Мёртвые поля (DEBT-008): удалённые ключи — предупреждение и пропуск; grid.type,
   output.log_level, лимиты и допуски Ньютона — проверка; умолчания = умолчаниям прототипа.
@@ -408,6 +409,55 @@ class TestValidationRock:
         raw["rock"]["compressibility"] = c_r
         cfg = load_config(_write_json(tmp_path, raw))
         assert cfg.rock.compressibility == c_r
+
+
+class TestValidationPVT:
+    """Плотности при стандартных условиях > 0 (DEBT-076).
+
+    ρ_o,ст, ρ_g,ст входят в энергию (eq:rho_oil, eq:mdot), у Стендинга — и в
+    корреляции. Комментарии к случаям — замер до DEBT-076, 2 сут
+    (vault/issues/debt-076/probes/density_sign.out.txt, пример 18 — таблица
+    PVT; density_sign_standing.out.txt, пример 03 — Стендинг): load_config
+    принимал все случаи.
+    """
+
+    @pytest.mark.parametrize("model", ["standing", "table"])
+    @pytest.mark.parametrize("key, value", [
+        # таблица: охлаждение забоя −3.02 К вместо −0.23 К, молча;
+        # Стендинг: отказ фабрики «пересыщено газом», p_b(Rs0) = 138025 МПа
+        ("rho_o_std", -850.0),
+        # таблица: −1.16 К; Стендинг: ZeroDivisionError в _api_gravity
+        ("rho_o_std", 0.0),
+        # таблица: нагрев +0.56 К вместо охлаждения; Стендинг: «пересыщено газом»
+        ("rho_g_std", -0.85),
+        # таблица: нагрев +0.16 К; Стендинг: «пересыщено газом», p_b = inf
+        ("rho_g_std", 0.0),
+        # наименьшее по модулю отрицательное число: проверка по знаку, без допуска
+        ("rho_g_std", -5e-324),
+    ], ids=["rho_o_negative", "rho_o_zero", "rho_g_negative", "rho_g_zero", "rho_g_tiny"])
+    def test_nonpositive_density_rejected(self, tmp_path, key, value, model):
+        """ρ ≤ 0 → ValueError в load_config с полным именем поля — при любой модели PVT."""
+        raw = _minimal_raw()
+        raw["pvt"]["model"] = model
+        if model == "table":
+            # load_config CSV не читает (их читает фабрика): отказ — до файлов
+            raw["pvt"].update(oil_pvt_file="oil_pvt.csv", gas_pvt_file="gas_pvt.csv")
+        raw["pvt"][key] = value
+        with pytest.raises(ValueError, match=f"pvt.{key}") as exc:
+            load_config(_write_json(tmp_path, raw))
+        # значение — как в конфиге, смысл поля — чтобы не спутать с пластовой
+        assert f"= {value} кг/м³" in str(exc.value)
+        assert "при стандартных условиях" in str(exc.value)
+
+    @pytest.mark.parametrize("rho_o, rho_g", [
+        (850.0, 0.85), (800.0, 0.727), (800.0, 1.014),
+    ], ids=["examples_01_16_18", "examples_19_21", "examples_17_20"])
+    def test_project_densities_accepted(self, tmp_path, rho_o, rho_g):
+        """Плотности всех 31 конфига проекта проходят: верхней границы и порогов нет."""
+        raw = _minimal_raw()
+        raw["pvt"].update(rho_o_std=rho_o, rho_g_std=rho_g)
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert (cfg.pvt.rho_o_std, cfg.pvt.rho_g_std) == (rho_o, rho_g)
 
 
 class TestValidationInitial:

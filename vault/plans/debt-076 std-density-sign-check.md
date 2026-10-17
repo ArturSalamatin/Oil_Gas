@@ -8,7 +8,8 @@ github: 129
 branch: refactor/debt-076/std-density-sign-check
 model_level: null
 status: реализован
-worktree: .worktrees/debt-076
+worktree: .worktrees/debt-076; удалён после влития
+merged: f6e9aa0 (2026-10-17)
 audit:
   date: 2026-10-17
   found: 10

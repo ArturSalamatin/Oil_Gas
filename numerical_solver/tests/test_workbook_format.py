@@ -11,6 +11,7 @@
 
 import dataclasses
 import json
+import re
 
 import numpy as np
 import pytest
@@ -31,6 +32,8 @@ CONFIG_FIELDS = {f"{s}.{f.name}" for s, cls in SECTIONS.items()
                  for f in dataclasses.fields(cls)}
 PARAMS = [p for sheet in wf.PARAM_SHEETS.values() for p in sheet]
 COLUMNS = [c for sheet in wf.TABLE_SHEETS.values() for c in sheet]
+# Повелительное наклонение в русском тексте книги: «меняйте», «подберите»
+IMPERATIVE = re.compile(r"[а-яё]+(?:йте|ите)\b", re.IGNORECASE)
 
 
 def _demo(key):
@@ -161,11 +164,14 @@ def test_comments_in_two_languages():
     """Comment — по-английски, «Комментарии» — по-русски, у каждой строки (решение 66).
 
     Без минуса U+2212 и тире: в формулах — дефис-минус ASCII (замечание 12 пользователя).
+    Русский текст описывает, а не велит: «добавляются», не «добавляйте» (замечание
+    пользователя 2026-10-17) — повелительное наклонение ловит окончание -йте/-ите.
     """
     for p in PARAMS:
         assert p.comment and p.comment_ru, p.key
         assert not any("а" <= ch.lower() <= "я" for ch in p.comment), p.key
         assert any("а" <= ch.lower() <= "я" for ch in p.comment_ru), p.key
+        assert not IMPERATIVE.search(p.comment_ru), (p.key, IMPERATIVE.findall(p.comment_ru))
         for text in (p.comment, p.comment_ru):
             assert not {"−", "–", "—"} & set(text), (p.key, text)
 

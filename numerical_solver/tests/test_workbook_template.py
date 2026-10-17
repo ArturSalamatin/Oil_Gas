@@ -20,6 +20,7 @@ from gpn_multiphase_solver.io.workbook_template import (
     COMMENTS, DEMO_TABLES, excel_rule, limit_text, write_template)
 
 from ._xlsx import read_book
+from .test_workbook_format import IMPERATIVE
 
 SOLVER = Path(__file__).resolve().parents[1]             # numerical_solver/
 GENERATOR_BOOK = SOLVER / "configs" / "INPUT_TEMPLATE_v1.xlsx"
@@ -119,6 +120,8 @@ def test_comments_sheet(book):
     assert [(v[f"A{r}"], v[f"B{r}"], v[f"C{r}"]) for r in rows] == list(COMMENTS)
     for _, text, text_ru in COMMENTS:
         assert any("а" <= ch.lower() <= "я" for ch in text_ru), text_ru
+        # Описательная форма, не повелительная: «добавляются», не «добавляйте»
+        assert not IMPERATIVE.search(text_ru), IMPERATIVE.findall(text_ru)
         assert not {"−", "–", "—"} & set(text + text_ru), text
     assert any("gpn-solver template" in text for _, text, _ in COMMENTS)
     assert not any("run_prototype" in str(x) for x in v.values())

@@ -135,8 +135,8 @@ COMMENTS = (
     ("Fill in",
      "On MODEL, THERMAL and NUMERICS change only the Value column. Every row needs a value, "
      "even if it equals the program default; rows are not added or removed.",
-     "На листах MODEL, THERMAL и NUMERICS меняйте только столбец Value. Значение нужно в "
-     "каждой строке, даже если оно совпадает с принятым в программе по умолчанию; строки "
+     "На листах MODEL, THERMAL и NUMERICS меняется только столбец Value. Значение задаётся "
+     "в каждой строке, даже если оно совпадает с принятым в программе по умолчанию; строки "
      "не добавляются и не удаляются."),
     ("Protection",
      "MODEL, THERMAL, NUMERICS and RELPERM are protected without a password. Locked: Key, "
@@ -150,7 +150,7 @@ COMMENTS = (
      "read; convert your data to these units. bar(a): absolute pressure in bar. Sm3: cubic "
      "metre at standard conditions; rm3: cubic metre at reservoir conditions.",
      "Единицы измерения заданы для каждой строки и каждого столбца таблиц и проверяются при "
-     "чтении книги; данные нужно перевести в эти единицы. bar(a): абсолютное давление в "
+     "чтении книги; данные приводятся к этим единицам. bar(a): абсолютное давление в "
      "барах. Sm3: кубический метр при стандартных условиях; rm3: кубический метр в "
      "пластовых условиях."),
     ("Excel checks",
@@ -199,8 +199,8 @@ COMMENTS = (
      "kro = 0; these cells are locked. Add or remove intermediate points by inserting or "
      "deleting worksheet rows between the first and the last row.",
      "Sg возрастает от первой строки, Sg = 0 и krg = 0, до последней, Sg = 1 и kro = 0; эти "
-     "ячейки заблокированы. Промежуточные точки добавляйте и удаляйте вставкой и удалением "
-     "строк листа между первой и последней строкой."),
+     "ячейки заблокированы. Промежуточные точки добавляются и удаляются вставкой и "
+     "удалением строк листа между первой и последней строкой."),
 )
 
 

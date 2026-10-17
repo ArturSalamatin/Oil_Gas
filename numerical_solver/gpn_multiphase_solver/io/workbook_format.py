@@ -92,7 +92,7 @@ class Column:
 MODEL = (
     Param("format_version", "Format version", "-", FORMAT_VERSION,
           "Workbook format; written by gpn-solver template, do not change.",
-          "Версия формата книги. Её записывает gpn-solver template, менять нельзя.",
+          "Версия формата книги. Её записывает gpn-solver template, значение не меняется.",
           fixed=True),
     Param("geometry.r_well", "Wellbore radius (rw)", "m", 0.1,
           "Inner boundary of the radial model.",
@@ -169,7 +169,7 @@ THERMAL = (
           "λeff = (1 - φi)·λma + φi·(So·λo + Sg·λg) is an upper (parallel) bound: "
           "choose λma so that λeff matches the measured conductivity of the saturated rock.",
           "Эффективная теплопроводность считается как λeff = (1 - φi)·λma + "
-          "φi·(So·λo + Sg·λg); такое осреднение даёт оценку сверху. Подбирайте λma так, "
+          "φi·(So·λo + Sg·λg); такое осреднение даёт оценку сверху. λma подбирается так, "
           "чтобы λeff совпала с измеренной теплопроводностью насыщенной породы.",
           NON_NEGATIVE),
     Param("rock.lambda_oil", "Oil phase thermal conductivity (λo)", "W/(m*K)", 0.13,

@@ -8,7 +8,8 @@ github: 128
 branch: feat/feat-033/workbook-input-format
 model_level: null
 status: реализован
-worktree: .worktrees/feat-033
+worktree: .worktrees/feat-033; удалён после влития
+merged: 7036854 (2026-10-17)
 audit:
   date: 2026-10-17
   found: 10

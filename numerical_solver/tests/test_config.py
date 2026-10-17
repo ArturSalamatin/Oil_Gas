@@ -15,6 +15,7 @@
   скин не входит в уравнение энергии (BUG-029).
 - Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).
 - PVT: плотности при ст. у. pvt.rho_o_std, pvt.rho_g_std > 0 при любой модели PVT (DEBT-076).
+- PVT: сжимаемость недонасыщенной нефти pvt.co_undersaturated ≥ 0 при любой модели (DEBT-078).
 - Минимальный конфиг: только обязательные секции.
 - Мёртвые поля (DEBT-008): удалённые ключи — предупреждение и пропуск; grid.type,
   output.log_level, лимиты и допуски Ньютона — проверка; умолчания = умолчаниям прототипа.
@@ -458,6 +459,62 @@ class TestValidationPVT:
         raw["pvt"].update(rho_o_std=rho_o, rho_g_std=rho_g)
         cfg = load_config(_write_json(tmp_path, raw))
         assert (cfg.pvt.rho_o_std, cfg.pvt.rho_g_std) == (rho_o, rho_g)
+
+
+class TestValidationOilCompressibility:
+    """pvt.co_undersaturated ≥ 0 (DEBT-078).
+
+    Отдельно от TestValidationPVT (плотности, DEBT-076): другая величина и свой
+    замер. Имя другое: второй одноимённый класс в модуле молча заменил бы первый.
+    """
+
+    @pytest.mark.parametrize("c_o", [
+        # при c_r = 0 C_p < 0 в недонасыщенной зоне (абзац под eq:c_ot): расчёт
+        # шёл молча с одним предупреждением фабрики (BUG-019) при dt_integration
+        # 3600 и 1800 с, при 900 с — отказ шага; B_o выше p_b растёт с давлением
+        -1e-9,
+        # значение примеров 17, 20 с обратным знаком: отказ после дробления шага
+        # до dt/512 с советом увеличить max_retries, при всех трёх шагах
+        -3.3e-9,
+        # наименьшее по модулю отрицательное число: проверка — по знаку, без допуска
+        -5e-324,
+    ], ids=["step_dependent", "sign_error_examples_17_20", "tiny"])
+    def test_negative_co_rejected(self, tmp_path, c_o):
+        """c_o < 0 → ValueError с полным именем поля и значением (DEBT-078).
+
+        c_o = −(1/B_o)·∂B_o/∂p при постоянном R_s (eq:co_cg) ≥ 0: при постоянном
+        составе объём жидкости с ростом давления не растёт. Комментарии к случаям —
+        замер до DEBT-078 на примере 03 (Стендинг, c_r = 0), 1 сут
+        (vault/issues/debt-078/probes/audit1_dt_dependence.out.txt).
+        """
+        raw = _minimal_raw()
+        raw["pvt"]["co_undersaturated"] = c_o
+        with pytest.raises(ValueError, match="pvt.co_undersaturated") as exc:
+            load_config(_write_json(tmp_path, raw))
+        # значение — как в конфиге: по нему пользователь найдёт ошибку
+        assert f"= {c_o} 1/Па" in str(exc.value)
+
+    def test_negative_co_rejected_for_table(self, tmp_path):
+        """При pvt.model = "table" c_o < 0 отвергает _validate — с сообщением о знаке.
+
+        Без проверки знака отказ дала бы только фабрика (create_pvt: c_o ≠ 0 при
+        таблице) — позже и без слова о знаке. CSV-файлы не нужны: load_config
+        их не читает.
+        """
+        raw = _minimal_raw()
+        raw["pvt"] = {"model": "table", "rho_o_std": 850.0, "rho_g_std": 0.85,
+                      "oil_pvt_file": "oil_pvt.csv", "gas_pvt_file": "gas_pvt.csv",
+                      "co_undersaturated": -1e-9}
+        with pytest.raises(ValueError, match="должна быть ≥ 0"):
+            load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("c_o", [0.0, 3.3e-9], ids=["zero_default", "examples_17_20"])
+    def test_nonnegative_co_accepted(self, tmp_path, c_o):
+        """c_o = 0 и 3.3e-9 1/Па проходят: умолчание и значение примеров 17, 20."""
+        raw = _minimal_raw()
+        raw["pvt"]["co_undersaturated"] = c_o
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.pvt.co_undersaturated == c_o
 
 
 class TestValidationInitial:

@@ -121,6 +121,23 @@ class TestFactoryStandingHydro:
         with pytest.raises(ValueError, match="mu_o_undersaturated"):
             create_pvt(config)
 
+    def test_co_with_table_raises(self):
+        """co_undersaturated ≠ 0 при табличном PVT — ValueError (DEBT-078).
+
+        Выше p_b у таблицы B_o задают её недонасыщенные ветви, c_o читает только
+        StandingFullPVT. До DEBT-078 значение пропускалось молча: пример 04 с
+        c_o = 3.3e-9 1/Па давал B_o, побитово равный c_o = 0
+        (vault/issues/debt-078/probes/co_undersaturated.out.txt). c_o = 0 у
+        табличных конфигов (умолчание) проходит — это проверяют остальные тесты
+        на TABLE_PVT.
+        """
+        config = load_config(TABLE_PVT)
+        config.pvt.co_undersaturated = 3.3e-9
+        with pytest.raises(ValueError, match="co_undersaturated") as exc:
+            create_pvt(config)
+        # значение — как в конфиге: по нему пользователь найдёт поле
+        assert "= 3.3e-09 1/Па" in str(exc.value)
+
 
 class TestStandingDeepDrawdownDenseGrid:
     """Сценарий DEBT-007: пример 03, N = 75, p_wf = 6 МПа на всех интервалах.

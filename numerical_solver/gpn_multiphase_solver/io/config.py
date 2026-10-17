@@ -64,8 +64,9 @@ class PVTConfig:
     model: str              # "standing" или "table"
     rho_o_std: float        # плотность нефти при ст. условиях, кг/м³; > 0 (_validate, DEBT-076)
     rho_g_std: float        # плотность газа при ст. условиях, кг/м³; > 0 (_validate, DEBT-076)
-    # Для Standing
-    co_undersaturated: float = 0.0   # сжимаемость нефти при p > pb, 1/Па
+    # Для Standing. При model = "table" выше p_b B_o и μ_o задаёт таблица:
+    # c_o ≠ 0 или μ_o ≠ "none" — отказ create_pvt (factory.py; DEBT-078, FEAT-027)
+    co_undersaturated: float = 0.0   # c_o ≥ 0 (_validate, DEBT-078) при p > pb, 1/Па
     mu_o_undersaturated: str = "none"  # μ_o при p > pb: "none" | "beal" (FEAT-027)
     # Для табличного PVT — имена CSV-файлов (относительно JSON)
     oil_pvt_file: Optional[str] = None
@@ -549,7 +550,7 @@ def _validate(cfg: SimulationConfig) -> None:
             f"порового пространства c_r = (1/φ)·dφ/dp должна быть ≥ 0 — поровый "
             f"объём с ростом давления не уменьшается (вероятно, ошибка знака)")
 
-    # ── PVT: плотности при стандартных условиях (DEBT-076, P8 §5) ──
+    # ── PVT: плотности при ст. у. (DEBT-076), сжимаемость нефти (DEBT-078); P8 §5 ──
     # ρ_o,ст, ρ_g,ст входят в энергию: ρ_o = (ρ_o,ст + R_s·ρ_g,ст)/B_o
     # (eq:rho_oil), ρ_g = ρ_g,ст/B_g (pvt/base.py), массовые потоки фаз
     # (fluxes.py) и интенсивность разгазирования ṁ (eq:mdot,
@@ -572,6 +573,30 @@ def _validate(cfg: SimulationConfig) -> None:
             raise ValueError(
                 f"{name} = {value} кг/м³: плотность {phase} при стандартных "
                 f"условиях (не пластовая) должна быть > 0")
+
+    # Сжимаемость недонасыщенной нефти c_o = −(1/B_o)·∂B_o/∂p при постоянном
+    # R_s ≥ 0 (DEBT-078, eq:co_cg problem_statement.tex): при постоянном составе
+    # объём жидкости с ростом давления не растёт — условие механической
+    # устойчивости (∂p/∂V)_T < 0; c_o < 0 — ошибка знака. В недонасыщенной зоне
+    # C_p = φ(c_r + c_o)/B_g (абзац под eq:c_ot; c_r проверен выше, DEBT-068):
+    # при c_o < −c_r C_p < 0 — задача некорректна, неявный шаг вырождается на
+    # последовательности Δt. Проверка строже: c_o < 0 отвергается и при
+    # c_r > |c_o|. Замер до DEBT-078 (vault/issues/debt-078/probes/
+    # audit1_dt_dependence.out.txt; пример 03, Стендинг, c_r = 0, 1 сут):
+    # c_o = −1e-9 — при dt_integration 3600 и 1800 с расчёт молча (одно
+    # предупреждение фабрики, BUG-019), при 900 с — отказ после дробления шага
+    # до dt/512 с советом увеличить max_retries; −3.3e-9 (значение примеров
+    # 17, 20 с обратным знаком) — отказ при всех трёх шагах. Проверка — при
+    # любой модели PVT: при таблице c_o ≠ 0 отвергает и create_pvt, но позже и
+    # без слова о знаке; отрицательная c_o табличных данных — свойство таблицы,
+    # о ней предупреждает фабрика (_warn_negative_compressibility, BUG-019).
+    # Верхней границы нет: ошибку единиц (1e-5 1/Па вместо 1e-9) проверка не
+    # ловит (vault/issues/debt-078/probes/co_magnitude.out.txt).
+    if pc.co_undersaturated < 0:
+        raise ValueError(
+            f"pvt.co_undersaturated = {pc.co_undersaturated} 1/Па < 0: сжимаемость "
+            f"недонасыщенной нефти c_o = −(1/B_o)·∂B_o/∂p должна быть ≥ 0 — объём "
+            f"нефти с ростом давления не растёт (вероятно, ошибка знака)")
 
     # ── Скважина: скин-фактор (DEBT-056, P8 §5) ──
     # Проводимость забойной грани прототипа (radial_blackoil/grid.py,

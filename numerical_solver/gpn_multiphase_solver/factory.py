@@ -129,6 +129,17 @@ def create_pvt(config: SimulationConfig):
             raise ValueError(
                 f"mu_o_undersaturated = {pc.mu_o_undersaturated!r} — только для "
                 f"model = 'standing'; у табличного PVT вязкость выше p_b задаёт таблица.")
+        # То же для B_o (DEBT-078): выше p_b его задают недонасыщенные ветви
+        # PVTO, c_o читает только StandingFullPVT.Bo. До DEBT-078 значение
+        # пропускалось молча: пример 04 с c_o = 3.3e-9 1/Па давал B_o, побитово
+        # равный c_o = 0 (vault/issues/debt-078/probes/co_undersaturated.out.txt).
+        # Явный 0 проходит: от умолчания PVTConfig он неотличим и ничего не
+        # меняет. Знак c_o при загрузке конфига проверяет _validate (io/config.py).
+        if pc.co_undersaturated != 0.0:
+            raise ValueError(
+                f"co_undersaturated = {pc.co_undersaturated} 1/Па — только для "
+                f"model = 'standing'; у табличного PVT B_o выше p_b задают "
+                f"недонасыщенные ветви таблицы. Уберите поле из секции pvt.")
         # CSV → BlackOilPVT (прототип) → PrototypePVTAdapter → TableFullPVT
         oil_rows = _read_oil_pvt_csv(config.config_dir / pc.oil_pvt_file)
         gas_rows = _read_gas_pvt_csv(config.config_dir / pc.gas_pvt_file)

@@ -1,0 +1,32 @@
+﻿1. Ловушки XlsxWriter 3.2.9
+    <c r="A1"><f>1/3</f><v>0</v></c>
+    <c r="A2" t="e"><f>1/0</f><v>#DIV/0!</v></c>
+    <c r="A3"><f>""</f><v></v></c>
+    <c r="A4" t="str"><f>"x"</f><v>abc</v></c>
+    <c r="A5" t="b"><f>1&gt;0</f><v>1</v></c>
+    <c r="A6" t="b"><v>1</v></c>
+    <c r="A7" t="b"><v>0</v></c>
+    <c r="A8" s="1"><v>46143</v></c>
+    <c r="A9" s="2"><v>46143</v></c>
+    <c r="A10" s="3"><v>46143.5</v></c>
+    <c r="A11" t="s"><v>0</v></c>
+    <c r="A12" t="s"><v>1</v></c>
+    <c r="A13" t="s"><v>2</v></c>
+    <c r="A14"><v>1.045146316678195</v></c>
+    <c r="A15" t="s"><v>3</v></c>
+    <c r="A16" s="1"/>
+    <c r="A17"><f>1/3</f><v>0.333</v></c>
+    <c r="A18"><f t="array" ref="A18">SUM(A9:A9)</f><v>46143</v></c>
+    <c r="C20"><v>7</v></c>
+   workbook: ['<sheet name="T" sheetId="1" r:id="rId1"/>', '<sheet name="H" sheetId="2" state="hidden" r:id="rId2"/>', '<calcPr calcId="124519" fullCalcOnLoad="1"/>']
+   numFmts: ['<numFmt numFmtId="164" formatCode="dd.mm.yyyy"/>']
+   cellXfs: ['0', '14', '16', '164']
+   sharedStrings: <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="4" uniqueCount="4"><si><t>1,5</t></si><si><t xml:space="preserve">  BHP </t></si><si><t>a_x0001_b</t></si><si><r><t>ab</t></r><r><rPr><b/><sz val="11"/><color theme="1"/><rFont val="Calibri"/><family val="2"/><scheme val="minor"/></rPr><t>cd</t></r></si></sst>
+2. constant_memory
+    <c r="A1" t="inlineStr"><is><t>inline?</t></is></c>
+    sharedStrings.xml в книге: False
+3. Пути частей
+    ("[('', '/xl/workbook.xml')]", "['/xl/worksheets/sheet#.xml']", "['/xl/styles.xml']") 23 ['INPUT_TEMPLATE.xlsx', 'Prototype_1.0.3_FINAL_PRODUCTION_REGRESSION_T00_T11.xlsx']
+    ("[('', 'xl/workbook.xml')]", "['worksheets/sheet#.xml']", "['styles.xml']") 23 ['T00_IMEX1b_FI_profiles.xlsx', 'T00_IMEX1b_FI_rates.xlsx']

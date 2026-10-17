@@ -1,0 +1,39 @@
+== черновик есть; модуль: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-034\probes\plan_tree\gpn_multiphase_solver\io\xlsx_reader.py 
+pytest:
+........................................................................ [ 46%]
+........................................................................ [ 93%]
+......ss..                                                               [100%]
+=========================== short test summary info ===========================
+SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+152 passed, 2 skipped in 4.21s
+
+собрано новых: 140 tests collected in 0.18s
+время:
+....................................................................     [100%]
+============================= slowest 3 durations =============================
+0.54s call     tests/test_xlsx_reader.py::test_corpus_matches_xlsxio[INPUT_TEMPLATE.xlsx]
+0.10s call     tests/test_xlsx_reader.py::test_bad_attribute_is_workbook_error[xl/worksheets/sheet1.xml-<c r="C21"><v>7</v></c>-<c r="C21" s="x"><v>7</v></c>-T!C21: \u0441\u0442\u0438\u043b\u044c]
+0.08s call     tests/test_xlsx_reader.py::test_broken_sheet_xml
+140 passed in 2.59s
+порча модуля (ждём failed в каждой строке):
+  fullCalcOnLoad не учитывается: 1 failed, 139 passed in 2.69s
+  экранированные буквы — дата: 2 failed, 138 passed in 2.90s
+  фонетика <rPh> читается: 1 failed, 139 passed in 2.65s
+  numFmt из <dxf>: 1 failed, 139 passed in 2.71s
+  _xHHHH_ не раскодируется: 2 failed, 138 passed in 2.67s
+  <v></v> — число: 6 failed, 103 passed, 31 errors in 4.51s
+  логическое — число 1.0: 4 failed, 136 passed in 2.69s
+  Strict не распознаётся: 1 failed, 139 passed in 2.67s
+  цель «xl/…» от корня не читается: 1 failed, 139 passed in 2.66s
+  стилизованные пустые хранятся: 25 failed, 115 passed in 3.15s
+  стиль ячейки — голый int() (аудит 2): 1 failed, 139 passed in 2.65s
+== черновик нет; модуль: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-034\probes\plan_tree\gpn_multiphase_solver\io\xlsx_reader.py 
+pytest:
+........................................................................ [ 46%]
+..................................................................s..... [ 93%]
+......ss..                                                               [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_xlsx_reader.py:476: черновик руководителя вне git (решение 11)
+SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+151 passed, 3 skipped in 3.54s
+

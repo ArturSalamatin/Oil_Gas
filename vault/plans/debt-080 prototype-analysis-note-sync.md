@@ -7,8 +7,9 @@ issue: DEBT-080
 github: 131
 branch: refactor/debt-080/prototype-analysis-note-sync
 status: реализован
-worktree: .worktrees/debt-080
+worktree: .worktrees/debt-080; удалён после влития
 implemented: 2026-10-17 (f0c58c0; 2116 passed, полный 620 с)
+merged: ecb4c36 (2026-10-17)
 audit:
   date: 2026-10-17
   found: 7

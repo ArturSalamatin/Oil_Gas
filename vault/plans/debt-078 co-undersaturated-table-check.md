@@ -7,7 +7,8 @@ issue: DEBT-078
 github: 130
 branch: refactor/debt-078/co-undersaturated-table-check
 status: реализован
-worktree: .worktrees/debt-078
+worktree: .worktrees/debt-078; удалён после влития
+merged: 9983841 (2026-10-17)
 audit:
   date: 2026-10-17
   round: 2

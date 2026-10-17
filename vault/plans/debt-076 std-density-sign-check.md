@@ -7,7 +7,7 @@ issue: DEBT-076
 github: 129
 branch: refactor/debt-076/std-density-sign-check
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-076
 audit:
   date: 2026-10-17

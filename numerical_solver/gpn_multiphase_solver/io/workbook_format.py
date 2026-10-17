@@ -122,7 +122,7 @@ MODEL = (
           "φ(p) = φi·exp(cr·(p - pi)); 0: incompressible pore volume.",
           "Пористость меняется с давлением как φ(p) = φi·exp(cr·(p - pi)); при нуле "
           "поровый объём не сжимается.", NON_NEGATIVE),
-    # У программы предела плотностей нет (DEBT-076); книга требует > 0 (решение 54)
+    # > 0 — как у _validate (DEBT-076); книга требовала > 0 и до него (решение 54)
     Param("pvt.rho_o_std", "Oil density at standard conditions (ρo,sc)", "kg/m3", 800.0,
           "Stock-tank oil; used by the energy equation.",
           "Дегазированная нефть при стандартных условиях; нужна уравнению энергии.",

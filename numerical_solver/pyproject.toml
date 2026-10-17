@@ -11,6 +11,9 @@ dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "matplotlib>=3.7",
+    # Шаблон книги ввода Excel (gpn-solver template, FEAT-033). Граница — как
+    # у прототипа (его pyproject.toml): в общем окружении одна версия.
+    "XlsxWriter>=3.2",
     # Прототип гидродинамики (HydroSolverPrototype/Prototype_1.0.3) — отдельный
     # дистрибутив в этом же репозитории (DEBT-059). Ровно эта версия: с нашими
     # правками прототипа совместима только она (тест test_packaging.py). Метка

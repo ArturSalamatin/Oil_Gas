@@ -19,6 +19,7 @@ class Sheet:
     """Лист: значения (адрес → float | str), стили ячеек, проверки данных, защита."""
     values: dict = field(default_factory=dict)
     styles: dict = field(default_factory=dict)       # адрес → индекс стиля cellXfs
+    row_styles: dict = field(default_factory=dict)   # номер строки → стиль строки (customFormat)
     validations: list = field(default_factory=list)  # атрибуты <dataValidation> + formula1
     protection: dict | None = None                   # атрибуты <sheetProtection>; None — нет
 
@@ -32,6 +33,11 @@ class Book:
     def locked(self, sheet: str, addr: str) -> bool:
         """Заблокирована ли ячейка; ячейка без стиля — стиль 0, заблокирована (как в Excel)."""
         return self.sheets[sheet].styles.get(addr, 0) not in self.unlocked
+
+    def row_unlocked(self, sheet: str, row: int) -> bool:
+        """Разблокирована ли строка целиком — формат строки без блокировки."""
+        style = self.sheets[sheet].row_styles.get(row)
+        return style is not None and style in self.unlocked
 
 
 def read_book(path: Path) -> Book:
@@ -54,6 +60,10 @@ def read_book(path: Path) -> Book:
             target = rels[s.get(f"{_R}id")].lstrip("/")
             root = ET.fromstring(z.read(target if target.startswith("xl/") else "xl/" + target))
             sh = Sheet()
+            for row in root.iter(f"{_M}row"):
+                # Формат всей строки: им Excel оформляет и пустые ячейки строки
+                if row.get("customFormat") == "1":
+                    sh.row_styles[int(row.get("r"))] = int(row.get("s", "0"))
             for c in root.iter(f"{_M}c"):
                 sh.styles[c.get("r")] = int(c.get("s", "0"))
                 v = c.find(f"{_M}v")

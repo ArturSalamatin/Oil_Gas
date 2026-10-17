@@ -137,13 +137,46 @@ def test_limit_above_key():
     assert lim.accepts(0.10000001, above=0.1)
 
 
-def test_param_accepts_none_and_choices():
-    """none — только в строке с none_allowed; список — точное совпадение."""
+def test_fixed_params_accept_only_their_value():
+    """Постоянные строки (решение 65): версия 1, якобиан grouped, решатель СЛАУ sparse."""
     by_key = {p.key: p for p in PARAMS}
-    assert by_key["time.dt_after_control_change"].accepts("none")
-    assert not by_key["time.dt_integration"].accepts("none")
+    assert {p.key for p in PARAMS if p.fixed} == {
+        "format_version", "numerics.jacobian_mode", "numerics.linear_solver"}
+    assert by_key["format_version"].accepts(1.0) and not by_key["format_version"].accepts(2.0)
     assert by_key["numerics.jacobian_mode"].accepts("grouped")
-    assert not by_key["numerics.jacobian_mode"].accepts("Grouped")
+    assert not by_key["numerics.jacobian_mode"].accepts("reference")
+    assert by_key["numerics.linear_solver"].accepts("sparse")
+    assert not by_key["numerics.linear_solver"].accepts("dense")
+
+
+def test_no_none_in_workbook():
+    """Слова «выключено» в книге нет (решение 64): поля с null в JSON требуют число > 0."""
+    by_key = {p.key: p for p in PARAMS}
+    for key in ("time.dt_after_control_change", "numerics.newton_cell_tol"):
+        assert not by_key[key].accepts("none"), key
+        assert by_key[key].limit == wf.POSITIVE, key
+
+
+def test_comments_in_two_languages():
+    """Comment — по-английски, «Комментарии» — по-русски, у каждой строки (решение 66).
+
+    Без минуса U+2212 и тире: в формулах — дефис-минус ASCII (замечание 12 пользователя).
+    """
+    for p in PARAMS:
+        assert p.comment and p.comment_ru, p.key
+        assert not any("а" <= ch.lower() <= "я" for ch in p.comment), p.key
+        assert any("а" <= ch.lower() <= "я" for ch in p.comment_ru), p.key
+        for text in (p.comment, p.comment_ru):
+            assert not {"−", "–", "—"} & set(text), (p.key, text)
+
+
+def test_relperm_fixed_rows():
+    """Обязательные строки RELPERM (решение 68): S_g = 0 с k_rg = 0, S_g = 1 с k_ro = 0."""
+    assert wf.RELPERM_FIRST_ROW == (0.0, None, 0.0)
+    assert wf.RELPERM_LAST_ROW == (1.0, 0.0, None)
+    for pattern in (wf.RELPERM_FIRST_ROW, wf.RELPERM_LAST_ROW):
+        for col, v in zip(wf.RELPERM, pattern):
+            assert v is None or col.limit.accepts(v)
 
 
 def test_demo_values_accepted():
@@ -197,13 +230,11 @@ def _probes(p, above):
         vals |= {above * 0.5, above, above * (1 + 1e-9), above * 2}
     if lim.integer:
         vals = {float(round(v)) for v in vals}
-    return sorted(vals) + ([wf.NONE_WORD] if p.none_allowed else [])
+    return sorted(vals)
 
 
 def _to_si(p, v):
     """Значение ячейки → значение поля JSON, как его запишет перевод."""
-    if v == wf.NONE_WORD:
-        return None
     if p.limit.integer:
         return int(v)
     return wf.UNIT_TO_SI[p.unit](v)
@@ -213,9 +244,10 @@ def test_excel_not_stricter_than_program(tmp_path):
     """Где программа принимает, а Excel отвергает, — только плотности при ст. у. (DEBT-076)."""
     by_key = {p.key: p for p in PARAMS}
     stricter = set()
-    # Прямые поля конфига (списки проверяет конструктор прототипа, не _validate)
+    # Прямые поля конфига. Постоянные строки (якобиан, решатель СЛАУ) книга
+    # намеренно строже JSON — решение 65; их значения проверяет конструктор прототипа
     for p in PARAMS:
-        if p.choices or p.key not in CONFIG_FIELDS:
+        if p.fixed or p.key not in CONFIG_FIELDS:
             continue
         above = _demo(p.limit.above_key) if p.limit.above_key else None
         for v in _probes(p, above):

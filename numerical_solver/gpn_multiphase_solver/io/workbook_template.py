@@ -117,42 +117,90 @@ DEMO_RELPERM = (
     (0.7, 0.0342935528120713, 0.531138545953361),
     (0.8, 0.00381039475689681, 0.704282883706752),
     (0.85, 0.0, 0.8),
+    # Обязательная последняя строка S_g = 1 (решение 68). k_rg — как при 0.85:
+    # выше последней строки таблицы фабрика и так брала её значения, расчёт тот же
+    (1.0, 0.0, 0.8),
 )
 DEMO_TABLES = {"SCHEDULE": DEMO_SCHEDULE, "OIL_PVT": DEMO_OIL_PVT,
                "GAS_PVT": DEMO_GAS_PVT, "RELPERM": DEMO_RELPERM}
 
-# Лист COMMENTS: тема → текст. Строку «Run» добавит FEAT-036 (решение 62)
+# Лист COMMENTS: тема, текст по-английски, текст по-русски (решение 67).
+# Строку «Run» добавит FEAT-036 (решение 62)
 COMMENTS = (
-    ("Template", "gpn-solver template my_case.xlsx writes this workbook with demonstration "
-                 "values. The command never overwrites an existing file."),
-    ("Fill in", "On MODEL, THERMAL and NUMERICS change only the Value column. Every row needs "
-                "a value, even if it equals the program default; rows are not added or "
-                "removed. Write none where the Comment allows it to switch an option off."),
-    ("Protection", "MODEL, THERMAL and NUMERICS are protected without a password: Key, Unit "
-                   "and the format version are locked. Review > Unprotect Sheet removes the "
-                   "protection."),
-    ("Units", "Units are fixed for every row and table column and are checked when the "
-              "workbook is read. Convert your data to these units."),
-    ("Excel checks", "Numeric cells carry Excel data validation with the program limits. "
-                     "Pasted values and cleared cells bypass it; the program checks every "
-                     "value again."),
-    ("SCHEDULE", "Row k sets the well control on [t_k, t_k+1]. The first row is t = 0; the "
-                 "last row only ends the run, its control cells are not used. Every row is a "
-                 "report time. Cells not used by the row's control mode are ignored."),
-    ("Control modes", "BHP: BHP target. OIL_RATE: Oil-rate target (stock-tank oil) and "
-                      "Minimum BHP. Shut-in: OIL_RATE with rate 0 and Minimum BHP "
-                      "1.01325 bar(a)."),
-    ("Time steps", "Δt and h0 on NUMERICS are in hours. Each SCHEDULE interval is split into "
-                   "equal substeps not longer than Δt; after a change of control (not at "
-                   "t = 0) the first substep shrinks to h0, rounded down to substep/2^m, "
-                   "then doubles."),
-    ("OIL_PVT", "PVTO-style table grouped by Rs: at least two Rs values, at least two rows "
-                "each. The first row of each Rs is saturated (p = Pb(Rs)); higher pressures "
-                "are undersaturated rows at fixed Rs, pressure increasing. Pb grows with Rs. "
-                "Rsi on MODEL lies within the Rs range, pi not below Pb(Rsi)."),
-    ("GAS_PVT", "At least two rows, pressure increasing."),
-    ("RELPERM", "At least two rows, Sg increasing; krg = 0 in the first row, kro = 0 in the "
-                "last row."),
+    ("Template",
+     "gpn-solver template my_case.xlsx writes this workbook with demonstration values. "
+     "The command never overwrites an existing file.",
+     "Команда gpn-solver template my_case.xlsx создаёт эту книгу с демонстрационными "
+     "значениями. Существующий файл команда не перезаписывает."),
+    ("Fill in",
+     "On MODEL, THERMAL and NUMERICS change only the Value column. Every row needs a value, "
+     "even if it equals the program default; rows are not added or removed.",
+     "На листах MODEL, THERMAL и NUMERICS меняйте только столбец Value. Значение нужно в "
+     "каждой строке, даже если оно совпадает с принятым в программе по умолчанию; строки "
+     "не добавляются и не удаляются."),
+    ("Protection",
+     "MODEL, THERMAL, NUMERICS and RELPERM are protected without a password. Locked: Key, "
+     "Unit, the format version, Jacobian mode, Linear solver and the fixed cells of RELPERM. "
+     "Review > Unprotect Sheet removes the protection.",
+     "Листы MODEL, THERMAL, NUMERICS и RELPERM защищены без пароля. Заблокированы Key, "
+     "Unit, версия формата, Jacobian mode, Linear solver и постоянные ячейки RELPERM. "
+     "Защиту снимает команда Рецензирование > Снять защиту листа."),
+    ("Units",
+     "Units are fixed for every row and table column and are checked when the workbook is "
+     "read; convert your data to these units. bar(a): absolute pressure in bar. Sm3: cubic "
+     "metre at standard conditions; rm3: cubic metre at reservoir conditions.",
+     "Единицы измерения заданы для каждой строки и каждого столбца таблиц и проверяются при "
+     "чтении книги; данные нужно перевести в эти единицы. bar(a): абсолютное давление в "
+     "барах. Sm3: кубический метр при стандартных условиях; rm3: кубический метр в "
+     "пластовых условиях."),
+    ("Excel checks",
+     "Numeric cells carry Excel data validation with the program limits. Pasted values and "
+     "cleared cells bypass it; the program checks every value again.",
+     "У числовых ячеек есть проверка данных Excel с пределами программы. Вставка из буфера "
+     "обмена и очистка ячейки её обходят, поэтому программа проверяет все значения ещё раз."),
+    ("SCHEDULE",
+     "Row k sets the well control on [t_k, t_k+1]. The first row is t = 0; the last row only "
+     "ends the run, its control cells are not used. Every row is a report time. Cells not "
+     "used by the row's control mode are ignored.",
+     "Строка k задаёт режим скважины на отрезке [t_k, t_k+1]. В первой строке t = 0; "
+     "последняя строка только завершает расчёт, режим в ней не читается. В каждый момент из "
+     "таблицы записываются результаты. Ячейки, которые режим строки не использует, не "
+     "читаются."),
+    ("Control modes",
+     "BHP: BHP target. OIL_RATE: Oil-rate target (stock-tank oil) and Minimum BHP. "
+     "Shut-in: OIL_RATE with rate 0 and Minimum BHP 1.01325 bar(a).",
+     "BHP: задано забойное давление (BHP target). OIL_RATE: заданы дебит нефти при "
+     "стандартных условиях (Oil-rate target) и наименьшее забойное давление (Minimum BHP). "
+     "Остановка скважины: OIL_RATE с дебитом 0 и Minimum BHP 1.01325 bar(a)."),
+    ("Time steps",
+     "Δt and h0 on NUMERICS are in hours. Each SCHEDULE interval is split into equal "
+     "substeps not longer than Δt; after a change of control (not at t = 0) the first "
+     "substep shrinks to h0, rounded down to substep/2^m, then doubles. h0 not less than Δt "
+     "switches this off.",
+     "Δt и h0 на листе NUMERICS задаются в часах. Каждый интервал SCHEDULE делится на "
+     "равные подшаги не длиннее Δt. После смены режима (кроме t = 0) первый подшаг "
+     "уменьшается до h0, округлённого вниз до подшага/2^m, и дальше удваивается; при h0 не "
+     "меньше Δt подшаг не уменьшается."),
+    ("OIL_PVT",
+     "PVTO-style table grouped by Rs: at least two Rs values, at least two rows each. The "
+     "first row of each Rs is saturated (p = Pb(Rs)); higher pressures are undersaturated "
+     "rows at fixed Rs, pressure increasing. Pb grows with Rs. Rsi on MODEL lies within the "
+     "Rs range, pi not below Pb(Rsi).",
+     "Таблица в форме PVTO, строки сгруппированы по Rs: не меньше двух значений Rs и не "
+     "меньше двух строк на каждое. Первая строка группы описывает насыщенную нефть "
+     "(p = Pb(Rs)), следующие, с ростом давления, недонасыщенную нефть при том же Rs. "
+     "Давление насыщения Pb растёт с Rs. Rsi на листе MODEL лежит в диапазоне Rs таблицы, "
+     "начальное давление pi не ниже Pb(Rsi)."),
+    ("GAS_PVT",
+     "At least two rows, pressure increasing.",
+     "Не меньше двух строк, давление возрастает."),
+    ("RELPERM",
+     "Sg increases from the first row, Sg = 0 with krg = 0, to the last row, Sg = 1 with "
+     "kro = 0; these cells are locked. Add or remove intermediate points by inserting or "
+     "deleting worksheet rows between the first and the last row.",
+     "Sg возрастает от первой строки, Sg = 0 и krg = 0, до последней, Sg = 1 и kro = 0; эти "
+     "ячейки заблокированы. Промежуточные точки добавляйте и удаляйте вставкой и удалением "
+     "строк листа между первой и последней строкой."),
 )
 
 
@@ -176,8 +224,7 @@ def write_template(path) -> None:
         f.write(buf.getvalue())
 
 
-def excel_rule(limit: wf.Limit, cell: str, above_cell: str | None = None,
-               none_allowed: bool = False) -> str:
+def excel_rule(limit: wf.Limit, cell: str, above_cell: str | None = None) -> str:
     """Формула проверки данных Excel для ячейки cell по пределу limit (решение 50)."""
     parts = [f"ISNUMBER({cell})"]
     if limit.integer:
@@ -188,15 +235,10 @@ def excel_rule(limit: wf.Limit, cell: str, above_cell: str | None = None,
         parts.append(f"{cell}<={limit.hi:g}")
     if limit.above_key is not None:
         parts.append(f"{cell}>{above_cell}")
-    rule = f"AND({','.join(parts)})"
-    if none_allowed:
-        # Excel сравнивает строки без учёта регистра — «None» тоже пройдёт (П10)
-        rule = f'OR({cell}="{wf.NONE_WORD}",{rule})'
-    return "=" + rule
+    return f"=AND({','.join(parts)})"
 
 
-def limit_text(limit: wf.Limit, above_label: str | None = None,
-               none_allowed: bool = False) -> str:
+def limit_text(limit: wf.Limit, above_label: str | None = None) -> str:
     """Сообщение Excel о недопустимом значении: какое значение ждёт ячейка."""
     what = "an integer" if limit.integer else "a number"
     lo, hi = limit.lo, limit.hi
@@ -209,7 +251,7 @@ def limit_text(limit: wf.Limit, above_label: str | None = None,
         rng = f" > {above_label}"
     else:
         rng = ""
-    return f"Enter {what}{rng}" + (f" or {wf.NONE_WORD}" if none_allowed else "") + "."
+    return f"Enter {what}{rng}."
 
 
 def _formats(book) -> dict:
@@ -227,52 +269,63 @@ def _formats(book) -> dict:
 
 
 def _param_sheet(book, name: str, params, fmt: dict) -> None:
-    """Лист «параметр–значение»: Key | Parameter | Value | Unit | Comment, защита без пароля."""
+    """Лист «параметр–значение»: Key | Parameter | Value | Unit | Comment | Комментарии."""
     ws = book.add_worksheet(name)
     ws.write_row(0, 0, wf.PARAM_HEADER, fmt["header"])
     row_of = {p.key: r for r, p in enumerate(params, start=1)}
     for r, p in enumerate(params, start=1):
         ws.write_string(r, 0, p.key, fmt["locked"])
         ws.write_string(r, 1, p.label, fmt["text"])
-        value_fmt = fmt["locked"] if p.key == "format_version" else fmt["value"]
+        value_fmt = fmt["locked"] if p.fixed else fmt["value"]
         if isinstance(p.demo, str):
             ws.write_string(r, 2, p.demo, value_fmt)
         else:
             ws.write_number(r, 2, p.demo, value_fmt)
         ws.write_string(r, 3, p.unit, fmt["locked"])
         ws.write_string(r, 4, p.comment, fmt["comment"])
-        cell = xl_rowcol_to_cell(r, 2)
-        if p.choices:
-            opts = {"validate": "list", "source": list(p.choices),
-                    "error_message": "Choose " + " or ".join(p.choices) + "."}
-        else:
-            above_key = p.limit.above_key
-            above_cell = xl_rowcol_to_cell(row_of[above_key], 2) if above_key else None
-            above_label = params[row_of[above_key] - 1].label if above_key else None
-            opts = {"validate": "custom",
-                    "value": excel_rule(p.limit, cell, above_cell, p.none_allowed),
-                    "ignore_blank": False,
-                    "error_message": limit_text(p.limit, above_label, p.none_allowed)}
-        opts["error_title"] = "Invalid value"
-        ws.data_validation(r, 2, r, 2, opts)
-    for col, width in enumerate((34, 46, 16, 10, 90)):
+        ws.write_string(r, 5, p.comment_ru, fmt["comment"])
+        if p.fixed:
+            continue          # постоянное значение заблокировано — проверка данных не нужна
+        above_key = p.limit.above_key
+        above_cell = xl_rowcol_to_cell(row_of[above_key], 2) if above_key else None
+        above_label = params[row_of[above_key] - 1].label if above_key else None
+        ws.data_validation(r, 2, r, 2, {
+            "validate": "custom",
+            "value": excel_rule(p.limit, xl_rowcol_to_cell(r, 2), above_cell),
+            "ignore_blank": False, "error_title": "Invalid value",
+            "error_message": limit_text(p.limit, above_label)})
+    for col, width in enumerate((34, 46, 16, 10, 70, 70)):
         ws.set_column(col, col, width)
     ws.freeze_panes(1, 0)
     ws.protect("", {"format_columns": True, "format_rows": True})
 
 
 def _table_sheet(book, name: str, columns, rows, fmt: dict) -> None:
-    """Табличный лист без защиты (решение 59): заголовки, строки, проверки на весь столбец."""
+    """Табличный лист: заголовки, строки, проверки на весь столбец; RELPERM защищён (решение 68)."""
     ws = book.add_worksheet(name)
     ws.write_row(0, 0, [c.header for c in columns], fmt["header"])
+    relperm = name == "RELPERM"
     for r, row in enumerate(rows, start=1):
+        # Обязательные строки RELPERM: число в образце — постоянная ячейка
+        pattern = ()
+        if relperm and r == 1:
+            pattern = wf.RELPERM_FIRST_ROW
+        elif relperm and r == len(rows):
+            pattern = wf.RELPERM_LAST_ROW
+        elif relperm:
+            # Промежуточная строка разблокирована целиком, а не только в A…C:
+            # строку с заблокированной ячейкой Excel на защищённом листе не удалит
+            ws.set_row(r, None, fmt["text"])
         for c, v in enumerate(row):
             if v is None:
                 continue                      # пустая ячейка
+            cell_fmt = None                   # листы без защиты — формат не нужен
+            if relperm:
+                cell_fmt = fmt["locked"] if pattern and pattern[c] is not None else fmt["text"]
             if isinstance(v, str):
-                ws.write_string(r, c, v)
+                ws.write_string(r, c, v, cell_fmt)
             else:
-                ws.write_number(r, c, v)
+                ws.write_number(r, c, v, cell_fmt)
     for c, col in enumerate(columns):
         if name == "SCHEDULE" and c == 0:
             # Время: первая строка — 0, дальше строго возрастает (раздел 2.6)
@@ -296,15 +349,24 @@ def _table_sheet(book, name: str, columns, rows, fmt: dict) -> None:
         ws.data_validation(1, c, EXCEL_ROWS - 1, c, opts)
     ws.set_column(0, len(columns) - 1, 24)
     ws.freeze_panes(1, 0)
+    if relperm:
+        # Без пароля (решение 53); вставка и удаление строк разрешены — так
+        # инженер меняет промежуточные точки. Первая и последняя строки с
+        # заблокированными ячейками не удаляются
+        ws.protect("", {"insert_rows": True, "delete_rows": True,
+                        "format_columns": True, "format_rows": True})
 
 
 def _comments_sheet(book, fmt: dict) -> None:
-    """Лист COMMENTS: как получить шаблон и заполнить его (решение 62 — без «Run»)."""
+    """Лист COMMENTS: как получить шаблон и заполнить его, по-английски и по-русски (решение 67)."""
     ws = book.add_worksheet("COMMENTS")
     ws.write_string(0, 0, f"gpn-solver input workbook, format version {wf.FORMAT_VERSION}",
                     fmt["title"])
-    for r, (topic, text) in enumerate(COMMENTS, start=2):
+    ws.write_string(0, 2, f"Книга исходных данных gpn-solver, версия формата "
+                          f"{wf.FORMAT_VERSION}", fmt["title"])
+    for r, (topic, text, text_ru) in enumerate(COMMENTS, start=2):
         ws.write_string(r, 0, topic, fmt["topic"])
         ws.write_string(r, 1, text, fmt["wrap"])
+        ws.write_string(r, 2, text_ru, fmt["wrap"])
     ws.set_column(0, 0, 22)
-    ws.set_column(1, 1, 110)
+    ws.set_column(1, 2, 80)

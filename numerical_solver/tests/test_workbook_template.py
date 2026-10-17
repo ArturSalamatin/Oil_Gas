@@ -2,8 +2,10 @@
 
 Книгу пишет write_template, читает помощник tests/_xlsx.py (zip/XML стандартной
 библиотекой). Проверяется, что книга — ровно таблица полей io/workbook_format.py:
-подписи, единицы, демонстрационные значения; что Key и Unit заблокированы
-(решение 37), таблицы не защищены (решение 59); что у каждой числовой ячейки
+подписи, единицы, демонстрационные значения, комментарии на двух языках; что
+Key, Unit и постоянные значения заблокированы (решения 37, 65), RELPERM защищён
+с обязательными строками S_g = 0 и S_g = 1 (решение 68), прочие таблицы — нет
+(решение 59); что у каждой числовой ячейки
 есть проверка данных Excel с пределом программы (решение 50); что существующий
 файл не перезаписывается (решение 58).
 """
@@ -62,10 +64,10 @@ def test_sheet_order(book):
 def test_param_sheet_rows(book, name):
     """Строка книги = строка таблицы полей; число — числом, слово — строкой."""
     v = book.sheets[name].values
-    assert tuple(v[f"{_col(c)}1"] for c in range(5)) == wf.PARAM_HEADER
+    assert tuple(v[f"{_col(c)}1"] for c in range(6)) == wf.PARAM_HEADER
     for r, p in enumerate(wf.PARAM_SHEETS[name], start=2):
-        assert (v[f"A{r}"], v[f"B{r}"], v[f"C{r}"], v[f"D{r}"], v.get(f"E{r}", "")) == \
-               (p.key, p.label, p.demo, p.unit, p.comment)
+        assert tuple(v[f"{x}{r}"] for x in "ABCDEF") == \
+               (p.key, p.label, p.demo, p.unit, p.comment, p.comment_ru)
         assert isinstance(v[f"C{r}"], str) == isinstance(p.demo, str), p.key
     assert f"A{len(wf.PARAM_SHEETS[name]) + 2}" not in v      # лишних строк нет
 
@@ -103,14 +105,22 @@ def test_demo_tables_satisfy_limits():
         _, used = wf.CONTROL_MODES[row[1]]
         idx = {c.target: i for i, c in enumerate(wf.SCHEDULE)}
         assert all(row[idx[t]] is not None for t in used), row
+    # Обязательные строки RELPERM (решение 68): число образца — в демо то же
+    rel = DEMO_TABLES["RELPERM"]
+    for row, pattern in ((rel[0], wf.RELPERM_FIRST_ROW), (rel[-1], wf.RELPERM_LAST_ROW)):
+        assert all(p is None or v == p for v, p in zip(row, pattern)), row
 
 
 def test_comments_sheet(book):
-    """COMMENTS — под gpn-solver, а не run_prototype.py прототипа (нестыковка 12)."""
+    """COMMENTS — под gpn-solver, по-английски и по-русски (решение 67), без run_prototype."""
     v = book.sheets["COMMENTS"].values
-    assert "format version 1" in v["A1"]
-    texts = [v[f"B{r}"] for r in range(3, 3 + len(COMMENTS))]
-    assert any("gpn-solver template" in t for t in texts)
+    assert "format version 1" in v["A1"] and "версия формата 1" in v["C1"]
+    rows = range(3, 3 + len(COMMENTS))
+    assert [(v[f"A{r}"], v[f"B{r}"], v[f"C{r}"]) for r in rows] == list(COMMENTS)
+    for _, text, text_ru in COMMENTS:
+        assert any("а" <= ch.lower() <= "я" for ch in text_ru), text_ru
+        assert not {"−", "–", "—"} & set(text + text_ru), text
+    assert any("gpn-solver template" in text for _, text, _ in COMMENTS)
     assert not any("run_prototype" in str(x) for x in v.values())
 
 
@@ -125,25 +135,45 @@ def test_param_sheets_protected_without_password(book, name):
 
 @pytest.mark.parametrize("name", list(wf.PARAM_SHEETS))
 def test_locked_cells(book, name):
-    """Key, Unit, заголовки, версия формата — заблокированы; Parameter, Value, Comment — нет."""
-    for c in "ABCDE":
+    """Key, Unit, заголовки, постоянные значения — заблокированы; подписи и комментарии — нет."""
+    for c in "ABCDEF":
         assert book.locked(name, f"{c}1")
     for r, p in enumerate(wf.PARAM_SHEETS[name], start=2):
         assert book.locked(name, f"A{r}") and book.locked(name, f"D{r}")
-        assert not book.locked(name, f"B{r}") and not book.locked(name, f"E{r}")
-        assert book.locked(name, f"C{r}") == (p.key == "format_version"), p.key
+        assert not any(book.locked(name, f"{c}{r}") for c in "BEF"), p.key
+        assert book.locked(name, f"C{r}") == p.fixed, p.key
 
 
-@pytest.mark.parametrize("name", [*wf.TABLE_SHEETS, "COMMENTS"])
+@pytest.mark.parametrize("name", ["SCHEDULE", "OIL_PVT", "GAS_PVT", "COMMENTS"])
 def test_table_sheets_unprotected(book, name):
     assert book.sheets[name].protection is None
+
+
+def test_relperm_protection(book):
+    """RELPERM (решение 68): без пароля, вставка и удаление строк разрешены.
+
+    В sheetProtection «0» означает «действие не защищено». Постоянные ячейки
+    первой (S_g = 0, k_rg = 0) и последней (S_g = 1, k_ro = 0) строк
+    заблокированы, остальные — нет; промежуточные строки разблокированы
+    целиком — иначе Excel не удалит их на защищённом листе.
+    """
+    prot = book.sheets["RELPERM"].protection
+    assert prot is not None and not {"password", "hashValue"} & set(prot)
+    assert prot.get("insertRows") == "0" and prot.get("deleteRows") == "0"
+    n = len(DEMO_TABLES["RELPERM"]) + 1                       # строка листа S_g = 1
+    for r, pattern in ((2, wf.RELPERM_FIRST_ROW), (n, wf.RELPERM_LAST_ROW)):
+        for x, p in zip("ABC", pattern):
+            assert book.locked("RELPERM", f"{x}{r}") == (p is not None), f"{x}{r}"
+    for r in range(3, n):
+        assert book.row_unlocked("RELPERM", r), r
+        assert not any(book.locked("RELPERM", f"{x}{r}") for x in "ABC"), r
 
 
 # ── Проверки данных ──────────────────────────────────────────
 
 @pytest.mark.parametrize("name", list(wf.PARAM_SHEETS))
 def test_param_value_validation(book, name):
-    """Ровно одна проверка на ячейку Value; пустая ячейка не проходит."""
+    """Одна проверка на ячейку Value, у постоянной — ни одной; пустая ячейка не проходит."""
     params = wf.PARAM_SHEETS[name]
     row_of = {p.key: r for r, p in enumerate(params, start=2)}
     by_cell = {}
@@ -151,15 +181,14 @@ def test_param_value_validation(book, name):
         by_cell.setdefault(dv["sqref"], []).append(dv)
     for p in params:
         cell = f"C{row_of[p.key]}"
+        if p.fixed:
+            assert cell not in by_cell, p.key
+            continue
         (dv,) = by_cell.pop(cell)
-        if p.choices:
-            assert dv["type"] == "list"
-            assert dv["formula1"] == '"' + ",".join(p.choices) + '"'
-        else:
-            above = f"C{row_of[p.limit.above_key]}" if p.limit.above_key else None
-            assert dv["type"] == "custom"
-            assert dv["formula1"] == excel_rule(p.limit, cell, above, p.none_allowed)[1:]
-            assert "allowBlank" not in dv, p.key
+        above = f"C{row_of[p.limit.above_key]}" if p.limit.above_key else None
+        assert dv["type"] == "custom"
+        assert dv["formula1"] == excel_rule(p.limit, cell, above)[1:]
+        assert "allowBlank" not in dv, p.key
     assert not by_cell                                       # лишних проверок нет
 
 
@@ -182,29 +211,26 @@ def test_table_validation(book, name):
             assert dv["formula1"] == excel_rule(col.limit, f"{x}2")[1:]
 
 
-@pytest.mark.parametrize("limit, cell, above, none, rule", [
-    (wf.POSITIVE, "C2", None, False, "=AND(ISNUMBER(C2),C2>0)"),
-    (wf.COUNT, "C2", None, False, "=AND(ISNUMBER(C2),C2=INT(C2),C2>=1)"),
-    (wf.POROSITY, "C2", None, False, "=AND(ISNUMBER(C2),C2>0,C2<=1)"),
-    (wf.Limit(above_key="k"), "C4", "C3", False, "=AND(ISNUMBER(C4),C4>C3)"),
-    (wf.POSITIVE, "C9", None, True, '=OR(C9="none",AND(ISNUMBER(C9),C9>0))'),
-    (wf.ANY, "C2", None, False, "=AND(ISNUMBER(C2))"),
+@pytest.mark.parametrize("limit, cell, above, rule", [
+    (wf.POSITIVE, "C2", None, "=AND(ISNUMBER(C2),C2>0)"),
+    (wf.COUNT, "C2", None, "=AND(ISNUMBER(C2),C2=INT(C2),C2>=1)"),
+    (wf.POROSITY, "C2", None, "=AND(ISNUMBER(C2),C2>0,C2<=1)"),
+    (wf.Limit(above_key="k"), "C4", "C3", "=AND(ISNUMBER(C4),C4>C3)"),
+    (wf.ANY, "C2", None, "=AND(ISNUMBER(C2))"),
 ])
-def test_excel_rule(limit, cell, above, none, rule):
-    assert excel_rule(limit, cell, above, none) == rule
+def test_excel_rule(limit, cell, above, rule):
+    assert excel_rule(limit, cell, above) == rule
 
 
-@pytest.mark.parametrize("limit, above, none, text", [
-    (wf.POSITIVE, None, False, "Enter a number > 0."),
-    (wf.Limit(lo=0.0, hi=20.0, integer=True), None, False, "Enter an integer from 0 to 20."),
-    (wf.POROSITY, None, False, "Enter a number in (0, 1]."),
-    (wf.Limit(above_key="k"), "Wellbore radius (rw)", False,
-     "Enter a number > Wellbore radius (rw)."),
-    (wf.POSITIVE, None, True, "Enter a number > 0 or none."),
-    (wf.ANY, None, False, "Enter a number."),
+@pytest.mark.parametrize("limit, above, text", [
+    (wf.POSITIVE, None, "Enter a number > 0."),
+    (wf.Limit(lo=0.0, hi=20.0, integer=True), None, "Enter an integer from 0 to 20."),
+    (wf.POROSITY, None, "Enter a number in (0, 1]."),
+    (wf.Limit(above_key="k"), "Wellbore radius (rw)", "Enter a number > Wellbore radius (rw)."),
+    (wf.ANY, None, "Enter a number."),
 ])
-def test_limit_text(limit, above, none, text):
-    assert limit_text(limit, above, none) == text
+def test_limit_text(limit, above, text):
+    assert limit_text(limit, above) == text
 
 
 # ── Запись файла ─────────────────────────────────────────────
@@ -240,6 +266,8 @@ class TestGeneratorBook:
         assert tuple(book.sheets) == wf.SHEET_ORDER
         for name, params in wf.PARAM_SHEETS.items():
             v = book.sheets[name].values
+            assert tuple(v.get(f"{_col(c)}1") for c in range(len(wf.PARAM_HEADER))) == \
+                   wf.PARAM_HEADER, name
             assert [(v.get(f"A{r}"), v.get(f"D{r}")) for r in range(2, len(params) + 2)] == \
                    [(p.key, p.unit) for p in params], name
         for name, cols in wf.TABLE_SHEETS.items():

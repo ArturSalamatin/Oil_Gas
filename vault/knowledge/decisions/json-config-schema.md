@@ -58,10 +58,10 @@ metadata:
 | `model` | str | `"standing"`, `"table"`, `"custom"` |
 | `rho_o_std` | float | Плотность нефтяного компонента при ст. условиях, кг/м³ |
 | `rho_g_std` | float | Плотность газового компонента при ст. условиях, кг/м³ |
-| `co_undersaturated` | float | Сжимаемость недонасыщенной нефти при p > pb, 1/Па; по умолчанию 0 (B_o выше pb не меняется). Только `"standing"` |
+| `co_undersaturated` | float | Сжимаемость недонасыщенной нефти при p > pb, 1/Па; по умолчанию 0 (B_o выше pb не меняется). Только `"standing"`: при `"table"` значение ≠ 0 → `ValueError` (DEBT-078) |
 | `mu_o_undersaturated` | str | Вязкость нефти при p > pb(Rs): `"none"` (по умолчанию) — только через Rs (Беггс–Робинсон); `"beal"` — линейный рост с p по Билу–Стендингу (FEAT-027, [[pvt-корреляции-стендинг]]). Только `"standing"`: при `"table"` значение `"beal"` → `ValueError` |
 
-Ограничения: `rho_o_std > 0`, `rho_g_std > 0` — при любой `model` (DEBT-076).
+Ограничения: `rho_o_std > 0`, `rho_g_std > 0` — при любой `model` (DEBT-076); `co_undersaturated ≥ 0` — при любой `model` (DEBT-078).
 
 Для `"standing"`: параметры корреляции (gamma_o, gamma_g, ...).
 Для `"table"`: `oil_pvt_file` (PVTO нефти) и `gas_pvt_file` (газ), CSV в СИ — формат и требования к ветвям в [[P8-формат-ввода-json]].

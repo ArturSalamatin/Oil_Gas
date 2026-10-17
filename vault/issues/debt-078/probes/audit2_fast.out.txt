@@ -1,0 +1,28 @@
+DEBT-078, аудит 2 (2026-10-17): эмуляция плана после влития DEBT-076
+
+База: f5239de (FEAT-033 7036854, DEBT-080 ecb4c36, DEBT-076 f6e9aa0). Без правок: 2129 тестов, быстрый уровень 1853.
+Решение пользователя (аудит 2): проверка c_o — в блок «PVT» DEBT-076; класс тестов — после
+TestValidationPVT; P8 — в группу «PVT (…)» и абзац после «PVT»; схема — в строку «Ограничения».
+
+Временный worktree: git worktree add --detach .worktrees/debt-078-audit2 HEAD (после замера удалён).
+Правки: python vault\issues\debt-078\probes\plan_apply.py .worktrees/debt-078-audit2 --write
+  все 14 якорей — OK; записано файлов: 7; git diff --stat: 7 files changed, 123 insertions(+), 8 deletions(-)
+  новых строк кода длиннее 95 символов нет
+
+Python: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python, pytest из numerical_solver worktree.
+
+1. pytest tests/test_config.py tests/test_factory_standing_hydro.py tests/test_eq_references.py
+          tests/test_workbook_format.py tests/test_pvt_consistency.py -q -m "not slow"
+   453 passed in 6.19s
+   новые по node id (-rA): test_negative_co_rejected[step_dependent, sign_error_examples_17_20, tiny],
+   test_negative_co_rejected_for_table, test_nonnegative_co_accepted[zero_default, examples_17_20],
+   test_co_with_table_raises — 7 passed
+
+2. pytest tests/ --collect-only -q                → 2136 tests collected
+   pytest tests/ --collect-only -q -m "not slow"  → 1860/2136 (276 deselected)
+
+3. pytest tests/ -m "not slow" -q -p no:cacheprovider
+   1860 passed, 276 deselected, 1 warning in 135.72s (0:02:15)
+   (предупреждение — то же, что при планировании и аудите 1)
+
+4. Проба «после» на коде аудита 2 — co_after_emulate.out.txt: три ожидаемых отказа, c_o = 0 при таблице — без отказа.

@@ -1,0 +1,18 @@
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\pvt\standing.py:168: RuntimeWarning: overflow encountered in exp
+  mu_g_cP = 1e-4 * K * np.exp(X * rho_g_gcc ** Y_exp)
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\pvt\standing.py:111: RuntimeWarning: overflow encountered in exp
+  Bo_under = Bo_at_pb_local * np.exp(-self._co_under * (p - pb_local))
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+пример 03 (Стендинг, c_r = 0), p_wf = 8 МПа, 1 сут; ячейка 0 и максимум |Δp| по области
+  c_o =        0, dt = 3600 с: p(r_0) = 8.046561 МПа, T(r_0) = 352.27821 К, двухфазных 16
+  c_o =        0, dt = 1800 с: p(r_0) = 8.046561 МПа, T(r_0) = 352.28283 К, двухфазных 16
+  c_o =        0, dt =  900 с: p(r_0) = 8.046561 МПа, T(r_0) = 352.28513 К, двухфазных 16
+  c_o =   -1e-09, dt = 3600 с: p(r_0) = 8.046342 МПа, T(r_0) = 352.26610 К, двухфазных 17
+  c_o =   -1e-09, dt = 1800 с: p(r_0) = 8.046342 МПа, T(r_0) = 352.27145 К, двухфазных 17
+  c_o =   -1e-09, dt =  900 с: отказ — HydroSolver не сошёлся при дроблении шага до dt/512 = 1.76e+00 с на подшаге с t = 0.0150 сут: двухфазных ячеек
+  c_o = -3.3e-09, dt = 3600 с: отказ — HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.1361 сут: двухфазных ячеек
+  c_o = -3.3e-09, dt = 1800 с: отказ — HydroSolver не сошёлся при дроблении шага до dt/512 = 3.52e+00 с на подшаге с t = 0.0753 сут: двухфазных ячеек
+  c_o = -3.3e-09, dt =  900 с: отказ — HydroSolver не сошёлся при дроблении шага до dt/512 = 1.76e+00 с на подшаге с t = 0.1050 сут: двухфазных ячеек
+
+разброс по шагу (3600 против 900 с):
+  c_o =        0: max|Δp| = 0.000 кПа, |ΔT(r_0)| = 0.00692 К

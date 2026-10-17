@@ -1,0 +1,23 @@
+DEBT-078, аудит 1 (2026-10-17): эмуляция плана после правок аудита
+
+База: 0f8074d (после влития FEAT-033, 7036854). Без правок: 2116 тестов, быстрый уровень 1840.
+Временный worktree: git worktree add --detach .worktrees/debt-078-audit HEAD (после замера удалён).
+Правки: python vault\issues\debt-078\probes\plan_apply.py .worktrees/debt-078-audit --write
+  все 12 якорей — OK; записано файлов: 7; git diff --stat: 7 files changed, 122 insertions(+), 6 deletions(-)
+  новых строк кода длиннее 95 символов нет
+
+Python: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python, pytest из numerical_solver worktree.
+
+1. pytest tests/test_config.py::TestValidationOilCompressibility
+          tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_co_with_table_raises
+          tests/test_eq_references.py tests/test_workbook_format.py -q
+   66 passed in 3.02s
+
+2. pytest tests/ --collect-only -q                → 2123 tests collected
+   pytest tests/ --collect-only -q -m "not slow"  → 1847/2123 (276 deselected)
+
+3. pytest tests/ -m "not slow" -q -p no:cacheprovider
+   1847 passed, 276 deselected, 1 warning in 141.36s (0:02:21)
+   (предупреждение — то же, что при планировании: не из правленых файлов)
+
+4. Проба «после» на коде аудита — co_after_emulate.out.txt.

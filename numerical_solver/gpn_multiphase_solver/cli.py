@@ -4,6 +4,10 @@
 рисунки, печать проверок. Коды возврата: 0 — расчёт завершён; 1 — решатель
 отказал на шаге по времени; 2 — ошибка аргументов или конфига (расчёт не
 начат). Та же команда — gpn-solver run config.json ([project.scripts]).
+
+Шаблон книги ввода Excel: gpn-solver template книга.xlsx (FEAT-033) — новый
+файл с демонстрационными значениями; существующий файл не перезаписывается
+(код 2).
 """
 
 from __future__ import annotations
@@ -65,13 +69,45 @@ def _parser(prog: str | None) -> argparse.ArgumentParser:
     run.add_argument("--profiles", type=_profiles, default=None, metavar="N",
                      help="число моментов на профильных графиках (по умолчанию "
                           "— output.n_profiles конфига)")
+    tpl = sub.add_parser(
+        "template", help="шаблон книги ввода Excel с демонстрационными значениями",
+        description="Шаблон книги ввода Excel (.xlsx, формат версии 1) с "
+                    "демонстрационными значениями. Существующий файл не "
+                    "перезаписывается.",
+        epilog="Коды возврата: 0 — шаблон записан; 2 — ошибка аргументов, файл "
+               "уже существует или не записывается.")
+    tpl.add_argument("workbook", type=Path, help="путь новой книги .xlsx")
     return p
+
+
+def _template(path: Path) -> int:
+    """Подкоманда template: шаблон книги в новый файл → код возврата (FEAT-033)."""
+    # Импорт здесь: шаблону не нужны решатель, scipy и прототип (импорт
+    # конвейера run — ниже, в main)
+    from .io.workbook_template import write_template
+    try:
+        write_template(path)
+    except FileExistsError:
+        # Подкласс OSError — ловится первым: заполненная книга не затирается (решение 58)
+        print(f"Ошибка: файл {path} уже существует — шаблон не записан, файл не "
+              f"изменён. Удалите его или укажите другое имя.", file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(f"Ошибка: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"Ошибка: не удалось записать {path}: {exc.strerror or exc}", file=sys.stderr)
+        return 2
+    print(f"Шаблон книги записан: {path}")
+    return 0
 
 
 def main(argv: list[str] | None = None, prog: str | None = None) -> int:
     """Точка входа команды: разбор аргументов → run_case → код возврата. FEAT-030."""
     configure_batch_run()
     args = _parser(prog).parse_args(argv)   # ошибка аргументов — SystemExit(2)
+    if args.command == "template":
+        return _template(args.workbook.resolve())
     # Импорт конвейера — после configure_batch_run и разбора: --help не
     # тянет scipy, решатель и прототип (matplotlib и numpy импортирует
     # configure_batch_run — режим Agg)

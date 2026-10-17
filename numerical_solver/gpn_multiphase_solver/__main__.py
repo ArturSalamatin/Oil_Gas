@@ -1,4 +1,4 @@
-"""python -m gpn_multiphase_solver — команда расчёта по конфигу (FEAT-030)."""
+"""python -m gpn_multiphase_solver — расчёт по конфигу и шаблон книги ввода (FEAT-030, FEAT-033)."""
 import sys
 
 from .cli import main

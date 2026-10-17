@@ -7,7 +7,7 @@ issue: FEAT-033
 github: 128
 branch: feat/feat-033/workbook-input-format
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-033
 audit:
   date: 2026-10-17

@@ -7,8 +7,9 @@ issue: DEBT-077
 github: 126
 branch: refactor/debt-077/hydro-note-sync-code
 status: реализован
-worktree: .worktrees/debt-077
+worktree: .worktrees/debt-077; удалён после влития
 implemented: 2026-10-17 (74bb73d, 35570ce; 2017 passed, полный 588 с)
+merged: edc8a5e (2026-10-17)
 audit:
   date: 2026-10-15
   found: 8

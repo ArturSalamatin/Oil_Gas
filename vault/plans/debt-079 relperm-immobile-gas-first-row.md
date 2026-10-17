@@ -7,7 +7,8 @@ issue: DEBT-079
 github: 127
 branch: refactor/debt-079/relperm-immobile-gas-first-row
 status: реализован
-worktree: .worktrees/debt-079
+worktree: .worktrees/debt-079; удалён после влития
+merged: 44b0f72 (2026-10-17)
 audit:
   date: 2026-10-15
   round: 1

@@ -20,6 +20,11 @@ CYR = re.compile("[а-яА-ЯёЁ]")
 NUMPY_SECTIONS = re.compile(r"^\s*(Parameters|Returns|Raises|Yields)\s*\n\s*-{3,}", re.M)
 GOOGLE_SECTIONS = re.compile(r"^\s*(Args|Returns|Raises):\s*$", re.M)
 EQ_LABEL = re.compile(r"eq:[\w-]+")
+# ID задач и пути vault/ попадут в HTML-документацию вместе с докстрингом (вопрос 3 плана)
+TASK_ID = re.compile(r"\b(BUG|DEBT|FEAT|VAL)-\d{3}\b")
+VAULT = re.compile(r"vault/")
+# Формулы LaTeX: $...$ или команды — нужен ли MathJax в HTML (вопрос 20 плана)
+LATEX = re.compile(r"\$[^$\n]+\$|\\(frac|partial|mathrm|sum|int|cdot|Delta|rho|lambda|mu)\b")
 
 
 def kind_of(doc):
@@ -61,6 +66,9 @@ def census(pkg_dir):
                 extra["разделы numpydoc"] += bool(NUMPY_SECTIONS.search(doc))
                 extra["разделы Google"] += bool(GOOGLE_SECTIONS.search(doc))
                 extra["с меткой eq:"] += bool(EQ_LABEL.search(doc))
+                extra["с ID задач"] += bool(TASK_ID.search(doc))
+                extra["с vault/"] += bool(VAULT.search(doc))
+                extra["с формулами LaTeX"] += bool(LATEX.search(doc))
     return stats, extra
 
 

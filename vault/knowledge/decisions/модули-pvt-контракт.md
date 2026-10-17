@@ -270,4 +270,4 @@ class CoreyRP(RelPermModel):
 
 - [[архитектура библиотеки numerical_solver]] — общая архитектура
 - [[json-config-schema]] — структура JSON-конфига
-- [[модули-hydro-newton]] — использование PVT в якобиане
+- [[модули-hydro-newton]] — контракт HydroSolver; PVT в якобиане — только в отменённой проектной схеме

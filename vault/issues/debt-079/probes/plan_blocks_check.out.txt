@@ -1,0 +1,15 @@
+﻿OK   «До» 1: {'factory.py': 1} — def _check_relperm_table(Sg: list, kro: list, relperm_file: str) -> No
+OK   «До» 2: {'factory.py': 1} —         # DEBT-044: число строк и рост S_g проверяет и TabulatedRelPer
+OK   «До» 3: {'factory.py': 1} —     # Правила таблицы целиком (число строк, рост давления и S_g, ветви
+OK   «До» 4: {'test_factory_prototype.py': 1} — - Допустимость значений CSV: пределы столбцов, число строк, рост p и S
+OK   «До» 5: {'test_factory_prototype.py': 1} —     def test_project_relperm_tables_accepted(self):
+OK   «До» 6: {'test_factory_prototype.py': 1} —             Sg, kro, _ = _read_relperm_csv(path)
+OK   «До» 7: {'test_table_range_warnings.py': 1} —     def test_initial_below_table_not_repeated(self, tmp_path, caplog):
+OK   «До» 8: {'README.md': 1} — В `gas_pvt.csv` не меньше двух строк, давление строго растёт. В
+OK   «До» 9: {'README.md': 1} — | содержимое `relperm.csv` | — | свои керновые данные (главный сценари
+OK   якорь: {'factory.py': 1} — # DEBT-073: выше последней строки TabulatedRelPerm берёт k_ro, k_rg из
+OK   якорь: {'test_factory_prototype.py': 1} — # ── Последняя строка ОФП: k_ro = 0 (DEBT-073) ──
+OK   якорь: {'P8-формат-ввода-json.md': 1} — Не меньше двух строк, $S_g$ строго растёт (`_check_relperm_table`, DEB
+OK   якорь: {'P8-формат-ввода-json.md': 1} — CSV-таблицы: числа, пределы, монотонность, ветви PVTO, $k_{ro} = 0$ в 
+
+блоков «До»: 9, якорей: 4, ошибок: 0

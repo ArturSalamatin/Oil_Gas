@@ -6,7 +6,7 @@ date: 2026-10-17
 issue: DEBT-078
 github: 130
 branch: refactor/debt-078/co-undersaturated-table-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-078
 audit:
   date: 2026-10-17

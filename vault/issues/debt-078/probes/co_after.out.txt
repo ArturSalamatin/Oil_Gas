@@ -1,0 +1,12 @@
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-078\numerical_solver\gpn_multiphase_solver\factory.py
+
+1. пример 04 (таблица), c_o = 3.3e-9, create_pvt:
+   ValueError: co_undersaturated = 3.3e-09 1/Па — только для model = 'standing'; у табличного PVT B_o выше p_b задают недонасыщенные ветви таблицы. Уберите поле из секции pvt.
+   то же, c_o = 0:
+   без отказа
+
+2. 03_standing_corey, c_o = -1e-09, load_config:
+   ValueError: pvt.co_undersaturated = -1e-09 1/Па < 0: сжимаемость недонасыщенной нефти c_o = −(1/B_o)·∂B_o/∂p должна быть ≥ 0 — объём нефти с ростом давления не растёт (вероятно, ошибка знака)
+
+3. 04_table_table, c_o = -1e-09, load_config:
+   ValueError: pvt.co_undersaturated = -1e-09 1/Па < 0: сжимаемость недонасыщенной нефти c_o = −(1/B_o)·∂B_o/∂p должна быть ≥ 0 — объём нефти с ростом давления не растёт (вероятно, ошибка знака)

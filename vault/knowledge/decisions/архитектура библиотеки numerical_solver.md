@@ -8,7 +8,7 @@ metadata:
 # Архитектура библиотеки numerical_solver
 
 > **Проектный этап (2026-08); сверено с кодом в [[DEBT-052]] (2026-10-10).** Заметка начата как замысел до передачи гидродинамического прототипа и обновлялась выборочно (дерево пакета, абзац FEAT-020 в §4). Интерфейсы, псевдокод и образцы ниже — **не текущий код**:
-> - нет в коде: `NewtonHydroSolver` (гидродинамику решает прототип через `PrototypeHydroAdapter`), `StandingPVT` (есть `StandingFullPVT`), `HydroUnitDecorator`, `EnergyUnitDecorator` (единицы переводят адаптеры прототипа по константам `units.py`), `HydroSolver.velocities`, `SimulationResult`;
+> - нет в коде: `NewtonHydroSolver` (и не будет: гидродинамику решает прототип через `PrototypeHydroAdapter`, собственный решатель отменён 2026-10-15 — [[DEBT-077]]), `StandingPVT` (есть `StandingFullPVT`), `HydroUnitDecorator`, `EnergyUnitDecorator` (единицы переводят адаптеры прототипа по константам `units.py`), `HydroSolver.velocities`, `SimulationResult`;
 > - ABC названы иначе: `PVTModel` → `HydroPVT`, `FullPVT`, `DifferentiableHydroPVT`; `RPModel` → `RelPermModel`; проводимости `Grid` — `trans_internal`, `trans_well`, `trans_ext`;
 > - сигнатуры: `HydroSolver.solve(state, dt, bc) → HydroResult`; `EnergySolver.solve(hydro_result, state_prev, dt, bc, collect=None) → T`; `Simulator(grid, hydro, energy, pvt, schedule, max_retries=9)` (`output_config` удалён в [[DEBT-053]]), `run(initial_state) → SimulationHistory`; `SimulatorFactory.from_config(config) → (Simulator, initial_state)`;
 > - дерево пакета неполное (нет `units.py`, `mass_balance.py`, `energy/balance.py`, `pvt/consistency.py`, `pvt/hydro_to_blackoil_adapter.py`), в `tests/` — 29 файлов, а не 5;
@@ -320,7 +320,7 @@ class SimulationState:
 Гидродинамический блок коллеги ещё не передан, его интерфейс неизвестен. Подход:
 
 1. Определить минимальный ABC `HydroSolver` с одним методом `solve(state, dt, bc)`.
-2. Реализовать собственный `NewtonHydroSolver` по problem_statement.tex.
+2. ~~Реализовать собственный `NewtonHydroSolver` по problem_statement.tex.~~ Отменено 2026-10-15 ([[DEBT-077]]): гидродинамику решает прототип.
 3. Когда модуль коллеги поступит — написать `AdapterHydroSolver`, который:
    - принимает внешний объект
    - транслирует вызов `solve()` в API коллеги
@@ -355,14 +355,14 @@ class SimulationState:
 | Указатели | `cptr<const T>` (shared_ptr) | Обычные ссылки (GC) |
 | Сборка объектов | Шаблонные фабрики | `SimulatorFactory.from_config()` |
 | Размерность | 2D (Z×R) | 1D (R) — осесимметричная задача |
-| СЛАУ | Eigen SparseLU | numpy/scipy (блочная прогонка вручную) |
+| СЛАУ | Eigen SparseLU | scipy: `solve_banded` (энергия), `splu` прототипа (гидродинамика) |
 | Конфиг | nlohmann::json | json (стандартная библиотека Python) |
 
 ## Связанные заметки
 
 - problem_statement.tex — постановка и численная схема
 - [[модули-pvt-контракт]] — детальный контракт PVT
-- [[модули-hydro-newton]] — детали блочного Ньютона
+- [[модули-hydro-newton]] — контракт HydroSolver, действующий решатель (прототип), отменённая схема блочного Ньютона
 - [[модули-energy-tridiag]] — детали тепловой прогонки
 - [[модули-simulator-оркестратор]] — текущий цикл шага, `Simulator`, фабрика
 - [[контейнер-simulation-history]] — контейнер результатов

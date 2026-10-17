@@ -1,0 +1,11 @@
+модуль генератора: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-033\probes\plan_tree\gpn_multiphase_solver\io\workbook_template.py 
+template: код 0; Шаблон книги записан: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-033\probes\plan_tree\configs\INPUT_TEMPLATE_v1.xlsx 
+размер книги: 18532 байт
+повтор template: код 2; Ошибка: файл D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-033\probes\plan_tree\configs\INPUT_TEMPLATE_v1.xlsx уже существует — шаблон не записан, файл не изменён. Удалите его или укажите другое имя.
+pytest:
+........................................................................ [ 66%]
+..................................ss.                                    [100%]
+107 passed, 2 skipped, 13 deselected in 4.90s
+
+без XlsxWriter в pyproject: 1 failed in 0.46s
+собрано новых: 89 tests collected in 0.65s

@@ -1,0 +1,21 @@
+﻿1 свободный: проверка: прошло
+   в output: ['a.png', 'well_history.csv', 'z.csv']; рядом: []
+1 свободный: очистка: прошло
+   в output: нет каталога; рядом: []
+2 нет каталога: проверка и очистка: прошло
+3 открытый файл: проверка: CaseConfigError: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-082\probes\plan_code\work\output не удаётся очистить (Access is denied): файл в нём открыт в другой программе (например, CSV в Excel) или каталог — текущий в консоли. Закройте файл или перейдите в консоли в другой каталог и повторите расчёт. Расчёт не начат, каталог не изменён.
+   в output: ['a.png', 'well_history.csv', 'z.csv']; рядом: []
+3 открытый файл: очистка: PermissionError: [WinError 5] Access is denied: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-082\\probes\\plan_code\\work\\output' -> 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-082\\probes\\plan_code\\work\\output.old-4340'
+   в output: ['a.png', 'well_history.csv', 'z.csv']; рядом: []
+4 консоль в каталоге: проверка: CaseConfigError: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-082\probes\plan_code\work\output не удаётся очистить (The process cannot access the file because it is being used by another process): файл в нём открыт в другой программе (например, CSV в Excel) или каталог — текущий в консоли. Закройте файл или перейдите в консоли в другой каталог и повторите расчёт. Расчёт не начат, каталог не изменён.
+4 консоль в каталоге: очистка: PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-082\\probes\\plan_code\\work\\output' -> 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-082\\probes\\plan_code\\work\\output.old-4340'
+   в output: ['a.png', 'well_history.csv', 'z.csv']; рядом: []
+5 корень диска: проверка: CaseConfigError: каталог вывода D:\ — корень диска: перед записью результатов каталог очищается целиком. Укажите подкаталог.
+6 занятое соседнее имя: output.check-4340-1
+6 занятое соседнее имя: проверка: прошло
+   в output: ['a.png', 'well_history.csv', 'z.csv']; рядом: ['output.check-4340']
+7 обратное переименование не прошло: CaseConfigError: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-082\probes\plan_code\work\output при проверке переименован в D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-082\probes\plan_code\work\output.check-4340 и не возвращён (Access is denied): верните ему прежнее имя и повторите расчёт.
+   в output: нет каталога; рядом: ['output.check-4340']
+8 удаление переименованного не прошло: прошло
+   в output: нет каталога; рядом: ['output.old-4340']
+9 запасной каталог: output_2026-10-18_15-57-32, при занятом имени — output_2026-10-18_15-57-32-1

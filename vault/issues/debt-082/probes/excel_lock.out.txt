@@ -1,0 +1,2 @@
+﻿rename: отказ WinError 5, осталось ['a.png', 'well_history.csv', 'z.csv']
+rmtree: отказ WinError 32, осталось ['well_history.csv', 'z.csv']

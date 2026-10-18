@@ -7,7 +7,8 @@ issue: DEBT-081
 github: 135
 branch: refactor/debt-081/grid-n-integer-check
 status: реализован
-worktree: .worktrees/debt-081
+worktree: .worktrees/debt-081; удалён после влития
+merged: f2d77db (2026-10-18)
 audit:
   date: 2026-10-18
   round: 1

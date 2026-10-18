@@ -184,16 +184,18 @@ if __name__ == "__main__":
     r = run_case(here / "config.json", here / "output")
     history, grid, config = r.history, r.grid, r.config
 
+    # Каталог, куда run_case записал результаты: при занятом here/output —
+    # соседний с датой и временем в имени (DEBT-082)
     _add_dupuit_curve(
         history, grid, config,
-        output_dir=here / "output",
+        output_dir=r.output_dir,
         title=r.title,
     )
     print("График давления перестроен с аналитикой Дюпюи.")
 
     _add_temperature_analytics(
         history, grid, config, r.simulator.pvt,
-        output_dir=here / "output",
+        output_dir=r.output_dir,
         title=r.title,
     )
 
@@ -202,4 +204,4 @@ if __name__ == "__main__":
 
     # Перестроенные выше рисунки — вторым пакетом: первый конвертировал
     # run_case (FEAT-026).
-    export_emf(here / "output")
+    export_emf(r.output_dir)

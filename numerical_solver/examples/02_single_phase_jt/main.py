@@ -289,11 +289,13 @@ if __name__ == "__main__":
     r = run_case(here / "config.json", here / "output")
     history, grid, config = r.history, r.grid, r.config
 
-    _add_dupuit_curve(history, grid, config, here / "output", r.title)
+    # Каталог, куда run_case записал результаты: при занятом here/output —
+    # соседний с датой и временем в имени (DEBT-082)
+    _add_dupuit_curve(history, grid, config, r.output_dir, r.title)
     print("График давления перестроен с аналитикой Дюпюи.")
 
     gap = _add_temperature_analytics(history, grid, config, r.simulator.pvt,
-                                     here / "output", r.title)
+                                     r.output_dir, r.title)
     print(f"  Отставание от JT-асимптотики: {gap:.3f} К "
           f"(релаксация не завершена за {history.times[-1] / 86400:.0f} сут)")
 
@@ -302,4 +304,4 @@ if __name__ == "__main__":
 
     # Перестроенные выше рисунки — вторым пакетом: первый конвертировал
     # run_case (FEAT-026).
-    export_emf(here / "output")
+    export_emf(r.output_dir)

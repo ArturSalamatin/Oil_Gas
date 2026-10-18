@@ -33,6 +33,13 @@ def test_setup_bat_installs_both_packages():
     assert "-m gpn_multiphase_solver run --help" in text
 
 
+def test_setup_bat_command_matches_readme():
+    """Ручная установка README §1 — та же команда, что выполняет setup.bat."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert rf".venv\Scripts\python {INSTALL}" in readme
+    assert "setup.bat" in readme
+
+
 def test_setup_bat_python_floor_matches_pyproject():
     """Граница версии Python в setup.bat — та же, что requires-python в pyproject.toml."""
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")

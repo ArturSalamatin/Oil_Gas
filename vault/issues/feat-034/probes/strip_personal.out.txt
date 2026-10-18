@@ -1,0 +1,8 @@
+﻿template_saved.xlsx xl/workbook.xml: замен 1
+template_saved.xlsx docProps/core.xml: замен 1
+template_saved.xlsx docProps/core.xml: замен 1
+template_saved.xlsx: осталось ничего
+traps.xlsx xl/workbook.xml: замен 1
+traps.xlsx docProps/core.xml: замен 1
+traps.xlsx docProps/core.xml: замен 1
+traps.xlsx: осталось ничего

@@ -8,8 +8,9 @@
 #   A7 «01.05.2026» — общая строка t="s" (при английских настройках не дата);
 #   =ROW() — в A10, не B1:B3 (общей формулы нет — её проверяет правка XML в тестах).
 # Признак даты на настоящем Excel — A8 10:30, встроенный формат 20. Книг .xls и с паролем
-# пользователь не делал. В docProps/core.xml обеих книг — имя автора (dc:creator «Artur»,
-# cp:lastModifiedBy «Artur Artur»).
+# пользователь не делал. Имя автора (docProps/core.xml) и абсолютный путь каталога
+# (x15ac:absPath в xl/workbook.xml) потом убраны — strip_personal.py; вывод ниже снят до этого,
+# значения ячеек от правки не зависят.
 разбор: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-034\numerical_solver\gpn_multiphase_solver\io\xlsx_reader.py
 numerical_solver/tests/data/feat034_excel/traps.xlsx: листов 1, recalc_on_open = False
   Sheet1!A1    number  1.5                          date=False formula='1.5'

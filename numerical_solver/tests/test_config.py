@@ -13,6 +13,8 @@
 - Скважина: skin ≥ 0 (отказ с обходом через r_well), предупреждения при skin > 50
   и при p_wf / min_bhp ≥ p0 в объекте истории (DEBT-056); при skin > 0 —
   скин не входит в уравнение энергии (BUG-029).
+- Сетка: grid.N — целое ≥ 1; true, строка, null, 100.0 — отказ при загрузке (DEBT-081).
+- Целые поля: каждое поле секции с аннотацией int отвергает true и 2.5 (страж, DEBT-081).
 - Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).
 - PVT: плотности при ст. у. pvt.rho_o_std, pvt.rho_g_std > 0 при любой модели PVT (DEBT-076).
 - PVT: сжимаемость недонасыщенной нефти pvt.co_undersaturated ≥ 0 при любой модели (DEBT-078).
@@ -351,6 +353,31 @@ class TestValidationGrid:
         raw["grid"]["N"] = 0
         with pytest.raises(ValueError, match="N"):
             load_config(_write_json(tmp_path, raw))
+
+    @pytest.mark.parametrize("value", [True, False, "100", None, 100.0, 100.5, 0, -1],
+                             ids=["true", "false", "str", "null", "float_integral",
+                                  "fraction", "zero", "negative"])
+    def test_N_not_positive_integer_rejected(self, tmp_path, value):
+        """grid.N — целое ≥ 1, иначе ValueError с узлом JSON при загрузке (DEBT-081)."""
+        # До DEBT-081 (vault/issues/debt-081/probes/red_state.out.txt): true —
+        # расчёт на одной ячейке молча (bool — подкласс int); "100" и null —
+        # TypeError в сравнении без имени поля; 100.0 и 100.5 load_config
+        # пропускал, отказ давал LogRadialGrid при сборке решателя, по-английски;
+        # 0, -1, false — отказ без префикса grid. 100.0 не приводится к 100 — как
+        # max_retries (test_float_rejected): в JSON целое пишется без точки,
+        # перевод книги (FEAT-035) пишет int.
+        raw = _minimal_raw()
+        raw["grid"]["N"] = value
+        with pytest.raises(ValueError, match=r"grid\.N должен быть целым ≥ 1"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_N_one_accepted(self, tmp_path):
+        """N = 1 — нижняя граница: сетку из одной ячейки LogRadialGrid строит."""
+        # Отличие от true — тип: 1 записано целым, это осознанный выбор, не опечатка
+        raw = _minimal_raw()
+        raw["grid"]["N"] = 1
+        cfg = load_config(_write_json(tmp_path, raw))
+        assert cfg.grid.N == 1 and type(cfg.grid.N) is int
 
 
 class TestValidationRock:
@@ -871,6 +898,23 @@ _FLOAT_FIELDS = [
 ]
 
 
+# Целые поля секций — по аннотациям, как _FLOAT_FIELDS (DEBT-081). Проверку
+# целого _validate пишет у каждого поля отдельно: _check_numeric_fields тип int
+# не проверяет, а bool — подкласс int. До DEBT-081 у grid.N её не было, и
+# "N": true давал расчёт на одной ячейке молча. Новое поле с аннотацией int
+# попадает в test_int_field_rejects_non_integer само и без своей проверки в
+# _validate уронит тест. repeat краткой формы истории — ключ словаря, не поле.
+_INT_FIELDS = [
+    (section, f.name)
+    for section, cls in (("geometry", GeometryConfig), ("grid", GridConfig),
+                         ("rock", RockConfig), ("pvt", PVTConfig),
+                         ("relperm", RelPermConfig), ("thermal", ThermalConfig),
+                         ("initial_conditions", InitialConfig), ("time", TimeConfig),
+                         ("numerics", NumericsConfig), ("output", OutputConfig))
+    for f in fields(cls) if f.type in ("int", "Optional[int]")
+]
+
+
 # Число и конечность любого числового поля (DEBT-051). Замер до DEBT-051
 # (vault/issues/debt-051/probes/red_state.out.txt, 24 ч при p_wf = 6 МПа):
 # NaN в p0, porosity и ещё 11 полях — отказ после дробления первого шага до
@@ -924,6 +968,27 @@ class TestValidationNumbers:
         raw = _minimal_raw()
         raw["grid"]["N"] = float("nan")
         with pytest.raises(ValueError, match=r"grid\.N должно быть конечным"):
+            load_config(_write_json(tmp_path, raw))
+
+    def test_int_field_list_covers_known_fields(self):
+        """Список целых полей из аннотаций содержит пять известных (DEBT-081)."""
+        # Страж способа отбора, как test_field_list_covers_known_fields: сменят
+        # аннотации вид («int | None») — список опустеет вместе с тестом ниже
+        known = {("grid", "N"), ("numerics", "newton_max_iter"),
+                 ("numerics", "max_active_set_iter"), ("numerics", "max_retries"),
+                 ("output", "n_profiles")}
+        assert known <= set(_INT_FIELDS)
+
+    @pytest.mark.parametrize("value", [True, 2.5], ids=["bool", "fraction"])
+    @pytest.mark.parametrize("section, key", _INT_FIELDS,
+                             ids=[f"{s}.{k}" for s, k in _INT_FIELDS])
+    def test_int_field_rejects_non_integer(self, tmp_path, section, key, value):
+        """true и 2.5 в целом поле → ValueError «<секция>.<поле> должен быть целым» (DEBT-081)."""
+        # Тексты у полей разные («целым», «целым ≥ 1», «целым ≥ 2 или null»),
+        # общий префикс — «<секция>.<поле> должен быть целым»
+        raw = _minimal_raw()
+        raw.setdefault(section, {})[key] = value
+        with pytest.raises(ValueError, match=rf"{section}\.{key} должен быть целым"):
             load_config(_write_json(tmp_path, raw))
 
     @pytest.mark.parametrize("value", [float("nan"), float("inf")], ids=["nan", "inf"])

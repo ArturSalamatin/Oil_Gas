@@ -6,6 +6,6 @@
 # importing the package. build_info.VERSION ('1.0.3') is the version written
 # to run_summary and compared by the regression with the golden outputs; it
 # is unchanged.
-__version__='1.0.3+gpn.1'
+__version__='1.0.3+gpn.2'
 from .input_reader import load_input, InputValidationError
 from .runner import run_workbook

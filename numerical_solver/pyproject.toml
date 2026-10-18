@@ -23,7 +23,7 @@ dependencies = [
     # пакет с тем же именем зависимость не удовлетворит. N и это требование
     # повышает tools/release.py при выпуске (FEAT-038). Ставить вместе:
     #   pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]"
-    "radial-blackoil==1.0.3+gpn.1",
+    "radial-blackoil==1.0.3+gpn.2",
 ]
 
 [project.optional-dependencies]

@@ -6,7 +6,7 @@ date: 2026-10-18
 issue: DEBT-082
 github: 138
 branch: refactor/debt-082/locked-output-dir
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-082
 audit:
   date: 2026-10-18
@@ -1147,3 +1147,21 @@ audit:
 4. 🟡 `numerical_solver/examples/README.md:287-292` повторяет правило очистки и коды возврата — план его не правил, после реализации README примеров разошёлся бы с README пакета. → Шаг 5, п. 5.
 5. 🔵 Посылка «Excel держит файл без права удаления, как `open()` Python» проверялась только эмуляцией. → Проба E на настоящем Excel: переименование — WinError 5, всё цело; `rmtree` — WinError 32, удалён файл.
 6. 🔵 Время быстрого уровня не было записано. → 190 с на копии (п. 7 «Как начать»).
+
+## 12. Реализация (2026-10-18)
+
+Ветка `refactor/debt-082/locked-output-dir`, worktree `.worktrees/debt-082`, от `e39fd5b` (база `35d2980` + предварительный коммит). Шаги выполнены по плану без отступлений; код функций и тесты — дословно блоки §5 (`plan_code/test_output_dir.py`).
+
+| Шаг | Коммит | Быстрый уровень |
+|---|---|---|
+| база | — | 2176 passed, 1 skipped за 168 с (2461 собрано) |
+| 1 функции | `91ac121` | 2187 passed, 1 skipped |
+| 2 `run_case` по конфигу | `1bd8fb4` | 2192 passed, 1 skipped |
+| 3 книга | `e68f69b` | 2192 passed, 1 skipped |
+| 4 примеры, `.gitignore` | `ed1888f` | 2192 passed, 1 skipped; `test_example_scripts.py` 84 passed; пример 01 из worktree — код 0, рисунки в `output/` |
+| 5 документация | `7517a96` | 2477 собрано; `test_cli.py` + `test_eq_references.py` 46 passed |
+| 6 vault | `d3059bf` | `test_eq_references.py` 13 passed |
+
+Полный прогон: 2476 passed, 1 skipped (`test_xlsx_reader.py:476`, черновик книги вне git) за 714 с.
+
+**Влитие.** Пока шла реализация, база выпустила `1.0.0` (`e100fcb`, `9b7dabd`, `024e19a`): «Не выпущено» журнала сведено в `## 1.0.0 — 2026-10-18`, над ним — пустой `## Не выпущено`. Пробное слияние (`git merge-tree --write-tree numerical_scheme/implementation HEAD`) — один конфликт, `numerical_solver/CHANGELOG.md`. Разрешение: блок «### Исправлено» ветки — под пустым `## Не выпущено`, раздел `1.0.0` базы — без изменений. Остальные файлы базы (`__version__` `1.0.1.dev0`, номер прототипа, `pyproject.toml`) с веткой не пересекаются.

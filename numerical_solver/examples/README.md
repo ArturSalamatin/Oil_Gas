@@ -263,8 +263,10 @@ cd numerical_solver
 
 Прототип гидродинамики `radial_blackoil` — отдельный дистрибутив `radial-blackoil`
 (каталог `HydroSolverPrototype/Prototype_1.0.3`), зависимость решателя (DEBT-059).
-Ставить оба одной командой, как выше: решатель требует ровно версию `1.0.3+gpn.1`,
-и `pip install -e .` без прототипа завершится ошибкой «No matching distribution
+Ставить оба одной командой, как выше: решатель требует ровно ту версию
+прототипа, что записана литералом `__version__` в
+`HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/__init__.py`, и
+`pip install -e .` без прототипа завершится ошибкой «No matching distribution
 found for radial-blackoil». `PYTHONPATH` задавать не нужно.
 
 ### Команда расчёта по конфигу (FEAT-030)

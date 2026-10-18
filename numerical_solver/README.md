@@ -32,9 +32,11 @@ Black Oil, вода отсутствует) совместно с расчёто
 
 Решатель и прототип — два отдельных пакета, и устанавливать их нужно
 **вместе, одной командой**: решатель требует строго определённую версию
-прототипа `radial-blackoil==1.0.3+gpn.1`, и без прототипа `pip install .`
-завершится ошибкой «No matching distribution found for radial-blackoil».
-Все команды выполняются из каталога `numerical_solver`.
+прототипа `radial-blackoil` (номер — литерал `__version__` в
+[`radial_blackoil/__init__.py`](HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/__init__.py)),
+и без прототипа `pip install .` завершится ошибкой «No matching
+distribution found for radial-blackoil». Команды ниже, кроме установки из
+выпуска, выполняются из каталога `numerical_solver`.
 
 **Для разработки** (изменения исходного кода действуют сразу, без переустановки):
 
@@ -51,6 +53,28 @@ python -m venv .venv
 ```powershell
 .venv\Scripts\python -m pip install HydroSolverPrototype\Prototype_1.0.3 .
 ```
+
+**Из выпуска** (испытания: пакеты без исходного кода). Выпуски публикуются
+в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; к каждому
+приложены колёса решателя и прототипа и архив примеров
+`examples-vX.Y.Z.zip` (без примера 18: ему нужны файлы дерева прототипа).
+Репозиторий закрытый — нужен GitHub CLI, авторизованный командой
+`gh auth login`. Команды выполняются из любого каталога; номер выпуска —
+вместо `1.0.0`:
+
+```powershell
+gh release download v1.0.0 --repo ArturSalamatin/Oil_Gas --dir release-1.0.0
+Expand-Archive release-1.0.0\examples-v1.0.0.zip -DestinationPath release-1.0.0
+python -m venv .venv                       # один раз
+.venv\Scripts\python -m pip install (Get-ChildItem release-1.0.0\*.whl).FullName
+.venv\Scripts\python -m gpn_multiphase_solver run release-1.0.0\examples\06_table_corey_rp\config.json
+```
+
+Колёса ставятся по путям файлов: при установке по имени пакета с
+`--find-links` pip может взять одноимённый пакет с PyPI. Шаблон `*.whl`
+раскрывает `Get-ChildItem` — сам pip его не раскрывает. Обновление — те же
+команды, кроме создания `.venv`, с номером нового выпуска: примеры
+распаковываются в каталог своего выпуска, pip заменит установленные версии.
 
 **На компьютере без доступа к PyPI.** На компьютере, где доступ есть,
 соберите в каталог `wheels` установочные файлы (формат wheel, `.whl`)

@@ -437,16 +437,48 @@ cells (N)): 20.5 — нужно целое число ≥ 1`. Ошибки, ко
 
 ## 4. Использование из Python
 
-Тот же штатный набор результатов даёт одна функция — с доступом к данным расчёта:
+Решатель вызывается из скриптов другого проекта. Пакет ставится в окружение
+этого проекта: из выпуска — шаги 2, 4 и 5 из §1 «Из выпуска», из исходного
+кода — команды §1. Исходные данные — файл конфигурации с таблицами CSV
+(3.1–3.3) или книга Excel (3.6); проще всего скопировать папку подходящего
+примера, например `examples\06_table_corey_rp` под именем `my_case`.
+Относительные пути в скриптах ниже отсчитываются от папки, из которой
+запускается скрипт; все величины — в СИ.
+
+**Штатный набор результатов с доступом к данным расчёта** — файл
+`my_script.py`:
 
 ```python
+from gpn_multiphase_solver.cli import configure_batch_run
 from gpn_multiphase_solver.report.pipeline import run_case
 
-r = run_case("my_case/config.json", "my_case/output", title="Скважина 1")
-last = r.history.states[-1]
-print(last.p[0], last.T[0])              # давление, Па, и температура, К, в ячейке у забоя
-print(r.history.well_data[-1].q_o_std)   # дебит нефти, м³ст/с
+# Рисунки — в файлы, без окон; русские буквы в консоли — без ошибок
+configure_batch_run()
+
+# Расчёт: файлы результатов — в my_case/output, сводка — в консоль
+result = run_case("my_case/config.json", "my_case/output", title="Скважина 1")
+
+# Данные расчёта для своей обработки
+history = result.history
+last_state = history.states[-1]      # пласт на последней записи
+last_well = history.well_data[-1]    # скважина на последней записи
+
+print("Забойное давление, МПа:", last_well.p_wf / 1e6)
+print("Забойная температура, К:", last_well.T_wf)
+print("Дебит нефти, м³ст/сут:", last_well.q_o_std * 86400)
+print("Наибольшая газонасыщенность:", last_state.Sg.max())
 ```
+
+Запуск — из папки проекта:
+
+```powershell
+.venv\Scripts\python my_script.py
+```
+
+`configure_batch_run()` вызывается первой строкой собственного скрипта: она
+переключает matplotlib в режим без вывода окон и устанавливает для консоли
+кодировку UTF-8 — так же, как это делает команда. Без неё вывод в файл или
+канал может прерваться ошибкой кодировки на знаках вроде «м³».
 
 `run_case` записывает файлы и выводит сводку в консоль так же, как команда.
 Первым аргументом можно передать и книгу Excel (3.6): `run_case("my_case.xlsx")`.
@@ -455,30 +487,51 @@ print(r.history.well_data[-1].q_o_std)   # дебит нефти, м³ст/с
 профилей: словарь `{"p" | "T" | "Sg" | "Rs": функция(ax, history, grid, simulator)}`,
 пример — функция `overlay_temperature` в
 [examples/03_standing_corey/main.py](examples/03_standing_corey/main.py).
-В собственном скрипте сначала вызовите
-`gpn_multiphase_solver.cli.configure_batch_run()`: она переключает matplotlib
-в режим без вывода окон и устанавливает для консоли кодировку UTF-8 — так же,
-как это делает команда.
+Ошибка в файле конфигурации, таблицах или книге — исключение
+`CaseConfigError` (наследник `ValueError`), расчёт не начинался; отказ
+решателя на шаге по времени — `CaseRunError` (наследник `RuntimeError`).
+Оба класса — в `gpn_multiphase_solver.report.pipeline`; текст исключения
+называет причину, у ошибок конфигурации — поле.
 
-Только расчёт, без записи файлов и вывода в консоль:
+**Только расчёт**, без записи файлов и сводки в консоли — например, для
+серии расчётов:
 
 ```python
+from gpn_multiphase_solver.cli import configure_batch_run
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.factory import SimulatorFactory
 
-config = load_config("my_case/config.json")
-simulator, initial_state = SimulatorFactory.from_config(config)
-history = simulator.run(initial_state)
+configure_batch_run()
 
-r = simulator.grid.r_centers          # центры ячеек, м
-p = history.states[-1].p              # давление на последней записи, Па
-t = history.times                     # моменты записей, с
+config = load_config("my_case/config.json")                      # прочитать и проверить
+simulator, initial_state = SimulatorFactory.from_config(config)  # собрать решатель
+history = simulator.run(initial_state)                           # рассчитать
+
+# Таблица по моментам записи: время, забойные давление и температура, дебит
+for t, well in zip(history.times, history.well_data):
+    print(f"{t / 86400:8.3f} сут  {well.p_wf / 1e6:7.3f} МПа  "
+          f"{well.T_wf:8.3f} К  {well.q_o_std * 86400:8.2f} м³ст/сут")
+
+# Профиль по радиусу на последней записи
+r = simulator.grid.r_centers         # центры ячеек, м
+T = history.states[-1].T             # температура в ячейках, К
+print("ячеек:", len(r), " T у забоя:", T[0], " T у контура:", T[-1])
 ```
+
+Строки журнала решателя (`[INFO] …`) выводятся и здесь; уровень подробности
+задаёт поле `output.log_level` файла конфигурации, например `"WARNING"`.
+Ошибки в файле конфигурации или таблицах — исключения `load_config` и
+`SimulatorFactory.from_config`: обычно `ValueError`; `OSError` — файл не
+читается, `TypeError` и `KeyError` — лишний или пропущенный ключ. Отказ
+решателя — `RuntimeError` (`simulator.run`). В `run_case` все они сведены к
+`CaseConfigError` и `CaseRunError`.
 
 Содержимое истории расчёта: `history.times` — моменты записей, с;
 `history.states[i]` — поля `p` (Па), `T` (К), `Sg`, `Rs` (м³ст/м³ст) по
 ячейкам; `history.well_data[i]` — `q_o_std`, `q_g_std` (м³ст/с), `m_o_well`,
-`m_g_well` (кг/с), `p_wf` (Па), `T_wf` (К). Сетка, PVT-модель и ОФП доступны
+`m_g_well` (кг/с), `p_wf` (Па), `T_wf` (К). Индекс 0 у полей `states[i]` —
+ячейка у забоя; `states[i].p[0]` — давление в её центре, а забойное
+давление — `well_data[i].p_wf`. Сетка, PVT-модель и ОФП доступны
 как свойства `simulator.grid`, `simulator.pvt`, `simulator.relperm`; без
 расчёта PVT-модель и ОФП создают функции `factory.create_pvt(config)` и
 `factory.create_relperm(config)`.

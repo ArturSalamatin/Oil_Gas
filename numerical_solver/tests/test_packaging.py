@@ -101,6 +101,19 @@ class TestDistributions:
         # '1.0' по PEP 440 канонична (проба plan_checks.py) — число частей отдельно
         assert len(version.release) == 3, f"не MAJOR.MINOR.PATCH: {text!r}"
 
+    def test_changelog_has_section_for_version(self):
+        """Журнал согласован с номером: до выпуска — раздел «Не выпущено», выпуск — раздел своего номера (FEAT-037)."""
+        # is_prerelease истинно для .devN, aN, bN, rcN. Ловит выпуск без
+        # раздела журнала. Суффикс .dev, забытый после выпуска, не ловит:
+        # номер ставит выпуск (FEAT-031), журнал за него не отвечает
+        version = Version(_static_version(SOLVER_INIT))
+        lines = (SOLVER / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+        if version.is_prerelease:
+            assert "## Не выпущено" in lines, "номер до выпуска, а раздела «Не выпущено» нет"
+        else:
+            head = re.compile(rf"## {re.escape(str(version))}( |$)")
+            assert any(head.match(s) for s in lines), f"нет раздела «## {version} — <дата>»"
+
     def test_prototype_installs_only_its_package(self):
         """В дистрибутив прототипа попадает только radial_blackoil (рядом tests/ — тоже пакет)."""
         # Без include в site-packages лёг бы пакет верхнего уровня tests

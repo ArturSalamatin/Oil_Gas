@@ -7,7 +7,7 @@ issue: FEAT-038
 github: 137
 branch: feat/feat-038/team-releases-script
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-038
 audit:
   date: 2026-10-18

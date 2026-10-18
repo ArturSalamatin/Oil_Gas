@@ -8,7 +8,8 @@ github: 134
 branch: feat/feat-037/solver-version-changelog
 model_level: null
 status: реализован
-worktree: .worktrees/feat-037
+merged: 5ea30e7 (2026-10-18)
+worktree: .worktrees/feat-037; удалён после влития
 audit:
   date: 2026-10-18
   round: 1

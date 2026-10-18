@@ -221,13 +221,6 @@ ENTRY = re.compile(r"^(\*{0,2}\w+(?:\s*,\s*\*{0,2}\w+)*)\s*(?::.*)?$")
 # списка. После шага 9 список пуст и удаляется. Начальный список — по факту
 # прогона (91 из 120 объектов), а не руками
 PENDING = frozenset(f"{PACKAGE}.{n}" for n in (
-    # шаг 6 — сборка, решатель, история, режим скважины, сетка
-    "factory.SimulatorFactory.from_config", "factory.create_pvt", "factory.create_relperm",
-    "simulator.Simulator", "simulator.Simulator.run",
-    "state.SimulationState", "state.WellData", "state.SimulationHistory",
-    "state.BoundaryConditions",
-    "bc.WellControl", "bc.PressureControl", "bc.RateControl",
-    "grid.log_radial.LogRadialGrid",
     # шаг 7 — PVT и ОФП
     "pvt.base.HydroPVT.Rs_eq", "pvt.base.HydroPVT.Bo", "pvt.base.HydroPVT.Bg",
     "pvt.base.HydroPVT.mu_o", "pvt.base.HydroPVT.mu_g", "pvt.base.HydroPVT.pb",

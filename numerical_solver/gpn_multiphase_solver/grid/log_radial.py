@@ -8,24 +8,38 @@ import numpy as np
 from .base import Grid
 
 
+# Грани: geomspace(r_well, R_ext, N+1). Центры: среднее геометрическое граней
+# √(r_{j-1/2}·r_{j+1/2}) (eq:cell_center). Проводимости: 2πkh /
+# ln(r_center[j+1]/r_center[j]) (eq:transmissibility). Immutable после создания
 class LogRadialGrid(Grid):
-    """Логарифмическая радиальная сетка.
+    """Логарифмическая радиальная сетка: грани — геометрическая прогрессия от r_w до r_e. Ур. (eq:log_grid) problem_statement.tex.
 
-    Грани: geomspace(r_well, R_ext, N+1).
-    Центры: среднее геометрическое граней √(r_{j-1/2}·r_{j+1/2}) (eq:cell_center).
-    Проводимости: T = 2πkh / ln(r_center[j+1]/r_center[j]).
-    Immutable после создания.
+    Центр ячейки — среднее геометрическое её граней, Ур. (eq:cell_center);
+    объёмы — Ур. (eq:volume); проводимости граней — Ур. (eq:transmissibility).
+
+    Параметры
+    ---------
+    r_well : float
+        Радиус скважины r_w, м, > 0.
+    R_ext : float
+        Радиус контура питания r_e, м, > r_w.
+    h : float
+        Толщина пласта, м, > 0.
+    N : int
+        Число ячеек, целое ≥ 1.
+    k : float, optional
+        Абсолютная проницаемость, м², > 0; входит в проводимости граней.
+        По умолчанию 1.
+
+    Исключения
+    ----------
+    ValueError
+        Значение вне указанных пределов.
     """
 
     def __init__(self, r_well: float, R_ext: float, h: float,
                  N: int, k: float = 1.0):
-        """
-        r_well — радиус скважины, м
-        R_ext  — радиус контура питания, м
-        h      — мощность пласта, м
-        N      — число ячеек (≥ 1)
-        k      — абсолютная проницаемость, м²
-        """
+        """Построить грани, центры, объёмы и проводимости; параметры — в докстринге класса."""
         if r_well <= 0:
             raise ValueError(f"r_well must be > 0, got {r_well}")
         if R_ext <= r_well:

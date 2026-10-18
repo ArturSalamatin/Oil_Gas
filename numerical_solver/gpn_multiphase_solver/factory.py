@@ -32,14 +32,40 @@ from .log import setup_logging, user_log
 
 
 class SimulatorFactory:
-    """Фабрика: SimulationConfig → (Simulator, initial_state)."""
+    """Сборка решателя по конфигурации: сетка, PVT, ОФП, гидродинамика прототипом, уравнение энергии, расписание."""
 
     @staticmethod
     def from_config(config: SimulationConfig) -> tuple[Simulator, SimulationState]:
-        """Создать Simulator и начальное состояние из конфига.
+        """Собрать решатель и начальное состояние по проверенной конфигурации.
 
-        Возвращает (simulator, initial_state).
-        Запуск: history = simulator.run(initial_state).
+        Настраивает журнал решателя (``output.log_level``), читает и
+        проверяет таблицы PVT и ОФП, проверяет, что начальная нефть
+        недонасыщена. Расчёт: ``history = simulator.run(initial_state)``.
+
+        Параметры
+        ---------
+        config : SimulationConfig
+            Результат :func:`load_config`.
+
+        Возвращает
+        ----------
+        simulator : Simulator
+            Решатель: логарифмическая сетка, PVT и ОФП конфигурации,
+            гидродинамика — прототип ``radial_blackoil``, температура —
+            трёхдиагональный решатель уравнения энергии.
+        initial_state : SimulationState
+            Однородное начальное состояние: p0, T0, Rs0 из
+            ``initial_conditions``, газа нет (S_g = 0), t = 0.
+
+        Исключения
+        ----------
+        ValueError
+            Начальная нефть перенасыщена газом (давление насыщения при Rs0
+            выше p0 — в сообщении его значение); таблица CSV не проходит
+            проверку (формат, пределы, монотонность); параметр, допустимый
+            только для корреляций Стендинга, задан при таблицах.
+        OSError
+            Файл таблицы CSV не читается.
         """
         # Логирование
         setup_logging(config.output.log_level)
@@ -103,7 +129,31 @@ class SimulatorFactory:
 # примеры получают PVT и ОФП без решателя. Остальное — внутреннее.
 
 def create_pvt(config: SimulationConfig):
-    """FullPVT по config.pvt.model; публичная — для диагностики без решателя (DEBT-011)."""
+    """PVT-модель конфигурации без сборки решателя — для своей обработки и проверок.
+
+    Тот же объект, что получает решатель (``simulator.pvt``): гидродинамические
+    свойства и постоянные тепловые свойства раздела ``thermal``.
+
+    Параметры
+    ---------
+    config : SimulationConfig
+        Результат :func:`load_config`.
+
+    Возвращает
+    ----------
+    FullPVT
+        ``StandingFullPVT`` при ``pvt.model = "standing"``, ``TableFullPVT``
+        при ``"table"``.
+
+    Исключения
+    ----------
+    ValueError
+        Неизвестная модель; таблица не проходит проверку; при таблицах задан
+        параметр только для корреляций Стендинга (``co_undersaturated ≠ 0``,
+        ``mu_o_undersaturated ≠ "none"``).
+    OSError
+        Файл таблицы не читается.
+    """
     pc = config.pvt
     tc = config.thermal
     ic = config.initial_conditions
@@ -420,7 +470,28 @@ def _warn_initial_table_range(adapter, ic) -> None:
 
 
 def create_relperm(config: SimulationConfig):
-    """RelPermModel по config.relperm.model; публичная — для диагностики без решателя (DEBT-011)."""
+    """Модель ОФП конфигурации без сборки решателя — для своей обработки и проверок.
+
+    Параметры
+    ---------
+    config : SimulationConfig
+        Результат :func:`load_config`.
+
+    Возвращает
+    ----------
+    RelPermModel
+        ``CoreyRP`` при ``relperm.model = "corey"``, ``PrototypeRPAdapter``
+        (таблица прототипа) при ``"table"``.
+
+    Исключения
+    ----------
+    ValueError
+        Неизвестная модель; таблица не проходит проверку: S_g не растёт,
+        значения вне пределов, k_rg в первой строке или k_ro в последней не
+        равны нулю.
+    OSError
+        Файл таблицы не читается.
+    """
     rc = config.relperm
 
     if rc.model == "corey":

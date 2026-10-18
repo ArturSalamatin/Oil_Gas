@@ -57,24 +57,83 @@ python -m venv .venv
 **Из выпуска** (испытания: пакеты без исходного кода). Выпуски публикуются
 в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; к каждому
 приложены колёса решателя и прототипа и архив примеров
-`examples-vX.Y.Z.zip` (без примера 18: ему нужны файлы дерева прототипа).
-Репозиторий закрытый — нужен GitHub CLI, авторизованный командой
-`gh auth login`. Команды выполняются из любого каталога; номер выпуска —
-вместо `1.0.0`:
+`examples-vX.Y.Z.zip` (без примера 18). Нужен GitHub CLI, авторизованный
+командой `gh auth login`. Команды — в PowerShell, в новой пустой папке вне
+каталога проекта; номер выпуска — вместо `1.0.0`.
+
+1. Создать папку и перейти в неё:
+
+   ```powershell
+   mkdir D:\gpn-test
+   cd D:\gpn-test
+   ```
+
+2. Скачать выпуск. В `release-1.0.0` — три файла: `examples-v1.0.0.zip`,
+   `gpn_multiphase_solver-1.0.0-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`:
+
+   ```powershell
+   gh release download v1.0.0 --repo ArturSalamatin/Oil_Gas --dir release-1.0.0
+   dir release-1.0.0
+   ```
+
+3. Распаковать примеры в `release-1.0.0\examples`:
+
+   ```powershell
+   Expand-Archive release-1.0.0\examples-v1.0.0.zip -DestinationPath release-1.0.0
+   ```
+
+4. Создать окружение Python:
+
+   ```powershell
+   python -m venv .venv
+   ```
+
+5. Установить оба пакета по путям файлов. В конце — `Successfully installed`
+   с `gpn-multiphase-solver-1.0.0` и `radial-blackoil-1.0.3+gpn.N`:
+
+   ```powershell
+   .venv\Scripts\python -m pip install (Get-ChildItem release-1.0.0\*.whl).FullName
+   ```
+
+6. Номер версии — `gpn-multiphase-solver 1.0.0`:
+
+   ```powershell
+   .venv\Scripts\python -m gpn_multiphase_solver --version
+   ```
+
+7. Пакеты взяты из окружения — обе строки начинаются с
+   `D:\gpn-test\.venv\Lib\site-packages\`:
+
+   ```powershell
+   .venv\Scripts\python -c "import gpn_multiphase_solver as g, radial_blackoil as r; print(g.__file__); print(r.__file__)"
+   ```
+
+8. Рассчитать пример 06. В начале — строка `Версии: gpn-multiphase-solver
+   1.0.0, radial-blackoil 1.0.3+gpn.N, …`; в сводке `T(r_w) финал` и
+   `q_o финал` совпадают с таблицей «Ожидаемое поведение» в
+   `release-1.0.0\examples\06_table_corey_rp\README.md`:
+
+   ```powershell
+   .venv\Scripts\python -m gpn_multiphase_solver run release-1.0.0\examples\06_table_corey_rp\config.json
+   ```
+
+9. Проверить результаты: в `output` — `well_history.csv`, `profiles.csv`,
+   рисунки PNG и `versions.txt`; первые строки `versions.txt` —
+   `gpn-multiphase-solver 1.0.0` и `radial-blackoil 1.0.3+gpn.N`:
+
+   ```powershell
+   dir release-1.0.0\examples\06_table_corey_rp\output
+   type release-1.0.0\examples\06_table_corey_rp\output\versions.txt
+   ```
+
+Обновление — шаги 2, 3 и 5 с номером нового выпуска. Удаление проверочной
+папки:
 
 ```powershell
-gh release download v1.0.0 --repo ArturSalamatin/Oil_Gas --dir release-1.0.0
-Expand-Archive release-1.0.0\examples-v1.0.0.zip -DestinationPath release-1.0.0
-python -m venv .venv                       # один раз
-.venv\Scripts\python -m pip install (Get-ChildItem release-1.0.0\*.whl).FullName
-.venv\Scripts\python -m gpn_multiphase_solver run release-1.0.0\examples\06_table_corey_rp\config.json
+cd D:\
+Remove-Item D:\gpn-test -Recurse -Force
 ```
-
-Колёса ставятся по путям файлов: при установке по имени пакета с
-`--find-links` pip может взять одноимённый пакет с PyPI. Шаблон `*.whl`
-раскрывает `Get-ChildItem` — сам pip его не раскрывает. Обновление — те же
-команды, кроме создания `.venv`, с номером нового выпуска: примеры
-распаковываются в каталог своего выпуска, pip заменит установленные версии.
 
 **На компьютере без доступа к PyPI.** На компьютере, где доступ есть,
 соберите в каталог `wheels` установочные файлы (формат wheel, `.whl`)

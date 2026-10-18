@@ -6,7 +6,7 @@ date: 2026-10-18
 issue: DEBT-081
 github: 135
 branch: refactor/debt-081/grid-n-integer-check
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-081
 audit:
   date: 2026-10-18

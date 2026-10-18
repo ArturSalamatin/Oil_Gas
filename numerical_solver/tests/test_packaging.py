@@ -1,4 +1,4 @@
-"""Установка пакетов: зависимости, версия прототипа, код своего дерева в тестах (DEBT-059)."""
+"""Установка пакетов: зависимости, версии решателя (FEAT-037) и прототипа, код своего дерева в тестах (DEBT-059)."""
 
 import ast
 import importlib
@@ -7,9 +7,12 @@ import sys
 from pathlib import Path
 
 import pytest
+# packaging — зависимость pytest (packaging>=22), не пакета решателя
+from packaging.version import Version
 
 SOLVER = Path(__file__).resolve().parents[1]                 # numerical_solver/
 PROTO = SOLVER / "HydroSolverPrototype" / "Prototype_1.0.3"  # дистрибутив radial-blackoil
+SOLVER_INIT = SOLVER / "gpn_multiphase_solver" / "__init__.py"  # литерал __version__ решателя
 
 # Модуль импорта → дистрибутив (имя по PEP 503). Новый сторонний импорт
 # в пакете — добавить сюда и в dependencies его pyproject.toml.
@@ -78,6 +81,25 @@ class TestDistributions:
         assert proj["project"]["dynamic"] == ["version"]
         assert proj["tool"]["setuptools"]["dynamic"]["version"] == {
             "attr": "radial_blackoil.__version__"}
+
+    def test_solver_version_is_dynamic_from_literal(self):
+        """Версия дистрибутива решателя — из gpn_multiphase_solver.__version__: один источник номера (FEAT-037)."""
+        proj = _pyproject(SOLVER / "pyproject.toml")
+        assert proj["project"]["dynamic"] == ["version"]
+        # Статический номер рядом с dynamic — второй источник (setuptools
+        # отвергает сборку), его возврат при правке pyproject.toml ловится здесь
+        assert "version" not in proj["project"]
+        assert proj["tool"]["setuptools"]["dynamic"]["version"] == {
+            "attr": "gpn_multiphase_solver.__version__"}
+
+    def test_solver_version_literal_follows_rule(self):
+        """__version__ решателя — литерал, каноническая форма PEP 440, ровно три числа MAJOR.MINOR.PATCH."""
+        # _static_version отвергает вычисляемое значение (не ast.Constant)
+        text = _static_version(SOLVER_INIT)
+        version = Version(text)            # InvalidVersion — не PEP 440
+        assert str(version) == text, f"не каноническая форма PEP 440: {text!r} → {version}"
+        # '1.0' по PEP 440 канонична (проба plan_checks.py) — число частей отдельно
+        assert len(version.release) == 3, f"не MAJOR.MINOR.PATCH: {text!r}"
 
     def test_prototype_installs_only_its_package(self):
         """В дистрибутив прототипа попадает только radial_blackoil (рядом tests/ — тоже пакет)."""

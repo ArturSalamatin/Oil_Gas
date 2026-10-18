@@ -4,7 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gpn-multiphase-solver"
-version = "0.1.0"
+# Номер — литерал gpn_multiphase_solver.__version__ ([tool.setuptools.dynamic]
+# ниже, FEAT-037); правило номеров — CHANGELOG.md
+dynamic = ["version"]
 description = "FVM solver for two-phase Black Oil filtration with energy equation"
 requires-python = ">=3.10"
 dependencies = [
@@ -34,6 +36,12 @@ dev = [
 # ложится в Scripts\ окружения: без активации venv её нет в PATH, тогда —
 # форма python -m.
 gpn-solver = "gpn_multiphase_solver.cli:main"
+
+[tool.setuptools.dynamic]
+# Единственный источник номера — литерал в gpn_multiphase_solver/__init__.py,
+# как у прототипа (DEBT-059). setuptools читает его разбором исходника, без
+# импорта пакета: в изолированной сборке numpy нет.
+version = {attr = "gpn_multiphase_solver.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]

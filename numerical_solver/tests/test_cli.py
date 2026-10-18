@@ -5,6 +5,7 @@
   - команда в отдельном процессе из постороннего каталога: код 0, штатный
     набор файлов, печать заголовка и сводки;
   - коды возврата: 2 — ошибка конфига или аргументов (расчёт не начат),
+    занятый каталог вывода — тоже 2 до расчёта (DEBT-082),
     1 — отказ решателя (без трассировки), 0 — успех;
   - флаги --output, --title, --profiles доходят до run_case;
   - точка входа gpn-solver объявлена в pyproject.toml;
@@ -178,6 +179,35 @@ def test_output_with_config_refused(tmp_path, capsys, monkeypatch):
     assert cli.main(["run", str(cfg), "--output", str(cfg.parent)]) == 2
     assert cfg.is_file()
     assert "содержит входной файл" in capsys.readouterr().err
+
+
+def test_busy_output_returns_2(tmp_path, capsys, monkeypatch):
+    """Каталог вывода занят (файл открыт в другой программе) → код 2 до расчёта, без трассировки, файлы целы (DEBT-082).
+
+    os.rename каталога вывода подменён на отказ, как Windows при открытом
+    CSV (WinError 5): тест не зависит от ОС.
+    """
+    def must_not_run(self, *args, **kwargs):
+        raise AssertionError("расчёт начат при занятом каталоге вывода")
+    monkeypatch.setattr(Simulator, "run", must_not_run)
+
+    cfg = _small_case(tmp_path)
+    out = cfg.parent / "output"
+    out.mkdir()
+    (out / "well_history.csv").write_text("1", encoding="utf-8")
+    real = os.rename
+
+    def locked(src, dst):
+        if Path(src).resolve() == out.resolve():
+            raise PermissionError(13, "Access is denied", str(src))
+        return real(src, dst)
+    monkeypatch.setattr(os, "rename", locked)
+
+    assert cli.main(["run", str(cfg)]) == 2
+    err = capsys.readouterr().err
+    assert "не удаётся очистить" in err and str(out.resolve()) in err
+    assert "Traceback" not in err
+    assert [p.name for p in out.iterdir()] == ["well_history.csv"]
 
 
 # ── Аргументы ────────────────────────────────────────────────

@@ -201,3 +201,98 @@ def test_real_lock_keeps_files(tmp_path, hold):
             pipeline._clear_output(out)
         assert _names(out) == OLD_FILES
     assert _names(tmp_path) == ["out"]
+
+
+# ── run_case по конфигу ──────────────────────────────────────
+
+def _small_case(dst: Path) -> Path:
+    """Конфиг примера 03 на сетке N = 20, одни сутки — в dst/case (как _small_case в test_cli.py). Расчёт ~1 с."""
+    raw = json.loads((EXAMPLES_DIR / "03_standing_corey" / "config.json")
+                     .read_text(encoding="utf-8"))
+    raw["grid"]["N"] = 20
+    h0 = raw["time"]["history"][0]
+    raw["time"]["history"] = [dict(h0, duration=86400.0, dt_out=43200.0)]
+    raw["output"] = {"log_level": "INFO", "title": "тест каталога вывода"}
+    case = dst / "case"
+    case.mkdir(parents=True)
+    cfg = case / "config.json"
+    cfg.write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+    return cfg
+
+
+# Имя запасного каталога: <имя>_<ГГГГ-ММ-ДД>_<чч-мм-сс>[-k]
+STAMPED = re.compile(r"out_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(-\d+)?")
+
+
+def test_run_case_busy_refused_before_run(tmp_path, monkeypatch, capsys):
+    """Занятый каталог: CaseConfigError до расчёта и до печати заголовка, файлы целы."""
+    monkeypatch.setattr(Simulator, "run", _must_not_run)
+    cfg = _small_case(tmp_path)
+    out = _old_output(tmp_path)
+    _lock_rename(monkeypatch, out)
+    with pytest.raises(CaseConfigError, match="не удаётся очистить"):
+        run_case(cfg, out)
+    assert capsys.readouterr().out == ""
+    assert _names(out) == OLD_FILES
+
+
+def test_run_case_busy_after_run_writes_sibling(tmp_path, monkeypatch, caplog):
+    """Каталог заняли во время расчёта: результаты в out_<дата>_<время>, прежний цел, предупреждение с обоими путями.
+
+    _check_output_free настоящий (каталог свободен), отказывает очистка
+    после расчёта — подмена _clear_output: тест не зависит от ОС.
+    """
+    cfg = _small_case(tmp_path)
+    out = _old_output(tmp_path)
+
+    def busy(path):
+        raise PermissionError(13, "Access is denied", str(path))
+    monkeypatch.setattr(pipeline, "_clear_output", busy)
+    buf = io.StringIO()
+    with caplog.at_level(logging.WARNING, logger="gpn_multiphase_solver"), \
+            contextlib.redirect_stdout(buf):
+        r = run_case(cfg, out)
+    assert STAMPED.fullmatch(r.output_dir.name), r.output_dir
+    assert r.output_dir.parent == out.parent
+    assert {"well_history.csv", "versions.txt"} <= set(_names(r.output_dir))
+    assert _names(out) == OLD_FILES                     # прежний каталог не тронут
+    assert str(out) in caplog.text and str(r.output_dir) in caplog.text
+    # Сводка (_print_summary) называет новый каталог
+    assert any(s.startswith("Результаты:") and s.endswith(str(r.output_dir))
+               for s in buf.getvalue().splitlines())
+
+
+@windows_only
+def test_run_case_locked_during_run(tmp_path, monkeypatch):
+    """Windows: файл открыт после расчёта, до очистки — как Excel посреди расчёта: результаты в соседнем каталоге, прежний цел."""
+    cfg = _small_case(tmp_path)
+    out = _old_output(tmp_path)
+    real_run = Simulator.run
+    held = []
+
+    def run_then_open(self, *args, **kwargs):
+        history = real_run(self, *args, **kwargs)
+        held.append(open(out / "well_history.csv", "a", encoding="utf-8"))
+        return history
+    monkeypatch.setattr(Simulator, "run", run_then_open)
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            r = run_case(cfg, out)
+    finally:
+        for f in held:
+            f.close()
+    assert STAMPED.fullmatch(r.output_dir.name), r.output_dir
+    assert _names(out) == OLD_FILES
+    assert (r.output_dir / "well_history.csv").is_file()
+
+
+def test_run_case_free_output_cleared(tmp_path):
+    """Свободный каталог: прежние файлы удалены, результаты на месте, временных каталогов (.check-, .old-) не осталось; путь не меняется."""
+    cfg = _small_case(tmp_path)
+    out = _old_output(tmp_path)
+    with contextlib.redirect_stdout(io.StringIO()):
+        r = run_case(cfg, out)
+    assert r.output_dir == out
+    names = _names(out)
+    assert "a.png" not in names and "z.csv" not in names and "well_history.csv" in names
+    assert _names(tmp_path) == ["case", "out"]

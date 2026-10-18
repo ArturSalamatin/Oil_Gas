@@ -11,6 +11,10 @@ cli.configure_batch_run.
 Вход — JSON-конфиг или книга ввода Excel (FEAT-036): книга переводится в
 output/input/ — вход, по которому расчёт повторяется без книги; каталог
 вывода при этом очищается до перевода (решение пользователя 2026-10-18).
+
+Каталог вывода очищается переименованием (DEBT-082): занятый — отказ до
+расчёта; занятый во время расчёта по конфигу — результаты в соседнем
+каталоге с датой и временем в имени.
 """
 
 from __future__ import annotations
@@ -56,7 +60,7 @@ INPUT_DIR = "input"
 
 
 class CaseConfigError(ValueError):
-    """Конфиг или книга не читаются, не проходят проверку или не собираются фабрикой; расчёт не начат. FEAT-030."""
+    """Конфиг или книга не читаются, не проходят проверку или не собираются фабрикой, каталог вывода занят; расчёт не начат. FEAT-030, DEBT-082."""
 
 
 class CaseRunError(RuntimeError):
@@ -65,7 +69,7 @@ class CaseRunError(RuntimeError):
 
 @dataclass
 class CaseResult:
-    """Итог run_case: решатель, история, сетка, конфиг, заголовок, каталог вывода, время расчёта, с. FEAT-030."""
+    """Итог run_case: решатель, история, сетка, конфиг, заголовок, каталог вывода (фактический: занятый после расчёта заменяется соседним, DEBT-082), время расчёта, с. FEAT-030."""
     elapsed: float
     simulator: Simulator
     history: SimulationHistory
@@ -94,6 +98,12 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     каталоге остаётся только input/. Заголовок по умолчанию — имя книги.
     В нём же versions.txt — версии решателя, прототипа, Python, numpy и
     scipy (FEAT-037).
+
+    Каталог вывода занят (файл в нём открыт в другой программе, консоль в
+    нём) — CaseConfigError до расчёта; ни один файл не удаляется. Заняли во
+    время расчёта по конфигу — результаты пишутся в соседний каталог
+    <имя>_<ГГГГ-ММ-ДД>_<чч-мм-сс>, прежний не тронут, предупреждение в
+    журнал; CaseResult.output_dir — этот каталог (DEBT-082).
 
     title, n_profiles, steady_state — None: значение из секции output
     конфига (заголовок по умолчанию — имя папки конфига).
@@ -154,6 +164,10 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
         # Перевод книги лежит в output/input/ по замыслу; саму книгу
         # проверил _translate_workbook
         _check_inputs_outside(config_path, config, output_dir)
+        # Занятый каталог вывода (файл открыт в Excel, консоль в каталоге) —
+        # отказ до расчёта, а не трассировка после него (DEBT-082). У книги
+        # каталог уже очищен в _translate_workbook
+        _check_output_free(output_dir)
 
     # Версии — после проверки конфига: при его ошибке stdout по-прежнему
     # пуст (test_run_case_config_errors). Тот же список пишется в
@@ -190,8 +204,20 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     # актуальные. Удаление ПОСЛЕ расчёта, а не до: если решатель упадёт,
     # прошлые результаты уцелеют. Книга — исключение: каталог очищен до
     # перевода (_translate_workbook), в нём только input/ этого расчёта.
+    # Очистка переименованием (_clear_output, DEBT-082): каталог заняли во
+    # время расчёта (проверка до расчёта прошла) — ни один файл не удалён,
+    # а расчёт не теряется: результаты пишутся в соседний каталог с датой и
+    # временем в имени, прежний не тронут (решение пользователя
+    # 2026-10-18). Расчёт выполнен — код команды 0, CaseResult.output_dir —
+    # новый каталог
     if workbook is None and output_dir.is_dir():
-        shutil.rmtree(output_dir)
+        try:
+            _clear_output(output_dir)
+        except OSError as exc:
+            busy = output_dir
+            output_dir = _sibling(busy, time.strftime("_%Y-%m-%d_%H-%M-%S"))
+            user_log.warning(f"{_busy_message(busy, exc)}. Результаты записаны в "
+                             f"{output_dir}; прежние результаты в {busy} не тронуты.")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Версии (FEAT-037) ──

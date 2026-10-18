@@ -13,6 +13,10 @@
 config.json и CSV таблиц в СИ в новом или пустом каталоге; ошибки книги, файла
 и каталога — код 2.
 
+Расчёт по книге: gpn-solver run книга.xlsx (FEAT-036) — run_case переводит
+книгу в output/input/ и считает по переводу; каталог вывода очищается до
+расчёта. Ошибки книги — код 2, сообщение «Ошибка книги: …».
+
 Номер версии: gpn-solver --version (FEAT-037) — номер решателя; решатель
 и прототип не импортируются.
 """
@@ -69,19 +73,25 @@ def _parser(prog: str | None) -> argparse.ArgumentParser:
                    version=f"gpn-multiphase-solver {__version__}")
     sub = p.add_subparsers(dest="command", required=True, metavar="команда")
     run = sub.add_parser(
-        "run", help="расчёт по конфигу: CSV, рисунки, печать проверок",
-        description="Расчёт по JSON-конфигу: история скважины и профили (CSV), "
-                    "штатные рисунки (PNG), печать проверок.",
+        "run", help="расчёт по конфигу или книге Excel: CSV, рисунки, печать проверок",
+        description="Расчёт по JSON-конфигу или книге ввода Excel (.xlsx): история "
+                    "скважины и профили (CSV), штатные рисунки (PNG), печать "
+                    "проверок. Книга переводится в config.json и CSV таблиц в "
+                    "каталоге input внутри каталога вывода; по ним расчёт "
+                    "повторяется без книги.",
         epilog="Коды возврата: 0 — расчёт завершён; 1 — решатель отказал; "
-               "2 — ошибка аргументов или конфига. Каталог вывода после "
-               "расчёта очищается целиком.")
-    run.add_argument("config", type=Path, help="JSON-конфиг расчёта")
+               "2 — ошибка аргументов, конфига или книги. Каталог вывода "
+               "очищается целиком: при расчёте по конфигу — после расчёта, "
+               "по книге — до него.")
+    run.add_argument("config", type=Path, metavar="вход",
+                     help="JSON-конфиг расчёта или книга ввода Excel (.xlsx)")
     run.add_argument("--output", type=Path, default=None,
                      help="каталог результатов (по умолчанию — output рядом с "
-                          "конфигом); очищается целиком")
+                          "конфигом или книгой); очищается целиком")
     run.add_argument("--title", default=None,
                      help="заголовок рисунков и печати (по умолчанию — "
-                          "output.title конфига или имя его папки)")
+                          "output.title конфига или имя его папки; у книги — "
+                          "её имя без расширения)")
     run.add_argument("--profiles", type=_profiles, default=None, metavar="N",
                      help="число моментов на профильных графиках (по умолчанию "
                           "— output.n_profiles конфига)")
@@ -166,15 +176,18 @@ def main(argv: list[str] | None = None, prog: str | None = None) -> int:
     # Импорт конвейера — после configure_batch_run и разбора: --help не
     # тянет scipy, решатель и прототип (matplotlib и numpy импортирует
     # configure_batch_run — режим Agg)
-    from .report.pipeline import CaseConfigError, CaseRunError, run_case
-    # Абсолютные пути: печать «Конфиг: …» однозначна при любом каталоге
+    from .report.pipeline import EXCEL_SUFFIXES, CaseConfigError, CaseRunError, run_case
+    # Абсолютные пути: печать «Конфиг: …» и «Книга: …» однозначна при любом каталоге
     # запуска (и совпадает с прежней печатью main.py примеров)
     config = args.config.resolve()
     output = args.output.resolve() if args.output is not None else None
     try:
         run_case(config, output, title=args.title, n_profiles=args.profiles)
     except CaseConfigError as exc:
-        print(f"Ошибка конфига: {exc}", file=sys.stderr)
+        # Книга (FEAT-036): и ошибки ячеек, и отказ проверки конфига по её
+        # переводу — ключ строки книги равен пути поля JSON (FEAT-035)
+        what = "книги" if config.suffix.lower() in EXCEL_SUFFIXES else "конфига"
+        print(f"Ошибка {what}: {exc}", file=sys.stderr)
         return 2
     except CaseRunError as exc:
         print(f"Расчёт не завершён: {exc}", file=sys.stderr)

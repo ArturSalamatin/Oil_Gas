@@ -15,6 +15,8 @@ import importlib.util
 import inspect
 import json
 import re
+import subprocess
+import sys
 import textwrap
 from pathlib import Path
 
@@ -216,16 +218,6 @@ UNDERLINE = re.compile(r"^\s*-{3,}\s*$")
 # Запись раздела: строка без отступа «имя», «имя : тип», «a, b : тип», «*args»
 ENTRY = re.compile(r"^(\*{0,2}\w+(?:\s*,\s*\*{0,2}\w+)*)\s*(?::.*)?$")
 
-# Объекты, чьи докстринги ещё не переписаны (шаги 5–9 плана FEAT-031):
-# строгий xfail — переписанный объект проходит (XPASS) и обязан уйти из
-# списка. После шага 9 список пуст и удаляется. Начальный список — по факту
-# прогона (91 из 120 объектов), а не руками
-PENDING = frozenset(f"{PACKAGE}.{n}" for n in (
-    # шаг 9 — докстринги подпакетов
-    "pvt", "energy", "hydro", "grid", "io", "diagnostics", "report",
-))
-
-
 def api_objects() -> dict[str, tuple[str, object, type | None, str | None]]:
     """Полное имя → (вид, объект, класс-владелец, имя члена) по перечню, с членами классов."""
     out = {}
@@ -370,16 +362,38 @@ def docstring_problems(name: str) -> list[str]:
     return problems
 
 
-@pytest.mark.parametrize("name", [
-    pytest.param(n, marks=pytest.mark.xfail(
-        strict=True, reason="докстринг ещё не переписан (FEAT-031)")) if n in PENDING else n
-    for n in API])
+@pytest.mark.parametrize("name", list(API))
 def test_public_docstring(name):
     """Докстринг объекта публичного интерфейса — по правилу NumPy с русскими заголовками (D1–D7)."""
     problems = docstring_problems(name)
     assert not problems, problems
 
 
-def test_pending_names_exist():
-    """Каждое имя PENDING — объект перечня: опечатка не должна прятать объект от проверки."""
-    assert PENDING <= set(API), sorted(PENDING - set(API))
+def test_version_literal_unique():
+    """В __init__.py пакета ровно одна строка, начинающаяся с «__version__ =».
+
+    tools/release.py (выпуск, вне каталога numerical_solver) ищет номер
+    регулярным выражением по всему тексту файла (re.M), а не разбором кода:
+    строка докстринга вида «__version__ = …» дала бы два совпадения и
+    сорвала выпуск. tests/test_packaging.py этого не видит — читает литерал
+    разбором AST, где строка докстринга не присваивание. Шаблон — копия
+    VERSION_RE из tools/release.py.
+    """
+    text = (ROOT / PACKAGE / "__init__.py").read_text(encoding="utf-8")
+    assert len(re.findall(r"""^(__version__\s*=\s*)(['"])([^'"]+)\2""", text, re.M)) == 1
+
+
+@pytest.mark.slow
+def test_docs_build_without_warnings(tmp_path):
+    """HTML-документация собирается без единого предупреждения (sphinx -W).
+
+    Ловит то, что не видят проверки докстрингов: ошибки разметки RST,
+    метку постановки, которой нет в eq_numbers.json (conf.py), дубли
+    описаний. Около 10 с — поэтому медленный уровень.
+    """
+    r = subprocess.run(
+        [sys.executable, "-m", "sphinx", "-W", "-b", "html", "-q",
+         "-d", str(tmp_path / "doctrees"), str(DOC_SOURCE), str(tmp_path / "html")],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert (tmp_path / "html" / "index.html").is_file()

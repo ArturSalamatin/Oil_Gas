@@ -8,7 +8,8 @@ github: 133
 branch: feat/feat-035/workbook-to-config
 model_level: null
 status: реализован
-worktree: .worktrees/feat-035
+merged: 86348ed (2026-10-18)
+worktree: .worktrees/feat-035; удалён после влития
 audit:
   date: 2026-10-18
   round: 1

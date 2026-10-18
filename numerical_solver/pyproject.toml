@@ -7,7 +7,7 @@ name = "gpn-multiphase-solver"
 # Номер — литерал gpn_multiphase_solver.__version__ ([tool.setuptools.dynamic]
 # ниже, FEAT-037); правило номеров — CHANGELOG.md
 dynamic = ["version"]
-description = "FVM solver for two-phase Black Oil filtration with energy equation"
+description = "Near-wellbore non-isothermal Black Oil flow: energy equation solver coupled with the radial-blackoil hydrodynamic prototype"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
@@ -29,6 +29,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    # Сборка HTML-документации из README и докстрингов (FEAT-031):
+    # python -m sphinx -W -b html doc/source doc/build/html. Нижние границы
+    # не проверялись; проверено на Sphinx 9.1, myst-parser 5.1. Свежие версии
+    # не ставятся границей: на Python 3.10 (requires-python) их нет
+    "sphinx>=7.2",
+    "myst-parser>=2.0",
 ]
 
 [project.scripts]
@@ -53,8 +59,8 @@ testpaths = ["tests"]
 # Прототип — из этого же дерева, а не установленный: venv общий для основного
 # каталога и worktree, установленный radial_blackoil указывает на основной
 # каталог, а тесты worktree обязаны проверять свой код (DEBT-059). Путь — от
-# каталога этого файла. Установку проверяет приёмка в чистом окружении
-# (vault/issues/debt-059/probes/clean_env_acceptance.py).
+# каталога этого файла. Установку проверяет приёмка копии в свежем окружении
+# (tools/acceptance.py).
 pythonpath = ["HydroSolverPrototype/Prototype_1.0.3"]
 # slow — тяжёлые тесты: расчёт примеров на штатных конфигах или на
 # сгущённой сетке. Считаются по умолчанию (полный прогон, ~10 мин);

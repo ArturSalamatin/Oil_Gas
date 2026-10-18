@@ -452,10 +452,15 @@ class TestCaseC_MeshConvergence:
     # равен ln(R_ext/r_well)/N, поэтому удвоение N — ровно половинный h.
     N_RUNGE = (50, 100, 200)
 
-    def _run_to_stationary(self, N):
+    # Классовые методы, а не методы экземпляра: фикстуру класса в форме метода
+    # экземпляра pytest 9 помечает устаревшей (PytestRemovedIn10Warning), а
+    # pytest 10 её удаляет; поставка ставит pytest без верхней границы
+    # (FEAT-031). Метод читает только константы класса.
+    @classmethod
+    def _run_to_stationary(cls, N):
         """Прогнать energy solver до стационара с заданным N."""
         grid = LogRadialGrid(R_WELL, R_EXT, H, N, K_PERM)
-        pvt = _make_pvt(mu_JT_oil=self.MU_JT)
+        pvt = _make_pvt(mu_JT_oil=cls.MU_JT)
         relperm = CoreyRP(S_or=0.0, S_gc=0.0, n_o=2.0, n_g=2.0)
         rock = _rock()  # типичные λ: Pe ~ 1
         solver = TridiagEnergySolver(grid, pvt, rock)
@@ -466,21 +471,22 @@ class TestCaseC_MeshConvergence:
             T=np.full(N, T_EXT), regime=hydro.state.regime, t=0.0)
 
         T_final, _ = _run_energy_steps(
-            solver, hydro, state, self.DT_LARGE, T_EXT, self.N_STEPS,
+            solver, hydro, state, cls.DT_LARGE, T_EXT, cls.N_STEPS,
             rtol_converge=1e-8)
 
         return grid.r_centers, T_final
 
     @pytest.fixture(scope="class")
-    def solutions(self):
+    @classmethod
+    def solutions(cls):
         """Решения на всех сетках: N_LIST + эталон + тройка для Рунге.
 
         Списки пересекаются (50, 100 есть в обоих), поэтому объединяем
         через set — иначе те же сетки считались бы дважды.
         """
         results = {}
-        for N in sorted(set(self.N_LIST) | {self.N_REF} | set(self.N_RUNGE)):
-            r, T = self._run_to_stationary(N)
+        for N in sorted(set(cls.N_LIST) | {cls.N_REF} | set(cls.N_RUNGE)):
+            r, T = cls._run_to_stationary(N)
             results[N] = (r, T)
         return results
 

@@ -517,8 +517,19 @@ def _validate(cfg: SimulationConfig) -> None:
     if g.h <= 0:
         raise ValueError(f"h должен быть > 0, получено {g.h}")
 
-    if cfg.grid.N < 1:
-        raise ValueError(f"N должен быть ≥ 1, получено {cfg.grid.N}")
+    # grid.N — целое ≥ 1 (DEBT-081); bool исключается явно, как у max_retries.
+    # До DEBT-081 здесь было только N < 1, и "N": true проходил и это сравнение
+    # (True == 1), и LogRadialGrid (bool — подкласс int): расчёт шёл на сетке из
+    # одной ячейки молча. Давление в её центре r_0 = sqrt(r_w·R_ext) (2.24 м в
+    # примерах 01, 03) выше, чем у забоя: в примере 03 газ не выделялся вовсе,
+    # T_wf — на 1.43 К ниже и в 2.24 м от оси вместо 0.102 м (vault/issues/
+    # debt-081/probes/). Строка "100" и null давали TypeError в сравнении без
+    # имени поля, 100.0 — отказ LogRadialGrid по-английски при сборке решателя.
+    # 100.0 к 100 не приводится: в JSON целое пишется без точки, перевод книги
+    # (FEAT-035) пишет int. NaN и inf отсёк _check_numeric_fields выше.
+    N = cfg.grid.N
+    if isinstance(N, bool) or not isinstance(N, int) or N < 1:
+        raise ValueError(f"grid.N должен быть целым ≥ 1, получено {N!r}")
 
     # grid.type (DEBT-008): фабрика строит только логарифмическую радиальную сетку
     # (LogRadialGrid). До DEBT-008 любое значение проходило молча — расчёт шёл на

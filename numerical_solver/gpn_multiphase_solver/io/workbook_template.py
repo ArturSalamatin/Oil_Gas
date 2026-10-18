@@ -125,13 +125,24 @@ DEMO_TABLES = {"SCHEDULE": DEMO_SCHEDULE, "OIL_PVT": DEMO_OIL_PVT,
                "GAS_PVT": DEMO_GAS_PVT, "RELPERM": DEMO_RELPERM}
 
 # Лист COMMENTS: тема, текст по-английски, текст по-русски (решение 67).
-# Строку «Run» добавит FEAT-036 (решение 62)
+# Строка «Run» — расчёт по книге (FEAT-036; решение 62 FEAT-033)
 COMMENTS = (
     ("Template",
      "gpn-solver template my_case.xlsx writes this workbook with demonstration values. "
      "The command never overwrites an existing file.",
      "Команда gpn-solver template my_case.xlsx создаёт эту книгу с демонстрационными "
      "значениями. Существующий файл команда не перезаписывает."),
+    ("Run",
+     "gpn-solver run my_case.xlsx runs the calculation. Results go to the folder output "
+     "next to the workbook; the folder is cleared before the run. The subfolder "
+     "output/input keeps the workbook converted to config.json and CSV tables in SI "
+     "units: gpn-solver run output/input/config.json --output new_folder repeats the "
+     "run without the workbook.",
+     "Команда gpn-solver run my_case.xlsx выполняет расчёт. Результаты записываются в "
+     "папку output рядом с книгой; перед расчётом папка очищается. В папке output/input "
+     "сохраняется книга, переведённая в config.json и таблицы CSV в единицах СИ: "
+     "команда gpn-solver run output/input/config.json --output new_folder повторяет "
+     "расчёт без книги."),
     ("Fill in",
      "On MODEL, THERMAL and NUMERICS change only the Value column. Every row needs a value, "
      "even if it equals the program default; rows are not added or removed.",

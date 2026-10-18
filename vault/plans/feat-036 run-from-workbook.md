@@ -7,7 +7,7 @@ issue: FEAT-036
 github: 136
 branch: feat/feat-036/run-from-workbook
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-036
 audit:
   date: 2026-10-18

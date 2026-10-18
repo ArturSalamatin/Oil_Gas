@@ -55,10 +55,11 @@ from gpn_multiphase_solver.energy.tridiag import TridiagEnergySolver
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.grid.log_radial import LogRadialGrid
 from gpn_multiphase_solver.io.config import load_config
+from gpn_multiphase_solver.io.workbook_convert import convert_workbook
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 23 сценария, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 24 сценария, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -85,7 +86,21 @@ ALL_EXAMPLES = [
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
+    "22_workbook_input",
 ]
+
+# Примеры с книгой ввода Excel вместо config.json (FEAT-036): папка → книга.
+# Дублирует tests/test_examples.py::WORKBOOK_EXAMPLES — по той же причине,
+# что и список выше
+WORKBOOK_EXAMPLES = {"22_workbook_input": "22_workbook_input.xlsx"}
+
+
+def _example_config(example: str, tmp_path: Path):
+    """Конфиг примера: config.json его папки или перевод его книги в tmp_path (FEAT-036)."""
+    if example in WORKBOOK_EXAMPLES:
+        return load_config(convert_workbook(
+            EXAMPLES_DIR / example / WORKBOOK_EXAMPLES[example], tmp_path / "input"))
+    return load_config(EXAMPLES_DIR / example / "config.json")
 
 # Порог сверки. Шум разного порядка суммирования — 2.4e-15 на типичных
 # элементах, но на элементе вблизи нуля он больше в относительной мере:
@@ -849,15 +864,15 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
 # A. Сверка матрицы с эталоном на конфигах примеров
 # ═══════════════════════════════════════════════════════════
 
-# slow (DEBT-032): 23 штатных прогона с эталоном на каждом вызове solve —
+# slow (DEBT-032): 24 штатных прогона с эталоном на каждом вызове solve —
 # ~280 с без 17 и 18, из них примеры 14 / 13b / 04a — 70 / 59 / 41 с, 16 — 31 с;
 # 17 (останов из развитой газовой зоны, FEAT-029) — ~26 с (до DEBT-048 ~95 с), 18 (вход
 # прототипа, VAL-005) — ~17 с. Покрытие
-# не урезается: все 23 примера идут в полном прогоне (развилка предусмотрена
+# не урезается: все 24 примера идут в полном прогоне (развилка предусмотрена
 # планом DEBT-016, раздел «Решение о slow»).
 @pytest.mark.slow
 @pytest.mark.parametrize("example", ALL_EXAMPLES)
-def test_matrix_matches_reference(example):
+def test_matrix_matches_reference(example, tmp_path):
     """Коэффициенты СЛАУ совпадают с эталоном на каждом вызове solve.
 
     Условия: штатный конфиг примера без урезания сетки и расписания.
@@ -871,7 +886,7 @@ def test_matrix_matches_reference(example):
 
     d сверяется в отклонениях от T_ref, которые передаёт решатель (DEBT-043).
     """
-    cfg = load_config(EXAMPLES_DIR / example / "config.json")
+    cfg = _example_config(example, tmp_path)
     cfg.output.log_level = "ERROR"
     simulator, initial = SimulatorFactory.from_config(cfg)
 

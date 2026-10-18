@@ -7,6 +7,10 @@ run_example каждому примеру. Отличия: состав выво
 CaseResult с решателем; входные файлы внутри каталога вывода — отказ до
 расчёта. Режим matplotlib и кодировку консоли модуль не трогает —
 cli.configure_batch_run.
+
+Вход — JSON-конфиг или книга ввода Excel (FEAT-036): книга переводится в
+output/input/ — вход, по которому расчёт повторяется без книги; каталог
+вывода при этом очищается до перевода (решение пользователя 2026-10-18).
 """
 
 from __future__ import annotations
@@ -27,6 +31,8 @@ from ..io.config import SimulationConfig, load_config
 from ..io.figures import export_emf, save_figure
 from ..io.output import (plot_profiles, plot_well_rate, plot_wellbore_dynamics,
                          save_csv, save_well_csv)
+from ..io.workbook_convert import workbook_to_config, write_files
+from ..io.xlsx_reader import WorkbookError, read_workbook
 from ..simulator import Simulator
 from ..state import SimulationHistory
 from .closed_form import make_overlay_pressure, make_overlay_saturation, report_closed
@@ -38,12 +44,21 @@ from .rs import make_overlay_rs, report_rs
 from .temperature import report_asymptotics
 
 
+# Вход run_case — книга, если расширение файла Excel (FEAT-036). Формат книги —
+# .xlsx; .xlsm разбор читает так же, а .xls и .xlsb отвергает с подсказкой,
+# как пересохранить, — понятнее отказа загрузчика JSON «Expecting value»
+EXCEL_SUFFIXES = (".xlsx", ".xlsm", ".xls", ".xlsb")
+# Подкаталог вывода с переводом книги: config.json и CSV таблиц — вход, по
+# которому расчёт повторяется командой run без книги (FEAT-036, решение 3)
+INPUT_DIR = "input"
+
+
 class CaseConfigError(ValueError):
-    """Конфиг не читается, не проходит проверку или не собирается фабрикой; расчёт не начат. FEAT-030."""
+    """Конфиг или книга не читаются, не проходят проверку или не собираются фабрикой; расчёт не начат. FEAT-030."""
 
 
 class CaseRunError(RuntimeError):
-    """Решатель отказал на шаге по времени; результаты прошлого прогона не тронуты. FEAT-030."""
+    """Решатель отказал на шаге по времени; у конфига результаты прошлого прогона не тронуты, у книги в каталоге вывода только input/. FEAT-030, FEAT-036."""
 
 
 @dataclass
@@ -62,11 +77,19 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
              title: str | None = None, n_profiles: int | None = None,
              steady_state: bool | None = None,
              overlays: dict | None = None) -> CaseResult:
-    """Полный штатный расчёт по конфигу: решение → CSV + PNG + печать проверок. FEAT-030.
+    """Полный штатный расчёт по конфигу или книге: решение → CSV + PNG + печать проверок. FEAT-030.
 
-    Все выходные файлы кладутся в output_dir (None — папка output рядом с
-    конфигом). Каталог очищается целиком после успешного расчёта (решение
-    пользователя 2026-10-13); конфиг и его CSV внутри него — отказ до расчёта.
+    config_path — JSON-конфиг или книга ввода Excel (расширение из
+    EXCEL_SUFFIXES, FEAT-036). Все выходные файлы кладутся в output_dir
+    (None — папка output рядом с конфигом или книгой). Каталог очищается
+    целиком после успешного расчёта (решение пользователя 2026-10-13);
+    конфиг и его CSV внутри него — отказ до расчёта.
+
+    Книга: внутри output_dir — отказ до чтения; с ошибкой — отказ, каталог
+    не тронут. Переведённая книга: каталог очищается до записи перевода в
+    output_dir/input/ (решение пользователя 2026-10-18), расчёт идёт по
+    output_dir/input/config.json; при ошибке конфига или отказе решателя в
+    каталоге остаётся только input/. Заголовок по умолчанию — имя книги.
     В нём же versions.txt — версии решателя, прототипа, Python, numpy и
     scipy (FEAT-037).
 
@@ -92,34 +115,50 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     """
     config_path = Path(config_path)
     t_start = time.perf_counter()
+    # Явный аргумент проверяется до всего, что трогает файлы: у книги
+    # каталог вывода очищается до расчёта (FEAT-036)
+    if n_profiles is not None and (isinstance(n_profiles, bool)
+                                   or not isinstance(n_profiles, int) or n_profiles < 2):
+        raise ValueError(f"n_profiles = {n_profiles!r}: нужно целое не меньше двух")
+    # ── Книга ввода (FEAT-036) ──
+    # Перевод в output/input/ — до чтения конфига; дальше расчёт идёт по
+    # переведённому config.json, как по любому конфигу. В печати и
+    # сообщениях об ошибках — путь книги: ключ её строки равен пути поля
+    # JSON (FEAT-035), и отказ _validate называет строку книги
+    workbook = config_path if config_path.suffix.lower() in EXCEL_SUFFIXES else None
+    if workbook is not None:
+        output_dir = (Path(output_dir) if output_dir is not None
+                      else workbook.parent / "output")
+        config_path = _translate_workbook(workbook, output_dir)
+    source = workbook if workbook is not None else config_path
     # Ошибки чтения и проверки конфига — до печати и до расчёта. TypeError —
     # лишний ключ секции (строгая распаковка dataclass), KeyError —
     # пропущенный ключ внутри секции (time.history).
     try:
         config = load_config(config_path)
     except (OSError, KeyError, TypeError, ValueError) as exc:
-        raise CaseConfigError(f"{config_path}: {exc}") from exc
+        raise CaseConfigError(f"{source}: {exc}") from exc
 
     out = config.output
     if title is None:
         title = out.title if out.title is not None else config_path.resolve().parent.name
     if n_profiles is None:
         n_profiles = out.n_profiles
-    elif isinstance(n_profiles, bool) or not isinstance(n_profiles, int) or n_profiles < 2:
-        # Явный аргумент проверяется здесь, а не после расчёта в _profile_times
-        raise ValueError(f"n_profiles = {n_profiles!r}: нужно целое не меньше двух")
     if steady_state is None:
         steady_state = out.steady_state
     output_dir = (Path(output_dir) if output_dir is not None
                   else config_path.parent / "output")
-    _check_inputs_outside(config_path, config, output_dir)
+    if workbook is None:
+        # Перевод книги лежит в output/input/ по замыслу; саму книгу
+        # проверил _translate_workbook
+        _check_inputs_outside(config_path, config, output_dir)
 
     # Версии — после проверки конфига: при его ошибке stdout по-прежнему
     # пуст (test_run_case_config_errors). Тот же список пишется в
     # versions.txt после расчёта (FEAT-037)
     versions = _versions()
     print(f"=== {title} ===")
-    print(f"Конфиг: {config_path}")
+    print(f"Книга: {workbook}" if workbook is not None else f"Конфиг: {config_path}")
     print("Версии: " + ", ".join(f"{name} {ver}" for name, ver in versions))
 
     try:
@@ -127,7 +166,7 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     except (OSError, ValueError) as exc:
         # Таблицы PVT/ОФП не читаются или несогласованы (factory.py) — та
         # же категория: расчёт не начат
-        raise CaseConfigError(f"{config_path}: {exc}") from exc
+        raise CaseConfigError(f"{source}: {exc}") from exc
     # Grid нужен для save_csv и профильных графиков (r_centers).
     grid = simulator.grid
 
@@ -137,7 +176,8 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
         # Отказ шага (Simulator._failure_message), нефизичное состояние
         # гидродинамики (DEBT-075) или нефизичная T (DEBT-047) — сообщения
         # решателя написаны для пользователя. Каталог вывода не тронут:
-        # очистка — после расчёта.
+        # очистка — после расчёта (у книги — до него: в каталоге только
+        # input/, вход, на котором расчёт остановился).
         raise CaseRunError(str(exc)) from exc
 
     elapsed = time.perf_counter() - t_start
@@ -146,8 +186,9 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     # текущая конфигурация уже не порождает (например, rs_profiles.png после
     # перехода примера на однофазный режим), остаются лежать и выглядят как
     # актуальные. Удаление ПОСЛЕ расчёта, а не до: если решатель упадёт,
-    # прошлые результаты уцелеют.
-    if output_dir.is_dir():
+    # прошлые результаты уцелеют. Книга — исключение: каталог очищен до
+    # перевода (_translate_workbook), в нём только input/ этого расчёта.
+    if workbook is None and output_dir.is_dir():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -317,6 +358,48 @@ def _check_inputs_outside(config_path: Path, config, output_dir: Path) -> None:
                 f"каталог вывода {out} содержит входной файл {f}: после расчёта "
                 f"каталог очищается целиком, и файл был бы удалён. Укажите "
                 f"другой каталог вывода.")
+
+
+def _translate_workbook(workbook: Path, output_dir: Path) -> Path:
+    """Книга → output_dir/input/ (config.json и CSV таблиц), каталог вывода очищается до записи; путь config.json. FEAT-036."""
+    # Книга внутри каталога вывода — отказ до чтения: очистка удалила бы её
+    # (решение 4 черновика плана; по образцу _check_inputs_outside)
+    out, book = output_dir.resolve(), workbook.resolve()
+    if book == out or out in book.parents:
+        raise CaseConfigError(
+            f"каталог вывода {out} содержит книгу {book}: перед расчётом по книге "
+            f"каталог очищается целиком, и книга была бы удалена. Укажите "
+            f"другой каталог вывода.")
+    # Перевод в памяти — до очистки: книга с ошибкой (не .xlsx, значения
+    # ячеек) каталог вывода не трогает. Сообщение WorkbookError уже
+    # начинается с пути книги
+    try:
+        config, tables = workbook_to_config(read_workbook(workbook))
+    except WorkbookError as exc:
+        raise CaseConfigError(str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise CaseConfigError(f"{workbook}: книга не найдена") from exc
+    except OSError as exc:
+        raise CaseConfigError(f"{workbook}: {exc.strerror or exc}") from exc
+    # Очистка — до записи перевода и до расчёта (решение пользователя
+    # 2026-10-18): input/ и результаты в каталоге всегда от одного запуска.
+    # Цена: при ошибке конфига или отказе решателя прежних результатов нет,
+    # остаётся input/ — вход, на котором расчёт остановился
+    if output_dir.is_dir():
+        try:
+            shutil.rmtree(output_dir)
+        except OSError as exc:
+            # Windows: файл каталога открыт в другой программе (CSV в Excel) —
+            # WinError 32, rmtree успевает удалить часть файлов (аудит 1). Расчёт
+            # ещё не начат: отказ с подсказкой, а не трассировка (у конфига — DEBT-082)
+            raise CaseConfigError(
+                f"каталог вывода {output_dir} очищен не полностью — {exc.filename}: "
+                f"{exc.strerror}. Файл открыт в другой программе? Закройте его и "
+                f"повторите расчёт.") from exc
+    try:
+        return write_files(output_dir / INPUT_DIR, config, tables)
+    except OSError as exc:
+        raise CaseConfigError(f"{output_dir / INPUT_DIR}: {exc.strerror or exc}") from exc
 
 
 def _pick_overlay(overlays: dict, key: str, default):

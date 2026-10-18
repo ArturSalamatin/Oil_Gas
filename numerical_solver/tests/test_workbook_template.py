@@ -124,6 +124,10 @@ def test_comments_sheet(book):
         assert not IMPERATIVE.search(text_ru), IMPERATIVE.findall(text_ru)
         assert not {"−", "–", "—"} & set(text + text_ru), text
     assert any("gpn-solver template" in text for _, text, _ in COMMENTS)
+    # Строка «Run» — вторая, после «Template»: команда расчёта по книге на обоих
+    # языках (FEAT-036; FEAT-033 описывала только работающие команды, решение 62)
+    assert [topic for topic, _, _ in COMMENTS][:2] == ["Template", "Run"]
+    assert all("gpn-solver run my_case.xlsx" in t for t in COMMENTS[1][1:])
     assert not any("run_prototype" in str(x) for x in v.values())
 
 

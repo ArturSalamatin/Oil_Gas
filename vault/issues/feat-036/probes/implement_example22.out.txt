@@ -1,0 +1,74 @@
+﻿python.exe : [INFO] Расчет: 22 интервалов, T_total = 2592000 с
+At line:1 char:735
++ ... = Get-Date; & $PY examples\22_workbook_input\main.py > "$W\vault\issu ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([INFO] Расчет: ...tal = 2592000 с:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[INFO]   Интервал 1/22: dt_hist=60 с, 1 подшагов, dt_actual=60.0 с
+[INFO]   Интервал 2/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 3/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 4/22: dt_hist=172800 с, 48 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 5/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 6/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с, первый шаг от 0.0781 с (смена управления)
+[INFO]   Интервал 7/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 8/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 9/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 10/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 11/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 12/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 13/22: dt_hist=691200 с, 192 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 14/22: dt_hist=86400 с, 24 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 15/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с, первый шаг от 0.0781 с (смена управления)
+[INFO]   Интервал 16/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 17/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 18/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 19/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 20/22: dt_hist=10 с, 1 подшагов, dt_actual=10.0 с
+[INFO]   Интервал 21/22: dt_hist=86340 с, 24 подшагов, dt_actual=3597.5 с
+[INFO]   Интервал 22/22: dt_hist=1209600 с, 336 подшагов, dt_actual=3600.0 с
+[INFO] Симуляция завершена: 23 сохранённых шагов, T_final = 2592000 с
+=== 22_workbook_input ===
+Книга: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-036\numerical_solver\examples\22_workbook_input\22_workbook_input.xlsx
+Версии: gpn-multiphase-solver 1.0.0.dev0, radial-blackoil 1.0.3+gpn.1, Python 3.13.3, numpy 2.5.2, scipy 1.18.1
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-036\numerical_solver\examples\22_workbook_input\output\energy_balance.png
+  dE финал          = -9.9245e+09 Дж
+  Адиабатика финал  = -9.6927e+09 Дж
+  Конвекция финал   = -6.5268e+06 Дж
+  Джоуль-Томсон     = +5.3433e+08 Дж
+  Скрытая теплота   = -7.6382e+08 Дж
+  Теплопроводность  = +4.2636e+06 Дж
+  Невязка финал     = +1.1444e-04 Дж  (5.47e-15)
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-036\numerical_solver\examples\22_workbook_input\output\mass_balance.png
+Баланс массы компонентов, м3ст:
+  Нефть: dM = -5.6044e+01, добыча = +8.7162e+01, приток с контура = +3.1119e+01
+         невязка финал = -6.7248e-09 (3.86e-11), max по записям 2.41e-10
+  Газ  : dM = -2.5092e+03, добыча = +4.0651e+03, приток с контура = +1.5559e+03
+         невязка финал = -1.6350e-05 (2.01e-09), max по записям 1.63e-08
+Шагов сохранено: 23
+Время расчёта:   14.79 с
+p(r_w) финал:    10.071 МПа
+T(r_w) финал:    350.105 К
+Sg макс:         0.06504
+Rs мин:          25.245 м³ст/м³ст
+q_o финал:       3.5618e-05 м³ст/с
+q_g финал:       1.6187e-03 м³ст/с
+Результаты:      D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-036\numerical_solver\examples\22_workbook_input\output
+
+── Rs: равновесие Black Oil без кинетики ──
+  ячейки с газом (Sg > 1e-08) — 73: max|Rs_числ - Rs_eq(p)| = 7.105e-15 м³ст/м³ст (1.42e-14 % от Rs0)
+  ячейки без газа — 27: пересыщенных (Rs > Rs_eq(p) + 1e-05) — 0, ниже pb (нефть недонасыщена) — 0
+  Rs: 25.2445 … 50.0000 при Rs0 = 50.0, pb = 18.0000 МПа; ячеек с Rs > Rs0: 0
+
+── PVT: table ──
+  рабочий диапазон: p = 10.0711 … 20.0000 МПа
+  Rs0 = 50 м³ст/м³ст,  p_b = 18.0000 МПа (в рабочем диапазоне)
+  узлов таблицы в рабочем диапазоне: 7
+     p, МПа         Rs        Bo   mu_o, Па·с         Bg   mu_g, Па·с     rho_o     rho_g
+    10.0711    25.2445   1.08602   3.0993e-03    0.01022   1.4873e-05    753.53     71.14
+    15.0355    40.3915   1.11806   2.3012e-03    0.00670   1.6712e-05    741.79    108.51
+    20.0000    50.0000   1.13626   2.0240e-03    0.00506   1.8859e-05    736.06    143.70
+
+── Стационарная аналитика отключена (steady_state=False): замкнутое решение и асимптотика температуры не строятся ──

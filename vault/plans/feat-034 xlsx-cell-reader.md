@@ -8,7 +8,8 @@ github: 132
 branch: feat/feat-034/xlsx-cell-reader
 model_level: null
 status: реализован
-worktree: .worktrees/feat-034
+merged: 25b7eee (2026-10-18)
+worktree: .worktrees/feat-034; удалён после влития
 audit:
   date: 2026-10-17
   round: 2

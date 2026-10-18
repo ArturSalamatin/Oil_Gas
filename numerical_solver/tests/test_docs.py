@@ -221,16 +221,6 @@ ENTRY = re.compile(r"^(\*{0,2}\w+(?:\s*,\s*\*{0,2}\w+)*)\s*(?::.*)?$")
 # списка. После шага 9 список пуст и удаляется. Начальный список — по факту
 # прогона (91 из 120 объектов), а не руками
 PENDING = frozenset(f"{PACKAGE}.{n}" for n in (
-    # шаг 5 — расчёт, конфигурация, книга
-    "report.pipeline.run_case", "report.pipeline.CaseResult",
-    "report.pipeline.CaseConfigError", "report.pipeline.CaseRunError",
-    "cli.configure_batch_run", "cli.main",
-    "io.config.load_config", "io.config.SimulationConfig", "io.config.GeometryConfig",
-    "io.config.GridConfig", "io.config.RockConfig", "io.config.PVTConfig",
-    "io.config.RelPermConfig", "io.config.ThermalConfig", "io.config.InitialConfig",
-    "io.config.HistoryInterval", "io.config.TimeConfig", "io.config.NumericsConfig",
-    "io.config.OutputConfig",
-    "io.workbook_template.write_template", "io.workbook_convert.convert_workbook",
     # шаг 6 — сборка, решатель, история, режим скважины, сетка
     "factory.SimulatorFactory.from_config", "factory.create_pvt", "factory.create_relperm",
     "simulator.Simulator", "simulator.Simulator.run",

@@ -15,6 +15,7 @@ output/input/ — вход, по которому расчёт повторяе�
 
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 import time
@@ -33,6 +34,7 @@ from ..io.output import (plot_profiles, plot_well_rate, plot_wellbore_dynamics,
                          save_csv, save_well_csv)
 from ..io.workbook_convert import workbook_to_config, write_files
 from ..io.xlsx_reader import WorkbookError, read_workbook
+from ..log import user_log
 from ..simulator import Simulator
 from ..state import SimulationHistory
 from .closed_form import make_overlay_pressure, make_overlay_saturation, report_closed
@@ -358,6 +360,81 @@ def _check_inputs_outside(config_path: Path, config, output_dir: Path) -> None:
                 f"каталог вывода {out} содержит входной файл {f}: после расчёта "
                 f"каталог очищается целиком, и файл был бы удалён. Укажите "
                 f"другой каталог вывода.")
+
+
+def _sibling(path: Path, suffix: str) -> Path:
+    """Свободное имя <имя каталога><suffix>[-k] рядом с каталогом path; корень диска — CaseConfigError. DEBT-082."""
+    # abspath, а не resolve: resolve на сетевом диске и диске subst заменил
+    # бы букву диска реальным путём (проба аудита 1), и сообщения назвали бы
+    # путь, которого инженер не вводил
+    path = Path(os.path.abspath(path))
+    # У корня диска (D:\) нет имени: соседнего каталога нет, переименовать
+    # корень нельзя, а rmtree стёр бы весь диск. Отказ до любого действия
+    if not path.name:
+        raise CaseConfigError(
+            f"каталог вывода {path} — корень диска: перед записью результатов "
+            f"каталог очищается целиком. Укажите подкаталог.")
+    k = 0
+    while True:
+        cand = path.with_name(f"{path.name}{suffix}" + (f"-{k}" if k else ""))
+        if not cand.exists():
+            return cand
+        k += 1
+
+
+def _busy_message(output_dir: Path, exc: OSError) -> str:
+    """Текст отказа очистки каталога вывода: причина ОС и подсказка. DEBT-082."""
+    return (f"каталог вывода {output_dir} не удаётся очистить ({exc.strerror or exc}): "
+            f"файл в нём открыт в другой программе (например, CSV в Excel) или "
+            f"каталог — текущий в консоли. Закройте файл или перейдите в консоли "
+            f"в другой каталог")
+
+
+def _check_output_free(output_dir: Path) -> None:
+    """Каталог вывода удаляется целиком: проба переименованием туда и обратно, иначе CaseConfigError. DEBT-082."""
+    # Windows не переименовывает каталог, в котором открыт файл без права
+    # удаления (так открывает Excel) или который служит текущим каталогом
+    # процесса, — и ничего при этом не трогает. rmtree на том же каталоге
+    # удалил бы часть файлов, а при консоли в каталоге — все, и только
+    # потом упал бы (пробы DEBT-082, vault/issues/debt-082/probes/).
+    # Файл, открытый с правом удаления, переименование тоже не пропускает,
+    # хотя rmtree прошёл бы, — отказ с запасом. На POSIX переименование
+    # проходит, как и rmtree
+    if not output_dir.is_dir():
+        return
+    probe = _sibling(output_dir, f".check-{os.getpid()}")
+    try:
+        os.rename(output_dir, probe)
+    except OSError as exc:
+        raise CaseConfigError(
+            f"{_busy_message(output_dir, exc)} и повторите расчёт. Расчёт не "
+            f"начат, каталог не изменён.") from exc
+    try:
+        os.rename(probe, output_dir)
+    except OSError as exc:
+        raise CaseConfigError(
+            f"каталог вывода {output_dir} при проверке переименован в {probe} и "
+            f"не возвращён ({exc.strerror or exc}): верните ему прежнее имя и "
+            f"повторите расчёт.") from exc
+
+
+def _clear_output(output_dir: Path) -> None:
+    """Очистка каталога вывода: переименование в соседний, затем его удаление; OSError переименования — каталог цел. DEBT-082."""
+    # Переименование — точка невозврата. Прошло — каталог свободен (см.
+    # _check_output_free), удаляется уже переименованный. Не прошло —
+    # OSError вызывающему, ни один файл не тронут: прямой rmtree успевал
+    # удалить часть файлов до отказа (проба аудита 1 FEAT-036)
+    if not output_dir.is_dir():
+        return
+    trash = _sibling(output_dir, f".old-{os.getpid()}")
+    os.rename(output_dir, trash)
+    try:
+        shutil.rmtree(trash)
+    except OSError as exc:
+        # Файл открыли в уже переименованном каталоге — почти невозможно, но
+        # прежние результаты под чужим именем не должны остаться молча
+        user_log.warning(f"прежние результаты перенесены в {trash} и не удалены "
+                         f"({exc.strerror or exc}); удалите этот каталог вручную.")
 
 
 def _translate_workbook(workbook: Path, output_dir: Path) -> Path:

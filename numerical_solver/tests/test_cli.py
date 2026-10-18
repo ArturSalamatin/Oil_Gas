@@ -47,6 +47,8 @@ STANDARD_FILES = sorted([
     "pressure_profiles.png", "temperature_profiles.png", "saturation_profiles.png",
     "rs_profiles.png", "well_rates.png", "wellbore_dynamics.png",
     "relperm.png", "pvt.png", "energy_balance.png", "mass_balance.png",
+    # FEAT-037: версии, которыми получены результаты
+    "versions.txt",
 ])
 
 
@@ -96,7 +98,7 @@ def test_help_via_module(tmp_path):
 
 
 def test_run_from_foreign_directory(tmp_path):
-    """Команда из постороннего каталога: код 0, 12 файлов штатного набора, заголовок из конфига.
+    """Команда из постороннего каталога: код 0, 13 файлов штатного набора, строка версий и versions.txt, заголовок из конфига.
 
     Путь к конфигу относительный — команда печатает абсолютный (так же,
     как печатали main.py примеров). Ловит: зависимость команды от
@@ -111,6 +113,11 @@ def test_run_from_foreign_directory(tmp_path):
     lines = r.stdout.splitlines()
     assert lines[0] == "=== тест команды ==="
     assert lines[1] == f"Конфиг: {cfg.resolve()}"
+    # FEAT-037: строка версий третьей и versions.txt — тот же список. Подпроцесс
+    # — тот же интерпретатор и PYTHONPATH на это дерево: пары совпадают
+    expected = [f"{name} {ver}" for name, ver in pipeline._versions()]
+    assert lines[2] == "Версии: " + ", ".join(expected)
+    assert (out / "versions.txt").read_text(encoding="utf-8").splitlines() == expected
     assert any(s.startswith("Шагов сохранено") for s in lines)
 
     # Пакет — из этого дерева, а не установленный в общий venv
@@ -381,3 +388,22 @@ def test_version_does_not_import_solver(tmp_path):
     r = _run(["-c", code], cwd=tmp_path)
     assert r.returncode == 0, r.stderr[-2000:]
     assert r.stdout.split()[-3:] == ["0", "False", "False"]
+
+
+def test_versions_sources():
+    """Пары versions.txt: решатель и прототип — литералы модулей этого дерева, затем Python, numpy, scipy.
+
+    Ловит подмену источника метаданными pip: в основном каталоге они
+    отстают от литерала до переустановки (0.1.0 на 2026-10-18).
+    """
+    import platform
+
+    import numpy as np
+    import radial_blackoil
+    import scipy
+    assert pipeline._versions() == [
+        ("gpn-multiphase-solver", gpn_multiphase_solver.__version__),
+        ("radial-blackoil", radial_blackoil.__version__),
+        ("Python", platform.python_version()),
+        ("numpy", np.__version__),
+        ("scipy", scipy.__version__)]

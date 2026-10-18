@@ -7,7 +7,8 @@ issue: DEBT-082
 github: 138
 branch: refactor/debt-082/locked-output-dir
 status: реализован
-worktree: .worktrees/debt-082
+worktree: .worktrees/debt-082; удалён после влития
+merged: f5d9279 (2026-10-18)
 audit:
   date: 2026-10-18
   round: 1

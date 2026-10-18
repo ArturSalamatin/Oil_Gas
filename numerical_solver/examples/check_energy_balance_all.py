@@ -23,6 +23,7 @@
 """
 
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -33,16 +34,25 @@ sys.path.insert(0, str(HERE))
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
 from gpn_multiphase_solver.factory import SimulatorFactory  # noqa: E402
 from gpn_multiphase_solver.energy.balance import compute_energy_balance  # noqa: E402
+from gpn_multiphase_solver.io.workbook_convert import convert_workbook  # noqa: E402
+
+
+def _source(folder: Path) -> Path | None:
+    """Вход примера: config.json или книга <имя папки>.xlsx (пример 22, FEAT-036); None — не пример."""
+    for path in (folder / "config.json", folder / f"{folder.name}.xlsx"):
+        if path.is_file():
+            return path
+    return None
+
 
 def find_examples() -> list[str]:
-    """Папки примеров: NN_имя с config.json внутри, по порядку номера.
+    """Папки примеров: NN_имя с config.json или книгой <имя папки>.xlsx, по порядку номера.
 
     Список строится автодискаверингом, а не перечислением, по той же
     причине, что в run_all.py: жёсткий список молча теряет новые примеры.
     """
     return sorted(d.name for d in HERE.iterdir()
-                  if d.is_dir() and (d / "config.json").is_file()
-                  and d.name[0].isdigit())
+                  if d.is_dir() and d.name[0].isdigit() and _source(d))
 
 
 # Порог приёмки. Баланс замыкается с машинной точностью (см. шапку):
@@ -62,12 +72,18 @@ def check_one(folder: str) -> dict:
     example_dir = HERE / folder
 
     try:
-        config = load_config(example_dir / "config.json")
-        config.output.log_level = "WARNING"
-        # Члены баланса копятся на подшагах внутри решателя, поэтому
-        # структура истории на баланс не влияет.
+        source = _source(example_dir)
+        # Книга — перевод во временный каталог (как в tests/test_examples.py):
+        # таблицы CSV перевода фабрика читает при сборке решателя
+        with tempfile.TemporaryDirectory(prefix="gpn-balance-") as tmp:
+            if source.suffix == ".xlsx":
+                source = convert_workbook(source, Path(tmp) / "input")
+            config = load_config(source)
+            config.output.log_level = "WARNING"
+            # Члены баланса копятся на подшагах внутри решателя, поэтому
+            # структура истории на баланс не влияет.
 
-        simulator, initial_state = SimulatorFactory.from_config(config)
+            simulator, initial_state = SimulatorFactory.from_config(config)
         history = simulator.run(initial_state)
 
         bal = compute_energy_balance(history)
@@ -84,7 +100,7 @@ def check_one(folder: str) -> dict:
 if __name__ == "__main__":
     examples = find_examples()
     if not examples:
-        print(f"В {HERE} не найдено ни одного примера с config.json")
+        print(f"В {HERE} не найдено ни одного примера с config.json или книгой")
         sys.exit(1)
 
     results = [check_one(folder) for folder in examples]

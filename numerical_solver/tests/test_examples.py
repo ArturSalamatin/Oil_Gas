@@ -1,7 +1,8 @@
 """Smoke-тесты для примеров из examples/ (FEAT-013).
 
 Проверяет:
-  A. Структура: каждая подпапка содержит config.json, main.py, README.md
+  A. Структура: каждая подпапка содержит config.json (у 22 — книгу ввода
+     Excel, FEAT-036), main.py, README.md
   B. Конфиги: load_config проходит, CSV на месте, нет мёртвых полей
   C. Расчёт: все сценарии ALL_EXAMPLES считаются без NaN/Inf, Sg ∈ [0,1], p > 0, T > 0
   D. Физика по семействам: однофазные без газа, двухфазные с газом
@@ -10,11 +11,15 @@
   G. README: обязательные разделы на месте
 
 Расчёты кэшируются на уровне сессии (фикстура results): каждый сценарий
-считается один раз, при первом обращении; все 23 — около 5.5 мин.
+считается один раз, при первом обращении; все 24 — около 6 мин.
 Тесты на фикстуре помечены slow (хук в tests/conftest.py, DEBT-032).
 """
 
+import atexit
+import functools
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +28,7 @@ import pytest
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io.config import NumericsConfig, load_config
 from gpn_multiphase_solver.io.output import pvt_table_nodes, relperm_table_nodes
+from gpn_multiphase_solver.io.workbook_convert import convert_workbook
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -51,6 +57,7 @@ ALL_EXAMPLES = [
     "19_rs150_cooling",
     "20_rs300_cooling",
     "21_rs100_cooling",
+    "22_workbook_input",
 ]
 
 # Примеры со своей логикой в main.py после штатного расчёта run_case:
@@ -61,7 +68,8 @@ OWN_LOGIC = {"01_single_phase_no_jt", "02_single_phase_jt", "03_standing_corey",
              "04_table_table", "05_standing_table_rp", "18_prototype_input"}
 
 # Образец обёртки без докстринга — то же, что python -m gpn_multiphase_solver
-# run <папка примера>/config.json (сравнивается дерево разбора, не текст)
+# run <папка примера>/<вход> (сравнивается дерево разбора, не текст); вход —
+# config.json или книга примера (WORKBOOK_EXAMPLES)
 _THIN_MAIN = '''
 import sys
 from pathlib import Path
@@ -69,8 +77,27 @@ from pathlib import Path
 from gpn_multiphase_solver.cli import main
 
 if __name__ == "__main__":
-    sys.exit(main(["run", str(Path(__file__).parent / "config.json")]))
+    sys.exit(main(["run", str(Path(__file__).parent / "{input}")]))
 '''
+
+# Примеры с книгой ввода Excel вместо config.json (FEAT-036): папка → книга.
+# Вход такого примера — только книга; тестам она переводится тем же
+# переводом, что и у команды run (_config_path)
+WORKBOOK_EXAMPLES = {"22_workbook_input": "22_workbook_input.xlsx"}
+
+# Переводы книг примеров — во временном каталоге на сессию тестов: в папке
+# примера перевод был бы второй копией входа. Нужен уже при сборке тестов
+# (TABLE_PVT), поэтому не фикстура tmp_path_factory
+_TRANSLATED = Path(tempfile.mkdtemp(prefix="gpn-examples-"))
+atexit.register(shutil.rmtree, _TRANSLATED, ignore_errors=True)
+
+
+@functools.cache
+def _config_path(name: str) -> Path:
+    """Конфиг примера: config.json его папки или перевод его книги (FEAT-036), один раз на сессию."""
+    if name not in WORKBOOK_EXAMPLES:
+        return EXAMPLES_DIR / name / "config.json"
+    return convert_workbook(EXAMPLES_DIR / name / WORKBOOK_EXAMPLES[name], _TRANSLATED / name)
 
 # Семейство 1: Rs0 = 0 → газ не выделяется ни при каком давлении.
 SINGLE_PHASE = ["01_single_phase_no_jt", "02_single_phase_jt"]
@@ -97,6 +124,7 @@ NEEDS_SG_SECTION = [
     "13a_pwf_ramp_down", "13b_pwf_alternating", "14_high_gor_cooling", "15_oil_rate_ramp_up",
     "16_well_shut_in",
     "18_prototype_input",
+    "22_workbook_input",
 ]
 
 
@@ -104,7 +132,7 @@ NEEDS_SG_SECTION = [
 
 def _run(name: str) -> dict:
     """Прогнать один пример, вернуть срез результатов."""
-    cfg = load_config(EXAMPLES_DIR / name / "config.json")
+    cfg = load_config(_config_path(name))
     simulator, initial = SimulatorFactory.from_config(cfg)
     history = simulator.run(initial)
     final = history.states[-1]
@@ -162,7 +190,7 @@ def results():
 
 def _output(name: str):
     """Секция output конфига примера (FEAT-030): состав штатного вывода."""
-    return load_config(EXAMPLES_DIR / name / "config.json").output
+    return load_config(_config_path(name)).output
 
 
 # ═══════════════════════════════════════════════════════════
@@ -172,10 +200,14 @@ def _output(name: str):
 class TestStructure:
     @pytest.mark.parametrize("name", ALL_EXAMPLES)
     def test_required_files(self, name):
-        """Каждый пример самодостаточен: конфиг, точка входа, описание."""
+        """Каждый пример самодостаточен: вход (конфиг или книга), точка входа, описание."""
         folder = EXAMPLES_DIR / name
-        for fname in ("config.json", "main.py", "README.md"):
+        source = WORKBOOK_EXAMPLES.get(name, "config.json")
+        for fname in (source, "main.py", "README.md"):
             assert (folder / fname).is_file(), f"{name}: нет {fname}"
+        # У примера с книгой config.json рядом — второй вход, расходящийся с ней
+        if name in WORKBOOK_EXAMPLES:
+            assert not (folder / "config.json").exists(), f"{name}: config.json рядом с книгой"
 
     @pytest.mark.parametrize("name", [n for n in ALL_EXAMPLES if n not in OWN_LOGIC])
     def test_thin_main_py_is_command_wrapper(self, name):
@@ -193,7 +225,8 @@ class TestStructure:
         assert isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant), (
             f"{name}: main.py без докстринга — суть сценария")
         body = ast.Module(body=tree.body[1:], type_ignores=[])
-        assert ast.dump(body) == ast.dump(ast.parse(_THIN_MAIN)), (
+        thin = _THIN_MAIN.format(input=WORKBOOK_EXAMPLES.get(name, "config.json"))
+        assert ast.dump(body) == ast.dump(ast.parse(thin)), (
             f"{name}: main.py — не обёртка команды (образец — _THIN_MAIN в "
             f"tests/test_examples.py); своя логика — пример в OWN_LOGIC")
 
@@ -220,7 +253,7 @@ class TestConfigs:
     @pytest.mark.parametrize("name", ALL_EXAMPLES)
     def test_load_config_passes(self, name):
         """Валидация конфига проходит (проверяет физические ограничения)."""
-        cfg = load_config(EXAMPLES_DIR / name / "config.json")
+        cfg = load_config(_config_path(name))
         assert cfg.grid.N > 0
 
     @pytest.mark.parametrize("name", ALL_EXAMPLES)
@@ -230,8 +263,9 @@ class TestConfigs:
         Ловит рассинхрон: конфиг переключили на табличный PVT,
         а файлы скопировать забыли.
         """
-        folder = EXAMPLES_DIR / name
-        cfg = load_config(folder / "config.json")
+        # У примера с книгой — каталог её перевода: CSV пишет перевод
+        folder = _config_path(name).parent
+        cfg = load_config(_config_path(name))
 
         if cfg.pvt.model == "table":
             assert cfg.pvt.oil_pvt_file, f"{name}: pvt.model=table без oil_pvt_file"
@@ -251,7 +285,7 @@ class TestConfigs:
         внушал бы, что поле на что-то влияет (до DEBT-008 — output.format,
         numerics.dt_min, dt_max, time.start_day: объявлены, но не читались).
         """
-        raw = json.loads((EXAMPLES_DIR / name / "config.json").read_text(encoding="utf-8"))
+        raw = json.loads(_config_path(name).read_text(encoding="utf-8"))
         removed = {"rock": ("p_ref",), "time": ("start_day",),
                    "numerics": ("dt_min", "dt_max", "newton_rtol", "newton_atol"),
                    "output": ("format",)}
@@ -269,6 +303,10 @@ class TestConfigs:
         """
         steady = set()
         for name in ALL_EXAMPLES:
+            if name in WORKBOOK_EXAMPLES:
+                # Листа OUTPUT в книге нет (FEAT-033, решение 44): заголовок —
+                # имя книги, steady_state — умолчание false (TestWorkbookInput)
+                continue
             out = json.loads((EXAMPLES_DIR / name / "config.json")
                              .read_text(encoding="utf-8"))["output"]
             assert isinstance(out.get("title"), str) and out["title"].strip(), (
@@ -1091,7 +1129,7 @@ PVT_REPORT_KEYS = {
 # не может» падал бы с сообщением, не указывающим на причину.
 TABLE_PVT = [
     name for name in ALL_EXAMPLES
-    if load_config(EXAMPLES_DIR / name / "config.json").pvt.model == "table"
+    if load_config(_config_path(name)).pvt.model == "table"
 ]
 ANALYTIC_PVT = [n for n in ALL_EXAMPLES if n not in TABLE_PVT]
 
@@ -3268,3 +3306,43 @@ class TestPrototypeInput:
         assert np.all((dT > -1.0) & (dT < -0.1)), dT
         assert dT.min() == pytest.approx(-0.6419, abs=2e-3)
         assert dT[-1] == pytest.approx(-0.4887, abs=2e-3)
+
+
+# ═══════════════════════════════════════════════════════════
+# Пример 22: расчёт по книге ввода Excel (FEAT-036)
+# ═══════════════════════════════════════════════════════════
+# Блок дописывается в конец tests/test_examples.py
+
+class TestWorkbookInput:
+    """22_workbook_input: вход — только книга, main.py — обёртка команды run по книге.
+
+    Книга — шаблон gpn-solver template с демонстрационными значениями
+    (FEAT-033): k = 1 мД, R_e = 100 м, p_0 = 200 бар, R_s0 = 50 (p_b = 180 бар),
+    p_wf 150 → 120 → 100 бар на 5 и 15 сут, 30 сут, N = 100. Общие проверки
+    (балансы, границы, R_s, README) идут по её переводу, как у остальных
+    примеров (_config_path); здесь — то, что задаёт книга.
+    """
+
+    NAME = "22_workbook_input"
+
+    def test_config_from_book(self):
+        """Перевод книги: таблицы PVT и ОФП, N = 100, 22 интервала на 30 сут ровно; заголовок — имя книги; стационарной аналитики нет.
+
+        Ловит: книгу примера заменили, а README и ожидания остались прежними;
+        в переводе потерян заголовок (листа OUTPUT в книге нет).
+        """
+        cfg = load_config(_config_path(self.NAME))
+        assert cfg.pvt.model == "table" and cfg.relperm.model == "table"
+        assert cfg.grid.N == 100
+        assert len(cfg.time.history) == 22
+        # Моменты SCHEDULE — в целых мс (FEAT-035, решение 19): сумма точна
+        assert sum(h.dt for h in cfg.time.history) == 30 * 86400.0
+        assert sorted({h.p_wf for h in cfg.time.history}) == [100e5, 120e5, 150e5]
+        assert cfg.output.title == self.NAME
+        assert cfg.output.steady_state is False
+
+    def test_folder_holds_only_book_as_input(self):
+        """В папке примера — книга, main.py, README.md; перевода (config.json, CSV) нет: вход один."""
+        names = {p.name for p in (EXAMPLES_DIR / self.NAME).iterdir()
+                 if p.name not in ("output", "__pycache__")}
+        assert names == {"22_workbook_input.xlsx", "main.py", "README.md"}

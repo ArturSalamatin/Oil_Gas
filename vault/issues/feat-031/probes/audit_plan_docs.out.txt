@@ -1,0 +1,26 @@
+﻿Срез: D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice; sphinx 9.1.0
+
+=== 1. Сборка по шагу 3 плана, без -W
+  код 0
+  предупреждений: 9; по типам: {'docutils': 9}
+        3  gpn_multiphase_solver.io.output.plot_pvt_properties
+        3  gpn_multiphase_solver.io.output.plot_relperm_curves
+        2  gpn_multiphase_solver.io.output.plot_energy_balance_series
+        1  gpn_multiphase_solver.diagnostics.two_phase.compute_free_gas_prediction
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:11: WARNING: Definition list ends without a blank line; unexpected uni
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:15: ERROR: Unexpected indentation. [docutils]
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:19: WARNING: Block quote ends without a blank line; unexpected uninden
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_relperm_curves:5: ERROR: Unexpected indentation. [docutils]
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_relperm_curves:6: WARNING: Block quote ends without a blank line; unexpected unindent
+      | D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_relperm_curves:9: WARNING: Definition list ends without a blank line; unexpected unin
+  меток eq: в api.html: 0
+
+=== 1б. С -W
+  код 1; первое: D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:11: WARNING: Definition list ends without a blank line; unexpected uni
+
+=== 2. dataclass «Атрибуты», autoexception
+  код 0; предупреждений 0
+  r_well в HTML: True; «Радиус скважины» в HTML: True
+
+=== 3. Импорты примеров против api.rst
+  объектов в api.rst: 67; не покрыто импортов примеров: 0

@@ -1,0 +1,13 @@
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+конфиг: examples\01_single_phase_no_jt\config.json, история 2 ч, p_wf = 15 МПа
+
+N = 150     load_config пропустил (cfg.grid.N = 150); расчёт 2 ч: ячеек 150, q_o = 167.847 м³ст/сут, T_wf = 349.4773 К в r_0 = 0.1021 м
+N = True    load_config пропустил (cfg.grid.N = True); расчёт 2 ч: ячеек 1, q_o = 167.847 м³ст/сут, T_wf = 349.6223 К в r_0 = 2.2361 м
+N = False   load_config: ValueError: N должен быть ≥ 1, получено False
+N = '100'   load_config: TypeError: '<' not supported between instances of 'str' and 'int'
+N = None    load_config: TypeError: '<' not supported between instances of 'NoneType' and 'int'
+N = 100.0   load_config пропустил (cfg.grid.N = 100.0); from_config: ValueError: N must be an integer >= 1, got 100.0
+N = 100.5   load_config пропустил (cfg.grid.N = 100.5); from_config: ValueError: N must be an integer >= 1, got 100.5
+N = 0       load_config: ValueError: N должен быть ≥ 1, получено 0
+N = -1      load_config: ValueError: N должен быть ≥ 1, получено -1
+N = nan     load_config: ValueError: grid.N должно быть конечным числом, получено nan

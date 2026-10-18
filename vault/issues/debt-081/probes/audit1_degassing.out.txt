@@ -1,0 +1,5 @@
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+конфиг: examples\03_standing_corey\config.json, история 2 ч, p_wf = 8 МПа
+
+N = 150   ячеек 150: q_o =  937.809 м³ст/сут, ГФ =  50.000, S_g[0] = 0.0813, T_wf = 351.0801 К в r_0 = 0.1021 м
+N = True  ячеек   1: q_o =  947.443 м³ст/сут, ГФ =  50.000, S_g[0] = 0.0000, T_wf = 349.6470 К в r_0 = 2.2361 м

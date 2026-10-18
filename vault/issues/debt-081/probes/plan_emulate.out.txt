@@ -1,0 +1,76 @@
+HEAD: 30a64f7; план: debt-081 grid-n-integer-check.md
+блоков «До/После» в плане: 7
+самая длинная строка кода в блоках «После» 1–5: 98 символов
+копия: vault\issues\debt-081\probes\_emu (11.9 МБ tar)
+
+── 1. только тесты (блоки 1–4): ожидается 10 failed, 11 passed ──
+блок 1 → numerical_solver/tests/test_config.py: «До» найден 1 раз, заменён
+блок 2 → numerical_solver/tests/test_config.py: «До» найден 1 раз, заменён
+блок 3 → numerical_solver/tests/test_config.py: «До» найден 1 раз, заменён
+блок 4 → numerical_solver/tests/test_config.py: «До» найден 1 раз, заменён
+$ -m pytest tests/test_config.py -q -p no:cacheprovider -k TestValidationGrid or int_field_rejects or int_field_list   [2 с, код 1]
+    =========================== short test summary info ===========================
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[true]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[false]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[str]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[null]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[float_integral]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[fraction]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[zero]
+    FAILED tests/test_config.py::TestValidationGrid::test_N_not_positive_integer_rejected[negative]
+    FAILED tests/test_config.py::TestValidationNumbers::test_int_field_rejects_non_integer[grid.N-bool]
+    FAILED tests/test_config.py::TestValidationNumbers::test_int_field_rejects_non_integer[grid.N-fraction]
+    10 failed, 11 passed, 337 deselected in 1.22s
+
+── 2. весь план (блоки 5–7) ──
+блок 5 → numerical_solver/gpn_multiphase_solver/io/config.py: «До» найден 1 раз, заменён
+блок 6 → vault/knowledge/decisions/P8-формат-ввода-json.md: «До» найден 1 раз, заменён
+блок 7 → vault/knowledge/decisions/перевод книги в конфиг проверяет только книгу — моменты SCHEDULE в целых мс.md: «До» найден 1 раз, заменён
+$ -c import gpn_multiphase_solver as g; print(g.__file__)   [0 с, код 0]
+    D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-081\probes\_emu\numerical_solver\gpn_multiphase_solver\__init__.py
+$ -m pytest tests/ --collect-only -q -p no:cacheprovider   [7 с, код 0]
+    2421 tests collected in 5.99s
+$ -m pytest tests/ -m not slow --collect-only -q -p no:cacheprovider   [4 с, код 0]
+    2145/2421 tests collected (276 deselected) in 2.47s
+$ -m pytest tests/test_config.py tests/test_grid.py tests/test_workbook_convert.py tests/test_eq_references.py -q -p no:cacheprovider   [6 с, код 0]
+    ..............................................                           [100%]
+    550 passed in 4.81s
+$ -m pytest tests/ -m not slow -q -p no:cacheprovider   [151 с, код 0]
+    
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+    2144 passed, 1 skipped, 276 deselected, 1 warning in 149.56s (0:02:29)
+
+── 3. red_state.py на копии ──
+$ D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-081\probes\red_state.py _emu_state.out.txt   [1 с, код 0]
+    пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-081\probes\_emu\numerical_solver\gpn_multiphase_solver
+    конфиг: examples\01_single_phase_no_jt\config.json, история 2 ч, p_wf = 15 МПа
+    
+    N = 150     load_config пропустил (cfg.grid.N = 150); расчёт 2 ч: ячеек 150, q_o = 167.847 м³ст/сут, T_wf = 349.4773 К в r_0 = 0.1021 м
+    N = True    load_config: ValueError: grid.N должен быть целым ≥ 1, получено True
+    N = False   load_config: ValueError: grid.N должен быть целым ≥ 1, получено False
+    N = '100'   load_config: ValueError: grid.N должен быть целым ≥ 1, получено '100'
+    N = None    load_config: ValueError: grid.N должен быть целым ≥ 1, получено None
+    N = 100.0   load_config: ValueError: grid.N должен быть целым ≥ 1, получено 100.0
+    N = 100.5   load_config: ValueError: grid.N должен быть целым ≥ 1, получено 100.5
+    N = 0       load_config: ValueError: grid.N должен быть целым ≥ 1, получено 0
+    N = -1      load_config: ValueError: grid.N должен быть целым ≥ 1, получено -1
+    N = nan     load_config: ValueError: grid.N должно быть конечным числом, получено nan
+    [INFO] Расчет: 2 интервалов, T_total = 7200 с
+    [INFO]   Интервал 1/2: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+    [INFO]   Интервал 2/2: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+    [INFO] Симуляция завершена: 3 сохранённых шагов, T_final = 7200 с
+    пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-081\probes\_emu\numerical_solver\gpn_multiphase_solver
+    конфиг: examples\01_single_phase_no_jt\config.json, история 2 ч, p_wf = 15 МПа
+    
+    N = 150     load_config пропустил (cfg.grid.N = 150); расчёт 2 ч: ячеек 150, q_o = 167.847 м³ст/сут, T_wf = 349.4773 К в r_0 = 0.1021 м
+    N = True    load_config: ValueError: grid.N должен быть целым ≥ 1, получено True
+    N = False   load_config: ValueError: grid.N должен быть целым ≥ 1, получено False
+    N = '100'   load_config: ValueError: grid.N должен быть целым ≥ 1, получено '100'
+    N = None    load_config: ValueError: grid.N должен быть целым ≥ 1, получено None
+    N = 100.0   load_config: ValueError: grid.N должен быть целым ≥ 1, получено 100.0
+    N = 100.5   load_config: ValueError: grid.N должен быть целым ≥ 1, получено 100.5
+    N = 0       load_config: ValueError: grid.N должен быть целым ≥ 1, получено 0
+    N = -1      load_config: ValueError: grid.N должен быть целым ≥ 1, получено -1
+    N = nan     load_config: ValueError: grid.N должно быть конечным числом, получено nan
+
+_emu/ удалён: True

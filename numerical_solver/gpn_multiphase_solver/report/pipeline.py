@@ -487,18 +487,17 @@ def _translate_workbook(workbook: Path, output_dir: Path) -> Path:
     # Очистка — до записи перевода и до расчёта (решение пользователя
     # 2026-10-18): input/ и результаты в каталоге всегда от одного запуска.
     # Цена: при ошибке конфига или отказе решателя прежних результатов нет,
-    # остаётся input/ — вход, на котором расчёт остановился
-    if output_dir.is_dir():
-        try:
-            shutil.rmtree(output_dir)
-        except OSError as exc:
-            # Windows: файл каталога открыт в другой программе (CSV в Excel) —
-            # WinError 32, rmtree успевает удалить часть файлов (аудит 1). Расчёт
-            # ещё не начат: отказ с подсказкой, а не трассировка (у конфига — DEBT-082)
-            raise CaseConfigError(
-                f"каталог вывода {output_dir} очищен не полностью — {exc.filename}: "
-                f"{exc.strerror}. Файл открыт в другой программе? Закройте его и "
-                f"повторите расчёт.") from exc
+    # остаётся input/ — вход, на котором расчёт остановился.
+    # Очистка переименованием (_clear_output, DEBT-082): каталог занят (файл
+    # открыт в Excel, консоль в каталоге) — отказ с подсказкой, ни один файл
+    # не удалён; прямой rmtree успевал удалить часть (аудит 1 FEAT-036).
+    # Корень диска _clear_output отвергает сам (CaseConfigError)
+    try:
+        _clear_output(output_dir)
+    except OSError as exc:
+        raise CaseConfigError(
+            f"{_busy_message(output_dir, exc)} и повторите расчёт. Расчёт не "
+            f"начат, каталог не изменён.") from exc
     try:
         return write_files(output_dir / INPUT_DIR, config, tables)
     except OSError as exc:

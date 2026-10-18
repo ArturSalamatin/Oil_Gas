@@ -485,6 +485,68 @@ def test_draft_book_matches_xlsxio():
         assert _rows(sheet) == _xlsxio_rows(theirs[name]), name
 
 
+# ── Книги, сохранённые Excel (шаг 3 плана) ───────────────────
+
+EXCEL_DIR = SOLVER / "tests" / "data" / "feat034_excel"
+# traps.xlsx — Excel 16 с английскими настройками (десятичная точка), лист Sheet1.
+# Ловушка русского Excel «1.5 → 1 мая» здесь не воспроизводится: при точке ввод
+# 1.5 — число, а «01.05.2026» — не дата, текст. Признак даты книги настоящего
+# Excel проверяет время 10:30 (встроенный формат 20)
+EXCEL_TRAPS = EXCEL_DIR / "traps.xlsx"
+# template_saved.xlsx — книга генератора FEAT-033 (версия 1), открытая и сохранённая
+# в Excel; в Value строки geometry.r_well введено =0.2/2
+TEMPLATE_SAVED = EXCEL_DIR / "template_saved.xlsx"
+
+
+@pytest.mark.parametrize("address, kind, value, is_date, formula", [
+    ("A1", NUMBER, 1.5, False, "1.5"),              # введено формулой =1.5
+    ("A2", STRING, "1,5", False, None),             # запятая при десятичной точке — текст
+    ("A3", STRING, "1,5", False, None),             # '1,5 — текст с апострофом
+    ("A4", BOOL, True, False, None),
+    ("A5", NUMBER, 0.11 / 3600, False, "0.11/3600"),  # в XML — 3.0555555555555554E-5
+    ("A6", ERROR, "#DIV/0!", False, "1/0"),
+    ("A7", STRING, "01.05.2026", False, None),      # не дата при английских настройках
+    ("A8", NUMBER, 0.4375, True, None),             # 10:30 = 10.5/24, встроенный формат 20
+    ("A9", NUMBER, 0.05, False, None),              # 5 %, формат 9 — не дата
+    ("A10", NUMBER, 10.0, False, "ROW()"),
+])
+def test_excel_saved_traps(address, kind, value, is_date, formula):
+    """Книга настоящего Excel: тип, значение, признак даты и формула ячейки — как в её XML."""
+    cell = _cell(read_workbook(EXCEL_TRAPS).sheets["Sheet1"], address)
+    assert (cell.kind, cell.value, cell.is_date, cell.formula) == (kind, value, is_date, formula)
+    assert type(cell.value) is type(value)          # True — bool, не float, как у xlsxio
+
+
+def test_excel_saved_traps_book():
+    """Excel пометку пересчёта не ставит; в книге ровно ячейки A1:A10."""
+    book = read_workbook(EXCEL_TRAPS)
+    assert not book.recalc_on_open
+    assert list(book.sheets) == ["Sheet1"]
+    assert sorted(book.sheets["Sheet1"].cells) == [(r, 1) for r in range(1, 11)]
+
+
+def test_template_saved_by_excel():
+    """Книга генератора после Excel: пометки пересчёта нет, у формулы есть значение (решение 9).
+
+    Допущение решения 9: Excel при сохранении снимает fullCalcOnLoad, который
+    ставит XlsxWriter, — иначе формулы всех книг инженеров получили бы отказ.
+    С текущей книгой генератора фикстура не сравнивается: она — снимок версии 1,
+    генератор меняется вместе с форматом FEAT-033 (аудит 2).
+    """
+    book = read_workbook(TEMPLATE_SAVED)
+    assert not book.recalc_on_open
+    assert list(book.sheets) == ["MODEL", "THERMAL", "NUMERICS", "SCHEDULE", "OIL_PVT",
+                                 "GAS_PVT", "RELPERM", "COMMENTS"]
+    model = book.sheets["MODEL"]
+    row = next(r for (r, c), cell in model.cells.items()
+               if c == 1 and cell.value == "geometry.r_well")
+    value = model.cell(row, 3)                      # столбец C — Value
+    assert (value.formula, value.kind, value.value) == ("0.2/2", NUMBER, 0.1)
+    cells = [c for s in book.sheets.values() for c in s.cells.values()]
+    assert not [c.ref for c in cells if c.formula_without_value]
+    assert [c.ref for c in cells if c.formula is not None] == [value.ref]   # формула одна
+
+
 # ── Без зависимостей ─────────────────────────────────────────
 
 def test_reader_imports_only_stdlib():

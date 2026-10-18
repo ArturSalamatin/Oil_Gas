@@ -7,7 +7,7 @@ issue: FEAT-037
 github: 134
 branch: feat/feat-037/solver-version-changelog
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-037
 audit:
   date: 2026-10-18
@@ -639,3 +639,12 @@ $env:PYTHONIOENCODING="utf-8"; [Console]::OutputEncoding = [System.Text.Encoding
 - [[DEBT-059]] — единый источник номера прототипа (образец), приёмка в чистом окружении `vault/issues/debt-059/probes/clean_env_acceptance.py`.
 - [[DEBT-048]] — номер прототипа повышается при выпуске.
 - [[feat-035 workbook-to-config|FEAT-035]], [[feat-036 run-from-workbook|FEAT-036]] — правят `cli.py`, `test_cli.py`, README и вывод `run_case` (2.5).
+- [[номер версии решателя — литерал __version__, журнал сводится при выпуске]] — заметка-решение по итогам.
+
+## 8. Итог реализации (2026-10-18)
+
+- Начало — после влития FEAT-035 (`86348ed`, «влит» `2f29235`); предварительный коммит `b9454a6` (план, `vault/issues/feat-037/`, черновик FEAT-031 с решениями 38–44 — по умолчанию п. 8 «Как начать»). Ветка от `b9454a6`, коммиты `c2538d5` (шаг 1), `54dbb2a` (2), `cad2c4c` (3), `d20dd4e` (4), `bf1b7fa` (5).
+- Baseline 2395, быстрый 2118 passed / 1 skipped (138 с). После шагов: 2120 → 2123 → 2124 passed. Итог — 2401 тест; полный прогон 2400 passed, 1 skipped, 594 с. Предупреждение одно и прежнее (`PytestRemovedIn10Warning`, фикстура уровня класса в существующих тестах).
+- Шаг 6: колесо из worktree `gpn_multiphase_solver-1.0.0.dev0-py3-none-any.whl`, METADATA `1.0.0.dev0` (`probes/implement_wheel.out.txt`).
+- **Отклонение от плана:** шаг 7.3 (черновик FEAT-031) выполнен в worktree, а не в базовой ветке: причина, по которой план требовал базу (чужие незакоммиченные правки файла), отпала — файл закоммичен в `b9454a6`.
+- Все блоки «После» перенесены без изменений; якоря «До» на базе после FEAT-035 совпали с эмуляцией аудита.

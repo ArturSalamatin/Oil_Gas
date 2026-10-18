@@ -612,6 +612,8 @@ def test_pipeline_writes_output(tmp_path):
         "mass_balance.png",
         # FEAT-017: свойства PVT — общий модуль для всех примеров
         "pvt.png",
+        # FEAT-037: версии, которыми получены результаты
+        "versions.txt",
     ]
     for fname in expected:
         path = tmp_path / fname

@@ -11,6 +11,7 @@ cli.configure_batch_run.
 
 from __future__ import annotations
 
+import platform
 import shutil
 import time
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
+from .. import __version__
 from ..factory import SimulatorFactory
 from ..grid.base import Grid
 from ..io.config import SimulationConfig, load_config
@@ -65,6 +67,8 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     Все выходные файлы кладутся в output_dir (None — папка output рядом с
     конфигом). Каталог очищается целиком после успешного расчёта (решение
     пользователя 2026-10-13); конфиг и его CSV внутри него — отказ до расчёта.
+    В нём же versions.txt — версии решателя, прототипа, Python, numpy и
+    scipy (FEAT-037).
 
     title, n_profiles, steady_state — None: значение из секции output
     конфига (заголовок по умолчанию — имя папки конфига).
@@ -110,8 +114,13 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
                   else config_path.parent / "output")
     _check_inputs_outside(config_path, config, output_dir)
 
+    # Версии — после проверки конфига: при его ошибке stdout по-прежнему
+    # пуст (test_run_case_config_errors). Тот же список пишется в
+    # versions.txt после расчёта (FEAT-037)
+    versions = _versions()
     print(f"=== {title} ===")
     print(f"Конфиг: {config_path}")
+    print("Версии: " + ", ".join(f"{name} {ver}" for name, ver in versions))
 
     try:
         simulator, initial_state = SimulatorFactory.from_config(config)
@@ -141,6 +150,12 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     if output_dir.is_dir():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Версии (FEAT-037) ──
+    # Какой версией получены результаты: решатель и прототип, а также Python,
+    # numpy и scipy — от них зависят последние разряды чисел
+    (output_dir / "versions.txt").write_text(
+        "".join(f"{name} {ver}\n" for name, ver in versions), encoding="utf-8")
 
     # ── Таблицы ──
     save_well_csv(history, output_dir / "well_history.csv")
@@ -350,6 +365,23 @@ def _plot_field(history, grid, times_to_plot, field: str,
     fig.tight_layout()
     save_figure(fig, path, dpi=110)
     plt.close(fig)
+
+
+def _versions() -> list[tuple[str, str]]:
+    """Версии решателя, прототипа, Python, numpy, scipy — пары (имя, номер) для versions.txt и печати. FEAT-037."""
+    # Импорт здесь, как во всём пакете: прототип импортируется при сборке
+    # задачи, а не при импорте модулей. Номер прототипа — из модуля,
+    # который считает задачу, а не из метаданных pip: у редактируемой
+    # установки они записаны при pip install -e и отстают от кода, в
+    # worktree — принадлежат основному каталогу. build_info.VERSION
+    # ('1.0.3') — номер для регрессии прототипа, не номер дистрибутива.
+    import radial_blackoil
+    import scipy
+    return [("gpn-multiphase-solver", __version__),
+            ("radial-blackoil", radial_blackoil.__version__),
+            ("Python", platform.python_version()),
+            ("numpy", np.__version__),
+            ("scipy", scipy.__version__)]
 
 
 def _print_summary(history, elapsed: float, output_dir: Path) -> None:

@@ -12,6 +12,9 @@
 Перевод книги в конфиг: gpn-solver convert книга.xlsx каталог (FEAT-035) —
 config.json и CSV таблиц в СИ в новом или пустом каталоге; ошибки книги, файла
 и каталога — код 2.
+
+Номер версии: gpn-solver --version (FEAT-037) — номер решателя; решатель
+и прототип не импортируются.
 """
 
 from __future__ import annotations
@@ -19,6 +22,8 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+
+from . import __version__
 
 
 def configure_batch_run() -> None:
@@ -55,6 +60,13 @@ def _parser(prog: str | None) -> argparse.ArgumentParser:
         prog=prog,
         description="Расчёт притока газированной нефти к скважине с температурой "
                     "(gpn_multiphase_solver).")
+    # Номер решателя (FEAT-037). Строка — имя дистрибутива, а не %(prog)s:
+    # prog зависит от способа запуска (gpn-solver.exe, python -m …), а
+    # строка совпадает с первой строкой versions.txt. argparse печатает её в
+    # stdout и выходит с кодом 0 до проверки обязательной подкоманды.
+    # Прототип не импортируется — как и для --help.
+    p.add_argument("--version", action="version",
+                   version=f"gpn-multiphase-solver {__version__}")
     sub = p.add_subparsers(dest="command", required=True, metavar="команда")
     run = sub.add_parser(
         "run", help="расчёт по конфигу: CSV, рисунки, печать проверок",

@@ -1,0 +1,4 @@
+# Пакетные файлы cmd — с CRLF при любой настройке core.autocrlf, и в срезе
+# (git archive применяет атрибуты): переход goto по метке в LF-файле cmd
+# исполняет ненадёжно (FEAT-031)
+*.bat text eol=crlf

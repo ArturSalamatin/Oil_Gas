@@ -14,7 +14,9 @@
     файл не трогается — код 2 (решение 58); решатель и прототип не импортируются;
   - перевод книги (convert, FEAT-035): книга генератора — код 0, 4 файла; ошибка
     книги, не книга .xlsx, нет файла, непустой каталог — код 2; решатель и
-    прототип не импортируются.
+    прототип не импортируются;
+  - номер версии (FEAT-037): --version без импорта решателя и прототипа;
+    строка «Версии: …» в печати и versions.txt в каталоге вывода.
 
 Подпроцессы получают PYTHONPATH на пакет и прототип этого дерева: иначе в
 worktree они взяли бы установленный пакет основного каталога (правило 3
@@ -30,6 +32,7 @@ from pathlib import Path
 
 import pytest
 
+import gpn_multiphase_solver
 import gpn_multiphase_solver.report.pipeline as pipeline
 from gpn_multiphase_solver import cli
 from gpn_multiphase_solver.simulator import Simulator
@@ -354,6 +357,26 @@ def test_convert_does_not_import_solver(tmp_path):
     """Переводу не нужны решатель, scipy и прототип: их нет в sys.modules после команды."""
     code = ("import sys; from gpn_multiphase_solver import cli; "
             f"rc = cli.main(['convert', {str(TEMPLATE_BOOK)!r}, 'c']); "
+            "print(rc, 'scipy' in sys.modules, 'radial_blackoil' in sys.modules)")
+    r = _run(["-c", code], cwd=tmp_path)
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert r.stdout.split()[-3:] == ["0", "False", "False"]
+
+
+# ── Номер версии (FEAT-037) ──────────────────────────────────
+
+def test_version_flag(capsys):
+    """--version: «gpn-multiphase-solver <номер>» в stdout, код 0 — подкоманда не нужна."""
+    with pytest.raises(SystemExit) as e:
+        cli.main(["--version"])
+    assert e.value.code == 0
+    assert capsys.readouterr().out == f"gpn-multiphase-solver {gpn_multiphase_solver.__version__}\n"
+
+
+def test_version_does_not_import_solver(tmp_path):
+    """--version, как и template, не импортирует решатель, scipy и прототип: номер — литерал пакета."""
+    code = ("import sys\nfrom gpn_multiphase_solver import cli\n"
+            "try:\n    cli.main(['--version'])\nexcept SystemExit as e:\n    rc = e.code\n"
             "print(rc, 'scipy' in sys.modules, 'radial_blackoil' in sys.modules)")
     r = _run(["-c", code], cwd=tmp_path)
     assert r.returncode == 0, r.stderr[-2000:]

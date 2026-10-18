@@ -45,6 +45,9 @@ numerical_solver/results/*.npz
 numerical_solver/results/*.png
 numerical_solver/results/*.xlsx
 numerical_solver/examples/**/output/
+# Соседний каталог вывода при занятом output/ (output_<дата>_<время>) и
+# временные имена очистки (output.check-<pid>, output.old-<pid>) — DEBT-082
+numerical_solver/examples/**/output[._]*/
 # vault/issues: тексты issue и скрипты проб — в git (нужны в worktree задачи);
 # выходы проб — истории и графики — воспроизводимы, не хранить
 vault/issues/**/*.npz

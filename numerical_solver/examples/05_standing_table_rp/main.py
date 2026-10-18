@@ -108,8 +108,10 @@ if __name__ == "__main__":
 
     # report_asymptotics вызывает run_case (FEAT-016) — здесь не дублируем.
     print()
+    # Каталог, куда run_case записал результаты: при занятом here/output —
+    # соседний с датой и временем в имени (DEBT-082)
     _add_temperature_analytics(history, grid, config, pvt,
-                               here / "output", r.title)
+                               r.output_dir, r.title)
     print("\nГрафик T перестроен с JT-асимптотикой и линией фронта.")
 
     # Баланс энергии считает run_case — общей проверкой для всех
@@ -117,4 +119,4 @@ if __name__ == "__main__":
 
     # Перестроенный выше рисунок — вторым пакетом: первый конвертировал
     # run_case (FEAT-026).
-    export_emf(here / "output")
+    export_emf(r.output_dir)

@@ -13,11 +13,13 @@ import prototype_input  # noqa: E402
 
 if __name__ == "__main__":
     here = Path(__file__).parent
-    output = here / "output"
     # Заголовок, 6 моментов профилей (по моменту на каждый режим p_wf
     # 150 / 120 / 100 бар и конец), без стационарной аналитики — секция
     # output конфига; её пишет перевод книги (prototype_input.convert, FEAT-030)
-    r = run_case(here / "config.json", output)
+    r = run_case(here / "config.json", here / "output")
+    # Каталог, куда run_case записал результаты: при занятом here/output —
+    # соседний с датой и временем в имени (DEBT-082)
+    output = r.output_dir
     # Прототип на той же книге и эталон CMG IMEX T07: сводка и два рисунка.
     prototype_input.report_and_plot(r.history, r.grid, output, r.title)
     # Рисунки сравнения созданы после export_emf внутри run_case —

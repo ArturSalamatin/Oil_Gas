@@ -9,7 +9,8 @@
     прежние файлы удалены; книга с ошибкой каталог не трогает; при ошибке
     конфига или отказе решателя в каталоге остаётся только input/;
   - книга внутри каталога вывода — отказ до чтения, книга цела (решение 4);
-  - файл каталога вывода открыт в другой программе — отказ с подсказкой (аудит 1);
+  - файл каталога вывода открыт в другой программе — отказ с подсказкой, каталог
+    не изменён (аудит 1, DEBT-082);
   - расчёт по JSON-конфигу прежний: очистка после расчёта (FEAT-030);
   - расширения Excel в любом регистре — путь книги, а не загрузчика JSON;
   - команда в отдельном процессе из постороннего каталога.
@@ -200,22 +201,29 @@ def test_run_failure_keeps_input(tmp_path, monkeypatch):
 
 
 def test_locked_output_file_refused(tmp_path, monkeypatch):
-    """Файл каталога вывода открыт в другой программе: отказ с путём и подсказкой, а не трассировка.
+    """Файл каталога вывода открыт в другой программе: отказ с путём и подсказкой, ни один файл не удалён (DEBT-082).
 
-    На Windows rmtree падает PermissionError (WinError 32) на открытом файле,
-    успев удалить часть файлов (проба аудита 1, audit_locked_output.py). Здесь
-    rmtree подменён: тест не зависит от ОС. Расчёт не начат.
+    На Windows каталог с открытым файлом не переименовывается (WinError 5),
+    и очистка переименованием (_clear_output) отказывает, ничего не удалив;
+    прямой rmtree успевал удалить часть файлов (проба аудита 1,
+    audit_locked_output.py; пробы DEBT-082). Здесь os.rename каталога вывода
+    подменён: тест не зависит от ОС. Расчёт не начат.
     """
     monkeypatch.setattr(Simulator, "run", _must_not_run)
     book = _small_book(tmp_path / "b.xlsx")
     out = _old_output(tmp_path)
+    real = os.rename
 
-    def locked(path, *args, **kwargs):
-        raise PermissionError(13, "файл занят", str(Path(path) / "well_history.csv"))
-    monkeypatch.setattr(pipeline.shutil, "rmtree", locked)
+    def locked(src, dst):
+        if Path(src).resolve() == out.resolve():
+            raise PermissionError(13, "Access is denied", str(src))
+        return real(src, dst)
+    monkeypatch.setattr(pipeline.os, "rename", locked)
     with pytest.raises(CaseConfigError, match="открыт в другой программе") as e:
         run_case(book)
-    assert str(out) in str(e.value) and "well_history.csv" in str(e.value)
+    assert str(out) in str(e.value) and "Расчёт не начат" in str(e.value)
+    # Очистка переименованием: прежний каталог не изменён
+    assert [p.name for p in out.iterdir()] == ["прошлый.csv"]
 
 
 def test_config_run_clears_output_after_run(tmp_path):

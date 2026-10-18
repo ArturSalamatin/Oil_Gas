@@ -271,7 +271,7 @@ def compute_Cp(p, T, Sg, fluid, rock):
 
 Код: `numerical_solver/gpn_multiphase_solver/`. Имя пакета: `gpn_multiphase_solver` (pip: `gpn-multiphase-solver`). Полностью независим от `method_of_moments/`.
 
-Расчёт по конфигу: `python -m gpn_multiphase_solver run <config.json>` (или `gpn-solver run …`), результаты — `output/` рядом с конфигом (FEAT-030).
+Расчёт по конфигу: `python -m gpn_multiphase_solver run <config.json>` (или `gpn-solver run …`), результаты — `output/` рядом с конфигом (FEAT-030); по книге Excel — `run <книга.xlsx>`, перевод сохраняется в `output/input/`, каталог вывода очищается до расчёта (FEAT-036).
 
 Архитектурные решения, контракты модулей, конвенции знаков: `vault/knowledge/decisions/`.
 

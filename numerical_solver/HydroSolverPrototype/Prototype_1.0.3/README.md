@@ -80,7 +80,7 @@ This reruns the frozen production Excel cases and compares the numerical CSV out
 
 ## Installation as a package (GPN project)
 
-Since DEBT-059 of the GPN project the package `radial_blackoil` is an installable distribution `radial-blackoil` (`pyproject.toml` in this directory), version `1.0.3+gpn.1`: Prototype 1.0.3 with the local changes listed in `CHANGELOG_1.0.3.md`. The GPN solver (`numerical_solver/pyproject.toml`) requires exactly this version. Install both from `numerical_solver`:
+Since DEBT-059 of the GPN project the package `radial_blackoil` is an installable distribution `radial-blackoil` (`pyproject.toml` in this directory). Its version is the literal `__version__` in `radial_blackoil/__init__.py`, of the form `1.0.3+gpn.N`: Prototype 1.0.3 with the local changes listed in `CHANGELOG_1.0.3.md`; N is raised by `tools/release.py` at a solver release if this package changed (FEAT-038). The GPN solver (`numerical_solver/pyproject.toml`) requires exactly this version. Install both from `numerical_solver`:
 
 ```powershell
 python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"

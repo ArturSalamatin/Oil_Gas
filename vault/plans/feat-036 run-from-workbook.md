@@ -8,7 +8,8 @@ github: 136
 branch: feat/feat-036/run-from-workbook
 model_level: null
 status: реализован
-worktree: .worktrees/feat-036
+merged: c156604 (2026-10-18)
+worktree: .worktrees/feat-036; удалён после влития
 audit:
   date: 2026-10-18
   round: 1

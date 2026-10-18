@@ -221,18 +221,6 @@ ENTRY = re.compile(r"^(\*{0,2}\w+(?:\s*,\s*\*{0,2}\w+)*)\s*(?::.*)?$")
 # списка. После шага 9 список пуст и удаляется. Начальный список — по факту
 # прогона (91 из 120 объектов), а не руками
 PENDING = frozenset(f"{PACKAGE}.{n}" for n in (
-    # шаг 8 — результаты, рисунки, балансы, проверки
-    "io.output.save_csv", "io.output.save_well_csv", "io.output.save_npz",
-    "io.output.plot_profiles", "io.output.plot_well_rate", "io.output.plot_wellbore_dynamics",
-    "io.output.plot_pvt_properties", "io.output.plot_relperm_curves",
-    "io.output.plot_energy_balance_series", "io.output.pvt_table_nodes",
-    "io.figures.save_figure", "io.figures.export_emf",
-    "energy.balance.compute_energy_balance", "mass_balance.compute_mass_balance",
-    "diagnostics.closed_form.solve_closed", "diagnostics.rs.front_radius",
-    "diagnostics.temperature.single_phase_asymptote", "diagnostics.two_phase.compute_gor",
-    "diagnostics.two_phase.compute_free_gas_prediction",
-    "diagnostics.two_phase.predict_saturation", "diagnostics.two_phase.dupuit_check",
-    "diagnostics.two_phase.degassing_front", "report.relperm.report_relperm",
     # шаг 9 — докстринги подпакетов
     "pvt", "energy", "hydro", "grid", "io", "diagnostics", "report",
 ))

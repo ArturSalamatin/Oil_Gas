@@ -6,12 +6,29 @@ from .prototype_adapter import PrototypePVTAdapter
 
 
 class TableFullPVT(FullPVT):
-    """Табличные гидро-свойства + скалярные тепловые.
+    """PVT по таблицам CSV (нефть — формат PVTO, газ) с постоянными тепловыми свойствами.
 
-    Гидро-методы делегируются PrototypePVTAdapter.
-    Тепловые — постоянные скаляры.
+    Модель ``pvt.model = "table"``: свойства фаз — интерполяция таблиц
+    прототипа (тот же объект, что считает гидродинамику), тепловые —
+    постоянные из раздела ``thermal``. Корреляции не используются.
+
+    Параметры
+    ---------
+    hydro : PrototypePVTAdapter
+        Таблицы PVT прототипа в интерфейсе :class:`HydroPVT`.
+    c_p_oil : float
+        Удельная теплоёмкость нефти, Дж/(кг·К).
+    c_p_gas : float
+        Удельная теплоёмкость газа, Дж/(кг·К).
+    mu_JT_oil : float
+        Коэффициент Джоуля–Томсона нефти, К/Па.
+    mu_JT_gas : float
+        Коэффициент Джоуля–Томсона газа, К/Па.
+    L_degas : float
+        Удельная теплота разгазирования, Дж/кг газа.
     """
 
+    # Гидро-методы делегируются PrototypePVTAdapter, тепловые — постоянные скаляры
     def __init__(self, hydro: PrototypePVTAdapter,
                  c_p_oil: float, c_p_gas: float,
                  mu_JT_oil: float, mu_JT_gas: float,

@@ -221,19 +221,6 @@ ENTRY = re.compile(r"^(\*{0,2}\w+(?:\s*,\s*\*{0,2}\w+)*)\s*(?::.*)?$")
 # списка. После шага 9 список пуст и удаляется. Начальный список — по факту
 # прогона (91 из 120 объектов), а не руками
 PENDING = frozenset(f"{PACKAGE}.{n}" for n in (
-    # шаг 7 — PVT и ОФП
-    "pvt.base.HydroPVT.Rs_eq", "pvt.base.HydroPVT.Bo", "pvt.base.HydroPVT.Bg",
-    "pvt.base.HydroPVT.mu_o", "pvt.base.HydroPVT.mu_g", "pvt.base.HydroPVT.pb",
-    "pvt.base.HydroPVT.rho_o", "pvt.base.HydroPVT.rho_g",
-    "pvt.base.FullPVT.c_p_oil", "pvt.base.FullPVT.c_p_gas", "pvt.base.FullPVT.mu_JT_oil",
-    "pvt.base.FullPVT.mu_JT_gas", "pvt.base.FullPVT.L_degas",
-    "pvt.base.DifferentiableHydroPVT.dRs_eq_dp", "pvt.base.DifferentiableHydroPVT.dBo_dp",
-    "pvt.base.DifferentiableHydroPVT.dBo_dRs", "pvt.base.DifferentiableHydroPVT.dBg_dp",
-    "pvt.base.DifferentiableHydroPVT.dmu_o_dp", "pvt.base.DifferentiableHydroPVT.dmu_g_dp",
-    "pvt.base.RelPermModel.kro", "pvt.base.RelPermModel.krg",
-    "pvt.base.DifferentiableRelPerm.dkro_dSg", "pvt.base.DifferentiableRelPerm.dkrg_dSg",
-    "pvt.standing.StandingFullPVT", "pvt.table_full.TableFullPVT", "pvt.relperm.CoreyRP",
-    "pvt.prototype_adapter.PrototypeRPAdapter",
     # шаг 8 — результаты, рисунки, балансы, проверки
     "io.output.save_csv", "io.output.save_well_csv", "io.output.save_npz",
     "io.output.plot_profiles", "io.output.plot_well_rate", "io.output.plot_wellbore_dynamics",

@@ -8,7 +8,8 @@ github: 137
 branch: feat/feat-038/team-releases-script
 model_level: null
 status: реализован
-worktree: .worktrees/feat-038
+worktree: .worktrees/feat-038; удалён после влития
+merged: 225985e (2026-10-18)
 audit:
   date: 2026-10-18
   found: 9

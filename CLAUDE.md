@@ -31,6 +31,7 @@
 | `black_oil_gas_mass.html` | Интерактивная заметка: масса выделившегося газа в модели Black Oil |
 | `tools/release.py` | Выпуск решателя для испытаний: номера, метка, два колеса и архив примеров в Releases; порядок — в докстринге (FEAT-038) |
 | `tools/handover.py` | Передача заказчику: срез из метки выпуска, PDF постановки, HTML-документация, архив, приёмка на распакованной копии; git не меняет (FEAT-031) |
+| `tools/acceptance.py` | Приёмка копии в свежем окружении; запускает `handover.py`; заказчику не передаётся (решение 2026-10-19) |
 
 ## Обозначения и нотация
 
@@ -275,7 +276,7 @@ def compute_Cp(p, T, Sg, fluid, rock):
 
 Расчёт по конфигу: `python -m gpn_multiphase_solver run <config.json>` (или `gpn-solver run …`), результаты — `output/` рядом с конфигом (FEAT-030); по книге Excel — `run <книга.xlsx>`, перевод сохраняется в `output/input/`, каталог вывода очищается до расчёта (FEAT-036).
 
-HTML-документация (FEAT-031): `python -m sphinx -W -b html doc/source doc/build/html` из `numerical_solver/`, главный файл `doc/build/html/index.html` — README, техническое описание (докстринги пакета и подпакетов), публичный интерфейс. Перечень публичного интерфейса — `doc/source/api.rst`; правило докстрингов и сборку без предупреждений проверяет `tests/test_docs.py`. После правки `problem_statement.tex` и сборки PDF — `tools/eq_numbers.py` (таблица «метка → номер» для HTML). Установка для разработки — `setup.bat`; приёмка копии в свежем окружении — `numerical_solver/tools/acceptance.py`; передача заказчику — `tools/handover.py <метка выпуска>` из корня репозитория.
+HTML-документация (FEAT-031): `python -m sphinx -W -b html doc/source doc/build/html` из `numerical_solver/`, главный файл `doc/build/html/index.html` — README, техническое описание (докстринги пакета и подпакетов), публичный интерфейс. Перечень публичного интерфейса — `doc/source/api.rst`; правило докстрингов и сборку без предупреждений проверяет `tests/test_docs.py`. После правки `problem_statement.tex` и сборки PDF — `tools/eq_numbers.py` (таблица «метка → номер» для HTML). Установка для разработки — `setup.bat`; приёмка копии в свежем окружении — `tools/acceptance.py <копия>` из корня (заказчику не передаётся, в срез не входит); передача заказчику — `tools/handover.py <метка выпуска>` из корня репозитория.
 
 Архитектурные решения, контракты модулей, конвенции знаков: `vault/knowledge/decisions/`.
 

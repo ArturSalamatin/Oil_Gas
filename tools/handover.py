@@ -3,7 +3,7 @@
 Срез numerical_solver из метки выпуска (git archive — только файлы под git,
 вместе с атрибутами .gitattributes), PDF постановки, HTML-документация,
 архив gpn-multiphase-solver-<версия>.zip и приёмка на его распакованной
-копии (numerical_solver/tools/acceptance.py). Git не меняется: ни коммитов,
+копии (tools/acceptance.py рядом – в срез не входит). Git не меняется: ни коммитов,
 ни меток, ни push. Запуск — из корня репозитория, интерпретатором venv
 решателя (нужны Sphinx — группа [dev] — и packaging), нужны pdflatex в PATH
 и доступ к PyPI (приёмка ставит пакеты в свежее окружение):
@@ -138,11 +138,14 @@ def acceptance(archive: Path, check_dir: Path, top: str) -> int:
         shutil.rmtree(check_dir)
     with zipfile.ZipFile(archive) as z:
         z.extractall(check_dir)
-    script = check_dir / top / "tools" / "acceptance.py"
+    # Скрипт приёмки – из рабочего дерева, не из метки: заказчику он не
+    # передаётся и в срезе его нет (решение пользователя 2026-10-19)
+    script = Path(__file__).resolve().parent / "acceptance.py"
     # Окружение без активированного venv: setup.bat ищет Python сам, как у заказчика.
     # Вывод приёмки — сразу в консоль: она идёт около 15 мин
     env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
-    return subprocess.run([sys.executable, str(script)], cwd=check_dir, env=env).returncode
+    return subprocess.run([sys.executable, str(script), str(check_dir / top)],
+                          cwd=check_dir, env=env).returncode
 
 
 def main(argv: list[str]) -> int:

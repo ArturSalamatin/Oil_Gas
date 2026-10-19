@@ -1,9 +1,11 @@
 """Приёмочная проверка копии решателя в свежем окружении (FEAT-031).
 
-Повторяется на машине команды разработки после получения архива: распакуйте
-архив в новый каталог и запустите любым Python 3.10 или новее (Windows):
+Внутренний инструмент передачи: заказчику не передаётся (решение пользователя
+2026-10-19), поэтому лежит вне numerical_solver и в срез не попадает. Запускает
+его tools/handover.py на распакованной копии архива; вручную – из корня
+репозитория любым Python 3.10 или новее (Windows):
 
-    py -3 tools\\acceptance.py
+    py -3 tools\\acceptance.py <каталог копии numerical_solver>
 
 Проверки — каждая строкой «ОК» или «ОШИБКА», итог — последней строкой:
   1. в копии нет .venv — приёмка идёт на свежей копии;
@@ -18,7 +20,8 @@
   7. расчёт по файлу конфигурации из постороннего каталога (копия примера 06).
 
 Посторонний каталог — <копия>-acceptance рядом с копией; создаётся заново.
-Код возврата: 0 — приёмка пройдена, 1 — нет. Только стандартная библиотека.
+Код возврата: 0 – приёмка пройдена, 1 – нет, 2 – неверный аргумент.
+Только стандартная библиотека.
 """
 
 import os
@@ -30,14 +33,11 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]                  # корень копии (numerical_solver)
-WORK = ROOT.parent / f"{ROOT.name}-acceptance"
-VENV_PY = ROOT / ".venv" / "Scripts" / "python.exe"
-SOLVER_EXE = ROOT / ".venv" / "Scripts" / "gpn-solver.exe"
 EXAMPLE = "06_table_corey_rp"
 
-# Допустимые причины пропуска тестов в копии — подстроки сообщений pytest.skip
-# (сверку с исходниками тестов делает tests/test_acceptance_script.py)
+# Допустимые причины пропуска тестов в копии — подстроки сообщений pytest.skip.
+# Если текст пропуска в тестах изменится, приёмка покажет его строкой «ОШИБКА»;
+# список правится здесь, нового выпуска не нужно (скрипт вне среза)
 ALLOWED_SKIPS = (
     "нет vault/knowledge/",            # test_eq_references.py: заметок vault в копии нет
     "черновик руководителя вне git",   # test_xlsx_reader.py: книги руководителя в копии нет
@@ -57,7 +57,7 @@ PIN_RE = re.compile(r'"radial-blackoil==([^"]+)"')
 failures: list[str] = []
 
 
-# ── Чистые функции (проверяются тестами) ─────────────────────
+# ── Разбор вывода и файлов ───────────────────────────────────
 
 def parse_skips(stdout: str) -> list[tuple[int, str]]:
     """Строки «SKIPPED [n] файл:строка: причина» итога pytest -rs → (n, причина)."""
@@ -85,7 +85,7 @@ def read_versions(path: Path) -> dict[str, str]:
     return out
 
 
-def source_versions(root: Path = ROOT) -> tuple[str, str]:
+def source_versions(root: Path) -> tuple[str, str]:
     """Номер решателя (литерал __version__) и требуемый номер radial-blackoil из pyproject.toml."""
     init = (root / "gpn_multiphase_solver" / "__init__.py").read_text(encoding="utf-8")
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
@@ -115,46 +115,54 @@ def tail(p: subprocess.CompletedProcess, n: int = 2000) -> str:
     return (p.stdout[-n:] + "\n" + p.stderr[-n:]).strip()
 
 
-def main() -> int:
-    print(f"Приёмка копии: {ROOT}\nПосторонний каталог: {WORK}", flush=True)
+def main(argv: list[str]) -> int:
+    if len(argv) != 1 or not (Path(argv[0]) / "gpn_multiphase_solver").is_dir():
+        print(__doc__)
+        return 2
+    root = Path(argv[0]).resolve()                          # корень копии (numerical_solver)
+    work = root.parent / f"{root.name}-acceptance"
+    venv_py = root / ".venv" / "Scripts" / "python.exe"
+    solver_exe = root / ".venv" / "Scripts" / "gpn-solver.exe"
+
+    print(f"Приёмка копии: {root}\nПосторонний каталог: {work}", flush=True)
     if sys.platform != "win32":
         print("Приёмка — только Windows (setup.bat)")
         return 1
     t_all = time.perf_counter()
 
     # ── 1. Свежая копия ──
-    if not check(not (ROOT / ".venv").exists(),
+    if not check(not (root / ".venv").exists(),
                  "в копии нет .venv (приёмка — на свежей копии: распакуйте архив заново)"):
         return 1
-    if WORK.exists():
-        shutil.rmtree(WORK)
-    WORK.mkdir(parents=True)
+    if work.exists():
+        shutil.rmtree(work)
+    work.mkdir(parents=True)
 
     # ── 2. setup.bat — из постороннего каталога: скрипт находит свой сам ──
     t0 = time.perf_counter()
-    p = run(["cmd", "/c", ROOT / "setup.bat"], cwd=WORK, timeout=1800)
-    if not check(p.returncode == 0 and VENV_PY.is_file(),
+    p = run(["cmd", "/c", root / "setup.bat"], cwd=work, timeout=1800)
+    if not check(p.returncode == 0 and venv_py.is_file(),
                  f"setup.bat: код {p.returncode} ({time.perf_counter() - t0:.0f} с)"):
         print(tail(p))
         return 1
 
     # ── 3. Версии ──
-    gpn_ver, proto_ver = source_versions()
-    p = run([VENV_PY, "-m", "gpn_multiphase_solver", "--version"], cwd=WORK)
+    gpn_ver, proto_ver = source_versions(root)
+    p = run([venv_py, "-m", "gpn_multiphase_solver", "--version"], cwd=work)
     check(p.stdout.strip() == f"gpn-multiphase-solver {gpn_ver}",
           f"gpn-solver --version: {p.stdout.strip()!r}, в коде {gpn_ver}")
-    p = run([VENV_PY, "-c", "import radial_blackoil; print(radial_blackoil.__version__)"], cwd=WORK)
+    p = run([venv_py, "-c", "import radial_blackoil; print(radial_blackoil.__version__)"], cwd=work)
     check(p.stdout.strip() == proto_ver,
           f"radial-blackoil: {p.stdout.strip()!r}, требуется {proto_ver}")
-    p = run([VENV_PY, "-c", "import platform, numpy, scipy; "
-             "print(platform.python_version(), numpy.__version__, scipy.__version__)"], cwd=WORK)
+    p = run([venv_py, "-c", "import platform, numpy, scipy; "
+             "print(platform.python_version(), numpy.__version__, scipy.__version__)"], cwd=work)
     py_ver, np_ver, sp_ver = (p.stdout.split() + ["?", "?", "?"])[:3]
     print(f"       окружение: Python {py_ver}, numpy {np_ver}, scipy {sp_ver}")
 
     # ── 4. Полный прогон тестов ──
     t0 = time.perf_counter()
-    p = run([VENV_PY, "-m", "pytest", "tests", "-q", "-rs", "-p", "no:cacheprovider"],
-            cwd=ROOT, timeout=7200)
+    p = run([venv_py, "-m", "pytest", "tests", "-q", "-rs", "-p", "no:cacheprovider"],
+            cwd=root, timeout=7200)
     summary = next((s for s in reversed(p.stdout.splitlines()) if " in " in s and "passed" in s), "")
     skips = parse_skips(p.stdout)
     bad = disallowed_skips(skips)
@@ -166,9 +174,9 @@ def main() -> int:
         print(tail(p, 4000))
 
     # ── 5. Документация ──
-    p = run([VENV_PY, "-m", "sphinx", "-W", "-b", "html", "-q", "-d", WORK / "doctrees",
-             ROOT / "doc" / "source", WORK / "html"], cwd=ROOT, timeout=600)
-    check(p.returncode == 0 and (WORK / "html" / "index.html").is_file(),
+    p = run([venv_py, "-m", "sphinx", "-W", "-b", "html", "-q", "-d", work / "doctrees",
+             root / "doc" / "source", work / "html"], cwd=root, timeout=600)
+    check(p.returncode == 0 and (work / "html" / "index.html").is_file(),
           f"документация без предупреждений: код {p.returncode}")
     if p.returncode != 0:
         print(tail(p))
@@ -177,11 +185,11 @@ def main() -> int:
                 "Python": py_ver, "numpy": np_ver, "scipy": sp_ver}
 
     # ── 6. Книга из постороннего каталога ──
-    book = WORK / "book"
+    book = work / "book"
     book.mkdir()
-    p = run([SOLVER_EXE, "template", "case.xlsx"], cwd=book)
+    p = run([solver_exe, "template", "case.xlsx"], cwd=book)
     check(p.returncode == 0 and (book / "case.xlsx").is_file(), f"шаблон книги: код {p.returncode}")
-    p = run([SOLVER_EXE, "run", "case.xlsx"], cwd=book, timeout=1800)
+    p = run([solver_exe, "run", "case.xlsx"], cwd=book, timeout=1800)
     lost = missing_outputs(book / "output", REQUIRED_OUTPUT + ("input/config.json",))
     check(p.returncode == 0 and not lost,
           f"расчёт по книге: код {p.returncode}, нет файлов: {lost or '—'}")
@@ -192,13 +200,13 @@ def main() -> int:
         check(got == expected, f"versions.txt: {got}")
 
     # ── 7. Файл конфигурации из постороннего каталога ──
-    case = WORK / "case06"
+    case = work / "case06"
     case.mkdir()
-    for f in [ROOT / "examples" / EXAMPLE / "config.json",
-              *sorted((ROOT / "examples" / EXAMPLE).glob("*.csv"))]:
+    for f in [root / "examples" / EXAMPLE / "config.json",
+              *sorted((root / "examples" / EXAMPLE).glob("*.csv"))]:
         shutil.copy(f, case / f.name)
-    p = run([VENV_PY, "-I", "-m", "gpn_multiphase_solver", "run", Path("case06") / "config.json"],
-            cwd=WORK, timeout=1800)
+    p = run([venv_py, "-I", "-m", "gpn_multiphase_solver", "run", Path("case06") / "config.json"],
+            cwd=work, timeout=1800)
     lost = missing_outputs(case / "output", REQUIRED_OUTPUT)
     check(p.returncode == 0 and not lost,
           f"расчёт по конфигурации ({EXAMPLE}): код {p.returncode}, нет файлов: {lost or '—'}")
@@ -214,4 +222,4 @@ if __name__ == "__main__":
     for stream in (sys.stdout, sys.stderr):
         # Консоль Windows (cp1251) не кодирует часть знаков вывода pytest и решателя
         stream.reconfigure(errors="replace")
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

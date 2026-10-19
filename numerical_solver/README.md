@@ -108,7 +108,9 @@ python -m venv .venv
 **Из выпуска** (испытания: пакеты без исходного кода). Выпуски публикуются
 в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; к каждому
 приложены колёса решателя и прототипа и архив примеров
-`examples-vX.Y.Z.zip` (без примера 18). Нужен GitHub CLI, авторизованный
+`examples-vX.Y.Z.zip` (без примера 18), начиная с выпуска 1.0.2 – ещё этот
+README (`README.md`) и собранная HTML-документация `docs-vX.Y.Z.zip`
+(`index.html` – в корне архива). Нужен GitHub CLI, авторизованный
 командой `gh auth login`. Команды — в PowerShell, в новой пустой папке вне
 каталога проекта; номер выпуска — вместо `1.0.0`.
 
@@ -121,7 +123,8 @@ python -m venv .venv
 
 2. Скачать выпуск. В `release-1.0.0` — три файла: `examples-v1.0.0.zip`,
    `gpn_multiphase_solver-1.0.0-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`:
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`; в выпусках с 1.0.2 –
+   ещё `README.md` и `docs-vX.Y.Z.zip`:
 
    ```powershell
    gh release download v1.0.0 --repo ArturSalamatin/Oil_Gas --dir release-1.0.0

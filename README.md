@@ -235,23 +235,19 @@ vault, перечни задач и скрипт приёмки не перед�
 ## Поставка для использования
 
 Пакеты без исходного кода – для расчётов без изменения кода. Выпуск `vX.Y.Z`
-состоит из трёх файлов:
+состоит из пяти файлов, все их собирает и публикует `tools/release.py` из
+метки выпуска:
 
 | Файл | Содержание |
 |---|---|
 | `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl` | решатель |
 | `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl` | прототип – обязательная зависимость решателя ровно этой версии |
 | `examples-vX.Y.Z.zip` | примеры: конфигурации, таблицы, README с эталонными значениями; без примера 18 – ему нужны книги и эталон CMG IMEX из дерева прототипа |
-
-Вместе с выпуском получателю передаются ещё два файла, собранные из той же
-метки (шаг 8 ниже):
-
-| Файл | Содержание |
-|---|---|
 | `README.md` | README решателя: установка из выпуска (§1), формат файла конфигурации и таблиц (§3), книга Excel (§3.6), вызов из Python (§4) |
 | `docs-vX.Y.Z.zip` | собранная HTML-документация: README, техническое описание, публичный интерфейс |
 
-Тесты и PDF постановки не передаются. Решатель ставится без группы `[dev]`
+Выпуски v1.0.0 и v1.0.1 опубликованы до этого – в них три файла, без
+README и документации. Тесты и PDF постановки не передаются. Решатель ставится без группы `[dev]`
 (pytest, Sphinx), с зависимостями numpy, scipy, matplotlib и XlsxWriter.
 
 Команды – PowerShell. `X.Y.Z` – номер выпуска (например, `1.0.2`), его
@@ -315,12 +311,14 @@ vault, перечни задач и скрипт приёмки не перед�
 
    Номер – три числа без суффикса, больше текущего и прошлого выпуска.
    Скрипт делает коммит `release: X.Y.Z` и метку `vX.Y.Z`, собирает из
-   метки (не из рабочего каталога) архив примеров и wheels в
-   `dist\vX.Y.Z\`, проверяет дерево метки тестами
-   `tests/test_packaging.py`, делает коммит
+   метки (не из рабочего каталога) в `dist\vX.Y.Z\` архив примеров, README
+   решателя, HTML-документацию (архив `docs-vX.Y.Z.zip`) и wheels,
+   проверяет дерево метки тестами `tests/test_packaging.py`, делает коммит
    `release: начало X.Y.(Z+1).dev0`, одним push отправляет ветку с меткой и
-   публикует выпуск в Releases репозитория `ArturSalamatin/Oil_Gas`.
-   Подробности – в докстринге [tools/release.py](tools/release.py).
+   публикует все пять файлов в Releases репозитория `ArturSalamatin/Oil_Gas`.
+   Нужен Sphinx в venv решателя (группа `[dev]`) – без него скрипт
+   отказывает до любых изменений. Подробности – в докстринге
+   [tools/release.py](tools/release.py).
 
    Итог: `$LASTEXITCODE` – 0. При отказе до push скрипт откатывает свои
    коммиты и метку и завершается с кодом 1, каталог `dist\vX.Y.Z\`
@@ -328,46 +326,26 @@ vault, перечни задач и скрипт приёмки не перед�
    origin – скрипт печатает команду `gh` для повтора. Опубликованный
    выпуск не меняется; исправление – новый выпуск.
 
-6. Проверить выпуск в Releases – три файла: `examples-vX.Y.Z.zip`,
-   `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`:
+6. Проверить выпуск в Releases – пять файлов: `docs-vX.Y.Z.zip`,
+   `examples-vX.Y.Z.zip`, `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`:
 
    ```powershell
    cd D:\Lessons\Grants\2026\GPN\Oil_Gas
    gh release view vX.Y.Z --repo ArturSalamatin/Oil_Gas --json assets --jq '.assets[].name'
    ```
 
-7. Скачать три файла выпуска в одну папку `dist\release-X.Y.Z`:
+7. Скачать пять файлов выпуска в одну папку `dist\release-X.Y.Z`,
+   проверить её и открыть:
 
    ```powershell
    cd D:\Lessons\Grants\2026\GPN\Oil_Gas
    gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas --dir dist\release-X.Y.Z
-   ```
-
-8. Добавить в ту же папку README решателя и архив собранной
-   HTML-документации из той же метки. Срез метки с собранной
-   документацией делает скрипт передачи для разработки (`tools\handover.py`
-   без `--acceptance`; нужны pdflatex и Sphinx, перед запуском – проверка
-   процессов, как в шаге 5 поставки для разработки). Если архив для
-   разработки этого выпуска уже собран, первую команду можно пропустить:
-
-   ```powershell
-   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
-   numerical_solver\.venv\Scripts\python tools\handover.py vX.Y.Z
-   Copy-Item D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z\README.md -Destination D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
-   Compress-Archive -Path D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z\doc\build\html\* -DestinationPath D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z\docs-vX.Y.Z.zip -Force
-   ```
-
-9. Проверить папку – пять файлов: три файла выпуска, `README.md` и
-   `docs-vX.Y.Z.zip`; открыть её:
-
-   ```powershell
-   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
    Get-ChildItem D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
    explorer D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
    ```
 
-10. Передать получателю папку `release-X.Y.Z` с пятью файлами.
+8. Передать получателю папку `release-X.Y.Z` с пятью файлами.
 
 ### Что делает получатель
 

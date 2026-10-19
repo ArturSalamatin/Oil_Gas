@@ -3,7 +3,7 @@
 Перед запуском раздел «## Не выпущено» в numerical_solver/CHANGELOG.md
 заполнен (черновик по git log от прошлой метки сводит Claude по просьбе) и
 закоммичен. Запуск — из корня репозитория, интерпретатором venv решателя
-(нужны packaging и pytest), в основном каталоге на ветке
+(нужны packaging, pytest и Sphinx – группа [dev]), в основном каталоге на ветке
 numerical_scheme/implementation:
 
     numerical_solver\\.venv\\Scripts\\python tools\\release.py 1.0.0
@@ -13,7 +13,8 @@ numerical_scheme/implementation:
 коммиты базовой ветки.
 
 Порядок:
-  1. Проверки, до любых изменений: gh установлен и авторизован; ветка
+  1. Проверки, до любых изменений: gh установлен и авторизован; в venv
+     есть pytest и Sphinx; ветка
      numerical_scheme/implementation, не позади origin; в numerical_solver/
      нет незакоммиченных правок отслеживаемых файлов (неотслеживаемые не
      мешают: сборка идёт из метки); X.Y.Z — три числа без суффикса, больше
@@ -26,15 +27,18 @@ numerical_scheme/implementation:
      литерале прототипа и в требовании numerical_solver/pyproject.toml.
   3. Сборка из метки, не из рабочего каталога, в dist/vX.Y.Z/: дерево
      numerical_solver метки → архив примеров examples-vX.Y.Z.zip (без
-     примера 18) → самопроверка tests/test_packaging.py дерева метки →
-     pip wheel --no-deps: ровно два колеса с ожидаемыми номерами в именах.
+     примера 18) → README.md решателя → HTML-документация (sphinx -W),
+     архив docs-vX.Y.Z.zip → самопроверка tests/test_packaging.py дерева
+     метки → pip wheel --no-deps: ровно два колеса с ожидаемыми номерами
+     в именах.
   4. Следующая разработка — локальный коммит «release: начало X.Y.(Z+1).dev0»:
      __version__ = "X.Y.(Z+1).dev0" (заглушка: номер следующего выпуска
      задаёт аргумент команды), пустой раздел «Не выпущено»; самопроверка
      рабочего каталога.
   5. Один push: ветка и метка вместе (--atomic).
-  6. Публикация: gh release create vX.Y.Z — два колеса и архив примеров,
-     заметки — раздел выпуска из журнала.
+  6. Публикация: gh release create vX.Y.Z — пять файлов: два колеса, архив
+     примеров, README.md решателя и архив HTML-документации; заметки —
+     раздел выпуска из журнала.
 
 Отказ на шагах 2–5 — скрипт откатывает свои коммиты и метку (git tag -d,
 git reset --keep к исходному коммиту; другие незакоммиченные файлы, например
@@ -237,8 +241,10 @@ def preflight(version: str) -> dict:
         raise ReleaseError("нет команды gh (GitHub CLI)")
     if run(["gh", "auth", "status"]).returncode != 0:
         raise ReleaseError("gh не авторизован: gh auth login")
-    if importlib.util.find_spec("pytest") is None:
-        raise ReleaseError("нет pytest: запускать интерпретатором numerical_solver\\.venv")
+    for module in ("pytest", "sphinx"):        # самопроверка и HTML-документация
+        if importlib.util.find_spec(module) is None:
+            raise ReleaseError(f"нет {module}: запускать интерпретатором numerical_solver\\.venv "
+                               "с группой [dev]")
     branch = git("branch", "--show-current")
     if branch != BRANCH:
         raise ReleaseError(f"текущая ветка {branch!r}, выпуск — только из {BRANCH} основного каталога")
@@ -319,6 +325,25 @@ def zip_examples(examples: Path, target: Path) -> int:
     return n
 
 
+def build_docs(tree: Path, out: Path, version: str) -> tuple[Path, int]:
+    """HTML-документация дерева метки (sphinx -W) – архив docs-vX.Y.Z.zip, index.html в корне; путь и число файлов."""
+    # Номера уравнений – из doc/source/eq_numbers.json под git: LaTeX не нужен.
+    # HTML и doctrees – вне дерева метки
+    html = out / "html"
+    r = run([sys.executable, "-m", "sphinx", "-W", "-b", "html", "-q", "-d", out / "doctrees",
+             "doc/source", html], cwd=tree)
+    if r.returncode != 0 or not (html / "index.html").is_file():
+        raise ReleaseError(f"sphinx: код {r.returncode}\n{r.stdout[-2000:]}{r.stderr[-2000:]}")
+    target = out / f"docs-v{version}.zip"
+    n = 0
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+        for p in sorted(html.rglob("*")):
+            if p.is_file():
+                z.write(p, p.relative_to(html))
+                n += 1
+    return target, n
+
+
 def selfcheck(tree: Path) -> str:
     """tests/test_packaging.py дерева tree: все прошли, пропусков нет; итоговая строка."""
     # Тесты сверяют номер прототипа с требованием решателя, раздел журнала с
@@ -349,7 +374,7 @@ def build_wheels(tree: Path, wheels: Path, version: str, proto_version: str) -> 
 
 
 def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
-    """Шаг 3: архив примеров, заметки, самопроверка и колёса из метки в out."""
+    """Шаг 3: архив примеров, README, документация, заметки, самопроверка и колёса из метки в out."""
     if out.exists():          # остаток прошлой неудачной попытки с тем же номером
         shutil.rmtree(out)
     tree = extract(tag, out / "src")
@@ -357,12 +382,18 @@ def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
     # Архив — до запуска тестов и сборки: они пишут в дерево (__pycache__, build/)
     n = zip_examples(tree / "examples", examples_zip)
     print(f"  архив примеров: {examples_zip.name}, файлов {n}")
+    # README решателя и документация – получателю выпуска: без них нет
+    # описания файла конфигурации (README §3) и вызова из Python (§4)
+    readme = out / "README.md"
+    shutil.copyfile(tree / "README.md", readme)
+    docs_zip, n = build_docs(tree, out, version)
+    print(f"  README.md; документация: {docs_zip.name}, файлов {n}")
     notes = section_body(read_text(tree / "CHANGELOG.md"), f"## {version} — ")
     write_text(out / "notes.md", f"{notes}\n\n{NOTES_TAIL}\n")
     print(f"  самопроверка метки: {selfcheck(tree)}")
     wheels = build_wheels(tree, out / "wheels", version, proto_version)
     print("  колёса: " + ", ".join(p.name for p in wheels))
-    return wheels + [examples_zip]
+    return wheels + [examples_zip, readme, docs_zip]
 
 
 # ── Откат ──

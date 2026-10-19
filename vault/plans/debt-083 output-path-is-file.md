@@ -7,7 +7,8 @@ issue: DEBT-083
 github: 139
 branch: refactor/debt-083/output-path-is-file
 status: реализован
-worktree: .worktrees/debt-083
+worktree: .worktrees/debt-083; удалён после влития
+merged: c4362aa (2026-10-19)
 audit:
   date: 2026-10-19
   round: 2

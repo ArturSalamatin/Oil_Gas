@@ -246,22 +246,68 @@ vault, перечни задач и скрипт приёмки не перед�
 Тесты, README решателя, HTML-документация и PDF постановки в выпуск не
 входят.
 
-### Порядок
+Для расчётов этого достаточно: решатель ставится без группы `[dev]`
+(pytest, Sphinx), с зависимостями numpy, scipy, matplotlib и XlsxWriter.
+Описание файла конфигурации и вызова из Python – в README решателя (§3,
+§4), в выпуск он не входит.
 
-Все команды выполняются из корня репозитория, интерпретатором venv решателя.
+Команды – PowerShell. `X.Y.Z` – номер выпуска (например, `1.0.2`), его
+нужно подставить. Корень репозитория – `D:\Lessons\Grants\2026\GPN\Oil_Gas`.
 
-1. Убедиться, что раздел «Не выпущено» в
-   [numerical_solver/CHANGELOG.md](numerical_solver/CHANGELOG.md) заполнен
-   и закоммичен: он становится заметками выпуска.
-2. Условия запуска: основной каталог на ветке
-   `numerical_scheme/implementation`, ветка не позади origin; в
-   `numerical_solver/` нет незакоммиченных правок отслеживаемых файлов;
-   GitHub CLI авторизован (`gh auth login`); другая сессия в это время не
-   вливает ветку (`/merge`) – скрипт коммитит в ту же ветку.
-3. Выпуск:
+### Что делаем мы
+
+1. Проверить ветку и рабочее дерево: все задачи влиты в
+   `numerical_scheme/implementation`, незакоммиченных правок в
+   `numerical_solver/` нет, ветка не позади origin.
 
    ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   git branch --show-current
+   git status --short numerical_solver
+   git fetch origin
+   git rev-list --count HEAD..origin/numerical_scheme/implementation
+   ```
+
+   Ожидается `numerical_scheme/implementation`, пустой вывод `git status`
+   и `0` в последней строке (число коммитов origin, которых нет локально).
+
+2. Проверить, нужен ли новый выпуск: последняя метка и изменения
+   `numerical_solver/` после неё.
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   git tag --list "v*" --sort=-v:refname | Select-Object -First 1
+   git diff --stat vX.Y.Z HEAD -- numerical_solver
+   ```
+
+   В `git diff` – последняя метка из первой команды. Пустой вывод – выпуск
+   уже есть, перейти к шагу 6 с её номером.
+
+3. Проверить раздел «Не выпущено» журнала изменений: в нём есть пункты
+   обо всех изменениях с прошлого выпуска, раздел закоммичен. Раздел
+   становится заметками выпуска в Releases.
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   Select-String -Path numerical_solver\CHANGELOG.md -Encoding UTF8 -Pattern "^## Не выпущено" -Context 0,20
+   ```
+
+4. Проверить GitHub CLI – печатается `Logged in to github.com`:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   gh auth status
+   ```
+
+   Убедиться, что в другой сессии не идёт `/merge`: скрипт выпуска
+   коммитит в ту же ветку.
+
+5. Выпуск:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
    numerical_solver\.venv\Scripts\python tools\release.py X.Y.Z
+   $LASTEXITCODE
    ```
 
    Номер – три числа без суффикса, больше текущего и прошлого выпуска.
@@ -273,20 +319,119 @@ vault, перечни задач и скрипт приёмки не перед�
    публикует выпуск в Releases репозитория `ArturSalamatin/Oil_Gas`.
    Подробности – в докстринге [tools/release.py](tools/release.py).
 
-   Если выпуск `vX.Y.Z` уже есть, шаг не повторяется: файлы лежат в
-   `dist\vX.Y.Z\` и в Releases.
-4. Проверка итога: код возврата 0, в Releases – выпуск `vX.Y.Z` с тремя
-   файлами. При отказе до push скрипт откатывает свои коммиты и метку и
-   завершается с кодом 1, каталог `dist\vX.Y.Z\` остаётся для разбора. При
-   отказе публикации ветка и метка уже на origin – скрипт печатает команду
-   `gh` для повтора. Опубликованный выпуск не меняется; исправление – новый
-   выпуск.
-5. Передать получателю три файла: `dist\vX.Y.Z\wheels\*.whl` и
-   `dist\vX.Y.Z\examples-vX.Y.Z.zip`. Репозиторий закрытый: скачать выпуск
-   из Releases (`gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas`)
-   может только тот, у кого есть доступ ко всему репозиторию.
+   Итог: `$LASTEXITCODE` – 0. При отказе до push скрипт откатывает свои
+   коммиты и метку и завершается с кодом 1, каталог `dist\vX.Y.Z\`
+   остаётся для разбора. При отказе публикации ветка и метка уже на
+   origin – скрипт печатает команду `gh` для повтора. Опубликованный
+   выпуск не меняется; исправление – новый выпуск.
 
-Установка у получателя – [README решателя](numerical_solver/README.md),
-§1 «Из выпуска», шаги 3–9: три файла кладутся в папку `release-X.Y.Z`
-вместо скачивания на шаге 2. Зависимости (numpy, scipy, matplotlib,
-XlsxWriter) ставятся из PyPI.
+6. Проверить выпуск в Releases – три файла: `examples-vX.Y.Z.zip`,
+   `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   gh release view vX.Y.Z --repo ArturSalamatin/Oil_Gas --json assets --jq '.assets[].name'
+   ```
+
+7. Скачать три файла выпуска в одну папку `dist\release-X.Y.Z` и открыть
+   её:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas --dir dist\release-X.Y.Z
+   explorer D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
+   ```
+
+8. Передать получателю папку `release-X.Y.Z` с тремя файлами.
+
+### Что делает получатель
+
+Нужны Python 3.10 или новее и доступ к PyPI. Папка `D:\gpn` – пример;
+папка `release-X.Y.Z` с тремя файлами положена в неё.
+
+1. Проверить файлы – три файла, как в шаге 6 выше:
+
+   ```powershell
+   cd D:\gpn
+   Get-ChildItem D:\gpn\release-X.Y.Z
+   ```
+
+2. Распаковать примеры – появится папка `D:\gpn\release-X.Y.Z\examples`:
+
+   ```powershell
+   cd D:\gpn
+   Expand-Archive D:\gpn\release-X.Y.Z\examples-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z
+   ```
+
+3. Создать окружение Python:
+
+   ```powershell
+   cd D:\gpn
+   python -m venv D:\gpn\.venv
+   ```
+
+4. Установить решатель и прототип – оба wheel одной командой. В конце –
+   `Successfully installed` с `gpn-multiphase-solver-X.Y.Z` и
+   `radial-blackoil-1.0.3+gpn.N`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\*.whl).FullName
+   ```
+
+5. Проверить номер версии – печатается `gpn-multiphase-solver X.Y.Z`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver --version
+   ```
+
+6. Рассчитать пример 06. В начале вывода – строка `Версии:
+   gpn-multiphase-solver X.Y.Z, radial-blackoil 1.0.3+gpn.N, …`; в сводке
+   `T(r_w) финал` и `q_o финал` совпадают с таблицей «Ожидаемое поведение»
+   в `D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\README.md`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\config.json
+   ```
+
+   Результаты – в папке `output` рядом с конфигурацией: `well_history.csv`,
+   `profiles.csv`, рисунки PNG и `versions.txt`:
+
+   ```powershell
+   cd D:\gpn
+   Get-ChildItem D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output
+   Get-Content D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output\versions.txt
+   ```
+
+7. Рассчитать свой вариант по файлу конфигурации – скопировать папку
+   подходящего примера, изменить в копии `config.json` и таблицы CSV,
+   рассчитать; результаты – в `D:\gpn\my_case\output\`:
+
+   ```powershell
+   cd D:\gpn
+   Copy-Item D:\gpn\release-X.Y.Z\examples\06_table_corey_rp D:\gpn\my_case -Recurse
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\my_case\config.json
+   ```
+
+   Или по книге Excel – шаблон, заполнение, расчёт; результаты – в
+   `D:\gpn\output\`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
+   ```
+
+8. Обновление до следующего выпуска – шаги 1, 2 и 4 с папкой нового
+   выпуска `release-<новый номер>`: `pip install` заменяет установленные
+   пакеты новыми.
+
+9. Удаление – окружение и папка выпуска:
+
+   ```powershell
+   cd D:\
+   Remove-Item D:\gpn\.venv, D:\gpn\release-X.Y.Z -Recurse -Force
+   ```

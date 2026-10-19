@@ -14,14 +14,14 @@
   использования» ниже) - вызвать tools/release.py.
 
 Для разработки заказчику передаётся один архив `gpn-multiphase-solver-<версия>.zip`
-финального выпуска и его контрольная сумма SHA256. В архиве – срез
+финального выпуска. В архиве – срез
 `numerical_solver` из метки выпуска: код решателя и прототипа, тесты,
 примеры, README, собранные HTML-документация и PDF постановки. История git,
 vault и перечни задач не передаются.
 
-Архив собирает одна команда из корня репозитория:
+Архив последнего выпуска собирает одна команда из корня репозитория:
 ```powershell
-numerical_solver\.venv\Scripts\python tools\handover.py v1.0.1
+numerical_solver\.venv\Scripts\python tools\handover.py
 ```
 
 ### Порядок
@@ -45,8 +45,12 @@ numerical_solver\.venv\Scripts\python tools\handover.py v1.0.1
 3. Создание архива для передачи на основе метки выпуска:
 
    ```powershell
-   numerical_solver\.venv\Scripts\python tools\handover.py vX.Y.Z
+   numerical_solver\.venv\Scripts\python tools\handover.py
    ```
+
+   Без аргумента берётся последний выпуск – локальная метка `vX.Y.Z` с
+   наибольшим номером (скрипт печатает, какая); другой выпуск задаётся
+   меткой: `tools\handover.py vX.Y.Z`.
 
    Скрипт берёт срез репозитория, папку numerical_solver, 
    из метки, собирает PDF постановки и HTML-документацию,
@@ -60,8 +64,7 @@ numerical_solver\.venv\Scripts\python tools\handover.py v1.0.1
    на диске и при её отказе – такой архив не передаётся. При отказе
    (код 1) каталог `dist\handover-X.Y.Z\` остаётся для разбора; повторный
    запуск создаёт его заново.
-5. Передать заказчику архив `dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z.zip`
-   и SHA256 из вывода скрипта (в файл сумма не записывается).
+5. Передать заказчику архив `dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z.zip`.
 
 ## Поставка для использования
 

@@ -1,4 +1,4 @@
-"""Передача команде разработки заказчика: python tools/handover.py <метка> (FEAT-031).
+"""Передача команде разработки заказчика: python tools/handover.py [<метка>] (FEAT-031).
 
 Срез numerical_solver из метки выпуска (git archive — только файлы под git,
 вместе с атрибутами .gitattributes), PDF постановки, HTML-документация,
@@ -8,7 +8,11 @@
 решателя (нужны Sphinx — группа [dev] — и packaging), нужны pdflatex в PATH
 и доступ к PyPI (приёмка ставит пакеты в свежее окружение):
 
+    numerical_solver\\.venv\\Scripts\\python tools\\handover.py
     numerical_solver\\.venv\\Scripts\\python tools\\handover.py v1.0.1
+
+Без аргумента берётся последний выпуск – локальная метка vX.Y.Z с
+наибольшим номером; меток выпуска нет – отказ.
 
 Порядок:
   1. метка — коммит; версия — литерал __version__ решателя в метке;
@@ -16,7 +20,7 @@
   3. PDF постановки (pdflatex дважды), сверка таблицы номеров уравнений с
      .aux (tools/eq_numbers.py --check), побочные файлы LaTeX — удалить;
   4. HTML-документация (sphinx -W) в doc/build/html/ среза;
-  5. архив gpn-multiphase-solver-<версия>.zip и его SHA256;
+  5. архив gpn-multiphase-solver-<версия>.zip;
   6. приёмка на распакованной копии архива (dist/handover-<версия>/check/).
 
 Метка не вида vX.Y.Z или номер с .dev — предупреждение: заказчику
@@ -27,7 +31,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 import re
 import shutil
@@ -44,6 +47,7 @@ import release  # noqa: E402
 ROOT = release.ROOT                                  # корень репозитория Oil_Gas
 SOLVER = release.SOLVER                              # "numerical_solver"
 INIT = f"{SOLVER}/gpn_multiphase_solver/__init__.py"
+RELEASE_TAG_RE = re.compile(r"v\d+\.\d+\.\d+")       # метка выпуска tools/release.py
 
 
 class HandoverError(Exception):
@@ -66,6 +70,16 @@ def tree_version(treeish: str) -> str:
     if not m:
         raise HandoverError(f"{treeish}:{INIT}: нет литерала __version__")
     return m.group(3)
+
+
+def latest_release() -> str:
+    """Последняя метка выпуска vX.Y.Z – наибольшая по номеру среди локальных меток."""
+    # По номеру, а не по дате: v1.0.10 новее v1.0.9; метки другого вида не выпуск
+    tags = [t for t in release.git("tag", "--list", "v*").splitlines()
+            if RELEASE_TAG_RE.fullmatch(t)]
+    if not tags:
+        raise HandoverError("нет меток выпуска vX.Y.Z: сначала выпуск tools/release.py")
+    return max(tags, key=lambda t: tuple(int(x) for x in t[1:].split(".")))
 
 
 def build_pdf(slice_dir: Path) -> Path:
@@ -123,15 +137,6 @@ def make_zip(slice_dir: Path, target: Path) -> int:
     return n
 
 
-def sha256(path: Path) -> str:
-    """SHA256 файла — для записи о передаче."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def acceptance(archive: Path, check_dir: Path, top: str) -> int:
     """Распаковать архив и выполнить приёмку копии; код возврата приёмки."""
     if check_dir.exists():
@@ -151,17 +156,21 @@ def acceptance(archive: Path, check_dir: Path, top: str) -> int:
 def main(argv: list[str]) -> int:
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
-    if len(argv) != 1:
+    if len(argv) > 1:
         print(__doc__)
         return 2
-    treeish = argv[0]
     t_all = time.perf_counter()
     try:
+        if argv:
+            treeish = argv[0]
+        else:
+            treeish = latest_release()
+            print(f"Метка не указана – последний выпуск {treeish}")
         if shutil.which("pdflatex") is None:
             raise HandoverError("нет pdflatex в PATH (MiKTeX или TeX Live)")
         release.git("rev-parse", "--verify", f"{treeish}^{{commit}}")
         version = tree_version(treeish)
-        if not re.fullmatch(r"v\d+\.\d+\.\d+", treeish) or ".dev" in version:
+        if not RELEASE_TAG_RE.fullmatch(treeish) or ".dev" in version:
             print(f"ПРЕДУПРЕЖДЕНИЕ: {treeish} (номер {version}) — не выпуск: заказчику "
                   "передаётся только архив из метки выпуска tools/release.py")
         top = f"gpn-multiphase-solver-{version}"
@@ -186,16 +195,15 @@ def main(argv: list[str]) -> int:
 
         archive = out / f"{top}.zip"
         n = make_zip(slice_dir, archive)
-        digest = sha256(archive)
-        print(f"4. Архив {archive.name}: файлов {n}, {archive.stat().st_size / 1e6:.1f} МБ, "
-              f"SHA256 {digest}", flush=True)
+        print(f"4. Архив {archive.name}: файлов {n}, {archive.stat().st_size / 1e6:.1f} МБ",
+              flush=True)
     except (HandoverError, release.ReleaseError, subprocess.TimeoutExpired) as e:
         print(f"Отказ: {e}")
         return 1
 
     print("5. Приёмка на распакованной копии", flush=True)
     code = acceptance(archive, out / "check", top)
-    print(f"Передача {version}: архив {archive} (SHA256 {digest}); приёмка — "
+    print(f"Передача {version}: архив {archive}; приёмка – "
           f"{'пройдена' if code == 0 else f'НЕ пройдена (код {code})'}; "
           f"{time.perf_counter() - t_all:.0f} с")
     return 0 if code == 0 else 1

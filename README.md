@@ -132,105 +132,10 @@ vault, перечни задач и скрипт приёмки не перед�
 
 ### Что делает заказчик
 
-Нужны Python 3.10 или новее и доступ к PyPI. Папка `D:\gpn` – пример;
-архив положен в неё.
-
-1. Распаковать архив:
-
-   ```powershell
-   cd D:\gpn
-   Expand-Archive D:\gpn\gpn-multiphase-solver-X.Y.Z.zip -DestinationPath D:\gpn
-   ```
-
-   Появится папка `D:\gpn\gpn-multiphase-solver-X.Y.Z`.
-
-2. Установить решатель и прототип в режиме разработки (с pytest и
-   Sphinx) – скриптом:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .\setup.bat
-   ```
-
-   или вручную:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   python -m venv .venv
-   .venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
-   ```
-
-   Проверка – печатается `gpn-multiphase-solver X.Y.Z`:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .venv\Scripts\python -m gpn_multiphase_solver --version
-   ```
-
-3. Открыть документацию и постановку:
-
-   ```powershell
-   start D:\gpn\gpn-multiphase-solver-X.Y.Z\doc\build\html\index.html
-   start D:\gpn\gpn-multiphase-solver-X.Y.Z\doc\problem_statement.pdf
-   ```
-
-4. Рассчитать пример по файлу конфигурации – результаты в
-   `examples\06_table_corey_rp\output\`:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json
-   ```
-
-   Рассчитать свой вариант по книге Excel – шаблон, заполнение, расчёт;
-   результаты в `D:\gpn\output\`:
-
-   ```powershell
-   cd D:\gpn
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
-   ```
-
-   Вызов из Python (`run_case`, `load_config`, `SimulatorFactory`) – README
-   решателя, §4.
-
-5. После правок кода – тесты решателя: быстрый уровень (1–2 мин) и
-   полный (около 10 мин, сверяет числа примеров с их README):
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .venv\Scripts\python -m pytest tests/ -m "not slow" -q
-   .venv\Scripts\python -m pytest tests/ -q
-   ```
-
-   После правок прототипа – ещё его тесты и регрессия по эталону, сверенному
-   с CMG IMEX (тесты решателя отклонение прототипа от эталона не
-   обнаружат):
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z\HydroSolverPrototype\Prototype_1.0.3
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m unittest discover -s tests -v
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python .\regression\run_regression.py
-   ```
-
-6. После правок докстрингов или README – пересобрать HTML-документацию:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
-   ```
-
-   После правки постановки – PDF (pdflatex дважды) и таблица номеров
-   уравнений для HTML, затем снова сборка HTML:
-
-   ```powershell
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z\doc
-   pdflatex -interaction=nonstopmode problem_statement.tex
-   pdflatex -interaction=nonstopmode problem_statement.tex
-   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
-   .venv\Scripts\python tools\eq_numbers.py
-   .venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
-   ```
+Пошаговая инструкция – в README решателя
+([numerical_solver/README.md](numerical_solver/README.md)), раздел «Начало
+работы», «Поставка для разработки». README входит в архив, заказчик получает
+её вместе с кодом.
 
 ## Поставка для использования
 
@@ -243,7 +148,7 @@ vault, перечни задач и скрипт приёмки не перед�
 | `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl` | решатель |
 | `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl` | прототип – обязательная зависимость решателя ровно этой версии |
 | `examples-vX.Y.Z.zip` | примеры: конфигурации, таблицы, README с эталонными значениями; без примера 18 – ему нужны книги и эталон CMG IMEX из дерева прототипа |
-| `README.md` | README решателя: установка из выпуска (§1), формат файла конфигурации и таблиц (§3), книга Excel (§3.6), вызов из Python (§4) |
+| `README.md` | README решателя: пошаговая инструкция получателя (раздел «Начало работы»), формат файла конфигурации и таблиц (§3), книга Excel (§3.6), вызов из Python (§4) |
 | `docs-vX.Y.Z.zip` | собранная HTML-документация: README, техническое описание, публичный интерфейс |
 
 Выпуски v1.0.0–v1.0.2 опубликованы до этого – в них три файла, без
@@ -349,107 +254,6 @@ README и документации. Тесты и PDF постановки не 
 
 ### Что делает получатель
 
-Нужны Python 3.10 или новее и доступ к PyPI. Папка `D:\gpn` – пример;
-папка `release-X.Y.Z` с пятью файлами положена в неё.
-
-1. Проверить файлы – пять файлов: `docs-vX.Y.Z.zip`,
-   `examples-vX.Y.Z.zip`, `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`:
-
-   ```powershell
-   cd D:\gpn
-   Get-ChildItem D:\gpn\release-X.Y.Z
-   ```
-
-2. Распаковать примеры – появится папка `D:\gpn\release-X.Y.Z\examples`:
-
-   ```powershell
-   cd D:\gpn
-   Expand-Archive D:\gpn\release-X.Y.Z\examples-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z
-   ```
-
-3. Распаковать и открыть HTML-документацию; README – в Блокноте. Для
-   расчётов в README нужны §1 «Из выпуска», §2–§4; разделы о разработке
-   (установка из исходного кода, тесты, сборка документации), §5 (пример 18
-   в поставку не входит) и ссылки на файлы исходного кода к этой поставке
-   не относятся:
-
-   ```powershell
-   cd D:\gpn
-   Expand-Archive D:\gpn\release-X.Y.Z\docs-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z\docs
-   start D:\gpn\release-X.Y.Z\docs\index.html
-   notepad D:\gpn\release-X.Y.Z\README.md
-   ```
-
-4. Создать окружение Python:
-
-   ```powershell
-   cd D:\gpn
-   python -m venv D:\gpn\.venv
-   ```
-
-5. Установить решатель и прототип – оба wheel одной командой. В конце –
-   `Successfully installed` с `gpn-multiphase-solver-X.Y.Z` и
-   `radial-blackoil-1.0.3+gpn.N`:
-
-   ```powershell
-   cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\*.whl).FullName
-   ```
-
-6. Проверить номер версии – печатается `gpn-multiphase-solver X.Y.Z`:
-
-   ```powershell
-   cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver --version
-   ```
-
-7. Рассчитать пример 06. В начале вывода – строка `Версии:
-   gpn-multiphase-solver X.Y.Z, radial-blackoil 1.0.3+gpn.N, …`; в сводке
-   `T(r_w) финал` и `q_o финал` совпадают с таблицей «Ожидаемое поведение»
-   в `D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\README.md`:
-
-   ```powershell
-   cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\config.json
-   ```
-
-   Результаты – в папке `output` рядом с конфигурацией: `well_history.csv`,
-   `profiles.csv`, рисунки PNG и `versions.txt`:
-
-   ```powershell
-   cd D:\gpn
-   Get-ChildItem D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output
-   Get-Content D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output\versions.txt
-   ```
-
-8. Рассчитать свой вариант по файлу конфигурации – скопировать папку
-   подходящего примера, изменить в копии `config.json` и таблицы CSV
-   (поля, единицы СИ и форматы таблиц – README, §3), рассчитать;
-   результаты – в `D:\gpn\my_case\output\`:
-
-   ```powershell
-   cd D:\gpn
-   Copy-Item D:\gpn\release-X.Y.Z\examples\06_table_corey_rp D:\gpn\my_case -Recurse
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\my_case\config.json
-   ```
-
-   Или по книге Excel – шаблон, заполнение, расчёт; результаты – в
-   `D:\gpn\output\`:
-
-   ```powershell
-   cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
-   ```
-
-9. Обновление до следующего выпуска – шаги 1, 2, 3 и 5 с папкой нового
-   выпуска `release-<новый номер>`: `pip install` заменяет установленные
-   пакеты новыми.
-
-10. Удаление – окружение и папка выпуска:
-
-   ```powershell
-   cd D:\
-   Remove-Item D:\gpn\.venv, D:\gpn\release-X.Y.Z -Recurse -Force
-   ```
+Пошаговая инструкция – в README решателя
+([numerical_solver/README.md](numerical_solver/README.md)), раздел «Начало
+работы», «Поставка для расчётов». README – один из пяти файлов выпуска.

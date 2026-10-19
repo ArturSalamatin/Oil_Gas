@@ -12,6 +12,231 @@ Black Oil, вода отсутствует) совместно с расчёто
 
 Постановка задачи и дискретные уравнения — [doc/problem_statement.tex](doc/problem_statement.tex).
 
+## Начало работы
+
+Решатель передаётся в одном из двух видов. Ниже – что делать с
+полученными файлами, по шагам. Команды – PowerShell, с полными путями;
+`X.Y.Z` – номер выпуска, его нужно подставить; папка `D:\gpn` – пример.
+Нужны Python 3.10 или новее и доступ к PyPI или к его зеркалу.
+
+| Поставка | Что получено | Для чего |
+|---|---|---|
+| для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
+| для расчётов | папка `release-X.Y.Z` с пятью файлами: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
+
+### Поставка для разработки
+
+Архив положен в `D:\gpn`.
+
+1. Распаковать архив – появится папка `D:\gpn\gpn-multiphase-solver-X.Y.Z`:
+
+   ```powershell
+   cd D:\gpn
+   Expand-Archive D:\gpn\gpn-multiphase-solver-X.Y.Z.zip -DestinationPath D:\gpn
+   ```
+
+2. Установить решатель и прототип в режиме разработки (с pytest и
+   Sphinx) – скриптом:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .\setup.bat
+   ```
+
+   или вручную:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   python -m venv .venv
+   .venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
+   ```
+
+   Проверка – печатается `gpn-multiphase-solver X.Y.Z`:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python -m gpn_multiphase_solver --version
+   ```
+
+3. Открыть документацию и постановку:
+
+   ```powershell
+   start D:\gpn\gpn-multiphase-solver-X.Y.Z\doc\build\html\index.html
+   start D:\gpn\gpn-multiphase-solver-X.Y.Z\doc\problem_statement.pdf
+   ```
+
+4. Рассчитать пример по файлу конфигурации – результаты в
+   `examples\06_table_corey_rp\output\`:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json
+   ```
+
+   Рассчитать свой вариант по книге Excel – шаблон, заполнение, расчёт;
+   результаты в `D:\gpn\output\`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
+   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
+   ```
+
+   Файл конфигурации и таблицы – §3, вызов из Python (`run_case`,
+   `load_config`, `SimulatorFactory`) – §4.
+
+5. После правок кода – тесты решателя: быстрый уровень (1–2 мин) и
+   полный (около 10 мин, сверяет числа примеров с их README):
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python -m pytest tests/ -m "not slow" -q
+   .venv\Scripts\python -m pytest tests/ -q
+   ```
+
+   После правок прототипа – ещё его тесты и регрессия по эталону, сверенному
+   с CMG IMEX (тесты решателя отклонение прототипа от эталона не
+   обнаружат):
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z\HydroSolverPrototype\Prototype_1.0.3
+   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m unittest discover -s tests -v
+   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python .\regression\run_regression.py
+   ```
+
+6. После правок докстрингов или README – пересобрать HTML-документацию:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
+   ```
+
+   После правки постановки – PDF (pdflatex дважды) и таблица номеров
+   уравнений для HTML, затем снова сборка HTML:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z\doc
+   pdflatex -interaction=nonstopmode problem_statement.tex
+   pdflatex -interaction=nonstopmode problem_statement.tex
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python tools\eq_numbers.py
+   .venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
+   ```
+
+### Поставка для расчётов
+
+Папка `release-X.Y.Z` с пятью файлами положена в `D:\gpn`. Решатель
+ставится без группы `[dev]` (pytest, Sphinx), с зависимостями numpy, scipy,
+matplotlib и XlsxWriter.
+
+1. Проверить файлы – пять файлов: `docs-vX.Y.Z.zip`,
+   `examples-vX.Y.Z.zip`, `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`:
+
+   ```powershell
+   cd D:\gpn
+   Get-ChildItem D:\gpn\release-X.Y.Z
+   ```
+
+2. Распаковать примеры – появится папка `D:\gpn\release-X.Y.Z\examples`:
+
+   ```powershell
+   cd D:\gpn
+   Expand-Archive D:\gpn\release-X.Y.Z\examples-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z
+   ```
+
+3. Распаковать и открыть HTML-документацию: этот README, техническое
+   описание, публичный интерфейс.
+
+   ```powershell
+   cd D:\gpn
+   Expand-Archive D:\gpn\release-X.Y.Z\docs-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z\docs
+   start D:\gpn\release-X.Y.Z\docs\index.html
+   ```
+
+   Для расчётов в этом README нужны ещё §2–§4, а в §1 – «На компьютере без
+   доступа к PyPI» и «Inkscape». Остальное в §1 и §5–§7 (установка из
+   исходного кода, пример 18, тесты, сборка документации) и ссылки на файлы
+   исходного кода к этой поставке не относятся.
+
+4. Создать окружение Python:
+
+   ```powershell
+   cd D:\gpn
+   python -m venv D:\gpn\.venv
+   ```
+
+5. Установить решатель и прототип – оба wheel одной командой. В конце –
+   `Successfully installed` с `gpn-multiphase-solver-X.Y.Z` и
+   `radial-blackoil-1.0.3+gpn.N`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\*.whl).FullName
+   ```
+
+6. Проверить установку: первая команда печатает `gpn-multiphase-solver
+   X.Y.Z`, вторая – две строки, обе начинаются с
+   `D:\gpn\.venv\Lib\site-packages\` (пакеты взяты из окружения):
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver --version
+   D:\gpn\.venv\Scripts\python -c "import gpn_multiphase_solver as g, radial_blackoil as r; print(g.__file__); print(r.__file__)"
+   ```
+
+7. Рассчитать пример 06. В начале вывода – строка `Версии:
+   gpn-multiphase-solver X.Y.Z, radial-blackoil 1.0.3+gpn.N, …`; в сводке
+   `T(r_w) финал` и `q_o финал` совпадают с таблицей «Ожидаемое поведение»
+   в `D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\README.md`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\config.json
+   ```
+
+   Результаты – в папке `output` рядом с конфигурацией: `well_history.csv`,
+   `profiles.csv`, рисунки PNG и `versions.txt`:
+
+   ```powershell
+   cd D:\gpn
+   Get-ChildItem D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output
+   Get-Content D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output\versions.txt
+   ```
+
+8. Рассчитать свой вариант по файлу конфигурации – скопировать папку
+   подходящего примера, изменить в копии `config.json` и таблицы CSV
+   (поля, единицы СИ и форматы таблиц – §3), рассчитать; результаты – в
+   `D:\gpn\my_case\output\`:
+
+   ```powershell
+   cd D:\gpn
+   Copy-Item D:\gpn\release-X.Y.Z\examples\06_table_corey_rp D:\gpn\my_case -Recurse
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\my_case\config.json
+   ```
+
+   Или по книге Excel (§3.6) – шаблон, заполнение, расчёт; результаты – в
+   `D:\gpn\output\`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
+   ```
+
+   Вызов решателя из своих скриптов Python – §4.
+
+9. Обновление до следующего выпуска – шаги 1, 2, 3 и 5 с папкой нового
+   выпуска `release-<новый номер>`: `pip install` заменяет установленные
+   пакеты новыми.
+
+10. Удаление – окружение и папка выпуска:
+
+    ```powershell
+    cd D:\
+    Remove-Item D:\gpn\.venv, D:\gpn\release-X.Y.Z -Recurse -Force
+    ```
+
 ## Состав каталога
 
 | Путь | Содержание |
@@ -105,89 +330,19 @@ python -m venv .venv
 .venv\Scripts\python -m pip install HydroSolverPrototype\Prototype_1.0.3 .
 ```
 
-**Из выпуска** (испытания: пакеты без исходного кода). Выпуски публикуются
-в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; к каждому
-приложены колёса решателя и прототипа и архив примеров
-`examples-vX.Y.Z.zip` (без примера 18), начиная с выпуска 1.0.3 – ещё этот
-README (`README.md`) и собранная HTML-документация `docs-vX.Y.Z.zip`
-(`index.html` – в корне архива). Нужен GitHub CLI, авторизованный
-командой `gh auth login`. Команды — в PowerShell, в новой пустой папке вне
-каталога проекта; номер выпуска — вместо `1.0.0`.
-
-1. Создать папку и перейти в неё:
-
-   ```powershell
-   mkdir D:\gpn-test
-   cd D:\gpn-test
-   ```
-
-2. Скачать выпуск. В `release-1.0.0` — три файла: `examples-v1.0.0.zip`,
-   `gpn_multiphase_solver-1.0.0-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`; в выпусках с 1.0.3 –
-   ещё `README.md` и `docs-vX.Y.Z.zip`:
-
-   ```powershell
-   gh release download v1.0.0 --repo ArturSalamatin/Oil_Gas --dir release-1.0.0
-   dir release-1.0.0
-   ```
-
-3. Распаковать примеры в `release-1.0.0\examples`:
-
-   ```powershell
-   Expand-Archive release-1.0.0\examples-v1.0.0.zip -DestinationPath release-1.0.0
-   ```
-
-4. Создать окружение Python:
-
-   ```powershell
-   python -m venv .venv
-   ```
-
-5. Установить оба пакета по путям файлов. В конце — `Successfully installed`
-   с `gpn-multiphase-solver-1.0.0` и `radial-blackoil-1.0.3+gpn.N`:
-
-   ```powershell
-   .venv\Scripts\python -m pip install (Get-ChildItem release-1.0.0\*.whl).FullName
-   ```
-
-6. Номер версии — `gpn-multiphase-solver 1.0.0`:
-
-   ```powershell
-   .venv\Scripts\python -m gpn_multiphase_solver --version
-   ```
-
-7. Пакеты взяты из окружения — обе строки начинаются с
-   `D:\gpn-test\.venv\Lib\site-packages\`:
-
-   ```powershell
-   .venv\Scripts\python -c "import gpn_multiphase_solver as g, radial_blackoil as r; print(g.__file__); print(r.__file__)"
-   ```
-
-8. Рассчитать пример 06. В начале — строка `Версии: gpn-multiphase-solver
-   1.0.0, radial-blackoil 1.0.3+gpn.N, …`; в сводке `T(r_w) финал` и
-   `q_o финал` совпадают с таблицей «Ожидаемое поведение» в
-   `release-1.0.0\examples\06_table_corey_rp\README.md`:
-
-   ```powershell
-   .venv\Scripts\python -m gpn_multiphase_solver run release-1.0.0\examples\06_table_corey_rp\config.json
-   ```
-
-9. Проверить результаты: в `output` — `well_history.csv`, `profiles.csv`,
-   рисунки PNG и `versions.txt`; первые строки `versions.txt` —
-   `gpn-multiphase-solver 1.0.0` и `radial-blackoil 1.0.3+gpn.N`:
-
-   ```powershell
-   dir release-1.0.0\examples\06_table_corey_rp\output
-   type release-1.0.0\examples\06_table_corey_rp\output\versions.txt
-   ```
-
-Обновление — шаги 2, 3 и 5 с номером нового выпуска. Удаление проверочной
-папки:
+**Из выпуска** (пакеты без исходного кода, для расчётов). Выпуски
+публикуются в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; состав
+выпуска – таблица раздела «Начало работы» (в выпусках до 1.0.2 включительно
+нет `README.md` и `docs-vX.Y.Z.zip`). При доступе к репозиторию выпуск
+скачивается GitHub CLI, авторизованным командой `gh auth login`:
 
 ```powershell
-cd D:\
-Remove-Item D:\gpn-test -Recurse -Force
+mkdir D:\gpn -Force
+cd D:\gpn
+gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas --dir D:\gpn\release-X.Y.Z
 ```
+
+Дальше – раздел «Начало работы», «Поставка для расчётов», с шага 1.
 
 **На компьютере без доступа к PyPI.** На компьютере, где доступ есть,
 соберите в каталог `wheels` установочные файлы (формат wheel, `.whl`)
@@ -496,7 +651,7 @@ cells (N)): 20.5 — нужно целое число ≥ 1`. Ошибки, ко
 ## 4. Использование из Python
 
 Решатель вызывается из скриптов другого проекта. Пакет ставится в окружение
-этого проекта: из выпуска — шаги 2, 4 и 5 из §1 «Из выпуска», из исходного
+этого проекта: из выпуска – шаг 5 раздела «Поставка для расчётов» (интерпретатором окружения этого проекта), из исходного
 кода — команды §1. Исходные данные — файл конфигурации с таблицами CSV
 (3.1–3.3) или книга Excel (3.6); проще всего скопировать папку подходящего
 примера, например `examples\06_table_corey_rp` под именем `my_case`.

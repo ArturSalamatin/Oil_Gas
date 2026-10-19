@@ -243,13 +243,16 @@ vault, перечни задач и скрипт приёмки не перед�
 | `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl` | прототип – обязательная зависимость решателя ровно этой версии |
 | `examples-vX.Y.Z.zip` | примеры: конфигурации, таблицы, README с эталонными значениями; без примера 18 – ему нужны книги и эталон CMG IMEX из дерева прототипа |
 
-Тесты, README решателя, HTML-документация и PDF постановки в выпуск не
-входят.
+Вместе с выпуском получателю передаются ещё два файла, собранные из той же
+метки (шаг 8 ниже):
 
-Для расчётов этого достаточно: решатель ставится без группы `[dev]`
+| Файл | Содержание |
+|---|---|
+| `README.md` | README решателя: установка из выпуска (§1), формат файла конфигурации и таблиц (§3), книга Excel (§3.6), вызов из Python (§4) |
+| `docs-vX.Y.Z.zip` | собранная HTML-документация: README, техническое описание, публичный интерфейс |
+
+Тесты и PDF постановки не передаются. Решатель ставится без группы `[dev]`
 (pytest, Sphinx), с зависимостями numpy, scipy, matplotlib и XlsxWriter.
-Описание файла конфигурации и вызова из Python – в README решателя (§3,
-§4), в выпуск он не входит.
 
 Команды – PowerShell. `X.Y.Z` – номер выпуска (например, `1.0.2`), его
 нужно подставить. Корень репозитория – `D:\Lessons\Grants\2026\GPN\Oil_Gas`.
@@ -334,23 +337,46 @@ vault, перечни задач и скрипт приёмки не перед�
    gh release view vX.Y.Z --repo ArturSalamatin/Oil_Gas --json assets --jq '.assets[].name'
    ```
 
-7. Скачать три файла выпуска в одну папку `dist\release-X.Y.Z` и открыть
-   её:
+7. Скачать три файла выпуска в одну папку `dist\release-X.Y.Z`:
 
    ```powershell
    cd D:\Lessons\Grants\2026\GPN\Oil_Gas
    gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas --dir dist\release-X.Y.Z
+   ```
+
+8. Добавить в ту же папку README решателя и архив собранной
+   HTML-документации из той же метки. Срез метки с собранной
+   документацией делает скрипт передачи для разработки (`tools\handover.py`
+   без `--acceptance`; нужны pdflatex и Sphinx, перед запуском – проверка
+   процессов, как в шаге 5 поставки для разработки). Если архив для
+   разработки этого выпуска уже собран, первую команду можно пропустить:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   numerical_solver\.venv\Scripts\python tools\handover.py vX.Y.Z
+   Copy-Item D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z\README.md -Destination D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
+   Compress-Archive -Path D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\handover-X.Y.Z\gpn-multiphase-solver-X.Y.Z\doc\build\html\* -DestinationPath D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z\docs-vX.Y.Z.zip -Force
+   ```
+
+9. Проверить папку – пять файлов: три файла выпуска, `README.md` и
+   `docs-vX.Y.Z.zip`; открыть её:
+
+   ```powershell
+   cd D:\Lessons\Grants\2026\GPN\Oil_Gas
+   Get-ChildItem D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
    explorer D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\release-X.Y.Z
    ```
 
-8. Передать получателю папку `release-X.Y.Z` с тремя файлами.
+10. Передать получателю папку `release-X.Y.Z` с пятью файлами.
 
 ### Что делает получатель
 
 Нужны Python 3.10 или новее и доступ к PyPI. Папка `D:\gpn` – пример;
-папка `release-X.Y.Z` с тремя файлами положена в неё.
+папка `release-X.Y.Z` с пятью файлами положена в неё.
 
-1. Проверить файлы – три файла, как в шаге 6 выше:
+1. Проверить файлы – пять файлов: `docs-vX.Y.Z.zip`,
+   `examples-vX.Y.Z.zip`, `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`:
 
    ```powershell
    cd D:\gpn
@@ -364,14 +390,27 @@ vault, перечни задач и скрипт приёмки не перед�
    Expand-Archive D:\gpn\release-X.Y.Z\examples-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z
    ```
 
-3. Создать окружение Python:
+3. Распаковать и открыть HTML-документацию; README – в Блокноте. Для
+   расчётов в README нужны §1 «Из выпуска», §2–§4; разделы о разработке
+   (установка из исходного кода, тесты, сборка документации), §5 (пример 18
+   в поставку не входит) и ссылки на файлы исходного кода к этой поставке
+   не относятся:
+
+   ```powershell
+   cd D:\gpn
+   Expand-Archive D:\gpn\release-X.Y.Z\docs-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z\docs
+   start D:\gpn\release-X.Y.Z\docs\index.html
+   notepad D:\gpn\release-X.Y.Z\README.md
+   ```
+
+4. Создать окружение Python:
 
    ```powershell
    cd D:\gpn
    python -m venv D:\gpn\.venv
    ```
 
-4. Установить решатель и прототип – оба wheel одной командой. В конце –
+5. Установить решатель и прототип – оба wheel одной командой. В конце –
    `Successfully installed` с `gpn-multiphase-solver-X.Y.Z` и
    `radial-blackoil-1.0.3+gpn.N`:
 
@@ -380,14 +419,14 @@ vault, перечни задач и скрипт приёмки не перед�
    D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\*.whl).FullName
    ```
 
-5. Проверить номер версии – печатается `gpn-multiphase-solver X.Y.Z`:
+6. Проверить номер версии – печатается `gpn-multiphase-solver X.Y.Z`:
 
    ```powershell
    cd D:\gpn
    D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver --version
    ```
 
-6. Рассчитать пример 06. В начале вывода – строка `Версии:
+7. Рассчитать пример 06. В начале вывода – строка `Версии:
    gpn-multiphase-solver X.Y.Z, radial-blackoil 1.0.3+gpn.N, …`; в сводке
    `T(r_w) финал` и `q_o финал` совпадают с таблицей «Ожидаемое поведение»
    в `D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\README.md`:
@@ -406,9 +445,10 @@ vault, перечни задач и скрипт приёмки не перед�
    Get-Content D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output\versions.txt
    ```
 
-7. Рассчитать свой вариант по файлу конфигурации – скопировать папку
-   подходящего примера, изменить в копии `config.json` и таблицы CSV,
-   рассчитать; результаты – в `D:\gpn\my_case\output\`:
+8. Рассчитать свой вариант по файлу конфигурации – скопировать папку
+   подходящего примера, изменить в копии `config.json` и таблицы CSV
+   (поля, единицы СИ и форматы таблиц – README, §3), рассчитать;
+   результаты – в `D:\gpn\my_case\output\`:
 
    ```powershell
    cd D:\gpn
@@ -425,11 +465,11 @@ vault, перечни задач и скрипт приёмки не перед�
    D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
    ```
 
-8. Обновление до следующего выпуска – шаги 1, 2 и 4 с папкой нового
+9. Обновление до следующего выпуска – шаги 1, 2, 3 и 5 с папкой нового
    выпуска `release-<новый номер>`: `pip install` заменяет установленные
    пакеты новыми.
 
-9. Удаление – окружение и папка выпуска:
+10. Удаление – окружение и папка выпуска:
 
    ```powershell
    cd D:\

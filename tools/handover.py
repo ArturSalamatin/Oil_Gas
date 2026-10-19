@@ -1,17 +1,19 @@
-"""Передача команде разработки заказчика: python tools/handover.py [<метка>] (FEAT-031).
+"""Передача команде разработки заказчика: python tools/handover.py [<метка>] [--acceptance] (FEAT-031).
 
 Срез numerical_solver из метки выпуска (git archive — только файлы под git,
-вместе с атрибутами .gitattributes), PDF постановки, HTML-документация,
-архив gpn-multiphase-solver-<версия>.zip и приёмка на его распакованной
-копии (tools/acceptance.py рядом – в срез не входит). Git не меняется: ни коммитов,
-ни меток, ни push. Запуск — из корня репозитория, интерпретатором venv
-решателя (нужны Sphinx — группа [dev] — и packaging), нужны pdflatex в PATH
-и доступ к PyPI (приёмка ставит пакеты в свежее окружение):
+вместе с атрибутами .gitattributes), PDF постановки, HTML-документация и
+архив gpn-multiphase-solver-<версия>.zip; с ключом --acceptance – ещё приёмка
+на его распакованной копии (tools/acceptance.py рядом – в срез не входит).
+Git не меняется: ни коммитов, ни меток, ни push. Запуск — из корня
+репозитория, интерпретатором venv решателя (нужны Sphinx — группа [dev] — и
+packaging), нужны pdflatex в PATH, для приёмки – доступ к PyPI (она ставит
+пакеты в свежее окружение):
 
     numerical_solver\\.venv\\Scripts\\python tools\\handover.py
     numerical_solver\\.venv\\Scripts\\python tools\\handover.py v1.0.1
+    numerical_solver\\.venv\\Scripts\\python tools\\handover.py --acceptance
 
-Без аргумента берётся последний выпуск – локальная метка vX.Y.Z с
+Без метки берётся последний выпуск – локальная метка vX.Y.Z с
 наибольшим номером; меток выпуска нет – отказ.
 
 Порядок:
@@ -21,12 +23,14 @@
      .aux (tools/eq_numbers.py --check), побочные файлы LaTeX — удалить;
   4. HTML-документация (sphinx -W) в doc/build/html/ среза;
   5. архив gpn-multiphase-solver-<версия>.zip;
-  6. приёмка на распакованной копии архива (dist/handover-<версия>/check/).
+  6. только с --acceptance: приёмка на распакованной копии архива
+     (dist/handover-<версия>/check/), около 15 мин.
 
 Метка не вида vX.Y.Z или номер с .dev — предупреждение: заказчику
 передаётся только выпуск (метка tools/release.py), а прогон на коммите
-ветки — проверка самого скрипта. Код возврата: 0 — архив готов и приёмка
-пройдена, 1 — отказ (каталог dist/handover-<версия>/ остаётся для разбора).
+ветки — проверка самого скрипта. Код возврата: 0 — архив готов (с
+--acceptance – и приёмка пройдена), 1 — отказ (каталог
+dist/handover-<версия>/ остаётся для разбора), 2 — неверные аргументы.
 """
 
 from __future__ import annotations
@@ -156,13 +160,16 @@ def acceptance(archive: Path, check_dir: Path, top: str) -> int:
 def main(argv: list[str]) -> int:
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
-    if len(argv) > 1:
+    # Приёмка – только по явному ключу: по умолчанию архив без неё
+    args = [a for a in argv if a != "--acceptance"]
+    with_acceptance = len(args) != len(argv)
+    if len(args) > 1 or any(a.startswith("-") for a in args):
         print(__doc__)
         return 2
     t_all = time.perf_counter()
     try:
-        if argv:
-            treeish = argv[0]
+        if args:
+            treeish = args[0]
         else:
             treeish = latest_release()
             print(f"Метка не указана – последний выпуск {treeish}")
@@ -200,6 +207,11 @@ def main(argv: list[str]) -> int:
     except (HandoverError, release.ReleaseError, subprocess.TimeoutExpired) as e:
         print(f"Отказ: {e}")
         return 1
+
+    if not with_acceptance:
+        print(f"Передача {version}: архив {archive}; приёмка не выполнялась "
+              f"(ключ --acceptance); {time.perf_counter() - t_all:.0f} с")
+        return 0
 
     print("5. Приёмка на распакованной копии", flush=True)
     code = acceptance(archive, out / "check", top)

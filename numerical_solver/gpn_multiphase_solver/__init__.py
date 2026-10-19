@@ -131,4 +131,4 @@ CMG IMEX (``run_tests.bat``, ``regression/`` в каталоге прототи�
 # и импортов: setuptools читает его разбором исходника, не импортируя
 # пакет. Форма — PEP 440, три числа MAJOR.MINOR.PATCH; между выпусками —
 # суффикс .devN. Правило номеров — CHANGELOG.md.
-__version__ = "1.0.1"
+__version__ = "1.0.2.dev0"

@@ -9,7 +9,8 @@ github: 114
 branch: feat/feat-031/customer-delivery-kit
 model_level: null
 status: реализован
-worktree: .worktrees/feat-031
+worktree: .worktrees/feat-031; удалён после влития
+merged: df52b19 (2026-10-19)
 audit:
   date: 2026-10-18
   found: 13

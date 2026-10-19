@@ -1,4 +1,4 @@
-"""Каталог вывода: проверка и очистка переименованием (DEBT-082).
+"""Каталог вывода: проверка и очистка переименованием (DEBT-082, DEBT-083).
 
 Windows не переименовывает каталог, в котором открыт файл без права удаления
 (CSV в Excel) или который служит текущим каталогом консоли, — и ничего не
@@ -8,6 +8,9 @@ Windows не переименовывает каталог, в котором о
     отсутствующий каталог, занятый (подмена os.rename — тест не зависит от
     ОС), неудача обратного переименования, корень диска, занятое соседнее
     имя, неудача удаления переименованного каталога;
+  - _check_output_path (DEBT-083): путь вывода — файл, путь через файл,
+    нет диска — CaseConfigError; каталог и несуществующий путь внутри
+    каталога проходят, ничего не создаётся;
   - настоящая блокировка на Windows: открытый файл и консоль в каталоге;
   - run_case по конфигу: занятый каталог — отказ до расчёта; заняли во время
     расчёта — результаты в соседнем каталоге с датой и временем, прежний цел
@@ -162,6 +165,51 @@ def test_clear_trash_left_warns(tmp_path, monkeypatch, caplog):
     assert str(trash) in caplog.text and "удалите этот каталог вручную" in caplog.text
 
 
+# ── Путь вывода — файл (DEBT-083) ────────────────────────────
+
+def test_output_path_file_refused(tmp_path):
+    """Путь вывода — существующий файл: CaseConfigError «файл, а не каталог» с путём, файл не тронут."""
+    f = tmp_path / "well_history.csv"
+    f.write_text("1", encoding="utf-8")
+    with pytest.raises(CaseConfigError, match="файл, а не каталог") as e:
+        pipeline._check_output_path(f)
+    assert str(f) in str(e.value) and "Расчёт не начат" in str(e.value)
+    assert f.read_text(encoding="utf-8") == "1"
+
+
+def test_output_path_under_file_refused(tmp_path):
+    """Файл на месте каталога пути (well_history.csv\\sub, …\\a\\b): отказ называет этот файл; ничего не создано.
+
+    mkdir(parents=True) на таком пути падает тем же FileExistsError, что и
+    на самом файле (проба plan_path_checks.py DEBT-083), — после расчёта.
+    """
+    f = tmp_path / "well_history.csv"
+    f.write_text("1", encoding="utf-8")
+    for out in (f / "sub", f / "a" / "b"):
+        with pytest.raises(CaseConfigError, match="файл, а не каталог") as e:
+            pipeline._check_output_path(out)
+        assert f"{out} не создать: {f}" in str(e.value)
+    assert _names(tmp_path) == ["well_history.csv"]
+
+
+def test_output_path_dir_or_missing_passes(tmp_path):
+    """Существующий каталог и несуществующий путь внутри каталога проходят; проверка ничего не создаёт и не меняет."""
+    out = _old_output(tmp_path)
+    for p in (out, tmp_path / "new" / "out"):
+        pipeline._check_output_path(p)
+    assert _names(tmp_path) == ["out"] and _names(out) == OLD_FILES
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="буквы дисков — только Windows")
+def test_output_path_missing_drive_refused():
+    """Диска нет (Q:\\out): ни одного существующего предка — отказ «диск … не найден»; mkdir после расчёта упал бы FileNotFoundError."""
+    free = [d for d in "QRSTUVWXYZ" if not Path(f"{d}:\\").exists()]
+    if not free:
+        pytest.skip("все буквы дисков Q…Z заняты")
+    with pytest.raises(CaseConfigError, match="не найден"):
+        pipeline._check_output_path(Path(f"{free[0]}:\\out"))
+
+
 @contextlib.contextmanager
 def _hold_open_file(out: Path):
     """Файл каталога открыт на запись — как CSV в Excel (без права удаления)."""
@@ -296,3 +344,24 @@ def test_run_case_free_output_cleared(tmp_path):
     names = _names(out)
     assert "a.png" not in names and "z.csv" not in names and "well_history.csv" in names
     assert _names(tmp_path) == ["case", "out"]
+
+
+def test_run_case_output_file_refused_before_run(tmp_path, monkeypatch, capsys):
+    """Каталог вывода — файл или путь через файл: CaseConfigError до расчёта и до печати заголовка, файл цел (DEBT-083).
+
+    Без проверки расчёт шёл целиком, а потом mkdir падал FileExistsError —
+    трассировка, код 1, расчёт потерян. Simulator.run подменён на падение:
+    отказ обязан прийти раньше расчёта.
+    """
+    # Своя подмена, а не _must_not_run модуля: её текст — о занятом каталоге
+    def must_not_run(self, *args, **kwargs):
+        raise AssertionError("расчёт начат при каталоге вывода — файле")
+    monkeypatch.setattr(Simulator, "run", must_not_run)
+    cfg = _small_case(tmp_path)
+    f = tmp_path / "well_history.csv"
+    f.write_text("1", encoding="utf-8")
+    for out in (f, f / "sub"):
+        with pytest.raises(CaseConfigError, match="файл, а не каталог"):
+            run_case(cfg, out)
+    assert capsys.readouterr().out == ""
+    assert f.read_text(encoding="utf-8") == "1"

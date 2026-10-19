@@ -6,7 +6,7 @@ date: 2026-10-18
 issue: DEBT-083
 github: 139
 branch: refactor/debt-083/output-path-is-file
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-083
 audit:
   date: 2026-10-19

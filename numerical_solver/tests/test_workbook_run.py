@@ -11,6 +11,8 @@
   - книга внутри каталога вывода — отказ до чтения, книга цела (решение 4);
   - файл каталога вывода открыт в другой программе — отказ с подсказкой, каталог
     не изменён (аудит 1, DEBT-082);
+  - каталог вывода — файл или путь через файл — отказ до чтения книги,
+    файл цел (DEBT-083);
   - расчёт по JSON-конфигу прежний: очистка после расчёта (FEAT-030);
   - расширения Excel в любом регистре — путь книги, а не загрузчика JSON;
   - команда в отдельном процессе из постороннего каталога.
@@ -224,6 +226,27 @@ def test_locked_output_file_refused(tmp_path, monkeypatch):
     assert str(out) in str(e.value) and "Расчёт не начат" in str(e.value)
     # Очистка переименованием: прежний каталог не изменён
     assert [p.name for p in out.iterdir()] == ["прошлый.csv"]
+
+
+def test_output_file_refused_before_reading_book(tmp_path, monkeypatch):
+    """Каталог вывода — файл или путь через файл: отказ «файл, а не каталог» до чтения книги, файл цел (DEBT-083).
+
+    Без проверки книга читалась и переводилась, а write_files падал
+    FileExistsError — «…\\input: Cannot create a file when that file
+    already exists», о файле вместо каталога ни слова.
+    """
+    monkeypatch.setattr(Simulator, "run", _must_not_run)
+
+    def must_not_read(*args, **kwargs):
+        raise AssertionError("книга прочитана, хотя каталог вывода — файл")
+    monkeypatch.setattr(pipeline, "read_workbook", must_not_read)
+    book = _small_book(tmp_path / "b.xlsx")
+    f = tmp_path / "прошлый.csv"
+    f.write_text("1", encoding="utf-8")
+    for out in (f, f / "sub"):
+        with pytest.raises(CaseConfigError, match="файл, а не каталог"):
+            run_case(book, out)
+    assert f.read_text(encoding="utf-8") == "1"
 
 
 def test_config_run_clears_output_after_run(tmp_path):

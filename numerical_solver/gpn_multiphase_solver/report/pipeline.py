@@ -468,6 +468,28 @@ def _busy_message(output_dir: Path, exc: OSError) -> str:
             f"в другой каталог")
 
 
+def _check_output_path(output_dir: Path) -> None:
+    """Путь вывода годится под каталог: первый существующий среди него и его предков — каталог, иначе CaseConfigError. DEBT-083."""
+    # Опечатка в --output (имя CSV или книги вместо каталога) обнаруживалась
+    # только после расчёта: mkdir на файле падает FileExistsError даже с
+    # exist_ok, на пути через файл (well_history.csv\sub) — тоже, на
+    # несуществующем диске — FileNotFoundError (пробы DEBT-083,
+    # vault/issues/debt-083/probes/). Проверка ничего не создаёт. abspath, а
+    # не resolve, — как в _sibling: диск subst и сетевой остаются собой
+    path = Path(os.path.abspath(output_dir))
+    existing = next((p for p in (path, *path.parents) if p.exists()), None)
+    if existing is None:
+        raise CaseConfigError(
+            f"каталог вывода {path}: диск {path.anchor} не найден. Укажите "
+            f"другой каталог вывода. Расчёт не начат.")
+    if not existing.is_dir():
+        head = (f"каталог вывода {path}" if existing == path
+                else f"каталог вывода {path} не создать: {existing}")
+        raise CaseConfigError(
+            f"{head} — файл, а не каталог. Укажите другой каталог вывода. "
+            f"Расчёт не начат.")
+
+
 def _check_output_free(output_dir: Path) -> None:
     """Каталог вывода удаляется целиком: проба переименованием туда и обратно, иначе CaseConfigError. DEBT-082."""
     # Windows не переименовывает каталог, в котором открыт файл без права

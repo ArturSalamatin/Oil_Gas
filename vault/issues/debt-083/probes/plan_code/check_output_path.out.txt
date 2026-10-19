@@ -1,0 +1,5 @@
+﻿файл: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\plan_code\_work\well_history.csv — файл, а не каталог. Укажите другой каталог вывода. Расчёт не начат.
+через файл: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\plan_code\_work\well_history.csv\sub не создать: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\plan_code\_work\well_history.csv — файл, а не каталог. Укажите другой каталог вывода. Расчёт не начат.
+через файл: каталог вывода D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\plan_code\_work\well_history.csv\a\b не создать: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\plan_code\_work\well_history.csv — файл, а не каталог. Укажите другой каталог вывода. Расчёт не начат.
+нет диска: каталог вывода Q:\out: диск Q:\ не найден. Укажите другой каталог вывода. Расчёт не начат.
+OK

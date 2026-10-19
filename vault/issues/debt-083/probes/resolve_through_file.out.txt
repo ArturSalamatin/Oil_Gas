@@ -1,0 +1,4 @@
+﻿python 3.13.3
+well_history.csv: resolve -> well_history.csv
+well_history.csv\sub: resolve -> well_history.csv\sub
+well_history.csv\a\b: resolve -> well_history.csv\a\b

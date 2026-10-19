@@ -1,0 +1,3 @@
+﻿config: FileExistsError errno=17 strerror='Cannot create a file when that file already exists'
+book: FileExistsError errno=17 strerror='Cannot create a file when that file already exists' filename='D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-083\\probes\\not_a_dir.csv'
+is_dir=False exists=True

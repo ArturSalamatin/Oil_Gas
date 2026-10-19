@@ -344,3 +344,24 @@ def test_run_case_free_output_cleared(tmp_path):
     names = _names(out)
     assert "a.png" not in names and "z.csv" not in names and "well_history.csv" in names
     assert _names(tmp_path) == ["case", "out"]
+
+
+def test_run_case_output_file_refused_before_run(tmp_path, monkeypatch, capsys):
+    """Каталог вывода — файл или путь через файл: CaseConfigError до расчёта и до печати заголовка, файл цел (DEBT-083).
+
+    Без проверки расчёт шёл целиком, а потом mkdir падал FileExistsError —
+    трассировка, код 1, расчёт потерян. Simulator.run подменён на падение:
+    отказ обязан прийти раньше расчёта.
+    """
+    # Своя подмена, а не _must_not_run модуля: её текст — о занятом каталоге
+    def must_not_run(self, *args, **kwargs):
+        raise AssertionError("расчёт начат при каталоге вывода — файле")
+    monkeypatch.setattr(Simulator, "run", must_not_run)
+    cfg = _small_case(tmp_path)
+    f = tmp_path / "well_history.csv"
+    f.write_text("1", encoding="utf-8")
+    for out in (f, f / "sub"):
+        with pytest.raises(CaseConfigError, match="файл, а не каталог"):
+            run_case(cfg, out)
+    assert capsys.readouterr().out == ""
+    assert f.read_text(encoding="utf-8") == "1"

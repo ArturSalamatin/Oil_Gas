@@ -6,6 +6,7 @@
     набор файлов, печать заголовка и сводки;
   - коды возврата: 2 — ошибка конфига или аргументов (расчёт не начат),
     занятый каталог вывода — тоже 2 до расчёта (DEBT-082),
+    путь --output — файл — тоже 2 до расчёта (DEBT-083),
     1 — отказ решателя (без трассировки), 0 — успех;
   - флаги --output, --title, --profiles доходят до run_case;
   - точка входа gpn-solver объявлена в pyproject.toml;
@@ -208,6 +209,26 @@ def test_busy_output_returns_2(tmp_path, capsys, monkeypatch):
     assert "не удаётся очистить" in err and str(out.resolve()) in err
     assert "Traceback" not in err
     assert [p.name for p in out.iterdir()] == ["well_history.csv"]
+
+
+def test_output_file_returns_2(tmp_path, capsys, monkeypatch):
+    """--output — существующий файл (имя CSV вместо каталога) → код 2 до расчёта, файл цел (DEBT-083).
+
+    Раньше расчёт шёл целиком, затем mkdir падал FileExistsError:
+    трассировка и код 1, расчёт потерян.
+    """
+    def must_not_run(self, *args, **kwargs):
+        raise AssertionError("расчёт начат при --output, указывающем на файл")
+    monkeypatch.setattr(Simulator, "run", must_not_run)
+
+    cfg = _small_case(tmp_path)
+    f = tmp_path / "well_history.csv"
+    f.write_text("1", encoding="utf-8")
+    assert cli.main(["run", str(cfg), "--output", str(f)]) == 2
+    err = capsys.readouterr().err
+    # cli.main передаёт run_case путь после resolve(); abspath его не меняет
+    assert "файл, а не каталог" in err and str(f.resolve()) in err
+    assert f.read_text(encoding="utf-8") == "1"
 
 
 # ── Аргументы ────────────────────────────────────────────────

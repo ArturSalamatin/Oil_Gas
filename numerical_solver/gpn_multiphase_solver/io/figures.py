@@ -73,8 +73,28 @@ def find_inkscape() -> Path | None:
     return None
 
 
+# FEAT-026
 def save_figure(fig, path, dpi: int) -> Path:
-    """PNG в path; при включённом EMF ещё SVG в path.parent/emf/. FEAT-026."""
+    """Сохранить рисунок в PNG и, если вывод векторных рисунков не выключен, в SVG в подкаталоге ``emf/``.
+
+    SVG — с текстом кривыми (подписи не сдвигаются при вставке в Word); EMF
+    из него делает :func:`export_emf`. Переменная окружения
+    ``GPN_EXAMPLES_EMF=0`` выключает SVG и EMF.
+
+    Параметры
+    ---------
+    fig : matplotlib.figure.Figure
+        Рисунок.
+    path : str or pathlib.Path
+        Файл PNG; SVG — ``<каталог path>/emf/<имя>.svg``.
+    dpi : int
+        Разрешение PNG, точек на дюйм.
+
+    Возвращает
+    ----------
+    pathlib.Path
+        Путь PNG.
+    """
     path = Path(path)
     fig.savefig(path, dpi=dpi)
     if emf_enabled():
@@ -92,8 +112,25 @@ def save_figure(fig, path, dpi: int) -> Path:
     return path
 
 
+# FEAT-026
 def export_emf(output_dir) -> list[Path]:
-    """SVG из output_dir/emf/ без пары — в EMF одним запуском Inkscape. FEAT-026."""
+    """Перевести в EMF все SVG каталога ``output_dir/emf/``, у которых ещё нет EMF, одним запуском Inkscape.
+
+    Inkscape — необязательная внешняя программа: путь задаёт переменная
+    окружения ``INKSCAPE``, иначе ищется в PATH и в стандартной установке
+    Windows. Без Inkscape печатается одно предупреждение, SVG остаются.
+
+    Параметры
+    ---------
+    output_dir : str or pathlib.Path
+        Каталог результатов (PNG); SVG и EMF — в его подкаталоге ``emf/``.
+
+    Возвращает
+    ----------
+    list of pathlib.Path
+        Созданные файлы EMF; пустой список — переводить нечего, Inkscape не
+        найден или не уложился в 300 с.
+    """
     emf_dir = Path(output_dir) / EMF_SUBDIR
     if not emf_dir.is_dir():
         # EMF выключен (так в тестах) или рисунков не было — молча.

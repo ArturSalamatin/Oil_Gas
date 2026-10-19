@@ -60,8 +60,39 @@ class WorkbookContentError(WorkbookError):
                          f"{shown}{tail}")
 
 
+# FEAT-035
 def convert_workbook(workbook, out_dir) -> Path:
-    """Книга .xlsx → config.json и CSV таблиц в новом или пустом каталоге out_dir; путь config.json (FEAT-035)."""
+    """Перевести книгу ввода Excel в файл конфигурации и таблицы CSV в единицах СИ без расчёта.
+
+    То же, что команда ``gpn-solver convert``. Проверяется только книга;
+    файл конфигурации и таблицы целиком проверяются при расчёте
+    (:func:`load_config`, :meth:`SimulatorFactory.from_config`). Книга с
+    ошибкой файлов не оставляет.
+
+    Параметры
+    ---------
+    workbook : str or pathlib.Path
+        Книга ввода ``.xlsx``.
+    out_dir : str or pathlib.Path
+        Новый или пустой каталог для ``config.json`` и таблиц CSV.
+
+    Возвращает
+    ----------
+    pathlib.Path
+        Путь записанного ``config.json``.
+
+    Исключения
+    ----------
+    FileExistsError
+        ``out_dir`` существует и это не пустой каталог; файлы в нём не
+        изменены.
+    FileNotFoundError
+        Книги нет.
+    WorkbookError
+        Файл не читается как книга ``.xlsx`` или значения книги не годятся
+        для перевода (все ошибки ячеек сразу, с листом и ячейкой);
+        наследник ``ValueError``.
+    """
     workbook, out_dir = Path(workbook), Path(out_dir)
     # Непустой каталог — отказ (решение 10): файлы прежнего перевода или расчёта
     # не перемешиваются с новыми, чужие файлы не затираются

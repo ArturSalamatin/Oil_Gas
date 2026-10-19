@@ -56,7 +56,17 @@ class PrototypePVTAdapter(HydroPVT):
 
 
 class PrototypeRPAdapter(RelPermModel):
-    """Обёртка TabulatedRelPerm прототипа → RelPermModel."""
+    """Таблица ОФП прототипа в интерфейсе :class:`RelPermModel` — модель ``relperm.model = "table"``.
+
+    Интерполяция — таблицей прототипа: тот же объект считает гидродинамику
+    (свойство ``proto_rp``), поэтому проверки и рисунки видят ровно те ОФП,
+    по которым шёл расчёт.
+
+    Параметры
+    ---------
+    proto_rp : radial_blackoil.relperm.TabulatedRelPerm
+        Таблица ОФП прототипа.
+    """
 
     def __init__(self, proto_rp):
         self._rp = proto_rp

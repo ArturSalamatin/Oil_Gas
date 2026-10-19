@@ -29,8 +29,47 @@ MU_O_UNDERSATURATED_MODELS = ("none", "beal")
 
 
 class StandingFullPVT(FullPVT):
-    """Корреляции Standing (Rs, Bo), Beggs-Robinson и Бил (μ_o), LGE (μ_g) + скалярные тепловые."""
+    """PVT по корреляциям: Стендинг (R_s, B_o), Беггс–Робинсон и Бил (μ_o), Ли–Гонсалес–Икин (μ_g); тепловые свойства — постоянные.
 
+    Модель ``pvt.model = "standing"``. Свойства — при пластовой
+    температуре T0.
+
+    Параметры
+    ---------
+    rho_o_std : float
+        Плотность нефти в стандартных условиях, кг/м³.
+    rho_g_std : float
+        Плотность газа в стандартных условиях, кг/м³.
+    T0 : float
+        Пластовая температура, К.
+    Rs0 : float
+        Начальное газосодержание, м³ст/м³ст.
+    co_undersaturated : float, optional
+        Сжимаемость недонасыщенной нефти c_o, 1/Па: выше давления насыщения
+        B_o убывает экспоненциально с ростом давления. По умолчанию 0 —
+        B_o зависит только от газосодержания.
+    c_p_oil : float, optional
+        Удельная теплоёмкость нефти, Дж/(кг·К). По умолчанию 2000.
+    c_p_gas : float, optional
+        Удельная теплоёмкость газа, Дж/(кг·К). По умолчанию 1000.
+    mu_JT_oil_val : float, optional
+        Коэффициент Джоуля–Томсона нефти, К/Па. По умолчанию 0.
+    mu_JT_gas_val : float, optional
+        Коэффициент Джоуля–Томсона газа, К/Па. По умолчанию 0.
+    L_degas_val : float, optional
+        Удельная теплота разгазирования, Дж/кг газа. По умолчанию 0.
+    mu_o_undersaturated : str, optional
+        Вязкость нефти выше давления насыщения: ``"none"`` (по умолчанию) —
+        только через газосодержание, ``"beal"`` — линейный рост с давлением
+        по Билу–Стендингу.
+
+    Исключения
+    ----------
+    ValueError
+        Неизвестное значение ``mu_o_undersaturated``.
+    """
+
+    # Rs0 определяет pb; модель вязкости недонасыщенной нефти — FEAT-027
     def __init__(self, rho_o_std: float, rho_g_std: float, T0: float,
                  Rs0: float,
                  co_undersaturated: float = 0.0,
@@ -38,12 +77,7 @@ class StandingFullPVT(FullPVT):
                  mu_JT_oil_val: float = 0.0, mu_JT_gas_val: float = 0.0,
                  L_degas_val: float = 0.0,
                  mu_o_undersaturated: str = "none"):
-        """
-        Rs0 — начальное газосодержание, м³ст/м³ст. Определяет pb.
-        co_undersaturated — сжимаемость нефти при p > pb, 1/Па.
-        mu_o_undersaturated — μ_o при p > pb(Rs): "none" — только через Rs,
-            "beal" — линейный рост с p по Билу–Стендингу (FEAT-027).
-        """
+        """Сохранить параметры корреляций; параметры — в докстринге класса."""
         # Проверка до присваиваний: при ошибке объект не создаётся частично.
         if mu_o_undersaturated not in MU_O_UNDERSATURATED_MODELS:
             raise ValueError(

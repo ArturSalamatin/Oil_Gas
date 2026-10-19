@@ -8,7 +8,7 @@ issue: FEAT-031
 github: 114
 branch: feat/feat-031/customer-delivery-kit
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-031
 audit:
   date: 2026-10-18
@@ -834,6 +834,14 @@ def Bo(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray:
 - [ ] `CLAUDE.md`, vault, комментарий в #114.
 
 Не критерий FEAT-031 (§6): выпуск поставки и передача архива — после влития, по команде пользователя.
+
+## 5а. Итог реализации (2026-10-18)
+
+Ветка `feat/feat-031/customer-delivery-kit` от `076a4d5` (база — `bc2c58b` после DEBT-082 и README §4), коммиты `f5156a9`…`72aac0e`, по одному-два на шаг.
+
+- Тестов 2477 → 2616 (+139: `test_docs.py` 127 — из них 120 объектов перечня, `test_setup_bat.py` 5, `test_acceptance_script.py` 7); полный прогон 2615 passed, 1 skipped, 658 с.
+- Расхождения с планом: база уехала (DEBT-082, `bc2c58b`) — номера строк README сверялись по тексту; под `PENDING` по факту прогона 91 объект из 120 (29 уже проходили правило); в `HydroPVT`/`RelPermModel` — «ветка в `create_pvt`/`create_relperm`», а не «значение в проверке конфигурации»: поле модели проверяет фабрика; `SCF_PER_M3` — множитель газосодержания м³ст/м³ст → scf/STB (5.6146 куб. фута в баррели), а не «футов в кубометре»; README: команды `setup.bat` и приёмки — без имени каталога `numerical_solver` (в срезе он называется `gpn-multiphase-solver-<версия>`).
+- `tools/handover.py HEAD` (`vault/issues/feat-031/probes/handover_head.out.txt`): срез 528 файлов, архив 4.1 МБ; приёмка ПРОЙДЕНА за 811 с — `setup.bat` 91 с, тесты в свежем окружении (numpy 2.5.4) 2612 passed, 4 skipped (aux, vault ×2, черновик руководителя), `sphinx -W`, книга и конфигурация из постороннего каталога, `versions.txt` = окружение.
 
 ## 6. После влития — передача
 

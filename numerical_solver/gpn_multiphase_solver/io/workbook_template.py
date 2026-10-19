@@ -216,7 +216,25 @@ COMMENTS = (
 
 
 def write_template(path) -> None:
-    """Записать шаблон книги версии 1 в новый файл path (.xlsx); существующий — FileExistsError."""
+    """Записать шаблон книги ввода Excel версии 1 с демонстрационными значениями.
+
+    То же, что команда ``gpn-solver template``. Листы MODEL, THERMAL,
+    NUMERICS — параметры (столбец Value), SCHEDULE — режим работы скважины,
+    OIL_PVT, GAS_PVT, RELPERM — таблицы, COMMENTS — правила листов. Величины —
+    в инженерных единицах, у числовых ячеек — проверка допустимых значений.
+
+    Параметры
+    ---------
+    path : str or pathlib.Path
+        Новый файл книги с расширением ``.xlsx``.
+
+    Исключения
+    ----------
+    ValueError
+        Расширение файла — не ``.xlsx``.
+    FileExistsError
+        Файл уже существует: заполненная книга не перезаписывается.
+    """
     path = Path(path)
     if path.suffix.lower() != ".xlsx":
         raise ValueError(f"шаблон книги пишется в файл .xlsx, получено {path.name!r}")

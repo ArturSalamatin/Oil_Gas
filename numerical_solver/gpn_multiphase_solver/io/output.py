@@ -66,11 +66,21 @@ def history_to_arrays(history: SimulationHistory) -> dict[str, np.ndarray]:
 
 def save_npz(history: SimulationHistory, grid: Grid,
              path: str | Path) -> None:
-    """Сохранить SimulationHistory в .npz файл.
+    """Сохранить историю расчёта в файл NumPy ``.npz``.
 
-    Содержимое:
-      r[N], times[K], p[K,N], T[K,N], Sg[K,N], Rs[K,N],
-      q_o_std[K], q_g_std[K], p_wf[K], T_wf[K].
+    Массивы файла (K — число записей, N — число ячеек): ``r`` [N] — центры
+    ячеек, м; ``times`` [K], с; ``p`` [K, N], Па; ``T`` [K, N], К; ``Sg``
+    [K, N]; ``Rs`` [K, N], м³ст/м³ст; ``q_o_std``, ``q_g_std`` [K], м³ст/с;
+    ``p_wf`` [K], Па; ``T_wf`` [K], К.
+
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    grid : Grid
+        Сетка расчёта.
+    path : str or pathlib.Path
+        Файл ``.npz``.
     """
     arrays = history_to_arrays(history)
     np.savez(
@@ -86,10 +96,19 @@ def save_npz(history: SimulationHistory, grid: Grid,
 
 def save_csv(history: SimulationHistory, grid: Grid,
              path: str | Path) -> None:
-    """Сохранить SimulationHistory в CSV (длинная таблица, tidy format).
+    """Сохранить профили всех записей в CSV (``profiles.csv``): строка на ячейку на каждой записи.
 
-    Столбцы: step, time_s, r_m, p_Pa, T_K, Sg, Rs.
-    Одна строка = одна ячейка на одном сохранённом шаге.
+    Столбцы: ``step`` — номер записи, ``time_s`` — время, с, ``r_m`` — центр
+    ячейки, м, ``p_Pa``, ``T_K``, ``Sg``, ``Rs`` (м³ст/м³ст).
+
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    grid : Grid
+        Сетка расчёта.
+    path : str or pathlib.Path
+        Файл CSV; перезаписывается.
     """
     r = grid.r_centers
     path = Path(path)
@@ -110,15 +129,23 @@ def save_csv(history: SimulationHistory, grid: Grid,
 # Сохранение: скважинная история (CSV)
 # ═══════════════════════════════════════════════════════════
 
+# Знак: дебиты > 0 при добыче (q = -G[0], см. WellData). GOR при q_o_std <= 0 —
+# пустое поле, не NaN: Excel и pandas читают пустое как NaN сами
 def save_well_csv(history: SimulationHistory, path: str | Path) -> None:
-    """Скважинные данные: одна строка на сохранённый шаг.
+    """Сохранить данные скважины в CSV (``well_history.csv``): строка на запись.
 
-    Столбцы: time_s, time_day, q_o_m3st_s, q_g_m3st_s,
-             m_o_kg_s, m_g_kg_s, p_wf_Pa, T_wf_K, GOR_m3st_m3st.
+    Столбцы: ``time_s``, ``time_day``; дебиты нефти и газа ``q_o_m3st_s``,
+    ``q_g_m3st_s`` (м³ст/с) и массовые ``m_o_kg_s``, ``m_g_kg_s`` (кг/с) —
+    положительны при добыче; ``p_wf_Pa``, ``T_wf_K``; газовый фактор
+    ``GOR_m3st_m3st`` — отношение дебитов газа и нефти, пустое поле при
+    нулевом дебите нефти.
 
-    Знак: дебиты > 0 при добыче (q = -G[0], см. WellData).
-    GOR = q_g_std / q_o_std; при q_o_std <= 0 записывается пустое поле
-    (не NaN — Excel и pandas читают пустое как NaN сами).
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    path : str or pathlib.Path
+        Файл CSV; перезаписывается.
     """
     path = Path(path)
     day = 86400.0
@@ -142,12 +169,33 @@ def save_well_csv(history: SimulationHistory, path: str | Path) -> None:
 # Визуализация
 # ═══════════════════════════════════════════════════════════
 
+# semilogx — логарифмическая шкала по r: ячейки у скважины мелкие
 def plot_profiles(history: SimulationHistory, grid: Grid,
                   times_to_plot: list[float], field: str = 'T',
                   ax=None):
-    """Профиль поля (p, T, Sg, Rs) на выбранных моментах времени.
+    """Нарисовать профили величины по радиусу в выбранные моменты времени; шкала r — логарифмическая.
 
-    semilogx — логарифмическая шкала по r (ячейки у скважины мелкие).
+    Для каждого момента берётся ближайшая запись истории; подпись кривой —
+    её время в сутках.
+
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    grid : Grid
+        Сетка расчёта.
+    times_to_plot : list of float
+        Моменты времени, с.
+    field : str, optional
+        ``"p"`` (Па), ``"T"`` (К, по умолчанию), ``"Sg"`` или ``"Rs"``
+        (м³ст/м³ст).
+    ax : matplotlib.axes.Axes, optional
+        Оси; ``None`` — создаются новые.
+
+    Возвращает
+    ----------
+    matplotlib.axes.Axes
+        Оси с профилями. Файл не пишется.
     """
     import matplotlib.pyplot as plt
 
@@ -176,9 +224,19 @@ def plot_profiles(history: SimulationHistory, grid: Grid,
 
 
 def plot_wellbore_dynamics(history: SimulationHistory, axes=None):
-    """Динамика на забое: p(rw,t), T(rw,t), Sg(rw,t).
+    """Нарисовать давление, температуру и газонасыщенность в ячейке у забоя во времени.
 
-    Три графика с общей осью t.
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    axes : sequence of matplotlib.axes.Axes, optional
+        Три оси с общей осью времени (сутки); ``None`` — создаются.
+
+    Возвращает
+    ----------
+    sequence of matplotlib.axes.Axes
+        Оси p (Па), T (К), S_g. Файл не пишется.
     """
     import matplotlib.pyplot as plt
 
@@ -205,7 +263,20 @@ def plot_wellbore_dynamics(history: SimulationHistory, axes=None):
 
 
 def plot_well_rate(history: SimulationHistory, ax=None):
-    """Дебит скважины: q_o(t) и q_g(t) из WellData."""
+    """Нарисовать дебиты нефти и газа в стандартных условиях (м³ст/с) во времени (сутки).
+
+    Параметры
+    ---------
+    history : SimulationHistory
+        История расчёта.
+    ax : matplotlib.axes.Axes, optional
+        Оси; ``None`` — создаются новые.
+
+    Возвращает
+    ----------
+    matplotlib.axes.Axes
+        Оси с дебитами. Файл не пишется.
+    """
     import matplotlib.pyplot as plt
 
     if ax is None:
@@ -252,15 +323,24 @@ def plot_2d_map(history: SimulationHistory, grid: Grid,
 # Визуализация: балансы энергии и массы (DEBT-011)
 # ═══════════════════════════════════════════════════════════
 
+# DEBT-013, DEBT-011
 def plot_energy_balance_series(bal: dict, axes=None, title: str = "Баланс энергии"):
-    """Баланс энергии во времени: члены и относительная невязка (DEBT-013, DEBT-011).
+    """Нарисовать баланс энергии во времени: накопленные члены и относительную невязку.
 
-    bal   — ряды compute_energy_balance (energy/balance.py)
-    axes  — пара осей (члены, невязка); None — создаются: 9×8 дюймов,
-            общая ось t, высоты 3:1
-    title — заголовок верхней панели
+    Параметры
+    ---------
+    bal : dict
+        Ряды :func:`compute_energy_balance`.
+    axes : sequence of matplotlib.axes.Axes, optional
+        Две оси: члены (Дж) и относительная невязка; ``None`` — создаются
+        (9×8 дюймов, общая ось времени в сутках, высоты 3:1).
+    title : str, optional
+        Заголовок верхней панели. По умолчанию «Баланс энергии».
 
-    Возвращает axes. Файл не пишет и не печатает — как остальные plot_*.
+    Возвращает
+    ----------
+    sequence of matplotlib.axes.Axes
+        Две оси. Файл не пишется, в консоль ничего не выводится.
     """
     import matplotlib.pyplot as plt
 
@@ -371,18 +451,30 @@ def relperm_table_nodes(relperm):
             np.asarray(proto.krg_tab, float))
 
 
+# DEBT-011
 def plot_relperm_curves(relperm, sg_range, axes=None, title: str = ""):
-    """Кривые ОФП и рабочий диапазон S_g расчёта: панель целиком и увеличение (DEBT-011).
+    """Нарисовать кривые ОФП и рабочий диапазон газонасыщенности расчёта: панель целиком и увеличение.
 
-    relperm  — RelPermModel: нужны kro, krg
-    sg_range — (S_g,min, S_g,max) расчёта; S_g,max ≤ 1e-12 — расчёт
-               однофазный, рисуется одна панель
-    axes     — оси формы (1, n) как у plt.subplots(1, n, squeeze=False):
-               n = 2 у двухфазного расчёта, 1 у однофазного; None — создаются
-               (6.5·n × 5 дюймов)
-    title    — заголовок первой панели
+    Узлы таблицы отмечаются только у табличной модели.
 
-    Возвращает axes. Файл не пишет и не печатает.
+    Параметры
+    ---------
+    relperm : RelPermModel
+        Модель ОФП.
+    sg_range : tuple of float
+        Наименьшая и наибольшая газонасыщенность расчёта, доли; наибольшая
+        не выше 1e-12 — расчёт однофазный, рисуется одна панель.
+    axes : numpy.ndarray of matplotlib.axes.Axes, optional
+        Оси формы (1, n), как у ``plt.subplots(1, n, squeeze=False)``: n = 2
+        у двухфазного расчёта, 1 — у однофазного; ``None`` — создаются
+        (6.5·n × 5 дюймов).
+    title : str, optional
+        Заголовок первой панели.
+
+    Возвращает
+    ----------
+    numpy.ndarray of matplotlib.axes.Axes
+        Оси формы (1, n). Файл не пишется, в консоль ничего не выводится.
     """
     import matplotlib.pyplot as plt
 
@@ -546,21 +638,31 @@ def _table_pb_span(pvt, table_nodes):
     return float(pb[0]), float(pb[1])
 
 
+# DEBT-011. Цепочка обёрток: TableFullPVT.hydro -> PrototypePVTAdapter.proto_pvt
+# -> BlackOilPVT прототипа, где всё лежит в БАРАХ (поля gp, pb, branches).
+# Ключи раздельные: наборы разные по природе и идут на разные панели — газовая
+# таблица на mu_g/Bg, строки PVTO и узлы строки Rs0 на mu_o/Bo/Rs. Ординаты
+# узлов НЕ возвращаются: недонасыщенная ветка интерполируется по dp = p - pb(Rs),
+# а не по p, поэтому значения считаются вызовом PVT в точке узла (это делает ядро)
 def pvt_table_nodes(pvt, Rs0: float):
-    """Узлы табличного PVT в Па для plot_pvt_properties; у аналитического PVT — None (DEBT-011).
+    """Узлы табличного PVT для отметок на рисунке :func:`plot_pvt_properties`; у корреляций — ``None``.
 
-    Цепочка обёрток: TableFullPVT.hydro -> PrototypePVTAdapter.proto_pvt ->
-    BlackOilPVT прототипа, где всё лежит в БАРАХ (поля gp, pb, branches).
-    У аналитического PVT (Standing) выделенных точек нет — возвращаем None,
-    маркеры на гладкой корреляции вводили бы в заблуждение.
+    Параметры
+    ---------
+    pvt : HydroPVT
+        PVT-модель расчёта.
+    Rs0 : float
+        Начальное газосодержание, м³ст/м³ст: узлы его строки PVTO.
 
-    Ключи раздельные, потому что наборы разные по природе и идут на разные
-    панели: газовая таблица — на mu_g/Bg, строки PVTO и узлы строки Rs0 —
-    на mu_o/Bo/Rs.
-
-    Ординаты узлов здесь НЕ возвращаются: недонасыщенная ветка
-    интерполируется по dp = p - pb(Rs), а не по p, поэтому значения
-    считаются вызовом PVT в точке узла (это делает ядро).
+    Возвращает
+    ----------
+    dict or None
+        ``"p_gas"`` — давления газовой таблицы, Па; ``"p_oil"`` — давления
+        насыщения строк PVTO и узлы строки Rs0, Па; ``"rs_values"`` —
+        газосодержания строк PVTO, м³ст/м³ст; ``"p_branch"`` — давления узлов
+        строки Rs0, Па (пусто, если Rs0 не совпадает ни с одной строкой).
+        ``None`` у корреляций Стендинга: отметки на гладкой кривой вводили бы
+        в заблуждение.
     """
     # Табличный ли PVT — по классу, BlackOilPVT — через публичные свойства
     # (DEBT-006). Прежде getattr по приватным _hydro, _pvt: их переименование
@@ -590,37 +692,40 @@ def pvt_table_nodes(pvt, Rs0: float):
     }
 
 
+# Ветви корреляции — «круглые» R_s,i (_round_rs_rows). Плотности — вызовами
+# pvt.rho_o / pvt.rho_g: rho_o = (rho_o_ст + Rs*rho_g_ст)/Bo (eq:rho_oil),
+# rho_g = rho_g_ст/Bg. Кривые размечены gid: 'pvto_saturated',
+# 'pvto_saturated_extrap', 'pvto_branch', 'pvto_rs0' — по ним их находят тесты
 def plot_pvt_properties(pvt, Rs0: float, p_range, axes=None,
                         table_nodes=None, label: str = ""):
-    """Свойства PVT по давлению в стиле таблицы PVTO: насыщенная кривая и веер ветвей R_s = const.
+    """Нарисовать свойства PVT-модели по давлению в виде таблицы PVTO: насыщенная кривая и ветви постоянного газосодержания.
 
-    Показывает не результат расчёта, а СВОЙСТВА МОДЕЛИ, которой считали.
-    На панелях нефти (mu_o, R_s, B_o, rho_o) — как в коммерческих
-    симуляторах (таблица PVTO): насыщенная кривая f(p, R_s^eq(p)) на всей
-    оси и ветви f(p, R_s,i) при p >= p_b(R_s,i); ветвь R_s,0 — жирная.
-    Газ сухой: mu_g, B_g, rho_g — по одной кривой.
+    Показаны свойства модели, которой считали, а не результат расчёта. На
+    панелях нефти (μ_o, R_s, B_o, ρ_o) — насыщенная кривая на всей оси
+    давлений и ветви R_s = const выше их давления насыщения; ветвь
+    начального газосодержания — жирная. Газ сухой: μ_g, B_g, ρ_g — по одной
+    кривой. Рабочий диапазон давлений расчёта подсвечен.
 
-    pvt         — HydroPVT/FullPVT: нужны Rs_eq, Bo, mu_o, Bg, mu_g, pb,
-                  rho_o, rho_g
-    Rs0         — начальное газосодержание, м³ст/м³ст: выделенная ветвь
-    p_range     — (p_lo, p_hi), Па: диапазон, который подсветить как рабочий
-    axes        — сетка 2x3; создаётся, если None
-    table_nodes — узлы табличного PVT (см. pvt_table_nodes), или None для аналитического PVT:
-                  'p_gas' — давления газовой таблицы, Па;
-                  'rs_values' — строки PVTO, м³ст/м³ст (они же ветви);
-                  'p_branch' — давления узлов строки R_s,0, Па (пусто,
-                  если R_s,0 не совпадает со строкой)
-    label       — подпись модели для заголовка первой панели
+    Параметры
+    ---------
+    pvt : HydroPVT
+        PVT-модель расчёта.
+    Rs0 : float
+        Начальное газосодержание, м³ст/м³ст: выделенная ветвь.
+    p_range : tuple of float
+        Рабочий диапазон давлений расчёта (наименьшее, наибольшее), Па.
+    axes : numpy.ndarray of matplotlib.axes.Axes, optional
+        Сетка осей 2×3; ``None`` — создаётся.
+    table_nodes : dict, optional
+        Узлы табличного PVT — результат :func:`pvt_table_nodes`; ``None``
+        у корреляций.
+    label : str, optional
+        Подпись модели в заголовке первой панели.
 
-    Ветви корреляции — «круглые» R_s,i (_round_rs_rows). Плотности —
-    вызовами pvt.rho_o / pvt.rho_g: rho_o = (rho_o_ст + Rs*rho_g_ст)/Bo —
-    \\eqref{eq:rho_oil}, rho_g = rho_g_ст/Bg.
-
-    Кривые размечены gid: 'pvto_saturated', 'pvto_saturated_extrap',
-    'pvto_branch', 'pvto_rs0' — по ним их находят тесты.
-
-    Возвращает axes. Файл не пишет и не печатает — как остальные plot_*
-    этого модуля.
+    Возвращает
+    ----------
+    numpy.ndarray of matplotlib.axes.Axes
+        Сетка осей 2×3. Файл не пишется, в консоль ничего не выводится.
     """
     import matplotlib.pyplot as plt
 

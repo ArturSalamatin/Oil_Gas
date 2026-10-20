@@ -8,7 +8,8 @@ github: 140
 branch: feat/feat-039/ramp-on-production-start
 base: 74c002e
 status: реализован
-worktree: .worktrees/feat-039
+worktree: .worktrees/feat-039; удалён после влития
+merged: d223192 (2026-10-20)
 audit:
   date: 2026-10-20
   round: 1

@@ -2851,7 +2851,9 @@ class TestShutInStrongCooling:
     (vault/issues/feat-029/probes/plan_numbers.out.txt, 2026-10-07). Первый час
     останова — от подшага 0.11 с с удвоением (time.dt_after_control_change =
     0.11 с, FEAT-032, BUG-026); числа останова — замер плана BUG-026
-    (vault/issues/bug-026/probes/readme_numbers_h011.out.txt).
+    (vault/issues/bug-026/probes/readme_numbers_h011.out.txt). Первый час добычи – тоже от
+    0.11 с (FEAT-039); числа – замер плана FEAT-039
+    (vault/issues/feat-039/probes/readme_numbers_039.emul.out.txt).
     """
 
     NAME = "17_shut_in_strong_cooling"
@@ -2899,15 +2901,15 @@ class TestShutInStrongCooling:
         Утверждения общих тестов test_oil_production, test_gas_appears,
         test_gas_produced — на записи 15 вместо последней (17 исключён из
         них списком ENDS_SHUT_IN). Охлаждение — теплота выделения газа.
-        Замер: T(r_w) = 365.0166 К (ΔT = -14.983 К), q_o = 3.33438e-3
+        Замер: T(r_w) = 365.0162 К (ΔT = -14.984 К), q_o = 3.33434e-3
         м³ст/с, GOR = 271.85 < R_s0 = 300 (газ копится в пласте до порога
         S_gc), S_g(r_w) = 0.4490, газ в 165 ячейках из 200 (до 51.9 м).
         Ловит: потерю скрытой теплоты, смену знака mu_JT, подмену ОФП.
         """
         r = results[self.NAME]
         st = r["history"].states[self.END_PROD]
-        assert st.T[0] == pytest.approx(365.0166, abs=2e-3)
-        assert r["q_o"][self.END_PROD] == pytest.approx(3.33438e-3, rel=1e-4)
+        assert st.T[0] == pytest.approx(365.0162, abs=2e-3)
+        assert r["q_o"][self.END_PROD] == pytest.approx(3.33434e-3, rel=1e-4)
         gor = r["q_g"][self.END_PROD] / r["q_o"][self.END_PROD]
         assert 0.0 < gor < r["Rs0"]
         assert st.Sg[0] == pytest.approx(0.4490, abs=1e-3)
@@ -2930,11 +2932,11 @@ class TestShutInStrongCooling:
     def test_pressure_builds_up_past_pb(self, results):
         """p(r_w) не убывает после останова; выше p_b — около 12 ч; на финале p = p0.
 
-        Замер: 5.1545 МПа (15 сут) -> 25.4409 (1 ч) -> 30.4251 (запись 27,
+        Замер: 5.1545 МПа (15 сут) -> 25.4408 (1 ч) -> 30.4251 (запись 27,
         15.5 сут — первая выше p_b = 30.2921 МПа) -> 31.6346 (16 сут) ->
         33.0000 (27 сут); наименьшее приращение между записями 3.7 Па;
         финал max|p - p0| = 2.4 Па. Допуск ±1 запись: граница хрупкая — на
-        записи 26 до p_b не хватает 31.3 кПа, а до BUG-024 (часы останова
+        записи 26 до p_b не хватает 31.4 кПа, а до BUG-024 (часы останова
         дробились) запись 26 была уже выше p_b на 3.8 кПа.
         Ловит: потерю притока через контур, «залипание» давления у забоя.
         """
@@ -2942,7 +2944,7 @@ class TestShutInStrongCooling:
         states = r["history"].states
         pw = np.array([s.p[0] for s in states])
         assert np.all(np.diff(pw[self.END_PROD:]) >= 0.0)
-        assert pw[self.END_PROD + 1] == pytest.approx(25.4409e6, rel=1e-4)
+        assert pw[self.END_PROD + 1] == pytest.approx(25.4408e6, rel=1e-4)
         pb = float(_pvt_of_config(r["config"]).pb(np.array([r["Rs0"]]))[0])
         above = [n for n in range(self.END_PROD, len(pw)) if pw[n] > pb]
         assert abs(above[0] - 27) <= 1, f"выше p_b с записи {above[0]}"
@@ -2978,13 +2980,13 @@ class TestShutInStrongCooling:
         assert np.max(np.abs(final.Rs[gas] - rs_eq[gas])) <= 1e-10
         assert final.Rs[gas].min() > r["Rs0"]           # 332.41 > 300
         assert np.max(final.Rs - rs_eq) <= 1e-10        # пересыщенных нет
-        # BUG-026: 88.5826 — первый час останова от подшага 0.11 с; от 1.76 с
+        # BUG-026: 88.5831 – первый час останова от подшага 0.11 с; от 1.76 с
         # (h0 = 2 с) было 79.5875, одним шагом 3600 с — 79.5368: R_s у забоя
         # задаёт начало останова. Предел нарастания по h0 ≈ 88.85; при 16
         # подшагах на ступень удвоения — 91.00 (остаток удвоения, README 17).
         # Чувствительность к допускам Ньютона замерена BUG-022 при шаге 3600 с:
         # 79.5364–79.5368 при atol = 1e-14, newton_cell_tol = 1e-8…1e-10.
-        assert final.Rs[0] == pytest.approx(88.5826, abs=1e-3)
+        assert final.Rs[0] == pytest.approx(88.5831, abs=1e-3)
 
     def test_wellbore_rs_never_decreases(self, results):
         """R_s(r_w) на останове не убывает: забойная ячейка получает нефть только из ячейки 1.
@@ -3011,10 +3013,11 @@ class TestShutInStrongCooling:
         в первый час зона греется растворением своего газа (53 %) и сжатием (43 %);
         дальше газа у забоя нет, и тепло приходит теплопроводностью из
         зоны, где газ ещё растворяется (сутки 2–15: 97 % нагрева зоны).
-        Конвекции через забой нет. Замер: 365.0166 (15 сут) -> 369.2612
-        (1 ч) -> 373.7366 (16 сут) -> 377.3500 К (30 сут); наименьшее
-        приращение между записями 0.0645 К. Первый час — 16 подшагов от 0.11 с
-        с удвоением (FEAT-032, BUG-026); третий час останова и четыре часа на
+        Конвекции через забой нет. Замер: 365.0162 (15 сут) -> 369.2608
+        (1 ч) -> 373.7362 (16 сут) -> 377.3497 К (30 сут); наименьшее
+        приращение между записями 0.0645 К. Первый час останова – 16 подшагов от
+        0.11 с с удвоением (FEAT-032, BUG-026), первый час добычи – тоже (FEAT-039);
+        третий час останова и шесть часов на
         20.4–20.8 сут дробятся на 2 × 1800 с (по одному отказу гидродинамики,
         DEBT-015), остальные часы — одним шагом.
         Ловит: потерю адиабатического члена или теплоты растворения,
@@ -3023,9 +3026,9 @@ class TestShutInStrongCooling:
         T = np.array([s.T[0] for s in results[self.NAME]["history"].states])
         E = self.END_PROD
         assert np.all(np.diff(T[E:]) > 0.0)
-        assert T[E + 1] == pytest.approx(369.2612, abs=2e-3)
-        assert T[39] == pytest.approx(373.7366, abs=2e-3)
-        assert T[-1] == pytest.approx(377.3500, abs=2e-3)
+        assert T[E + 1] == pytest.approx(369.2608, abs=2e-3)
+        assert T[39] == pytest.approx(373.7362, abs=2e-3)
+        assert T[-1] == pytest.approx(377.3497, abs=2e-3)
 
     def test_gas_ring_warmer_than_T0(self, results):
         """На финале кольцо газа теплее T0: max ΔT = +0.22 К на 22.5 м.

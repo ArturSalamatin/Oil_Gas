@@ -2499,7 +2499,9 @@ class TestWellShutIn:
     (vault/issues/feat-019/probes/plan_numbers.out.txt). Первый час останова —
     от подшага 0.11 с с удвоением (time.dt_after_control_change = 0.11 с,
     FEAT-032, BUG-026); числа останова — замер плана BUG-026
-    (vault/issues/bug-026/probes/readme_numbers_h011.out.txt).
+    (vault/issues/bug-026/probes/readme_numbers_h011.out.txt). Первый час добычи – тоже от
+    0.11 с (FEAT-039); числа – замер плана FEAT-039
+    (vault/issues/feat-039/probes/readme_numbers_039.emul.out.txt).
     """
 
     NAME = "16_well_shut_in"
@@ -2562,8 +2564,8 @@ class TestWellShutIn:
     def test_pressure_builds_up_past_pb(self, results):
         """p(r_w) не убывает после останова, выше p_b — с 12 ч, на финале p = p_ext.
 
-        Замер: 6.1242 МПа (15 сут) → 13.024 (1 ч) → 15.0324 (запись 27,
-        15.5 сут — первая выше p_b = 15 МПа) → 15.4206 (16 сут); финал
+        Замер: 6.1242 МПа (15 сут) → 13.0242 (1 ч) → 15.0326 (запись 27,
+        15.5 сут — первая выше p_b = 15 МПа) → 15.4207 (16 сут); финал
         max|p - p_ext| = 0.014 Па. Ловит: потерю притока через контур,
         «залипание» давления у забоя.
         """
@@ -2585,7 +2587,7 @@ class TestWellShutIn:
         после выравнивания давления нет, диффузии в модели нет — профиль R_s
         больше не меняется и к R_s0 не возвращается.
         Замер: двухфазных ячеек нет с записи 22 (15 сут + 7 ч, p(r_w) =
-        14.48 МПа < p_b); финал R_s(r_w) = 5.085, max(R_s - R_s^eq(p)) =
+        14.48 МПа < p_b); финал R_s(r_w) = 5.0845, max(R_s - R_s^eq(p)) =
         7.5e-14; max|R_s(20 сут) - R_s(30 сут)| = 1.0e-6.
         Ловит: пересыщение нефти «из ниоткуда», возврат R_s к R_s0 (утечку
         газа через контур или забой), залипание ячеек в двухфазном режиме.
@@ -2599,7 +2601,7 @@ class TestWellShutIn:
         final = states[-1]
         rs_eq = _pvt_of_config(r["config"]).Rs_eq(final.p)
         assert np.max(final.Rs - rs_eq) <= 1e-10
-        assert final.Rs[0] == pytest.approx(5.085, abs=1e-3)
+        assert final.Rs[0] == pytest.approx(5.0845, abs=1e-3)
         assert np.max(np.abs(states[43].Rs - final.Rs)) < 1e-3   # 20 сут против 30
 
     def test_wellbore_heats_then_relaxes(self, results):
@@ -2608,9 +2610,9 @@ class TestWellShutIn:
         Физика: давление у забоя за первый час растёт на 6.9 МПа — адиабатическое
         сжатие (за первые сутки останова +4.86e10 Дж из ΔE = +5.17e10 Дж),
         растворение газа добавляет +2.9e9 Дж. Конвекции через забой нет,
-        дальше тепло уходит теплопроводностью. Замер (план BUG-026, первый час —
-        от подшага 0.11 с с удвоением): 350.3507 (15 сут) → 350.6756 (запись 16,
-        максимум) → 350.3169 К (30 сут). Одним шагом 3600 с пик был на 2 ч
+        дальше тепло уходит теплопроводностью. Замер (план FEAT-039, первые часы
+        добычи и останова – от подшага 0.11 с с удвоением): 350.3513 (15 сут) →
+        350.6762 (запись 16, максимум) → 350.3174 К (30 сут). Одним шагом 3600 с пик был на 2 ч
         (350.6596 К): первый шаг занижал нагрев первого часа.
         Ловит: потерю адиабатического члена (нагрева не будет), остаток
         конвекции через забой при останове (релаксация пойдёт иначе), выключенное
@@ -2619,17 +2621,17 @@ class TestWellShutIn:
         T = np.array([s.T[0] for s in results[self.NAME]["history"].states])
         k = self.END_PROD + int(np.argmax(T[self.END_PROD:]))
         assert k == 16
-        assert T[k] == pytest.approx(350.6756, abs=2e-4)
+        assert T[k] == pytest.approx(350.6762, abs=2e-4)
         assert T[k] - T[self.END_PROD] > 0.25
         assert np.all(np.diff(T[k:]) < 0.0)
-        assert T[-1] == pytest.approx(350.3169, abs=2e-4)
+        assert T[-1] == pytest.approx(350.3174, abs=2e-4)
 
     def test_plots_cover_production_phase(self, results):
         """pvt.png и relperm.png 16 показывают диапазон добычи, а не только останов.
 
         На последней записи p = 15.5 МПа всюду и S_g ≡ 0. По всей истории:
         p 6.1224…15.5 МПа (p_b = 15 МПа внутри, один узел таблицы), S_g до
-        0.048261 (запись 1). Ловит возврат к диапазону по последней записи.
+        0.048267 (запись 1). Ловит возврат к диапазону по последней записи.
         """
         r = results[self.NAME]
         rep = _pvt_module().report_pvt(r["config"], r["history"])
@@ -2637,7 +2639,7 @@ class TestWellShutIn:
         assert rep["p_lo"] < rep["pb"] < rep["p_hi"]
         assert rep["nodes_in_range"] == 1
         _lo, hi = _relperm_module()._sg_range(r["history"])
-        assert hi == pytest.approx(0.048261, rel=1e-4)
+        assert hi == pytest.approx(0.048267, rel=1e-4)
         assert r["Sg"].max() == 0.0        # на последней записи газа нет
 
     def test_config_settings(self):

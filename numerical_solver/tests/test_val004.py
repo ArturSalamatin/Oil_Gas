@@ -153,16 +153,26 @@ def _run_forced_split(k):
 
 
 def _run_1h_shutin(h0):
-    """Добыча из конфига + 1 ч останова одним интервалом; нарастание h0 (None — выключено)."""
+    """Добыча из конфига без нарастания, затем 1 ч останова вторым прогоном из её конца; нарастание h0 (None – выключено)."""
+    # Останов – отдельный прогон (FEAT-039): поле включает нарастание и на
+    # пуске, а пределы T_LIM, RS_LIM сняты на добыче полными шагами. Во втором
+    # прогоне интервал останова – первый и нарастает от h0 как пуск; на коде
+    # до FEAT-039 два прогона побитово равны одному
+    # (vault/issues/feat-039/probes/val004_two_runs.out.txt).
     cfg = load_config(CFG)
     hist = cfg.time.history
     assert len(hist) == N_PROD + 1, "сценарий bug020_rs150 изменился"
     shut = copy.deepcopy(hist[N_PROD])
     shut.dt = HOUR
-    cfg.time.history = list(hist[:N_PROD]) + [shut]
-    cfg.time.dt_after_control_change = h0
+    cfg.time.history = list(hist[:N_PROD])
+    cfg.time.dt_after_control_change = None
     sim, s0 = SimulatorFactory.from_config(cfg)
-    return sim.run(s0).states[-1]
+    prod_end = sim.run(s0).states[-1]
+    cfg = load_config(CFG)
+    cfg.time.history = [shut]
+    cfg.time.dt_after_control_change = h0
+    sim, _ = SimulatorFactory.from_config(cfg)
+    return sim.run(prod_end).states[-1]
 
 
 @pytest.fixture(scope="module")

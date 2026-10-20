@@ -213,10 +213,10 @@ NUMERICS = (
     # первый шаг (TimeSchedule.first_substep_depth возвращает 0)
     Param("time.dt_after_control_change", "First substep after control change (h0)", "h",
           3.05555555555556e-05,
-          "After a change of well control (not at t = 0) the first substep shrinks to h0, "
-          "rounded down to substep/2^m, then doubles. A value not less than Δt switches "
-          "this off. 3.0556E-05 h = 0.11 s.",
-          "После смены режима скважины (кроме момента t = 0) первый подшаг уменьшается "
+          "At the well start (t = 0) and after each change of well control the first substep "
+          "shrinks to h0, rounded down to substep/2^m, then doubles. A value not less than Δt "
+          "switches this off. 3.0556E-05 h = 0.11 s.",
+          "На пуске скважины (t = 0) и после каждой смены режима первый подшаг уменьшается "
           "до h0, округлённого вниз до подшага/2^m, и дальше удваивается. Значение не "
           "меньше Δt отключает уменьшение. 3.0556E-05 ч = 0,11 с.", POSITIVE),
     Param("numerics.max_retries", "Max step halvings", "-", 9,

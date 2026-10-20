@@ -16,6 +16,7 @@ I. Нарастание шага после смены управления (FEA
 J. Отказ при нефизичном состоянии гидродинамики: S_g вне [0, 1], p ≤ 0, R_s < 0 или не конечны (DEBT-075)
 """
 
+import logging
 from dataclasses import replace
 from pathlib import Path
 import numpy as np
@@ -152,14 +153,20 @@ class TestFirstSubstepDepth:
     """FEAT-032: глубина m первого подшага dt/2**m интервала со сменой управления."""
 
     def test_off_by_default(self):
-        """Без dt_after_control_change — 0 на любом интервале: путь исполнения прежний."""
+        """Без dt_after_control_change – 0 на любом интервале, в том числе на пуске: путь исполнения прежний."""
         s = _schedule([PressureControl(15e6), PressureControl(10e6)])
+        assert s.first_substep_depth(0) == 0
         assert s.first_substep_depth(1) == 0
 
-    def test_first_interval_not_a_change(self):
-        """Интервал 0 — не смена (решение пользователя 2026-10-11; причина — BUG-028, исправлен)."""
+    def test_first_interval_is_a_change(self):
+        """Интервал 0 – пуск из равновесия, тоже смена (FEAT-039): m = 11 при dt = 3600 с, h0 = 2 с."""
         s = _schedule([PressureControl(15e6), PressureControl(10e6)], h0=2.0)
-        assert s.first_substep_depth(0) == 0
+        assert s.first_substep_depth(0) == 11
+
+    def test_first_interval_zero_rate_is_a_change(self):
+        """Скважина закрыта с начала (q_oil = 0) – интервал 0 тоже начинается с h0: переходного процесса нет, но и вреда нет."""
+        s = _schedule([RateControl(0.0, 101325.0)], h0=2.0)
+        assert s.first_substep_depth(0) == 11
 
     def test_same_control_value_not_a_change(self):
         """Два интервала с одним p_wf (разные объекты, как их создаёт фабрика) — не смена."""
@@ -712,24 +719,24 @@ class TestRampAfterControlChange:
 
         m = 2 (3600/4 = 900 <= h0). Единица — 3600/2**11 с, начальный подшаг 512 единиц:
         пройдено 512 — рост запрещён (512 % 1024 ≠ 0); 1024 — рост до 1024 (1800 с);
-        2048 — конец. Первый интервал — не смена: один шаг 3600 с.
+        2048 – конец. Первый интервал – пуск, тоже от 900 с (FEAT-039).
         """
         sim, hydro, energy = _ramp_run([15e6, 10e6], h0=900.0)
         sim.run(_initial_state())
-        assert hydro.dt_calls == [3600.0, 900.0, 900.0, 1800.0]
-        assert energy.dt_calls == [3600.0, 900.0, 900.0, 1800.0]
+        assert hydro.dt_calls == [900.0, 900.0, 1800.0, 900.0, 900.0, 1800.0]
+        assert energy.dt_calls == [900.0, 900.0, 1800.0, 900.0, 900.0, 1800.0]
 
     def test_no_ramp_without_change(self):
-        """То же p_wf в соседних интервалах (разные объекты) — оба шага полные."""
+        """То же p_wf в соседних интервалах (разные объекты) – второй шаг полный; первый – пуск, нарастает."""
         sim, hydro, _ = _ramp_run([15e6, 15e6], h0=900.0)
         sim.run(_initial_state())
-        assert hydro.dt_calls == [3600.0, 3600.0]
+        assert hydro.dt_calls == [900.0, 900.0, 1800.0, 3600.0]
 
     def test_ramp_only_on_first_step_of_interval(self):
         """Интервал 7200 с из двух шагов: нарастает только первый, второй — полный 3600 с."""
         sim, hydro, _ = _ramp_run([15e6, 10e6], h0=900.0, dt_hists=[3600.0, 7200.0])
         sim.run(_initial_state())
-        assert hydro.dt_calls == [3600.0, 900.0, 900.0, 1800.0, 3600.0]
+        assert hydro.dt_calls == [900.0, 900.0, 1800.0, 900.0, 900.0, 1800.0, 3600.0]
 
     def test_h0_not_less_than_step_keeps_path(self):
         """h0 = шагу: m = 0, путь как без поля — регрессия на штатный путь."""
@@ -737,6 +744,21 @@ class TestRampAfterControlChange:
         sim.run(_initial_state())
         assert hydro.dt_calls == [3600.0, 3600.0]
         assert energy.dt_calls == [3600.0, 3600.0]
+
+    def test_log_names_start_and_change(self, caplog):
+        """Журнал называет причину нарастания: интервал 0 – «пуск», дальше – «смена управления».
+
+        Строку журнала цитирует README примера 22 («первый шаг от 0.0586 с (пуск)»).
+        Ловит: подпись «смена управления» на пуске, пропавшую подпись.
+        """
+        sim, _, _ = _ramp_run([15e6, 10e6], h0=900.0)
+        with caplog.at_level(logging.INFO, logger="gpn_multiphase_solver"):
+            sim.run(_initial_state())
+        msgs = [r.getMessage() for r in caplog.records]
+        assert any(m.startswith("  Интервал 1/2:")
+                   and m.endswith("первый шаг от 900 с (пуск)") for m in msgs), msgs
+        assert any(m.startswith("  Интервал 2/2:")
+                   and m.endswith("первый шаг от 900 с (смена управления)") for m in msgs), msgs
 
     def test_failure_inside_ramp_refined_locally(self):
         """Отказ начального подшага нарастания делится пополам, рост продолжается с выравниванием.
@@ -747,8 +769,8 @@ class TestRampAfterControlChange:
         sim, hydro, energy = _ramp_run(
             [15e6, 10e6], h0=900.0, fails=lambda s, dt: s.t == 3600.0 and dt > 450.0)
         sim.run(_initial_state())
-        assert hydro.dt_calls == [3600.0, 900.0, 450.0, 450.0, 900.0, 1800.0]
-        assert energy.dt_calls == [3600.0, 450.0, 450.0, 900.0, 1800.0]
+        assert hydro.dt_calls == [900.0, 900.0, 1800.0, 900.0, 450.0, 450.0, 900.0, 1800.0]
+        assert energy.dt_calls == [900.0, 900.0, 1800.0, 450.0, 450.0, 900.0, 1800.0]
 
     def test_exhausted_below_h0_raises(self):
         """Дробление идёт на max_retries уровней ниже начального подшага; текст называет поле.
@@ -766,8 +788,8 @@ class TestRampAfterControlChange:
         assert "time.dt_after_control_change" in msg
         assert msg.endswith(
             "Последний отказ гидродинамики: двойник: отказ при dt = 225 с, t = 3600 с")
-        assert hydro.dt_calls == [3600.0, 900.0, 450.0, 225.0]
-        assert energy.dt_calls == [3600.0]
+        assert hydro.dt_calls == [900.0, 900.0, 1800.0, 900.0, 450.0, 225.0]
+        assert energy.dt_calls == [900.0, 900.0, 1800.0]
 
     def test_ramp_does_not_change_history_composition(self):
         """Подшаги нарастания в историю не попадают: записи — на концах интервалов (DEBT-013)."""

@@ -14,15 +14,16 @@ Black Oil, вода отсутствует) совместно с расчёто
 
 ## Начало работы
 
-Решатель передаётся в одном из двух видов. Ниже – что делать с
-полученными файлами, по шагам. Команды – PowerShell, с полными путями;
-`X.Y.Z` – номер выпуска, его нужно подставить; папка `D:\gpn` – пример.
-Нужны Python 3.10 или новее и доступ к PyPI или к его зеркалу.
+Ниже описано, что делать с полученными файлами, по шагам, в трёх случаях.
+Команды – PowerShell, с полными путями; `X.Y.Z` – номер выпуска, его нужно
+подставить; папка `D:\gpn` – пример. Нужны Python 3.10 или новее и доступ к
+PyPI или к его зеркалу.
 
-| Поставка | Что получено | Для чего |
+| Случай | Что получено | Для чего |
 |---|---|---|
-| для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
-| для расчётов | папка `release-X.Y.Z` с пятью файлами: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
+| поставка для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
+| поставка для расчётов | папка `release-X.Y.Z` с пятью файлами: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
+| папка с кодом без установки | папка с исходным кодом решателя и прототипа: распакованный архив поставки для разработки или его копия | вызов функций решателя из своих скриптов и команда расчёта без установки пакетов решателя и прототипа |
 
 ### Поставка для разработки
 
@@ -347,6 +348,110 @@ matplotlib и XlsxWriter.
     cd D:\
     Remove-Item D:\gpn\.venv, D:\gpn\release-X.Y.Z -Recurse -Force
     ```
+
+### Папка с кодом без установки
+
+Функции решателя вызываются прямо из папки с исходным кодом – пакеты
+решателя и прототипа не устанавливаются (`pip install` для них не
+выполняется). Папка `D:\gpn\solver` – пример: в ней лежат
+`gpn_multiphase_solver\`, `HydroSolverPrototype\`, `examples\` и этот
+README.
+
+Python должен найти два пакета: решатель `gpn_multiphase_solver` – в корне
+папки, прототип `radial_blackoil` – в
+`HydroSolverPrototype\Prototype_1.0.3`. Обе папки добавляются в путь поиска
+модулей; без второй расчёт завершается ошибкой
+`ModuleNotFoundError: No module named 'radial_blackoil'`.
+
+1. Окружение Python с зависимостями решателя и прототипа – numpy (≥ 1.24),
+   scipy (≥ 1.10), matplotlib (≥ 3.7), XlsxWriter (≥ 3.2). Подойдёт и уже
+   существующее окружение, где они есть; новое:
+
+   ```powershell
+   cd D:\gpn
+   python -m venv D:\gpn\.venv
+   D:\gpn\.venv\Scripts\python -m pip install numpy scipy matplotlib XlsxWriter
+   ```
+
+2. Вызов из своего скрипта. В начале скрипта обе папки добавляются в
+   `sys.path` – список папок, в которых Python ищет модули;
+   `sys.path.insert(0, ...)` ставит папку в начало списка, раньше
+   установленных пакетов. Дальше – те же функции, что в §4. Файл
+   `D:\gpn\my_script.py`:
+
+   ```python
+   import sys
+
+   # Где лежат решатель и прототип
+   sys.path.insert(0, r"D:\gpn\solver")
+   sys.path.insert(0, r"D:\gpn\solver\HydroSolverPrototype\Prototype_1.0.3")
+
+   import gpn_multiphase_solver, radial_blackoil
+   from gpn_multiphase_solver.cli import configure_batch_run
+   from gpn_multiphase_solver.report.pipeline import run_case
+
+   # Рисунки – в файлы, без окон; русские буквы в консоли – без ошибок
+   configure_batch_run()
+
+   # Откуда взяты пакеты: обе строки – из папки D:\gpn\solver
+   print(gpn_multiphase_solver.__file__)
+   print(radial_blackoil.__file__)
+
+   # Расчёт: файлы результатов – в my_case/output, сводка – в консоль
+   result = run_case("my_case/config.json", "my_case/output", title="Скважина 1")
+   well = result.history.well_data[-1]
+   print("Забойная температура, К:", well.T_wf)
+   print("Дебит нефти, м³ст/сут:", well.q_o_std * 86400)
+   ```
+
+   Исходные данные – копия папки примера 06; запуск:
+
+   ```powershell
+   cd D:\gpn
+   Copy-Item D:\gpn\solver\examples\06_table_corey_rp D:\gpn\my_case -Recurse
+   D:\gpn\.venv\Scripts\python D:\gpn\my_script.py
+   ```
+
+   Расчёт без записи файлов (`load_config`, `SimulatorFactory`), содержимое
+   истории расчёта и полезные модули – §4.
+
+3. Команда расчёта без скрипта. Пути задаются переменной окружения
+   `PYTHONPATH`; она действует в этом окне PowerShell до его закрытия, в
+   новом окне её нужно задать снова:
+
+   ```powershell
+   $env:PYTHONPATH = "D:\gpn\solver;D:\gpn\solver\HydroSolverPrototype\Prototype_1.0.3"
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver --version
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\solver\examples\06_table_corey_rp\config.json
+   ```
+
+   Команды `gpn-solver` здесь нет – её создаёт только установка; вместо неё
+   – `python -m gpn_multiphase_solver` с теми же аргументами (`run`,
+   `template`, `convert`, §3).
+
+4. Тесты – по желанию, нужен pytest. Из папки с кодом `PYTHONPATH` не нужен:
+   pytest берёт прототип из этого же дерева (`pyproject.toml`), решатель –
+   из текущей папки:
+
+   ```powershell
+   D:\gpn\.venv\Scripts\python -m pip install pytest
+   cd D:\gpn\solver
+   D:\gpn\.venv\Scripts\python -m pytest tests/ -m "not slow" -q
+   ```
+
+Чем этот случай отличается от установки:
+
+- версия прототипа не проверяется: при установке pip требует ровно ту
+  версию `radial-blackoil`, которую указывает решатель, а здесь берётся
+  прототип из папки. Папку нужно получать целиком, не сочетая решатель и
+  прототип из разных поставок; номера обоих печатаются в начале расчёта и
+  записываются в `versions.txt`;
+- если в окружении уже установлены `gpn-multiphase-solver` или
+  `radial-blackoil`, используется код из папки: она стоит в начале пути
+  поиска. Проверка – строки `__file__` в скрипте шага 2;
+- после переноса папки пути нужно исправить в скрипте (`sys.path.insert`) и в
+  `PYTHONPATH`.
 
 ## Состав каталога
 

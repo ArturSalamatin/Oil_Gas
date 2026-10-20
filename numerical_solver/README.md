@@ -800,18 +800,60 @@ CMG IMEX, — команды запуска приведены в его README.
 
 HTML-документация пакета — этот README, техническое описание (устройство
 пакета, поток данных расчёта, связь с прототипом, соглашения) и публичный
-интерфейс с параметрами, результатами и единицами. Сборка — из каталога
-`numerical_solver`:
+интерфейс с параметрами, результатами и единицами. В архиве передачи
+документация и PDF постановки (`doc/problem_statement.pdf`) уже собраны;
+пересобирать HTML нужно после правки докстрингов, этого README или
+постановки.
+
+**Что нужно.** Sphinx и myst-parser в окружении решателя – они ставятся с
+группой `[dev]` (`setup.bat` или установка для разработки, §1). LaTeX для
+сборки HTML не нужен.
+
+**Сборка.** Команды – из каталога решателя: у заказчика –
+`D:\gpn\gpn-multiphase-solver-X.Y.Z` (раздел «Начало работы»), в
+репозитории – `numerical_solver`:
 
 ```powershell
+cd D:\gpn\gpn-multiphase-solver-X.Y.Z
 .venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
+$LASTEXITCODE
 ```
 
-Главный файл — `doc/build/html/index.html`. В архиве передачи документация
-и PDF постановки (`doc/problem_statement.pdf`) уже собраны. Ссылки на
-уравнения в документации — номера по PDF постановки; после правки
-`problem_statement.tex` (и сборки PDF) таблицу номеров обновляет
-`.venv\Scripts\python tools\eq_numbers.py`.
+Части команды:
+
+- `-m sphinx` – запустить Sphinx интерпретатором окружения решателя;
+- `-W` – предупреждение считается ошибкой: сборка останавливается, если,
+  например, у объекта публичного интерфейса неверно оформлен докстринг или
+  ссылка на уравнение указывает на метку, которой нет в таблице номеров;
+- `-b html` – собирать HTML;
+- `doc/source` – исходники документации: `conf.py` (настройки сборки),
+  `index.md` (главная страница), `readme.md` (включает этот README),
+  `package.rst` (техническое описание), `api.rst` (перечень публичного
+  интерфейса), `eq_numbers.json` (таблица «метка уравнения → номер в PDF
+  постановки»);
+- `doc/build/html` – куда записать результат.
+
+Успешная сборка заканчивается строкой `build succeeded.`, `$LASTEXITCODE` –
+0. При ошибке Sphinx печатает файл, строку и причину; повторная сборка
+пересобирает только изменённые страницы. Открыть документацию:
+
+```powershell
+start D:\gpn\gpn-multiphase-solver-X.Y.Z\doc\build\html\index.html
+```
+
+**После правки постановки** (`doc/problem_statement.tex`). Ссылки на
+уравнения в документации – номера по PDF постановки, поэтому сначала PDF
+(pdflatex дважды: второй проход расставляет номера и ссылки), затем таблица
+номеров `doc/source/eq_numbers.json`, затем снова HTML:
+
+```powershell
+cd D:\gpn\gpn-multiphase-solver-X.Y.Z\doc
+pdflatex -interaction=nonstopmode problem_statement.tex
+pdflatex -interaction=nonstopmode problem_statement.tex
+cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+.venv\Scripts\python tools\eq_numbers.py
+.venv\Scripts\python -m sphinx -W -b html doc/source doc/build/html
+```
 
 Другие документы:
 

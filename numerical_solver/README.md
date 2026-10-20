@@ -73,14 +73,69 @@ Black Oil, вода отсутствует) совместно с расчёто
    .venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json
    ```
 
-   Рассчитать свой вариант по книге Excel – шаблон, заполнение, расчёт;
-   результаты в `D:\gpn\output\`:
+   Рассчитать пример 22 – исходные данные заданы не файлом конфигурации, а
+   книгой Excel `22_workbook_input.xlsx`. Команда проверяет книгу, переводит
+   её в файл конфигурации и таблицы CSV в единицах СИ
+   (`examples\22_workbook_input\output\input\`) и считает по ним; результаты –
+   в `examples\22_workbook_input\output\`. В сводке `T(r_w) финал` –
+   350.105 К, `q_o финал` – 3.5618e-05 м³ст/с (3.077 м³ст/сут); остальные
+   значения – таблица «Ожидаемое поведение» в README примера:
 
    ```powershell
-   cd D:\gpn
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
-   D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   .venv\Scripts\python -m gpn_multiphase_solver run examples\22_workbook_input\22_workbook_input.xlsx
+   $LASTEXITCODE
    ```
+
+   Посмотреть, как заполнена книга и во что она переведена:
+
+   ```powershell
+   cd D:\gpn\gpn-multiphase-solver-X.Y.Z
+   start D:\gpn\gpn-multiphase-solver-X.Y.Z\examples\22_workbook_input\22_workbook_input.xlsx
+   Get-ChildItem D:\gpn\gpn-multiphase-solver-X.Y.Z\examples\22_workbook_input\output\input
+   ```
+
+   Рассчитать свой вариант по книге Excel (§3.6). Для каждого варианта –
+   своя папка: результаты пишутся в папку `output` рядом с книгой, и расчёт
+   другой книги из той же папки удалил бы их.
+
+   1) Создать папку варианта и в ней книгу-шаблон `my_book.xlsx` с
+      демонстрационными значениями (вариант примера 22). Расчёт не
+      выполняется; если файл уже есть – ошибка, файл не меняется:
+
+      ```powershell
+      mkdir D:\gpn\my_book -Force
+      cd D:\gpn\my_book
+      D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver template my_book.xlsx
+      ```
+
+   2) Заполнить книгу в Excel: листы MODEL, THERMAL, NUMERICS – столбец
+      Value (значение в каждой строке); таблицы SCHEDULE (режим скважины),
+      OIL_PVT, GAS_PVT, RELPERM. Единицы инженерные и фиксированные (бар,
+      мД, сП, м³ст/сут, сутки, часы); правила – на листе COMMENTS. Сохранить
+      в формате «Книга Excel (*.xlsx)». Без этого шага расчёт выполнится по
+      демонстрационным значениям.
+
+      ```powershell
+      start D:\gpn\my_book\my_book.xlsx
+      ```
+
+   3) Рассчитать:
+
+      ```powershell
+      cd D:\gpn\my_book
+      D:\gpn\gpn-multiphase-solver-X.Y.Z\.venv\Scripts\python -m gpn_multiphase_solver run my_book.xlsx
+      $LASTEXITCODE
+      ```
+
+      Команда проверяет книгу (все ошибки – сразу, с листом и ячейкой; при
+      ошибке папка `output` не меняется, код 2), очищает
+      `D:\gpn\my_book\output\`, записывает в `output\input\` перевод книги в
+      единицы СИ (`config.json` и таблицы CSV), считает и записывает
+      результаты в `D:\gpn\my_book\output\` (состав – §3.5). Код 0 – готово;
+      1 – решатель не смог выполнить шаг по времени (в `output\` остаётся
+      только `input\`); 2 – ошибка в книге или папка вывода занята: открытый
+      в Excel файл из `output\` нужно закрыть и повторить расчёт.
 
    Файл конфигурации и таблицы – §3, вызов из Python (`run_case`,
    `load_config`, `SimulatorFactory`) – §4.
@@ -204,7 +259,30 @@ matplotlib и XlsxWriter.
    Get-Content D:\gpn\release-X.Y.Z\examples\06_table_corey_rp\output\versions.txt
    ```
 
-8. Рассчитать свой вариант по файлу конфигурации – скопировать папку
+8. Рассчитать пример 22 – исходные данные заданы не файлом конфигурации, а
+   книгой Excel `22_workbook_input.xlsx`. Команда проверяет книгу, переводит
+   её в файл конфигурации и таблицы CSV в единицах СИ (`output\input\`
+   рядом с книгой) и считает по ним; результаты – в
+   `D:\gpn\release-X.Y.Z\examples\22_workbook_input\output\`. В сводке
+   `T(r_w) финал` – 350.105 К, `q_o финал` – 3.5618e-05 м³ст/с
+   (3.077 м³ст/сут); остальные значения – таблица «Ожидаемое поведение» в
+   `D:\gpn\release-X.Y.Z\examples\22_workbook_input\README.md`:
+
+   ```powershell
+   cd D:\gpn
+   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\release-X.Y.Z\examples\22_workbook_input\22_workbook_input.xlsx
+   $LASTEXITCODE
+   ```
+
+   Посмотреть, как заполнена книга и во что она переведена:
+
+   ```powershell
+   cd D:\gpn
+   start D:\gpn\release-X.Y.Z\examples\22_workbook_input\22_workbook_input.xlsx
+   Get-ChildItem D:\gpn\release-X.Y.Z\examples\22_workbook_input\output\input
+   ```
+
+9. Рассчитать свой вариант по файлу конфигурации – скопировать папку
    подходящего примера, изменить в копии `config.json` и таблицы CSV
    (поля, единицы СИ и форматы таблиц – §3), рассчитать; результаты – в
    `D:\gpn\my_case\output\`:
@@ -215,22 +293,55 @@ matplotlib и XlsxWriter.
    D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run D:\gpn\my_case\config.json
    ```
 
-   Или по книге Excel (§3.6) – шаблон, заполнение, расчёт; результаты – в
-   `D:\gpn\output\`:
+   Или по книге Excel (§3.6). Для каждого варианта – своя папка: результаты
+   пишутся в папку `output` рядом с книгой, и расчёт другой книги из той же
+   папки удалил бы их.
 
-   ```powershell
-   cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver template my_case.xlsx
-   D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_case.xlsx
-   ```
+   1) Создать папку варианта и в ней книгу-шаблон `my_book.xlsx` с
+      демонстрационными значениями (вариант примера 22). Расчёт не
+      выполняется; если файл уже есть – ошибка, файл не меняется:
+
+      ```powershell
+      mkdir D:\gpn\my_book -Force
+      cd D:\gpn\my_book
+      D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver template my_book.xlsx
+      ```
+
+   2) Заполнить книгу в Excel: листы MODEL, THERMAL, NUMERICS – столбец
+      Value (значение в каждой строке); таблицы SCHEDULE (режим скважины),
+      OIL_PVT, GAS_PVT, RELPERM. Единицы инженерные и фиксированные (бар,
+      мД, сП, м³ст/сут, сутки, часы); правила – на листе COMMENTS. Сохранить
+      в формате «Книга Excel (*.xlsx)». Без этого шага расчёт выполнится по
+      демонстрационным значениям.
+
+      ```powershell
+      start D:\gpn\my_book\my_book.xlsx
+      ```
+
+   3) Рассчитать:
+
+      ```powershell
+      cd D:\gpn\my_book
+      D:\gpn\.venv\Scripts\python -m gpn_multiphase_solver run my_book.xlsx
+      $LASTEXITCODE
+      ```
+
+      Команда проверяет книгу (все ошибки – сразу, с листом и ячейкой; при
+      ошибке папка `output` не меняется, код 2), очищает
+      `D:\gpn\my_book\output\`, записывает в `output\input\` перевод книги в
+      единицы СИ (`config.json` и таблицы CSV), считает и записывает
+      результаты в `D:\gpn\my_book\output\` (состав – §3.5). Код 0 – готово;
+      1 – решатель не смог выполнить шаг по времени (в `output\` остаётся
+      только `input\`); 2 – ошибка в книге или папка вывода занята: открытый
+      в Excel файл из `output\` нужно закрыть и повторить расчёт.
 
    Вызов решателя из своих скриптов Python – §4.
 
-9. Обновление до следующего выпуска – шаги 1, 2, 3 и 5 с папкой нового
+10. Обновление до следующего выпуска – шаги 1, 2, 3 и 5 с папкой нового
    выпуска `release-<новый номер>`: `pip install` заменяет установленные
    пакеты новыми.
 
-10. Удаление – окружение и папка выпуска:
+11. Удаление – окружение и папка выпуска:
 
     ```powershell
     cd D:\
@@ -833,8 +944,8 @@ $LASTEXITCODE
   постановки»);
 - `doc/build/html` – куда записать результат.
 
-Успешная сборка заканчивается строкой `build succeeded.`, `$LASTEXITCODE` –
-0. При ошибке Sphinx печатает файл, строку и причину; повторная сборка
+Успешная сборка заканчивается строкой `build succeeded.`, код возврата
+`$LASTEXITCODE` – 0. При ошибке Sphinx печатает файл, строку и причину; повторная сборка
 пересобирает только изменённые страницы. Открыть документацию:
 
 ```powershell

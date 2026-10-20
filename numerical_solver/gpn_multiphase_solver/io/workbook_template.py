@@ -185,11 +185,11 @@ COMMENTS = (
      "Остановка скважины: OIL_RATE с дебитом 0 и Minimum BHP 1.01325 bar(a)."),
     ("Time steps",
      "Δt and h0 on NUMERICS are in hours. Each SCHEDULE interval is split into equal "
-     "substeps not longer than Δt; after a change of control (not at t = 0) the first "
-     "substep shrinks to h0, rounded down to substep/2^m, then doubles. h0 not less than Δt "
-     "switches this off.",
+     "substeps not longer than Δt; at the well start (t = 0) and after a change of control "
+     "the first substep shrinks to h0, rounded down to substep/2^m, then doubles. h0 not "
+     "less than Δt switches this off.",
      "Δt и h0 на листе NUMERICS задаются в часах. Каждый интервал SCHEDULE делится на "
-     "равные подшаги не длиннее Δt. После смены режима (кроме t = 0) первый подшаг "
+     "равные подшаги не длиннее Δt. На пуске (t = 0) и после смены режима первый подшаг "
      "уменьшается до h0, округлённого вниз до подшага/2^m, и дальше удваивается; при h0 не "
      "меньше Δt подшаг не уменьшается."),
     ("OIL_PVT",

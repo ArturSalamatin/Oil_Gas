@@ -28,8 +28,10 @@ from ._xlsx import read_book
 SOLVER = Path(__file__).resolve().parents[1]                     # numerical_solver/
 PROTO = SOLVER / "HydroSolverPrototype" / "Prototype_1.0.3"
 GENERATOR_BOOK = SOLVER / "configs" / "INPUT_TEMPLATE_v1.xlsx"
-# Черновик руководителя — вне git (FEAT-033, решение 56): тест пропускается без него
-DRAFT_BOOK = SOLVER / "configs" / "INPUT_TEMPLATE_THERMAL_v1_14.10.2026.xlsx"
+# Черновик руководителя – материал задачи FEAT-033 в vault, вне numerical_solver/:
+# в срез передачи заказчику (tools/handover.py) не входит, там тест пропускается
+DRAFT_BOOK = (SOLVER.parent / "vault" / "issues" / "feat-033"
+              / "INPUT_TEMPLATE_THERMAL_v1_14.10.2026.xlsx")
 IMEX_RATES = (PROTO / "regression" / "reference_imex_xlsx"
               / "T08c_IMEX8c_FI_EXTENDED_PVTO_rates.xlsx")
 # Каталоги книг прототипа в git; OUTPUT/ (выходы регрессии) не берётся
@@ -473,7 +475,7 @@ def test_generator_book_matches_test_reader():
         assert ours == theirs.sheets[name].values, name
 
 
-@pytest.mark.skipif(not DRAFT_BOOK.exists(), reason="черновик руководителя вне git (решение 11)")
+@pytest.mark.skipif(not DRAFT_BOOK.exists(), reason="черновик руководителя – только в репозитории, не в срезе передачи")
 def test_draft_book_matches_xlsxio():
     """Черновик руководителя: листы, неровные строки SCHEDULE, пустые строки THERMAL."""
     from radial_blackoil.xlsxio import read_workbook_tables

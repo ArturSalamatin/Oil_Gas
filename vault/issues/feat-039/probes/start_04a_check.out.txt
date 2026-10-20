@@ -1,0 +1,31 @@
+﻿.venv\Scripts\python : [INFO] Расчет: 1 интервалов, T_total = 300 с
+At line:1 char:408
++ ... 39\probes"; .venv\Scripts\python "$P\start_04a_check.py" emul *> "$P\ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([INFO] Расчет: ...T_total = 300 с:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[INFO]   Интервал 1/1: dt_hist=300 с, 1 подшагов, dt_actual=300.0 с
+[WARNING] Состояние при t = 0.003472 сут вне таблиц: GAS_PVT pressure below table: min P=42.334878 bar, table min=50 
+bar. Endpoint value used; no extrapolation.
+[WARNING] Состояние при t = 0.003472 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=42.334878 
+bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+[INFO] Симуляция завершена: 2 сохранённых шагов, T_final = 300 с
+FEAT-039: эмуляция – интервал 0 считается сменой управления
+h0=None: T(r_w) 349.964395 К, T_LIM - T +0.540805 К, время 0.64 с
+[INFO] Расчет: 1 интервалов, T_total = 300 с
+[INFO]   Интервал 1/1: dt_hist=300 с, 1 подшагов, dt_actual=300.0 с, первый шаг от 0.0732 с (смена управления)
+[WARNING] Состояние при t = 3.391e-06 сут вне таблиц: GAS_PVT pressure below table: min P=49.776939 bar, table min=50 
+bar. Endpoint value used; no extrapolation.
+[WARNING] Состояние при t = 3.391e-06 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=49.776939 
+bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+[INFO] Симуляция завершена: 2 сохранённых шагов, T_final = 300 с
+h0=0.11: T(r_w) 350.445216 К, T_LIM - T +0.059984 К, время 0.72 с
+[INFO] Расчет: 1 интервалов, T_total = 300 с
+[INFO]   Интервал 1/1: dt_hist=300 с, 1 подшагов, dt_actual=300.0 с, первый шаг от 1.17 с (смена управления)
+[WARNING] Состояние при t = 1.356e-05 сут вне таблиц: GAS_PVT pressure below table: min P=47.550185 bar, table min=50 
+bar. Endpoint value used; no extrapolation.
+[WARNING] Состояние при t = 1.356e-05 сут вне таблиц: OIL_PVT saturated locus below table: gas-active min P=47.550185 
+bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+[INFO] Симуляция завершена: 2 сохранённых шагов, T_final = 300 с
+h0=1.76: T(r_w) 350.440790 К, T_LIM - T +0.064410 К, время 0.83 с

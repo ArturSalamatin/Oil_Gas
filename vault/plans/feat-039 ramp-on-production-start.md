@@ -7,7 +7,7 @@ issue: FEAT-039
 github: 140
 branch: feat/feat-039/ramp-on-production-start
 base: 74c002e
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-039
 audit:
   date: 2026-10-20

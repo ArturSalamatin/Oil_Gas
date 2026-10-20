@@ -1,0 +1,48 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+01_single_phase_no_jt start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.2 с; отпечаток 98a9e2de8144881b
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+02_single_phase_jt start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.2 с; отпечаток 283117b789e6cd3d
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+03_standing_corey start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.3 с; отпечаток 409ccfb8885b3587
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+04a_high_gas_saturation start h0=none: первый подшаг 300 с; до первой записи (t = 300 с) принято 1, отказов 0; всего 864 / 0; счёт 13.9 с; отпечаток 15dc354252c96fc0
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+04_table_table start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.6 с; отпечаток 9cb0ee07436b8644
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+05_standing_table_rp start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.2 с; отпечаток 86665873bfb14643
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+06_table_corey_rp start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.7 с; отпечаток b745772a4b4570f5
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+07_degassing_adiabatic_only start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.6 с; отпечаток b3db76c84a0857ae
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+08_degassing_jt start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.6 с; отпечаток 1060c407784b5e27
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+09_degassing_latent_heat start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 0.6 с; отпечаток 5dfd90365c77f9bc
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+10_deep_degassing start h0=none: первый подшаг 1800 с; до первой записи (t = 3600 с) принято 2, отказов 1; всего 73 / 1; счёт 1.3 с; отпечаток 2b16f8c75773df90
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+11_degassing_at_boundary start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 72 / 0; счёт 1.6 с; отпечаток 9677ccfca6c2eef6
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+12_large_drainage_radius start h0=none: первый подшаг 3600 с; до первой записи (t = 86400 с) принято 24, отказов 0; всего 360 / 0; счёт 6.6 с; отпечаток 7c88ff3f4ec7ad03
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+13a_pwf_ramp_down start h0=none: первый подшаг 3600 с; до первой записи (t = 43200 с) принято 12, отказов 0; всего 360 / 0; счёт 6.7 с; отпечаток c777e48e26cbd4f5
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+13b_pwf_alternating start h0=none: первый подшаг 3600 с; до первой записи (t = 43200 с) принято 12, отказов 0; всего 720 / 0; счёт 26.7 с; отпечаток 041bc876f88d8cd1
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+14_high_gor_cooling start h0=none: первый подшаг 8.64e+04 с; до первой записи (t = 2.592e+06 с) принято 30, отказов 0; всего 360 / 0; счёт 10.6 с; отпечаток d801857e833491c7
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+15_oil_rate_ramp_up start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 360 / 0; счёт 7.6 с; отпечаток a6e91358e1482446
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+16_well_shut_in start h0=none: первый подшаг 0.1099 с; до первой записи (t = 86400 с) принято 39, отказов 0; всего 750 / 0; счёт 16.5 с; отпечаток b89d003bfd91d964
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+17_shut_in_strong_cooling start h0=none: первый подшаг 0.1099 с; до первой записи (t = 86400 с) принято 39, отказов 0; всего 757 / 7; счёт 27.4 с; отпечаток 68248f73dc2a618f
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+18_prototype_input start h0=none: первый подшаг 60 с; до первой записи (t = 60 с) принято 1, отказов 0; всего 733 / 0; счёт 13.8 с; отпечаток 9b429849070f30eb
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+19_rs150_cooling start h0=none: первый подшаг 8.64e+04 с; до первой записи (t = 86400 с) принято 1, отказов 0; всего 30 / 0; счёт 1.3 с; отпечаток bc6b6a0079e71ea9
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+20_rs300_cooling start h0=none: первый подшаг 3600 с; до первой записи (t = 3600 с) принято 1, отказов 0; всего 76 / 0; счёт 4.2 с; отпечаток a3654c52e358fbf0
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+21_rs100_cooling start h0=none: первый подшаг 8.64e+04 с; до первой записи (t = 86400 с) принято 1, отказов 0; всего 30 / 0; счёт 1.3 с; отпечаток 103e639d7ba06def
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-039\numerical_solver\gpn_multiphase_solver
+22_workbook_input start h0=none: первый подшаг 0.05859 с; до первой записи (t = 60 с) принято 11, отказов 0; всего 757 / 0; счёт 14.6 с; отпечаток 8f4adcdc35055e57

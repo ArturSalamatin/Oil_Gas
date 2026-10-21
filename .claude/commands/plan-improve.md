@@ -279,7 +279,7 @@ ls vault/plans/<id-lowercase>*
 
 1. Прочитай этот файл целиком
 2. Прочитай связанные vault-заметки (ссылки ниже)
-3. Создай ветку: `git checkout -b <branch>`
+3. Ветку `<branch>` и worktree `.worktrees/<id-lowercase>` создаёт `/implement` (§1.5) – вручную не создавать
 4. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
 5. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень). Если план меняет прототип — ещё до правки, из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`: `..\..\.venv\Scripts\python -m pytest tests -q` и `..\..\.venv\Scripts\python regression\run_regression.py --quick` (ожидается: все passed — 97 на 2026-10-10 — и 11/11 PASS)
 6. Запомни число тестов (всего и в быстром уровне) и время быстрого уровня — это baseline

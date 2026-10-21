@@ -293,7 +293,7 @@ ls vault/plans/<id-lowercase>*
 1. Прочитай этот файл целиком
 2. Прочитай moments_method.tex (раздел: <конкретный раздел>)
 3. Прочитай связанные vault-заметки (ссылки ниже)
-4. Создай ветку: `git checkout -b <branch>`
+4. Ветку `<branch>` и worktree `.worktrees/<id-lowercase>` создаёт `/implement` (§1.5) – вручную не создавать
 5. Venv: `.venv\Scripts\Activate.ps1` (PowerShell) или Claude использует `.venv/Scripts/python` напрямую
 6. Baseline: `.venv/Scripts/python -m pytest tests/ --collect-only -q` (число тестов) и `.venv/Scripts/python -m pytest tests/ -m "not slow" -q` (быстрый уровень). Если план меняет прототип — ещё до правки, из `numerical_solver/HydroSolverPrototype/Prototype_1.0.3`: `..\..\.venv\Scripts\python -m pytest tests -q` и `..\..\.venv\Scripts\python regression\run_regression.py --quick` (ожидается: все passed — 97 на 2026-10-10 — и 11/11 PASS)
 7. Начни с шага 1. После каждого шага: тест шага и регресс по полю «Регресс»; полный прогон — в конце (`/implement` §3.1)

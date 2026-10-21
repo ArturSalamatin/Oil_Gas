@@ -23,8 +23,9 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Реагируем только на команды, создающие сообщение: git commit, gh pr create/edit.
-# git log --grep=... и прочее чтение пропускаем.
-if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];&|])(git[[:space:]]+commit|gh[[:space:]]+pr[[:space:]]+(create|edit))'; then
+# git log --grep=... и прочее чтение пропускаем. `-C <путь>` / `-c <ключ=значение>`
+# перед commit допускаются: /implement и /merge коммитят через `git -C <КОРЕНЬ> commit`.
+if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];&|])(git([[:space:]]+-[Cc][[:space:]]+[^[:space:]]+)*[[:space:]]+commit|gh[[:space:]]+pr[[:space:]]+(create|edit))'; then
   exit 0
 fi
 
@@ -32,7 +33,9 @@ fi
 #   Co-Authored-By с Claude / Anthropic / noreply@anthropic
 #   "Generated with ... Claude"
 #   эмодзи робота (🤖) из шаблона PR
-if printf '%s' "$COMMAND" | grep -qiE 'co-authored-by:[^\n]*(claude|anthropic)|generated with[^\n]*claude|🤖'; then
+# `.*`, а не `[^\n]*`: в POSIX ERE `[^\n]` – «не `\` и не `n`», и подпись
+# с `noreply@anthropic.com` проходила (буква `n` между двоеточием и именем).
+if printf '%s' "$COMMAND" | grep -qiE 'co-authored-by:.*(claude|anthropic)|generated with.*claude|🤖'; then
   echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"В сообщениях коммитов и PR нельзя упоминать ИИ (CLAUDE.md). Убери строку Co-Authored-By / Generated with Claude и повтори."}}'
   exit 0
 fi

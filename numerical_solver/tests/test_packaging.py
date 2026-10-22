@@ -178,14 +178,24 @@ def _path_insertions(tree: ast.AST) -> list:
             for n in ast.walk(tree) if isinstance(n, ast.Call) and _is_path_insert(n)]
 
 
+# Пример 23 показывает работу из папки с исходным кодом без установки
+# пакетов (FEAT-040): вставка пути к прототипу – суть примера, а не обход
+# забытой установки. Исключение – ровно эти файлы;
+# test_allowed_file_inserts_prototype_path проверяет, что каждый из них есть
+# и вставку делает, – иначе исключение устарело бы молча
+PROTO_PATH_ALLOWED = ("examples/23_source_tree_run/main.py",)
+
+
 class TestNoPrototypePathInsertion:
     def test_code_does_not_insert_prototype_path(self):
-        """Ни пакет, ни примеры, ни тесты не вставляют путь к прототипу в sys.path (DEBT-059)."""
+        """Ни пакет, ни примеры, ни тесты не вставляют путь к прототипу в sys.path (DEBT-059); исключения – PROTO_PATH_ALLOWED (FEAT-040)."""
         # Вставка маскирует забытую установку: в репозитории работает, у
         # пользователя установленного пакета — ModuleNotFoundError
         found, hits = 0, []
         for base in ("gpn_multiphase_solver", "examples", "tests"):
             for path in sorted((SOLVER / base).rglob("*.py")):
+                if path.relative_to(SOLVER).as_posix() in PROTO_PATH_ALLOWED:
+                    continue
                 for text in _path_insertions(ast.parse(path.read_text(encoding="utf-8"))):
                     found += 1
                     # «proto» ловит и литерал HydroSolverPrototype, и имена _PROTO, PROTO_ROOT
@@ -195,3 +205,9 @@ class TestNoPrototypePathInsertion:
         # без пути к прототипу, 9 прямых уходят); ноль значит: разбор сломан
         assert found > 10, "сторож не нашёл ни одной вставки в sys.path"
         assert hits == []
+
+    @pytest.mark.parametrize("rel", PROTO_PATH_ALLOWED)
+    def test_allowed_file_inserts_prototype_path(self, rel):
+        """Файл-исключение существует и вставляет путь к прототипу: исключение не устарело (FEAT-040)."""
+        texts = _path_insertions(ast.parse((SOLVER / rel).read_text(encoding="utf-8")))
+        assert any("proto" in t.lower() for t in texts), f"{rel}: вставки пути к прототипу нет"

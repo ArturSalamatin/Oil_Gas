@@ -8,7 +8,7 @@ issue: FEAT-040
 github: 142
 branch: feat/feat-040/workbook-example-no-install
 model_level: null
-status: в процессе
+status: реализован
 worktree: .worktrees/feat-040
 audit:
   date: 2026-10-22

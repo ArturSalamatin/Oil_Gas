@@ -7,7 +7,8 @@ issue: DEBT-085
 github: 144
 branch: refactor/debt-085/balance-figure-titles
 status: реализован
-worktree: .worktrees/debt-085
+worktree: .worktrees/debt-085; удалён после влития
+merged: 9d9c3fd (2026-10-22)
 audit:
   date: 2026-10-22
   found: 6

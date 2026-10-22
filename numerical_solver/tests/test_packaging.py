@@ -211,3 +211,161 @@ class TestNoPrototypePathInsertion:
         """Файл-исключение существует и вставляет путь к прототипу: исключение не устарело (FEAT-040)."""
         texts = _path_insertions(ast.parse((SOLVER / rel).read_text(encoding="utf-8")))
         assert any("proto" in t.lower() for t in texts), f"{rel}: вставки пути к прототипу нет"
+
+
+# ── Форма пунктов журнала (DEBT-086) ──
+# Пункт – номер задачи (у правки без задачи – область, «README») жирным и
+# суть, затем абзацы-блоки с курсивными метками; форма – /implement, фаза 4.1.
+# Проверяется только текущий раздел: прошлые выпуски написаны до DEBT-086 и
+# не переписываются (решение пользователя 2026-10-22)
+CHANGELOG_SUBSECTIONS = ("### Добавлено", "### Изменено", "### Исправлено", "### Удалено")
+CHANGELOG_ITEM_RE = re.compile(r"- \*\*([^*]+)\.\*\* \S")     # «- **FEAT-040.** Суть»
+CHANGELOG_TASK_ID_RE = re.compile(r"(BUG|DEBT|FEAT|VAL)-\d{3}")
+CHANGELOG_LABEL_RE = re.compile(r"  \*([^*]+)\.\* \S")        # «  *Было.* Текст»
+CHANGELOG_LABEL_SETS = (["Было", "Стало"], ["Было", "Стало", "Числа"])
+CHANGELOG_EM_DASH = chr(0x2014)      # длинное тире U+2014: в тексте раздела запрещено (CLAUDE.md, «Тире»)
+# Вывод программ (сообщения решателя, команды) цитируется дословно в `…`:
+# в 177 строковых литералах пакета есть «—», поэтому тире и десятичная
+# запятая внутри обратных кавычек не проверяются
+CHANGELOG_CODE_SPAN_RE = re.compile(r"`[^`]*`")
+
+
+def _current_changelog_section() -> list:
+    """Строки текущего раздела журнала без заголовка: «Не выпущено» до выпуска, раздел своего номера – в метке."""
+    # Выбор раздела – как в test_changelog_has_section_for_version: в дереве
+    # метки (самопроверка tools/release.py) «Не выпущено» уже переименован
+    version = Version(_static_version(SOLVER_INIT))
+    lines = (SOLVER / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+    head = (re.compile(r"## Не выпущено$") if version.is_prerelease
+            else re.compile(rf"## {re.escape(str(version))}( |$)"))
+    starts = [i for i, s in enumerate(lines) if head.match(s)]
+    assert len(starts) == 1, f"разделов {head.pattern!r}: {len(starts)}, ожидался один"
+    end = next((i for i in range(starts[0] + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    return lines[starts[0] + 1:end]
+
+
+def _changelog_format_problems(lines: list) -> list:
+    """Нарушения формы пунктов в строках раздела журнала без заголовка «## …»; пусто – форма верна."""
+    problems, subsections, labels, prev = [], [], [], ""
+    item = None                          # номер строки, с которой начался текущий пункт
+
+    def close_item():
+        if item is not None and labels not in CHANGELOG_LABEL_SETS:
+            problems.append(f"строка {item}: блоки пункта {labels}, нужны «Было», «Стало» "
+                            "и, если изменяются результаты, «Числа» – по порядку")
+
+    for n, line in enumerate(lines, 1):
+        plain = CHANGELOG_CODE_SPAN_RE.sub("", line)      # без цитат вывода программ
+        if CHANGELOG_EM_DASH in plain:
+            problems.append(f"строка {n}: длинное тире (U+2014), нужно «–»")
+        if re.search(r"\d,\d", plain):
+            problems.append(f"строка {n}: десятичная запятая, нужна точка")
+        label = CHANGELOG_LABEL_RE.match(line)
+        if line.startswith("#"):
+            close_item()
+            item = None
+            if line not in CHANGELOG_SUBSECTIONS:
+                problems.append(f"строка {n}: подраздел {line!r} не из {CHANGELOG_SUBSECTIONS}")
+            subsections.append(line)
+        elif line.startswith("- "):
+            close_item()
+            item, labels = n, []
+            m = CHANGELOG_ITEM_RE.match(line)
+            if m is None:
+                problems.append(f"строка {n}: пункт не начинается с «- **<номер задачи или область>.** »")
+            elif re.search(r"\d", m[1]) and not CHANGELOG_TASK_ID_RE.fullmatch(m[1]):
+                # Цифра в выделении – номер задачи: опечатка «FEAT-40» не должна сойти за область
+                problems.append(f"строка {n}: номер {m[1]!r} не вида FEAT-040")
+            if prev:
+                problems.append(f"строка {n}: перед пунктом нет пустой строки")
+            if not subsections:
+                problems.append(f"строка {n}: пункт вне подраздела")
+        elif (item is not None and prev and label is not None
+              and label[1] in CHANGELOG_LABEL_SETS[1]):
+            # Метка сразу под текстом: на GitHub блок слился бы с предыдущим абзацем
+            problems.append(f"строка {n}: перед меткой *{label[1]}.* нет пустой строки")
+        elif (item is not None and not prev and line.startswith("  ")
+              and not line.startswith(("  - ", "    "))):
+            # Первая строка абзаца внутри пункта – метка блока
+            if label is None or label[1] not in CHANGELOG_LABEL_SETS[1]:
+                problems.append(f"строка {n}: абзац пункта не начинается с *Было.*, *Стало.* или *Числа.*")
+            else:
+                labels.append(label[1])
+        elif line and not line.startswith(" ") and subsections:
+            problems.append(f"строка {n}: текст вне пункта внутри подраздела")
+        prev = line
+    close_item()
+    order = [CHANGELOG_SUBSECTIONS.index(s) for s in subsections if s in CHANGELOG_SUBSECTIONS]
+    if order != sorted(set(order)):
+        problems.append(f"подразделы {subsections}: порядок – {CHANGELOG_SUBSECTIONS}, каждый один раз")
+    return problems
+
+
+# Минимальный верный пункт – основа образцов нарушений
+_GOOD = ["### Добавлено", "", "- **FEAT-001.** Суть.", "", "  *Было.* А.", "", "  *Стало.* Б."]
+_ITEM2 = ["- **FEAT-002.** Суть.", "", "  *Было.* А.", "", "  *Стало.* Б."]
+_BAD = {   # нарушение → подстрока сообщения
+    "без жирного номера": (["### Добавлено", "", "- FEAT-001. Суть.", "", "  *Было.* А.", "", "  *Стало.* Б."],
+                           "пункт не начинается"),
+    "номер не вида": (["### Добавлено", "", "- **FEAT-1.** Суть.", "", "  *Было.* А.", "", "  *Стало.* Б."],
+                      "не вида FEAT-040"),
+    "нет Стало": (_GOOD[:5], "блоки пункта"),
+    "блоки не по порядку": (_GOOD[:4] + ["  *Стало.* Б.", "", "  *Было.* А."], "блоки пункта"),
+    "чужая метка": (_GOOD + ["", "  *Итог.* В."], "абзац пункта не начинается"),
+    "абзац без метки": (_GOOD + ["", "  Просто текст."], "абзац пункта не начинается"),
+    "метка жирным": (_GOOD[:4] + ["  **Было.** А."] + _GOOD[5:], "абзац пункта не начинается"),
+    "нет пустой строки между пунктами": (_GOOD + _ITEM2, "нет пустой строки"),
+    "длинное тире": (_GOOD[:4] + [f"  *Было.* А {CHANGELOG_EM_DASH} Б."] + _GOOD[5:], "длинное тире"),
+    "десятичная запятая": (_GOOD[:4] + ["  *Было.* 10,67 м."] + _GOOD[5:], "десятичная запятая"),
+    "чужой подраздел": (["### Прочее"] + _GOOD[1:], "не из"),
+    "подразделы не по порядку": (["### Изменено"] + _GOOD[1:] + ["", "### Добавлено", ""] + _ITEM2, "порядок"),
+    "пункт вне подраздела": (_GOOD[2:], "вне подраздела"),
+    "текст вне пункта": (_GOOD + ["", "Текст."], "текст вне пункта"),
+    "метка без пустой строки": (_GOOD[:3] + ["  *Было.* А.", "", "  *Стало.* Б."],
+                                "нет пустой строки"),
+}
+
+
+class TestChangelogFormat:
+    """Форма пунктов текущего раздела журнала (DEBT-086): её читает получатель выпуска на GitHub."""
+
+    def test_changelog_current_section_format(self):
+        """Пункты текущего раздела – по форме /implement 4.1; в дереве метки – раздел выпуска."""
+        # Тот же тест идёт в самопроверке tools/release.py (шаг 3): пункт не
+        # по форме останавливает выпуск до публикации, с откатом
+        assert _changelog_format_problems(_current_changelog_section()) == []
+
+    def test_changelog_format_accepts_sample(self):
+        """Образец со всеми допустимыми элементами нарушений не содержит."""
+        # Вступление до подразделов (как у 1.0.5), перенесённая первая строка,
+        # пункт без задачи (область README), блок «Числа» с вложенным списком
+        # и перенесённой строкой вложенного пункта, два подраздела по порядку,
+        # дословная цитата вывода в `…` с длинным тире и запятой между цифрами
+        lines = [
+            "Код решателя не менялся: числа те же, что в 1.0.4.", "",
+            "### Добавлено", "",
+            "- **FEAT-039.** Пуск скважины считается", "  сменой режима.", "",
+            "  *Было.* Пуск шёл полным шагом.", "",
+            "  *Стало.* Первый шаг после пуска", "  начинается с подшага h0.", "",
+            "  *Числа.* Изменяются первые записи.",
+            "  - пример 22, через 1 мин: дебит 10.67 → 8.21 м³ст/сут,",
+            "    p(r_w) 151.79 → 151.38 бар",
+            "  - пример 17: T(r_w) +0.050 К на 1 сут", "",
+            "- **README.** Раздел «Начало работы»: третий случай.", "",
+            "  *Было.* Случая без установки не было.", "",
+            "  *Стало.* Описан запуск через `PYTHONPATH`.", "",
+            "### Исправлено", "",
+            "- **BUG-030.** Суть.", "",
+            "  *Было.* А.", "",
+            f"  *Стало.* Сообщение `каталог вывода {CHANGELOG_EM_DASH} файл`, интервал `[0,1]`.",
+        ]
+        assert _changelog_format_problems(lines) == []
+
+    @pytest.mark.parametrize("case", list(_BAD))
+    def test_changelog_format_catches(self, case):
+        """Каждое нарушение формы найдено, сообщение называет правило."""
+        # Без этих образцов проверка текущего раздела проходила бы и сломанной:
+        # после выпуска «Не выпущено» пуст
+        lines, expected = _BAD[case]
+        problems = _changelog_format_problems(lines)
+        assert any(expected in p for p in problems), problems

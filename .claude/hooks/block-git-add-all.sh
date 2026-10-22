@@ -3,7 +3,7 @@
 # Reads JSON from stdin, checks tool_input.command for forbidden patterns.
 
 # JSON разбирается python-ом, а не jq: jq в этой системе не установлен,
-# из-за чего хук молча не срабатывал — падал с "jq: command not found",
+# из-за чего хук молча не срабатывал – падал с "jq: command not found",
 # выходил с кодом 0, и запрещённая команда проходила дальше.
 INPUT=$(cat)
 COMMAND=$(printf '%s' "$INPUT" | python -c "

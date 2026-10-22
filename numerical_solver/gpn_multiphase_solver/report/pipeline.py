@@ -374,8 +374,9 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     #
     # Считается безусловно и при любой структуре истории: члены копятся
     # на подшагах внутри решателя, а не восстанавливаются по записям.
+    # Заголовок – тот же, что у остальных рисунков (DEBT-085).
     print()
-    plot_energy_balance(history, grid, config, output_dir)
+    plot_energy_balance(history, grid, config, output_dir, title)
 
     # ── Баланс массы компонентов (DEBT-039) ──
     # Интегралы потоков через забой и контур копит решатель по всем
@@ -383,7 +384,7 @@ def run_case(config_path: str | Path, output_dir: str | Path | None = None, *,
     # энергии, структура истории проверке не мешает. До export_emf:
     # рисунок попадает в тот же пакет EMF.
     print()
-    plot_mass_balance(config, history, output_dir)
+    plot_mass_balance(config, history, output_dir, title)
 
     # ── EMF-копии рисунков (FEAT-026) ──
     # Все рисунки run_case уже сохранены (PNG + SVG в emf/):

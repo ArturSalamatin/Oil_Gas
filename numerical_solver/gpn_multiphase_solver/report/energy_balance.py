@@ -47,7 +47,7 @@ from ..io.output import plot_energy_balance_series
 from ..io.figures import save_figure
 
 
-def plot_energy_balance(history, grid, config, output_dir: Path):
+def plot_energy_balance(history, grid, config, output_dir: Path, title: str):
     """Построить рисунок баланса энергии ``energy_balance.png``, напечатать итоги и вернуть относительную невязку.
 
     Ряды баланса – :func:`compute_energy_balance`: изменение запаса
@@ -64,10 +64,12 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
     grid : Grid
         Сетка расчёта; не используется, оставлен ради порядка аргументов.
     config : SimulationConfig
-        Конфигурация расчёта: имя каталога файла конфигурации – в
-        заголовке рисунка.
+        Конфигурация расчёта; не используется, оставлена ради порядка
+        аргументов.
     output_dir : str or pathlib.Path
         Каталог результатов; создаётся, если его нет.
+    title : str
+        Заголовок рисунка: первая строка, вторая – «Баланс энергии».
 
     Возвращает
     ----------
@@ -75,9 +77,9 @@ def plot_energy_balance(history, grid, config, output_dir: Path):
         Относительная невязка баланса на конец расчёта.
     """
     bal = compute_energy_balance(history)
-    # Имя расчёта берём из пути к конфигу (папка конфига): модуль общий для всех расчётов.
-    axes = plot_energy_balance_series(
-        bal, title=f"Баланс энергии — {Path(config.config_dir).name}")
+    # Заголовок расчёта – от вызывающего (run_case), как у plot_relperm и
+    # plot_pvt: имя каталога конфигурации у книги – «input» (DEBT-085)
+    axes = plot_energy_balance_series(bal, title=f"{title}\nБаланс энергии")
     fig = axes[0].figure
 
     fig.tight_layout()

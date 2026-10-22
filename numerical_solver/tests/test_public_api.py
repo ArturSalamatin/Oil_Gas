@@ -21,11 +21,13 @@ from gpn_multiphase_solver.energy.balance import (  # noqa: E402
 from gpn_multiphase_solver.factory import (  # noqa: E402
     SimulatorFactory, create_pvt, create_relperm)
 from gpn_multiphase_solver.io.config import load_config  # noqa: E402
+from gpn_multiphase_solver.io.figures import save_figure  # noqa: E402
 from gpn_multiphase_solver.io.output import (  # noqa: E402
     plot_energy_balance_series, plot_relperm_curves, pvt_table_nodes)
 from gpn_multiphase_solver.mass_balance import compute_mass_balance  # noqa: E402
 from gpn_multiphase_solver.pvt.prototype_adapter import PrototypeRPAdapter  # noqa: E402
 from gpn_multiphase_solver.pvt.relperm import CoreyRP  # noqa: E402
+from gpn_multiphase_solver.report import energy_balance, mass_balance  # noqa: E402
 from gpn_multiphase_solver.simulator import Simulator  # noqa: E402
 from gpn_multiphase_solver.state import SimulationHistory  # noqa: E402
 
@@ -92,6 +94,15 @@ def _energy_history():
     return SimulationHistory(times=[0.0, 10.0], balance=[zero, last])
 
 
+def _mass_history():
+    """История из двух записей запаса компонентов: нефть 100 → 90 м³ст, добыто 12, притекло 2."""
+    snaps = [dict(M_o=100.0, M_g=0.0, cum_o_well=0.0, cum_o_ext=0.0,
+                  cum_g_well=0.0, cum_g_ext=0.0),
+             dict(M_o=90.0, M_g=0.0, cum_o_well=-12.0, cum_o_ext=-2.0,
+                  cum_g_well=0.0, cum_g_ext=0.0)]
+    return SimulationHistory(times=[0.0, 1.0], mass_balance=snaps)
+
+
 def test_compute_energy_balance_residual_and_scale():
     """Невязка ΔE − Σ, нормировка на сумму модулей всех членов, t = 0 без деления на ноль.
 
@@ -139,6 +150,36 @@ def test_plot_energy_balance_series_draws_all_terms():
         assert axes[0].get_title() == "T"
     finally:
         plt.close(axes[0].figure)
+
+
+def test_balance_figures_titled_by_argument(tmp_path, monkeypatch):
+    """Рисунки балансов подписаны заголовком из аргумента title: первая строка – он, вторая – название рисунка.
+
+    Прежде подпись бралась из имени каталога файла конфигурации: у
+    расчёта по книге это перевод output/input/ – «input» (DEBT-085).
+    Конфигурация – configs/baseline.json: имени её каталога в подписи
+    быть не должно. Рисунок функция закрывает сама, поэтому он
+    перехватывается подменой save_figure; закрытый Figure сохраняет оси.
+    """
+    figures = {}
+
+    def keep(fig, path, dpi):
+        """Запомнить рисунок по имени файла, затем записать как обычно."""
+        figures[Path(path).name] = fig
+        return save_figure(fig, path, dpi)
+
+    monkeypatch.setattr(energy_balance, "save_figure", keep)
+    monkeypatch.setattr(mass_balance, "save_figure", keep)
+    cfg = load_config(BASELINE)
+    energy_balance.plot_energy_balance(_energy_history(), None, cfg, tmp_path, "Расчёт")
+    mass_balance.plot_mass_balance(cfg, _mass_history(), tmp_path, "Расчёт")
+
+    # Баланс энергии – заголовок верхней оси (plot_energy_balance_series)
+    assert figures["energy_balance.png"].axes[0].get_title() == "Расчёт\nБаланс энергии"
+    # Баланс массы – общий заголовок фигуры. Figure.get_suptitle – с
+    # matplotlib 3.8, пакет допускает 3.7: читается поле _suptitle
+    assert (figures["mass_balance.png"]._suptitle.get_text()
+            == "Расчёт\nБаланс массы компонентов")
 
 
 @pytest.mark.parametrize("sg_max, n_panels", [(0.05, 2), (0.0, 1)])

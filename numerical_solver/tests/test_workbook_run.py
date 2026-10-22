@@ -31,9 +31,14 @@ import numpy as np
 import pytest
 import xlsxwriter
 
+import gpn_multiphase_solver.report.energy_balance as energy_balance
+import gpn_multiphase_solver.report.mass_balance as mass_balance
 import gpn_multiphase_solver.report.pipeline as pipeline
+import gpn_multiphase_solver.report.pvt as report_pvt
+import gpn_multiphase_solver.report.relperm as report_relperm
 from gpn_multiphase_solver.factory import SimulatorFactory
 from gpn_multiphase_solver.io import workbook_format as wf
+from gpn_multiphase_solver.io.figures import save_figure
 from gpn_multiphase_solver.io import workbook_template as wt
 from gpn_multiphase_solver.io.config import load_config
 from gpn_multiphase_solver.io.workbook_convert import convert_workbook
@@ -88,19 +93,31 @@ def _must_not_run(self, *args, **kwargs):
 
 @pytest.fixture(scope="module")
 def case(tmp_path_factory):
-    """run_case по малой книге с кириллицей и пробелом в имени; рядом — вывод прошлого расчёта: (книга, результат, печать)."""
+    """run_case по малой книге с кириллицей и пробелом в имени; рядом – вывод прошлого расчёта: (книга, результат, печать, рисунки по именам файлов)."""
     folder = tmp_path_factory.mktemp("book")
     book = _small_book(folder / "малая книга.xlsx")
     _old_output(folder)
+    figures = {}
+
+    def keep(fig, path, dpi):
+        """Запомнить рисунок по имени файла, затем записать как обычно."""
+        figures[Path(path).name] = fig
+        return save_figure(fig, path, dpi)
+
+    # Рисунки закрываются сразу после записи: перехват save_figure во всех
+    # модулях штатного набора оставляет их объекты для проверки подписей
+    # (DEBT-085). Фикстура модульная – monkeypatch функций здесь недоступен
     buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
+    with pytest.MonkeyPatch.context() as mp, contextlib.redirect_stdout(buf):
+        for module in (pipeline, report_relperm, report_pvt, energy_balance, mass_balance):
+            mp.setattr(module, "save_figure", keep)
         r = run_case(book)
-    return book, r, buf.getvalue()
+    return book, r, buf.getvalue(), figures
 
 
 def test_input_saved_and_output_cleared(case):
     """Вывод — output рядом с книгой: input/ с четырьмя файлами перевода, штатный набор, файла прошлого расчёта нет."""
-    book, r, _ = case
+    book, r, _, _ = case
     out = book.parent / "output"
     assert r.output_dir == out
     # Имя подкаталога — в README, на листе COMMENTS книги и в справке команды
@@ -113,11 +130,36 @@ def test_input_saved_and_output_cleared(case):
 
 def test_title_and_print(case):
     """Заголовок — имя книги без расширения (перевод пишет output.title, FEAT-035); вторая строка печати — «Книга: путь»."""
-    book, r, text = case
+    book, r, text, _ = case
     assert r.title == "малая книга"
     lines = text.splitlines()
     assert lines[0] == "=== малая книга ==="
     assert lines[1] == f"Книга: {book}"
+
+
+def test_figure_titles_from_book(case):
+    """Все рисунки штатного набора подписаны именем книги первой строкой, рисунки балансов – тоже.
+
+    Ловит: подпись рисунков балансов из имени каталога файла
+    конфигурации – у книги это перевод output/input/, и выходило «input»
+    вместо имени книги (DEBT-085). Подпись рисунка – общий заголовок
+    фигуры, если он есть (PVT, баланс массы), иначе заголовок верхней оси.
+    """
+    book, _, _, figures = case
+    # Перехвачены все записанные рисунки: рисунок модуля без подмены
+    # save_figure выпал бы из проверки молча
+    assert set(figures) == {p.name for p in (book.parent / "output").glob("*.png")}
+
+    def heading(fig):
+        # Figure.get_suptitle – с matplotlib 3.8, пакет допускает 3.7
+        return (fig._suptitle.get_text() if fig._suptitle is not None
+                else fig.axes[0].get_title())
+
+    titles = {name: heading(fig) for name, fig in figures.items()}
+    assert titles["energy_balance.png"] == "малая книга\nБаланс энергии"
+    assert titles["mass_balance.png"] == "малая книга\nБаланс массы компонентов"
+    for name, text in titles.items():
+        assert text.startswith("малая книга\n"), (name, text)
 
 
 def test_saved_input_reproduces_run(case):
@@ -126,7 +168,7 @@ def test_saved_input_reproduces_run(case):
     Ловит: перевод в output/input/ отличается от того, по которому шёл
     расчёт (запись другого словаря, округление чисел при записи).
     """
-    book, r, _ = case
+    book, r, _, _ = case
     cfg = load_config(book.parent / "output" / INPUT_DIR / "config.json")
     simulator, initial = SimulatorFactory.from_config(cfg)
     history = simulator.run(initial)

@@ -102,7 +102,7 @@ def plot_relperm(config, history, output_dir: Path, title: str,
         relperm = create_relperm(config)
 
     axes = plot_relperm_curves(relperm, _sg_range(history),
-                               title=f"{title}\nОФП — {_describe(config)}")
+                               title=f"{title}\nОФП – {_describe(config)}")
     fig = axes[0, 0].figure
 
     fig.tight_layout()

@@ -194,7 +194,7 @@ def plot_pvt(config, history, output_dir: Path, title: str,
                         table_nodes=pvt_table_nodes(pvt, Rs0),
                         label=_describe(config))
 
-    fig.suptitle(f"{title}\nPVT — {_describe(config)}", fontsize=10)
+    fig.suptitle(f"{title}\nPVT – {_describe(config)}", fontsize=10)
     fig.tight_layout()
 
     output_dir = Path(output_dir)

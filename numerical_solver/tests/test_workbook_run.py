@@ -160,6 +160,9 @@ def test_figure_titles_from_book(case):
     assert titles["mass_balance.png"] == "малая книга\nБаланс массы компонентов"
     for name, text in titles.items():
         assert text.startswith("малая книга\n"), (name, text)
+    # Разделитель второй строки ОФП и PVT – среднее тире (правило «Тире»)
+    assert titles["relperm.png"].startswith("малая книга\nОФП – "), titles["relperm.png"]
+    assert titles["pvt.png"].startswith("малая книга\nPVT – "), titles["pvt.png"]
 
 
 def test_saved_input_reproduces_run(case):

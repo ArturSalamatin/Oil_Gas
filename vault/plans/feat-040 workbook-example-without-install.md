@@ -9,7 +9,8 @@ github: 142
 branch: feat/feat-040/workbook-example-no-install
 model_level: null
 status: реализован
-worktree: .worktrees/feat-040
+worktree: .worktrees/feat-040; удалён после влития
+merged: 3a23970 (2026-10-22)
 audit:
   date: 2026-10-22
   round: 2

@@ -7,7 +7,8 @@ issue: DEBT-086
 github: 143
 branch: refactor/debt-086/release-notes-format
 status: реализован
-worktree: .worktrees/debt-086
+worktree: .worktrees/debt-086; удалён после влития
+merged: 438f292 (2026-10-22)
 audit:
   date: 2026-10-22
   round: 2

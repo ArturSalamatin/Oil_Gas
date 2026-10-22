@@ -3359,3 +3359,170 @@ class TestWorkbookInput:
         names = {p.name for p in (EXAMPLES_DIR / self.NAME).iterdir()
                  if p.name not in ("output", "__pycache__")}
         assert names == {"22_workbook_input.xlsx", "main.py", "README.md"}
+
+
+# ═══════════════════════════════════════════════════════════
+# Пример 23: расчёт из папки с исходным кодом без установки (FEAT-040)
+# ═══════════════════════════════════════════════════════════
+
+class TestSourceTreeRun:
+    """23_source_tree_run: книга – шаблон, main.py – расчёт и штатный набор пошаговыми вызовами функций; пакеты – из папки с исходным кодом, без установки.
+
+    Общие проверки (балансы, границы, R_s, README) идут по переводу книги
+    через фикстуру results, как у остальных примеров, и main.py не
+    запускают. Здесь – то, ради чего пример существует: main.py сам находит
+    решатель и прототип в дереве папки, считает там, где они не
+    установлены, и строит набор результатов по образцу штатного.
+    Совпадение со штатным набором run_case не проверяется: пример –
+    иллюстрация (решение пользователя 2026-10-22).
+    """
+
+    NAME = "23_source_tree_run"
+    BOOK = "23_source_tree_run.xlsx"
+    # Штатный набор при GPN_EXAMPLES_EMF=0 (tests/conftest.py): без emf/
+    OUTPUT = {"input", "versions.txt", "well_history.csv", "profiles.csv",
+              "pressure_profiles.png", "temperature_profiles.png",
+              "saturation_profiles.png", "rs_profiles.png", "well_rates.png",
+              "wellbore_dynamics.png", "relperm.png", "pvt.png",
+              "energy_balance.png", "mass_balance.png"}
+
+    def test_book_is_template(self, tmp_path):
+        """Книга примера – шаблон write_template без изменений: её перевод равен переводу свежего шаблона.
+
+        README примера описывает шаблон с демонстрационными значениями, и
+        числа «Ожидаемого поведения» сняты на нём. Свежий шаблон пишется под
+        тем же именем: заголовок перевода – имя книги (проба плана
+        p3_book_vs_template.py). Ловит: книгу примера правили, а README
+        остался прежним; демонстрационные значения шаблона изменились, а
+        книга примера – нет.
+        """
+        from gpn_multiphase_solver.io.workbook_convert import workbook_to_config
+        from gpn_multiphase_solver.io.workbook_template import write_template
+        from gpn_multiphase_solver.io.xlsx_reader import read_workbook
+
+        fresh = tmp_path / self.BOOK
+        write_template(fresh)
+        own = workbook_to_config(read_workbook(EXAMPLES_DIR / self.NAME / self.BOOK))
+        assert own == workbook_to_config(read_workbook(fresh))
+
+    def test_folder_holds_only_book_as_input(self):
+        """В папке примера – книга, main.py, README.md; перевода (config.json, CSV) нет: вход один."""
+        names = {p.name for p in (EXAMPLES_DIR / self.NAME).iterdir()
+                 if p.name not in ("output", "__pycache__")}
+        assert names == {self.BOOK, "main.py", "README.md"}
+
+    def test_main_inserts_tree_folders(self):
+        """main.py вставляет в sys.path ровно две папки дерева, и в них лежат решатель и прототип.
+
+        Строковые части пути каждой вставки (у прототипа –
+        HydroSolverPrototype, Prototype_1.0.3) отсчитываются от папки с
+        исходным кодом – на два уровня выше папки примера, то есть от
+        numerical_solver/. Быстрая проверка без расчёта; запуск –
+        test_runs_without_installed_packages (slow). Ловит: вставку удалили;
+        папку прототипа переименовали при смене его версии, а путь в примере –
+        нет.
+        """
+        import ast
+        tree = ast.parse((EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8"))
+        inserts = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+                   and ast.unparse(n.func) == "sys.path.insert"]
+        assert len(inserts) == 2
+        found = set()
+        for call in inserts:
+            # ast.walk обходит дерево в ширину: у SOURCE / "a" / "b" константы
+            # пришли бы в порядке "b", "a" – порядок восстанавливается по позиции
+            parts = sorted((c for c in ast.walk(call.args[1])
+                            if isinstance(c, ast.Constant) and isinstance(c.value, str)),
+                           key=lambda c: (c.lineno, c.col_offset))
+            folder = EXAMPLES_DIR.parent.joinpath(*(c.value for c in parts))
+            found |= {name for name in ("gpn_multiphase_solver", "radial_blackoil")
+                      if (folder / name / "__init__.py").is_file()}
+        assert found == {"gpn_multiphase_solver", "radial_blackoil"}
+
+    def test_main_calls_functions_not_command(self):
+        """main.py – обычный код Python: считает вызовами функций пакета и не вызывает ни run_case, ни команду.
+
+        Пример – иллюстрация того, как пользоваться библиотекой из своего
+        скрипта (решение пользователя 2026-10-22). Совпадение его вывода со
+        штатным набором run_case тест не охраняет: регрессию штатного набора
+        проверяют остальные примеры. Ловит: пример вернулся к run_case или
+        команде (cli.main) – к тому, что уже показывают примеры 01–22.
+        """
+        import ast
+        main = ast.parse((EXAMPLES_DIR / self.NAME / "main.py").read_text(encoding="utf-8"))
+        # Имя вызываемой функции: f(...) – f, obj.f(...) – f
+        called = {n.func.id if isinstance(n.func, ast.Name) else n.func.attr
+                  for n in ast.walk(main) if isinstance(n, ast.Call)
+                  and isinstance(n.func, (ast.Name, ast.Attribute))}
+        assert "run_case" not in called and "main" not in called
+        # Шаги расчёта: перевод книги, конфигурация, сборка решателя, расчёт
+        assert {"convert_workbook", "load_config", "from_config", "run"} <= called
+
+    @pytest.mark.slow
+    def test_runs_without_installed_packages(self, tmp_path):
+        """Копия дерева (два пакета и папка примера) считает пример и строит штатный набор в окружении без пакетов решателя и прототипа.
+
+        Окружение «без установки» – python -S: модуль site не загружается,
+        файлы .pth в site-packages не обрабатываются, и поисковики
+        editable-установки не включаются. Зависимости (numpy, scipy,
+        matplotlib, XlsxWriter) находятся через PYTHONPATH на site-packages.
+        Контрольный запуск подтверждает, что пакеты решателя и прототипа в
+        этом окружении не видны: без него зелёный тест не отличить от
+        окружения, где они всё-таки установлены (проба плана p1_isolation.py).
+
+        Запускается копия, а не папка репозитория: main.py пишет output/
+        рядом с собой и отсчитывает пути от своего расположения, поэтому
+        __file__ обоих пакетов обязаны указывать в копию. Числа – строки
+        «Ожидаемого поведения» README примера (1 мин и 30 сут); печать – три
+        знака, отсюда допуск 2e-3. Ловит: пример перестал сам находить пакеты;
+        пакет решателя стал зависеть от файлов вне своей папки; штатный набор
+        неполон; вывод разошёлся с README.
+        """
+        import os
+        import subprocess
+        import sys
+        import sysconfig
+
+        solver = EXAMPLES_DIR.parent
+        tree = tmp_path / "solver"
+        skip = shutil.ignore_patterns("__pycache__", "output")
+        shutil.copytree(solver / "gpn_multiphase_solver", tree / "gpn_multiphase_solver",
+                        ignore=skip)
+        proto = Path("HydroSolverPrototype", "Prototype_1.0.3", "radial_blackoil")
+        shutil.copytree(solver / proto, tree / proto, ignore=skip)
+        shutil.copytree(EXAMPLES_DIR / self.NAME, tree / "examples" / self.NAME, ignore=skip)
+
+        # GPN_EXAMPLES_EMF=0 (tests/conftest.py) переходит в подпроцесс: без векторных копий
+        site = dict.fromkeys(sysconfig.get_paths()[k] for k in ("purelib", "platlib"))
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(site), PYTHONIOENCODING="utf-8")
+
+        def run(*args):
+            return subprocess.run([sys.executable, "-S", *args], cwd=tmp_path, env=env,
+                                  capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace")
+
+        # ── Контроль: в этом окружении пакетов решателя и прототипа нет ──
+        check = run("-c", "import importlib.util as u; "
+                          "print([m for m in ('gpn_multiphase_solver', 'radial_blackoil') "
+                          "if u.find_spec(m)])")
+        assert check.returncode == 0 and check.stdout.strip() == "[]", check.stdout + check.stderr
+
+        # ── Пример ──
+        r = run(str(tree / "examples" / self.NAME / "main.py"))
+        assert r.returncode == 0, r.stderr[-2000:]
+        lines = r.stdout.splitlines()
+        for line, head in zip(lines[:2], ("Решатель:", "Прототип:")):
+            assert line.startswith(head), lines[:2]
+            path = Path(line.split(maxsplit=2)[2]).resolve()
+            assert path.is_relative_to(tree.resolve()), f"{head} не из копии: {path}"
+        out = tree / "examples" / self.NAME / "output"
+        assert {p.name for p in out.iterdir()} == self.OUTPUT
+        assert (out / "input" / "config.json").is_file()
+        rows = [[float(x) for x in s.split()] for s in lines
+                if len(s.split()) == 4 and s.split()[0].replace(".", "", 1).isdigit()]
+        assert len(rows) == 23
+        by_time = {round(t * 1440): (p, T, q) for t, p, T, q in rows}   # ключ – минуты
+        p, T, q = by_time[1]                                            # 1 мин
+        assert (p, T, q) == (150.0, pytest.approx(349.748, abs=2e-3), pytest.approx(8.212, abs=2e-3))
+        p, T, q = by_time[30 * 1440]                                    # 30 сут
+        assert (p, T, q) == (100.0, pytest.approx(350.105, abs=2e-3), pytest.approx(3.077, abs=2e-3))

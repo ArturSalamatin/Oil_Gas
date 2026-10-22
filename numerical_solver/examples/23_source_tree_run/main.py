@@ -132,9 +132,9 @@ if __name__ == "__main__":
 
     # ── Балансы энергии и массы: рисунок и печать итогов ──
     print()
-    plot_energy_balance(history, grid, config, OUT)
+    plot_energy_balance(history, grid, config, OUT, title)
     print()
-    plot_mass_balance(config, history, OUT)
+    plot_mass_balance(config, history, OUT, title)
 
     # ── Векторные копии рисунков: SVG уже в output\emf\, EMF – через Inkscape ──
     export_emf(OUT)

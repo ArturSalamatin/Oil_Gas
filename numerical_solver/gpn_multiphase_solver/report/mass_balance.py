@@ -40,7 +40,7 @@ from ..mass_balance import compute_mass_balance
 from ..io.figures import save_figure
 
 
-def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
+def plot_mass_balance(config, history, output_dir: Path, title: str) -> dict | None:
     """Построить рисунок баланса массы компонентов ``mass_balance.png``, напечатать итоги и вернуть ряды баланса.
 
     Ур. (eq:residual_oil). Невязка компонента – изменение его запаса в
@@ -53,12 +53,15 @@ def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
     Параметры
     ---------
     config : SimulationConfig
-        Конфигурация расчёта: имя каталога файла конфигурации – в
-        заголовке рисунка.
+        Конфигурация расчёта; не используется, оставлена первым
+        аргументом, как у ``plot_relperm`` и ``plot_pvt``.
     history : SimulationHistory
         История расчёта: запас компонентов на записях и накопленные потоки.
     output_dir : str or pathlib.Path
         Каталог результатов; создаётся, если его нет.
+    title : str
+        Заголовок рисунка: первая строка, вторая – «Баланс массы
+        компонентов».
 
     Возвращает
     ----------
@@ -75,8 +78,9 @@ def plot_mass_balance(config, history, output_dir: Path) -> dict | None:
         return None
     axes = plot_mass_balance_series(bal)
     fig = axes[0, 0].figure
-    # Имя расчёта — из пути к конфигу (папка конфига): модуль общий для всех расчётов.
-    fig.suptitle(f"Баланс массы компонентов — {Path(config.config_dir).name}")
+    # Заголовок расчёта – от вызывающего (run_case), как у plot_relperm и
+    # plot_pvt: имя каталога конфигурации у книги – «input» (DEBT-085)
+    fig.suptitle(f"{title}\nБаланс массы компонентов")
     fig.tight_layout()
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

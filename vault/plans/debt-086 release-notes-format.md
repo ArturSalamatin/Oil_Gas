@@ -6,7 +6,7 @@ date: 2026-10-22
 issue: DEBT-086
 github: 143
 branch: refactor/debt-086/release-notes-format
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-086
 audit:
   date: 2026-10-22

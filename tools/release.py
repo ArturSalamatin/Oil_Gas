@@ -1,8 +1,12 @@
 """Выпуск решателя для испытаний внутри команды: python tools/release.py X.Y.Z (FEAT-038).
 
 Перед запуском раздел «## Не выпущено» в numerical_solver/CHANGELOG.md
-заполнен (черновик по git log от прошлой метки сводит Claude по просьбе) и
-закоммичен. Запуск — из корня репозитория, интерпретатором venv решателя
+заполнен и закоммичен. Пункты задач пишет /implement (фаза 4.1, там же форма
+пункта). Правки без задачи (например, README) Claude по просьбе сводит по
+git log от прошлой метки в ту же форму, вместо номера – область:
+«- **README.** …». Форму проверяет tests/test_packaging.py -k changelog из
+numerical_solver – после правки раздела и в самопроверке шага 3.
+Запуск — из корня репозитория, интерпретатором venv решателя
 (нужны packaging, pytest и Sphinx – группа [dev]), в основном каталоге на ветке
 numerical_scheme/implementation:
 
@@ -38,7 +42,8 @@ numerical_scheme/implementation:
   5. Один push: ветка и метка вместе (--atomic).
   6. Публикация: gh release create vX.Y.Z — пять файлов: два колеса, архив
      примеров, README.md решателя и архив HTML-документации; заметки —
-     раздел выпуска из журнала.
+     раздел выпуска из журнала, строки каждого абзаца склеены в одну:
+     перенос строки в описании выпуска GitHub показывает как <br> (DEBT-086).
 
 Отказ на шагах 2–5 — скрипт откатывает свои коммиты и метку (git tag -d,
 git reset --keep к исходному коммиту; другие незакоммиченные файлы, например
@@ -204,6 +209,43 @@ def changelog_new_unreleased(text: str, version: str) -> str:
         raise ReleaseError(f"{CHANGELOG}: разделов «## {version} — » {len(found)}, ожидался один")
     i = found[0].start()
     return text[:i] + UNRELEASED + eol + eol + text[i:]
+
+
+# Заголовок – «#»…«######» и пробел (или конец строки): «#143» в начале
+# перенесённой строки – продолжение абзаца, а не заголовок
+HEADING_RE = re.compile(r"\s*#{1,6}(\s|$)")
+# Начало элемента разметки: пустая строка, заголовок, пункт списка (и
+# вложенного), строка таблицы, цитата. Такая строка к предыдущей не клеится
+BLOCK_START_RE = re.compile(r"\s*($|#{1,6}(\s|$)|[-*+] |\d+[.)] |\||>)")
+
+
+def unwrap_paragraphs(text: str) -> str:
+    """Строки каждого абзаца и пункта списка – в одну; блоки кода не трогаются (DEBT-086)."""
+    # В описании выпуска GitHub отображает перенос строки исходного текста
+    # как <br>: пункт журнала, перенесённый по ~76 знаков, рвался посреди фраз
+    out: list[str] = []
+    fence = False                       # внутри блока кода ```
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("```"):
+            fence = not fence
+            out.append(line)
+            continue
+        prev = out[-1].strip() if out else ""
+        # Продолжение абзаца: предыдущая строка – текст (не пустая, не
+        # заголовок, не ограда кода), текущая не начинает новый элемент
+        if (not fence and prev and not prev.startswith("```") and not HEADING_RE.match(prev)
+                and not BLOCK_START_RE.match(line)):
+            out[-1] = f"{out[-1].rstrip()} {s}"
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
+def release_notes(text: str, version: str) -> str:
+    """Описание выпуска: раздел «## X.Y.Z — …» журнала со склеенными строками и NOTES_TAIL."""
+    notes = unwrap_paragraphs(section_body(text, f"## {version} — "))
+    return f"{notes}\n\n{NOTES_TAIL}\n"
 
 
 # ── Шаг 1: проверки ──
@@ -391,8 +433,7 @@ def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
     shutil.copyfile(tree / "README.md", readme)
     docs_zip, n = build_docs(tree, out, version)
     print(f"  README.md; документация: {docs_zip.name}, файлов {n}")
-    notes = section_body(read_text(tree / "CHANGELOG.md"), f"## {version} — ")
-    write_text(out / "notes.md", f"{notes}\n\n{NOTES_TAIL}\n")
+    write_text(out / "notes.md", release_notes(read_text(tree / "CHANGELOG.md"), version))
     print(f"  самопроверка метки: {selfcheck(tree)}")
     wheels = build_wheels(tree, out / "wheels", version, proto_version)
     print("  колёса: " + ", ".join(p.name for p in wheels))

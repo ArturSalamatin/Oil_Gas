@@ -6,7 +6,7 @@ date: 2026-10-22
 issue: DEBT-085
 github: 144
 branch: refactor/debt-085/balance-figure-titles
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-085
 audit:
   date: 2026-10-22

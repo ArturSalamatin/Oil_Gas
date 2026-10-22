@@ -43,6 +43,7 @@ ALLOWED_SKIPS = (
     "черновик руководителя вне git",   # test_xlsx_reader.py: книги руководителя в копии нет
     "нет problem_statement.aux",       # test_docs.py: .aux в копию не входит
     "could not import 'tomllib'",      # Python 3.10: test_cli.py, test_packaging.py
+    "нет tools/release.py",            # test_release_notes.py: корня репозитория в копии нет
 )
 # Файлы результатов расчёта (README §3.5); у книги ещё input/config.json
 REQUIRED_OUTPUT = (

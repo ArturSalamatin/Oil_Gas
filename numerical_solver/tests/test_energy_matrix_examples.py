@@ -59,7 +59,7 @@ from gpn_multiphase_solver.io.workbook_convert import convert_workbook
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
-# Те же 24 сценария, что в tests/test_examples.py::ALL_EXAMPLES.
+# Те же 25 сценариев, что в tests/test_examples.py::ALL_EXAMPLES.
 # Список дублируется намеренно: тест не должен молча менять охват
 # вслед за правками соседнего модуля.
 ALL_EXAMPLES = [
@@ -87,12 +87,14 @@ ALL_EXAMPLES = [
     "20_rs300_cooling",
     "21_rs100_cooling",
     "22_workbook_input",
+    "23_source_tree_run",
 ]
 
 # Примеры с книгой ввода Excel вместо config.json (FEAT-036): папка → книга.
 # Дублирует tests/test_examples.py::WORKBOOK_EXAMPLES — по той же причине,
 # что и список выше
-WORKBOOK_EXAMPLES = {"22_workbook_input": "22_workbook_input.xlsx"}
+WORKBOOK_EXAMPLES = {"22_workbook_input": "22_workbook_input.xlsx",
+                     "23_source_tree_run": "23_source_tree_run.xlsx"}
 
 
 def _example_config(example: str, tmp_path: Path):
@@ -864,11 +866,11 @@ def build_reference(grid, pvt, rock, hydro_result, state_prev, dt, bc,
 # A. Сверка матрицы с эталоном на конфигах примеров
 # ═══════════════════════════════════════════════════════════
 
-# slow (DEBT-032): 24 штатных прогона с эталоном на каждом вызове solve —
+# slow (DEBT-032): 25 штатных прогонов с эталоном на каждом вызове solve —
 # ~280 с без 17 и 18, из них примеры 14 / 13b / 04a — 70 / 59 / 41 с, 16 — 31 с;
 # 17 (останов из развитой газовой зоны, FEAT-029) — ~26 с (до DEBT-048 ~95 с), 18 (вход
 # прототипа, VAL-005) — ~17 с. Покрытие
-# не урезается: все 24 примера идут в полном прогоне (развилка предусмотрена
+# не урезается: все 25 примеров идут в полном прогоне (развилка предусмотрена
 # планом DEBT-016, раздел «Решение о slow»).
 @pytest.mark.slow
 @pytest.mark.parametrize("example", ALL_EXAMPLES)

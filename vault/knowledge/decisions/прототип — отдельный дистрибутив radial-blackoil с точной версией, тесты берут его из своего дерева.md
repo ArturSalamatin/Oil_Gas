@@ -26,7 +26,7 @@ issue: DEBT-059
 - в дистрибутив прототипа входит только `radial_blackoil`;
 - каждый сторонний импорт обоих пакетов объявлен в их `dependencies`;
 - пакеты импортированы из дерева тестов;
-- путь к прототипу в `sys.path` никто не вставляет.
+- путь к прототипу в `sys.path` никто не вставляет, кроме `examples/23_source_tree_run/main.py` (FEAT-040: работа без установки – суть примера; список `PROTO_PATH_ALLOWED` в `tests/test_packaging.py`, его актуальность проверяет `test_allowed_file_inserts_prototype_path`).
 
 **Приёмка:** `vault/issues/debt-059/probes/clean_env_acceptance.py`. Колёса без PyPI и установка с правкой исходников; расчёт примеров 03, 04, 05 побитово равен расчёту из репозитория; `run_workbook` пишет `results.xlsx` и PNG.
 

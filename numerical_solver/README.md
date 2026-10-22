@@ -976,7 +976,7 @@ PEP 440; правило номеров – [CHANGELOG.md](CHANGELOG.md)).
 | `gpn_multiphase_solver.io.figures` | `save_figure` (PNG и SVG), `export_emf` |
 | `gpn_multiphase_solver.energy.balance`, `gpn_multiphase_solver.mass_balance` | `compute_energy_balance(history)`, `compute_mass_balance(history)` – временные ряды балансов и невязки |
 | `gpn_multiphase_solver.diagnostics` | аналитическое стационарное решение, проверка равновесия $R_s$, однофазная асимптотика $T$ – без вывода в консоль и рисунков |
-| `gpn_multiphase_solver.report` | вывод проверок в консоль и построение рисунков с записью PNG – части, из которых собран штатный набор |
+| `gpn_multiphase_solver.report` | вывод проверок в консоль и построение рисунков с записью PNG – части, из которых собран штатный набор: `plot_relperm`, `plot_pvt`, `plot_energy_balance`, `plot_mass_balance`, наложение `make_overlay_rs`, печать `report_rs`, `report_pvt`, `report_relperm` |
 
 ## 5. Исходные данные в формате прототипа
 

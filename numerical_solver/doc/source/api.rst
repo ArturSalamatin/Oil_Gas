@@ -151,6 +151,23 @@ PVT и ОФП
 
 .. autofunction:: gpn_multiphase_solver.io.figures.export_emf
 
+Штатный набор: рисунки и проверки
+---------------------------------
+
+.. autofunction:: gpn_multiphase_solver.report.rs.make_overlay_rs
+
+.. autofunction:: gpn_multiphase_solver.report.relperm.plot_relperm
+
+.. autofunction:: gpn_multiphase_solver.report.pvt.plot_pvt
+
+.. autofunction:: gpn_multiphase_solver.report.energy_balance.plot_energy_balance
+
+.. autofunction:: gpn_multiphase_solver.report.mass_balance.plot_mass_balance
+
+.. autofunction:: gpn_multiphase_solver.report.rs.report_rs
+
+.. autofunction:: gpn_multiphase_solver.report.pvt.report_pvt
+
 Балансы
 -------
 

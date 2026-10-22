@@ -1,0 +1,8 @@
+﻿
+E         comparison failed
+FAILED tests/test_examples.py::TestShutInStrongCooling::test_wellbore_warms_monotonically
+FAILED tests/test_prototype_activation_cap.py::TestFirstStep::test_first_day_with_cell_tol
+FAILED tests/test_prototype_cell_tolerance.py::TestSwitching::test_switching_meets_cell_tol
+3 failed, 1674 passed, 1 warning in 619.75s (0:10:19)
+
+

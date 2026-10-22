@@ -1,0 +1,21 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+
+[1.7] expected 4.880662e-02; после 1 подшага 4.880662e-02 (rel 0.0e+00), snapshot == поле: True; после 2: 2.000000000000000×; _zero_balance: 0.0
+      по T_prev отличалось бы на rel 1.4e-03
+
+[3.2] укороченные сценарии (6 ч, N = 25):
+  03_standing_corey p_wf=None: rel 1.58e-13, round_ratio 4.472e-02, ratio[0] 0.0, bound[0] 0.0
+  04_table_table p_wf=None: rel 4.91e-13, round_ratio 1.277e-01, ratio[0] 0.0, bound[0] 0.0
+  04_table_table p_wf=16000000.0: rel 4.35e-13, round_ratio 4.006e-02, ratio[0] 0.0, bound[0] 0.0
+
+[3.3] дефект BUG-007 (тело теста):
+  03_standing_corey: rel 8.90e-03 (> 1e-4: True), round_ratio 2.50e+09 (> 1e6: True)
+  04_table_table: rel 1.84e-03 (> 1e-4: True), round_ratio 4.77e+08 (> 1e6: True)
+
+[3.2] структура истории (03, 04): round_bound разреженной и почасовой
+  03_standing_corey: np.float64(0.04781680161958177) vs np.float64(0.04781680161958177), равны: True
+  04_table_table: np.float64(0.04735348311888095) vs np.float64(0.04735348311888095), равны: True
+
+[4] полные конфиги:
+  03_standing_corey: rel 4.18e-14, round_ratio финал 0.0035, max по записям 0.0295, записей 73, ключи снимка ['cum_adiab', 'cum_cond', 'cum_conv', 'cum_deg', 'cum_jt', 'delta_E', 'round_bound']
+  21_rs100_cooling: rel 3.92e-12, round_ratio финал 0.2000, max по записям 0.2166, записей 31, ключи снимка ['cum_adiab', 'cum_cond', 'cum_conv', 'cum_deg', 'cum_jt', 'delta_E', 'round_bound']

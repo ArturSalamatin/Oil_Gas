@@ -1,0 +1,2 @@
+﻿файл в корне каталога: PermissionError, winerror 5, strerror 'Access is denied'; каталог на месте: True, файлы целы: ['a.png', 'well_history.csv']
+файл в подкаталоге input/: PermissionError, winerror 5, strerror 'Access is denied'; каталог на месте: True, файлы целы: ['a.png', 'input']

@@ -1,0 +1,8 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\__init__.py
+код возврата: 1
+расчёт был: True
+последние строки stderr:
+    os.mkdir(self, mode)
+    ~~~~~~~~^^^^^^^^^^^^
+FileExistsError: [WinError 183] Cannot create a file when that file already exists: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\debt-083\\probes\\_work_symptom\\well_history.csv'
+файл цел: True

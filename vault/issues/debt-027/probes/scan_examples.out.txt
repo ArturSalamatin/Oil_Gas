@@ -1,0 +1,46 @@
+﻿пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+=== 04_table_table: ok, принятых подшагов 72, 1 с ===
+       72 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=154.35233 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 6.353e-18
+=== 04a_high_gas_saturation: ok, принятых подшагов 864, 16 с ===
+      864 подшагов, впервые t = 0.003472 сут: GAS_PVT pressure below table: min P=42.334878 bar, table min=50 bar. Endpoint value used; no extrapolation.
+      864 подшагов, впервые t = 0.003472 сут: OIL_PVT saturated locus below table: gas-active min P=42.334878 bar, min Pb=50 bar. Endpoint Rs used; no extrapolation.
+      864 подшагов, впервые t = 0.003472 сут: OIL_PVT saturated locus above table: gas-active max P=169.02434 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 8.165e-02
+=== 06_table_corey_rp: ok, принятых подшагов 72, 1 с ===
+       72 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=155.62875 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 1.140e-15
+=== 07_degassing_adiabatic_only: ok, принятых подшагов 72, 1 с ===
+       72 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=154.35233 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 6.353e-18
+=== 08_degassing_jt: ok, принятых подшагов 72, 1 с ===
+       72 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=154.35233 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 6.353e-18
+=== 09_degassing_latent_heat: ok, принятых подшагов 72, 1 с ===
+       72 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=154.35233 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 6.353e-18
+=== 10_deep_degassing: ok, принятых подшагов 73, 1 с ===
+        2 подшагов, впервые t = 0.02083 сут: OIL_PVT saturated locus above table: gas-active max P=157.11756 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 0.000e+00
+=== 11_degassing_at_boundary: ok, принятых подшагов 72, 2 с ===
+        4 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=150.36043 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 2.102e-17
+=== 12_large_drainage_radius: ok, принятых подшагов 360, 7 с ===
+        3 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=153.09652 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 1.184e-11
+=== 13a_pwf_ramp_down: ok, принятых подшагов 360, 7 с ===
+        1 подшагов, впервые t = 1.042 сут: OIL_PVT saturated locus above table: gas-active max P=150.08134 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 8.766e-17
+=== 13b_pwf_alternating: ok, принятых подшагов 720, 30 с ===
+        3 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=153.09652 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 1.184e-11
+=== 14_high_gor_cooling: ok, принятых подшагов 361, 12 с ===
+   предупреждений нет
+=== 15_oil_rate_ramp_up: ok, принятых подшагов 360, 8 с ===
+   предупреждений нет
+=== 16_well_shut_in: ok, принятых подшагов 735, 18 с ===
+        3 подшагов, впервые t = 0.04167 сут: OIL_PVT saturated locus above table: gas-active max P=153.09652 bar, max Pb=150 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 15 МПа: 1.184e-11
+=== 18_prototype_input: ok, принятых подшагов 733, 15 с ===
+        2 подшагов, впервые t = 0.0006944 сут: OIL_PVT saturated locus above table: gas-active max P=182.14005 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation.
+   max S_g газовых ячеек выше max p_b = 18 МПа: 1.894e-14

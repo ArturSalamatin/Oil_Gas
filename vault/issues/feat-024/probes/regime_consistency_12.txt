@@ -1,0 +1,17 @@
+﻿=== D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\12_large_drainage_radius: p_b = 15.0000 МПа ===
+      0 сут: |A| =  0, |B| =  0, |C| =  0; A==C True, B==C True; min S_g по B = 0.000e+00
+      1 сут: |A| = 45, |B| = 45, |C| = 45; A==C True, B==C True; min S_g по B = 1.605e-03
+      2 сут: |A| = 46, |B| = 46, |C| = 46; A==C True, B==C True; min S_g по B = 2.023e-03
+      3 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 4.200e-04
+      4 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 8.687e-04
+      5 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 9.841e-04
+      6 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 9.268e-04
+      7 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 7.914e-04
+      8 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 6.296e-04
+      9 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 4.683e-04
+     10 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 3.206e-04
+     11 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 1.919e-04
+     12 сут: |A| = 47, |B| = 47, |C| = 47; A==C True, B==C True; min S_g по B = 8.349e-05
+     13 сут: |A| = 46, |B| = 46, |C| = 47; A==C False, B==C False; min S_g по B = 6.952e-04
+     14 сут: |A| = 46, |B| = 46, |C| = 47; A==C False, B==C False; min S_g по B = 5.092e-04
+     15 сут: |A| = 46, |B| = 46, |C| = 47; A==C False, B==C False; min S_g по B = 3.706e-04

@@ -1,0 +1,33 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+правок в плане: 9 (A, B, C, D, E, F, G, H, I)
+  A: numerical_solver/doc/problem_statement.tex — «До» найдено 1 раз
+  B: numerical_solver/doc/problem_statement.tex — «До» найдено 1 раз
+  C: numerical_solver/doc/problem_statement.tex — «До» найдено 1 раз
+  D: numerical_solver/gpn_multiphase_solver/energy/tridiag.py — «До» найдено 1 раз
+  E: numerical_solver/gpn_multiphase_solver/energy/tridiag.py — «До» найдено 1 раз
+  F: numerical_solver/examples/verify_balance_vs_solver.py — «До» найдено 1 раз
+  G: numerical_solver/gpn_multiphase_solver/state.py — «До» найдено 1 раз
+  H: numerical_solver/tests/test_val002.py — «До» найдено 1 раз
+  I: numerical_solver/tests/test_val002.py — «До» найдено 1 раз
+все «До» единственны: True
+py_compile: numerical_solver/gpn_multiphase_solver/energy/tridiag.py — ok
+py_compile: numerical_solver/examples/verify_balance_vs_solver.py — ok
+py_compile: numerical_solver/gpn_multiphase_solver/state.py — ok
+py_compile: numerical_solver/tests/test_val002.py — ok
+test_eq_references + DEBT-062 на правленых .py: нарушений нет
+  base_doc: ssec:bc_disc на с. 24
+  doc: ssec:bc_disc на с. 24
+.tex: страниц 39 → 40, Overfull 19 → 19, ошибок 0, undefined 0
+  меток 160 → 160; номера изменились у 0, пропало 0
+  запрещённые фразы в правленом .tex: нет
+Тесты кейса B из правленой копии:
+  [код как есть]
+    test_T_profile_matches_analytical: passed
+    test_cell0_is_center_not_wellbore: passed
+  [+ полуячейка]
+    test_T_profile_matches_analytical: FAILED (err = 1.500e-02 К)
+    test_cell0_is_center_not_wellbore: FAILED (без сообщения)
+  [JT выключен]
+    test_T_profile_matches_analytical: FAILED (err = 1.485e+00 К)
+    test_cell0_is_center_not_wellbore: FAILED (без сообщения)
+  test_wellbore_temperature в копии: нет

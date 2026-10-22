@@ -1,0 +1,4 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+18_prototype_input orig: записей 23, отпечаток 03f9fcb4c112bb8d, счёт 13.3 с
+18_prototype_input h0=0.44 first=1: записей 23, отпечаток 1fbb7f4809c8a997, счёт 13.9 с, подшагов 751, отказов 0, нарастаний 3 (m, h0: [(5, 0.3125), (8, 0.2344)])
+  18_prototype_input h0=0.44 first=1 против штатного: max|ΔT(r_w)| = 0.0324 К (t = 0.0007 сут, 349.4658 → 349.4982); max|ΔRs(r_w)| = 0.31 (t = 5.0001 сут, 32.07 → 31.76); max|Δp(r_w)| = 1.012 бар (t = 5.0001 сут); на конце: ΔT = +0.0000 К

@@ -1,0 +1,72 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 200.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 350,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-14,
+    "rho_cp_solid": 2100000.0,
+    "lambda_solid": 2.5,
+    "lambda_oil": 0.13,
+    "lambda_gas": 0.05
+  },
+  "pvt": {
+    "model": "standing",
+    "rho_o_std": 800.0,
+    "rho_g_std": 1.014,
+    "co_undersaturated": 3.3e-09
+  },
+  "relperm": {
+    "model": "corey",
+    "S_or": 0.05,
+    "S_gc": 0.1,
+    "n_o": 2.0,
+    "n_g": 3.0,
+    "kro_max": 1.0,
+    "krg_max": 0.8
+  },
+  "thermal": {
+    "c_p_oil": 2290.0,
+    "c_p_gas": 3010.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 2e-06,
+    "L_degas": 170000.0
+  },
+  "initial_conditions": {
+    "p0": 33000000.0,
+    "T0": 380.0,
+    "Rs0": 300.0
+  },
+  "time": {
+    "dt_integration": 86400.0,
+    "history": [
+      {
+        "duration": 172800.0,
+        "dt_out": 3600.0,
+        "control": "pressure",
+        "p_wf": 5000000.0
+      },
+      {
+        "duration": 2419200.0,
+        "dt_out": 86400.0,
+        "control": "pressure",
+        "p_wf": 5000000.0
+      }
+    ]
+  },
+  "numerics": {
+    "skin": 0.0,
+    "max_retries": 9
+  },
+  "output": {
+    "log_level": "INFO",
+    "title": "20: R_s0 = 300 — охлаждение забоя",
+    "steady_state": false
+  }
+}

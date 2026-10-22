@@ -1,11 +1,20 @@
 ---
-name: architecture-numerical-solver
+name: архитектура библиотеки numerical_solver
 description: Архитектура Python-библиотеки numerical_solver — модули, абстракции, паттерны, связь с InjectorGPN
 metadata:
   type: project
 ---
 
 # Архитектура библиотеки numerical_solver
+
+> **Проектный этап (2026-08); сверено с кодом в [[DEBT-052]] (2026-10-10).** Заметка начата как замысел до передачи гидродинамического прототипа и обновлялась выборочно (дерево пакета, абзац FEAT-020 в §4). Интерфейсы, псевдокод и образцы ниже — **не текущий код**:
+> - нет в коде: `NewtonHydroSolver` (и не будет: гидродинамику решает прототип через `PrototypeHydroAdapter`, собственный решатель отменён 2026-10-15 — [[DEBT-077]]), `StandingPVT` (есть `StandingFullPVT`), `HydroUnitDecorator`, `EnergyUnitDecorator` (единицы переводят адаптеры прототипа по константам `units.py`), `HydroSolver.velocities`, `SimulationResult`;
+> - ABC названы иначе: `PVTModel` → `HydroPVT`, `FullPVT`, `DifferentiableHydroPVT`; `RPModel` → `RelPermModel`; проводимости `Grid` — `trans_internal`, `trans_well`, `trans_ext`;
+> - сигнатуры: `HydroSolver.solve(state, dt, bc) → HydroResult`; `EnergySolver.solve(hydro_result, state_prev, dt, bc, collect=None) → T`; `Simulator(grid, hydro, energy, pvt, schedule, max_retries=9)` (`output_config` удалён в [[DEBT-053]]), `run(initial_state) → SimulationHistory`; `SimulatorFactory.from_config(config) → (Simulator, initial_state)`;
+> - дерево пакета неполное (нет `units.py`, `mass_balance.py`, `energy/balance.py`, `pvt/consistency.py`, `pvt/hydro_to_blackoil_adapter.py`), в `tests/` — 29 файлов, а не 5;
+> - образец JSON и раздел «Связь с внешним гидродинамическим модулем» — до прототипа.
+>
+> Текущее: контракты — `pvt/base.py`, `grid/base.py`, `hydro/base.py`, `energy/base.py` в `numerical_solver/gpn_multiphase_solver/`; цикл шага, `Simulator` и фабрика — [[модули-simulator-оркестратор]] (сверена с кодом в [[DEBT-050]]); результаты — [[контейнер-simulation-history]]; JSON — [[P8-формат-ввода-json]].
 
 ## Контекст
 
@@ -29,12 +38,12 @@ metadata:
 ```python
 from abc import ABC, abstractmethod
 
-class PVTModel(ABC):
+class HydroPVT(ABC):
     @abstractmethod
-    def Bo(self, p: np.ndarray) -> np.ndarray: ...
+    def Bo(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
 
     @abstractmethod
-    def dBo_dp(self, p: np.ndarray) -> np.ndarray: ...
+    def mu_o(self, p: np.ndarray, Rs: np.ndarray) -> np.ndarray: ...
 ```
 
 - `ABC` + `@abstractmethod` — аналог чисто виртуальных методов C++.
@@ -47,9 +56,9 @@ class PVTModel(ABC):
 
 ```
 numerical_solver/
-├── src/
+├── gpn_multiphase_solver/      # пакет (pip-имя: gpn-multiphase-solver)
 │   ├── __init__.py
-│   ├── pvt/                    # 1. PVT-модуль
+│   ├── pvt/                    # PVT-модуль
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: HydroPVT, FullPVT, RelPermModel
 │   │   ├── standing.py         # StandingFullPVT (корреляции + скалярные тепловые)
@@ -57,34 +66,54 @@ numerical_solver/
 │   │   ├── table_full.py       # TableFullPVT (табличные гидро + скалярные тепловые)
 │   │   └── relperm.py          # CoreyRP, PrototypeRPAdapter
 │   │
-│   ├── grid/                   # 7. Сетка и дискретизация
+│   ├── grid/                   # Сетка и дискретизация
 │   │   ├── __init__.py
 │   │   ├── base.py             # ABC: Grid
-│   │   └── log_radial.py       # Конкретная: логарифмическая радиальная сетка
+│   │   └── log_radial.py       # LogRadialGrid
 │   │
-│   ├── hydro/                  # 5. Гидродинамический модуль
+│   ├── hydro/                  # Гидродинамический модуль
 │   │   ├── __init__.py
-│   │   ├── base.py             # ABC: HydroSolver, HydroResult
-│   │   ├── analytical.py       # AnalyticalHydroSolver (стационарные аналитические поля)
-│   │   └── prototype_adapter.py # PrototypeHydroAdapter (обёртка RadialBlackOilModel)
+│   │   ├── base.py             # ABC: HydroSolver
+│   │   └── prototype_adapter.py # PrototypeHydroAdapter
 │   │
 │   ├── energy/                 # Тепловой модуль
 │   │   ├── __init__.py
-│   │   ├── base.py             # ABC: EnergySolver, EnergyResult
-│   │   └── tridiag.py          # Конкретная: прогонка Томаса
+│   │   ├── base.py             # ABC: EnergySolver
+│   │   ├── tridiag.py          # TridiagEnergySolver
+│   │   └── balance.py          # Накопитель баланса энергии + ряды compute_energy_balance (DEBT-013, DEBT-011)
 │   │
-│   ├── fluxes.py               # Вычисление потоков: G, Q, u, m + upstream
-│   ├── bc.py                   # Граничные условия: ABC WellControl, PressureControl
-│   ├── simulator.py            # 6. Оркестратор (Mediator)
-│   ├── factory.py              # 7.1. Фабрика: JSON → Simulator
+│   ├── diagnostics/            # Проверки расчёта (DEBT-011): ничего не печатают и не рисуют
+│   │   ├── closed_form.py      # Замкнутое решение двухфазного стационара (GOR = Rs0)
+│   │   ├── two_phase.py        # GOR, S_g из замыкания, Дюпюи, фронт разгазирования
+│   │   ├── rs.py               # Равновесие R_s, радиус изобары p_b
+│   │   └── temperature.py      # Однофазная асимптотика T
+│   │
+│   ├── report/                 # Рисунки с записью PNG, печать проверок, конвейер (FEAT-030)
+│   │   ├── pipeline.py         # run_case: конфиг → расчёт → CSV + PNG + печать; CaseResult, CaseConfigError, CaseRunError
+│   │   ├── relperm.py          # relperm.png + сводка ОФП
+│   │   ├── pvt.py              # pvt.png (PVTO) + сводка PVT
+│   │   ├── rs.py               # Наложение R_s^eq(p) на rs_profiles.png + печать проверки R_s
+│   │   ├── closed_form.py      # Наложения и сверка замкнутого решения
+│   │   ├── energy_balance.py   # energy_balance.png + печать членов баланса энергии
+│   │   ├── mass_balance.py     # mass_balance.png + печать баланса массы
+│   │   └── temperature.py      # Печать однофазной асимптотики T
+│   │
+│   ├── cli.py                  # Команда: main(argv) → run_case, коды 0/1/2; configure_batch_run (FEAT-030)
+│   ├── __main__.py             # python -m gpn_multiphase_solver → cli.main
+│   ├── mass_balance.py         # Накопитель баланса массы + ряды compute_mass_balance (DEBT-039, DEBT-011)
+│   ├── fluxes.py               # G по Дарси (путь тестов) + общий шаг Q, u, m, Gm обоих гидро-путей (DEBT-028)
+│   ├── bc.py                   # Управление скважиной (данные): WellControl, PressureControl, RateControl (FEAT-020)
+│   ├── simulator.py            # 6. Оркестратор: Simulator, TimeSchedule, ScheduleInterval
+│   ├── factory.py              # 7.1. Фабрика: SimulatorFactory.from_config()
 │   ├── log.py                  # Логирование: user + dev уровни
 │   │
-│   ├── io/                     # 2, 3. Ввод/вывод
+│   ├── io/                     # Ввод/вывод
 │   │   ├── __init__.py
 │   │   ├── config.py           # Чтение JSON, валидация, dataclasses
-│   │   └── output.py           # Сохранение результатов, визуализация
+│   │   ├── figures.py          # Запись рисунков: PNG + SVG/EMF через Inkscape (FEAT-026; в пакете с FEAT-030)
+│   │   └── output.py           # Сохранение результатов, визуализация (в т. ч. рисунки балансов и ОФП, узлы таблиц — DEBT-011)
 │   │
-│   └── state.py                # SimulationState, WellData, BoundaryConditions, SimulationHistory
+│   └── state.py                # SimulationState, HydroResult, EnergyResult, WellData, BoundaryConditions, SimulationHistory
 │
 ├── configs/
 │   └── baseline.json           # Эталонный конфиг
@@ -106,20 +135,22 @@ numerical_solver/
 
 ### 1. PVTModel — свойства фаз
 
-Контракт из problem_statement.tex §2.1 (таблица требований к PVT-модели):
+Контракт из problem_statement.tex — таблица «Требования к PVT-модели» в `ssec:closures`:
 
-| Метод | Аргументы | Возврат | Производные |
-|---|---|---|---|
-| `Rs_eq(p)` | p | м³ст/м³ст | `dRs_eq_dp(p)` |
-| `Bo(p, Rs)` | p, Rs | м³пл/м³ст | `dBo_dp(p, Rs)`, `dBo_dRs(p, Rs)` |
-| `Bg(p)` | p | м³пл/м³ст | `dBg_dp(p)` |
-| `rho_o(p, Rs)` | p, Rs | кг/м³ | через Bo, Rs |
-| `rho_g(p)` | p | кг/м³ | `drho_g_dp(p)` |
-| `mu_o(p)` | p | Па·с | `dmu_o_dp(p)` |
-| `mu_g(p)` | p | Па·с | `dmu_g_dp(p)` |
-| `pb()` | — | Па | — |
+| Метод | Аргументы | Возврат |
+|---|---|---|
+| `Rs_eq(p)` | p | м³ст/м³ст |
+| `Bo(p, Rs)` | p, Rs | м³пл/м³ст |
+| `Bg(p)` | p | м³пл/м³ст |
+| `mu_o(p, Rs)` | p, Rs | Па·с |
+| `mu_g(p)` | p | Па·с |
+| `pb(Rs)` | Rs | Па |
+| `rho_o(p, Rs)` | p, Rs | кг/м³ |
+| `rho_g(p)` | p | кг/м³ |
 
-Допущение splitting: в гидродинамике PVT зависят только от p (T=T_пл=const).
+Производные (dBo_dp, dBg_dp, dmu_o_dp, ...) — в отдельном ABC `DifferentiableHydroPVT`. Физика и метод решения разделены. См. [[P5-pvt-архитектура]].
+
+Допущение splitting: в гидродинамике PVT зависят от p и Rs, но не от T (T=T_пл=const).
 
 Тепловые свойства (расширение в `FullPVT`, наследуемом от `HydroPVT`, см. [[P5-pvt-архитектура]]):
 - `c_p_o(p, T)`, `c_p_g(p, T)` — теплоёмкости
@@ -156,6 +187,14 @@ numerical_solver/
 
 Контракт минимален — чтобы внешний модуль коллеги мог быть обёрнут через Adapter с минимальными усилиями.
 
+**Единый источник гидродинамических величин (FEAT-020, 2026-09-30).** Результат
+шага — `HydroResult` — целиком формирует модуль гидродинамики: потоки, расходы,
+новое состояние и фактическое давление на забойной грани `p_wf`. Энергия и
+`Simulator` берут гидродинамику только из него и к управлению скважиной
+(`bc.well`) не обращаются; `WellControl` — данные, их читает только
+гидродинамика. Причина: при управлении по дебиту $p_{wf}$ до шага неизвестно,
+а второй путь его вычисления разошёлся бы с первым (ср. DEBT-021).
+
 ### 5. EnergySolver — теплоперенос
 
 | Метод | Описание |
@@ -163,6 +202,8 @@ numerical_solver/
 | `solve(state, dt, bc) → T` | T^n → T^{n+1} на известных p, Sg, Rs, u_o, u_g |
 
 ### 6. Simulator — оркестратор
+
+> Псевдокод проектного этапа. Текущий цикл: `run(initial_state)` → `_advance` с локальным дроблением шага ([[DEBT-015]]), накопители балансов, запись на концах интервалов `time.history` — [[модули-simulator-оркестратор]], раздел «Цикл по времени».
 
 ```python
 class Simulator:
@@ -183,7 +224,7 @@ class Simulator:
 ```python
 class SimulatorFactory:
     @staticmethod
-    def from_json(path: str) -> Simulator:
+    def from_config(path: str) -> Simulator:
         config = load_config(path)
         grid = LogRadialGrid(config.grid)
         pvt = StandingPVT(config.pvt)
@@ -272,12 +313,14 @@ class SimulationState:
 }
 ```
 
+Секция `output` (FEAT-030) — состав штатного вывода команды расчёта, на сам расчёт не влияет: `log_level`; `title` (по умолчанию — имя папки конфига); `n_profiles` (моменты профильных графиков, ≥ 2; по умолчанию 4 опорных); `steady_state` (стационарная аналитика, по умолчанию `false`); `closed_form_overlays` (подмножество `["p", "Sg"]`). Проверка полей — `io/config.py::_validate`.
+
 ## Связь с внешним гидродинамическим модулем
 
 Гидродинамический блок коллеги ещё не передан, его интерфейс неизвестен. Подход:
 
 1. Определить минимальный ABC `HydroSolver` с одним методом `solve(state, dt, bc)`.
-2. Реализовать собственный `NewtonHydroSolver` по problem_statement.tex.
+2. ~~Реализовать собственный `NewtonHydroSolver` по problem_statement.tex.~~ Отменено 2026-10-15 ([[DEBT-077]]): гидродинамику решает прототип.
 3. Когда модуль коллеги поступит — написать `AdapterHydroSolver`, который:
    - принимает внешний объект
    - транслирует вызов `solve()` в API коллеги
@@ -285,21 +328,43 @@ class SimulationState:
 
 Паттерн Adapter позволяет не менять ни Simulator, ни код коллеги.
 
+## Диагностика и граница пакет / examples (DEBT-011, FEAT-030)
+
+Решатель с примерами и тестами передаётся заказчику (решение пользователя 2026-10-10): всё, чем проверяется расчёт, должно быть доступно после установки пакета, без репозитория.
+
+**В пакете** — вычисление и рисование:
+- `diagnostics/` — замкнутое решение, аналитика двухфазного стационара, равновесие $R_s$, однофазная асимптотика $T$; функции от `(config, history, grid, pvt, relperm)`, без печати и рисунков;
+- ряды балансов — `energy/balance.py::compute_energy_balance`, `mass_balance.py::compute_mass_balance` (рядом с накопителями);
+- рисунки — `io/output.py`: `plot_energy_balance_series`, `plot_mass_balance_series`, `plot_relperm_curves`, `plot_pvt_properties`, узлы таблиц `relperm_table_nodes`, `pvt_table_nodes`. Рисуют на переданных осях (или создают их) и возвращают оси; файлов не пишут и не печатают.
+
+**Объекты задачи** — публичные свойства `Simulator.grid`, `Simulator.pvt`, `Simulator.relperm` и функции фабрики `create_pvt`, `create_relperm` (без решателя). Приватный доступ (`sim._energy._pvt`, `factory._create_*`) из примеров убран.
+
+**Рисунки с записью файлов, печать и конвейер** — `report/` ([[FEAT-030]]): `run_case` (штатный набор по конфигу, возвращает `CaseResult` с решателем), наложения на профили (`make_overlay_*`, `_draw_rs`), печать отчётов (`report_*`), обёртки рисунков с записью PNG; запись рисунков и EMF — `io/figures.py`. Модули `report/` не выбирают режим matplotlib и не трогают консоль при импорте — это делает `cli.configure_batch_run`, которую зовут команда и скрипты примеров. Команда расчёта: `python -m gpn_multiphase_solver run config.json` / `gpn-solver run …` (`cli.py`, `__main__.py`), коды возврата 0 / 1 (отказ решателя) / 2 (аргументы, конфиг). Подробно — [[пример — это конфиг и README, штатный набор рисунков и проверок даёт команда пакета]].
+
+**В `examples/`** — конфиги, README и `main.py`: у 17 примеров — обёртка команды (`cli.main`), у 01–05 и 18 — собственная часть после `run_case`; исследования сходимости и средства разработки (`run_all.py`, `two_phase_analytics.py`, `convergence.py`, `energy_balance_convergence.py`, `check_energy_balance_all.py`, `verify_balance_vs_solver.py`, `compare_script_copies.py`).
+
+**Стражи** (разбор AST):
+- `tests/test_example_scripts.py::test_no_private_solver_access` — скрипты `examples/` не обращаются к приватным полям чужих объектов и не импортируют `_имена` из пакета;
+- `tests/test_public_api.py::test_package_does_not_depend_on_examples` — пакет не импортирует модули `examples/` и не трогает `sys.path`.
+
 ## Решения, отличные от InjectorGPN
 
 | Аспект | InjectorGPN (C++) | numerical_solver (Python) |
 |---|---|---|
 | Полиморфизм | Шаблоны + специализации | ABC + наследование |
 | Указатели | `cptr<const T>` (shared_ptr) | Обычные ссылки (GC) |
-| Сборка объектов | Шаблонные фабрики | `SimulatorFactory.from_json()` |
+| Сборка объектов | Шаблонные фабрики | `SimulatorFactory.from_config()` |
 | Размерность | 2D (Z×R) | 1D (R) — осесимметричная задача |
-| СЛАУ | Eigen SparseLU | numpy/scipy (блочная прогонка вручную) |
+| СЛАУ | Eigen SparseLU | scipy: `solve_banded` (энергия), `splu` прототипа (гидродинамика) |
 | Конфиг | nlohmann::json | json (стандартная библиотека Python) |
 
 ## Связанные заметки
 
 - problem_statement.tex — постановка и численная схема
 - [[модули-pvt-контракт]] — детальный контракт PVT
-- [[модули-hydro-newton]] — детали блочного Ньютона
+- [[модули-hydro-newton]] — контракт HydroSolver, действующий решатель (прототип), отменённая схема блочного Ньютона
 - [[модули-energy-tridiag]] — детали тепловой прогонки
-- [[json-config-schema]] — полная схема JSON
+- [[модули-simulator-оркестратор]] — текущий цикл шага, `Simulator`, фабрика
+- [[контейнер-simulation-history]] — контейнер результатов
+- [[P8-формат-ввода-json]] — актуальная схема JSON
+- [[json-config-schema]] — предыдущая версия (superseded)

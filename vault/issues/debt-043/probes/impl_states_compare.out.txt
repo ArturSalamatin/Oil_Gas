@@ -1,0 +1,4 @@
+﻿  03_standing_corey: p побитово True, Sg побитово True, max|ΔT| = 2.22e-12 K → OK
+  16_well_shut_in: p побитово True, Sg побитово True, max|ΔT| = 3.06e-11 K → OK
+  21_rs100_cooling: p побитово True, Sg побитово True, max|ΔT| = 4.26e-12 K → OK
+ИТОГ: OK

@@ -1,0 +1,56 @@
+HEAD 55868a6
+модуль: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-035\probes\plan_tree\numerical_solver\gpn_multiphase_solver\io\workbook_convert.py 
+новые тесты, test_cli, сторожа:
+  ============================= slowest 5 durations =============================
+  8.80s call     tests/test_cli.py::test_run_from_foreign_directory
+  2.33s call     tests/test_cli.py::test_report_import_has_no_side_effects
+  1.19s call     tests/test_public_api.py::test_package_does_not_depend_on_examples
+  0.77s call     tests/test_cli.py::test_help_via_module
+  0.71s call     tests/test_cli.py::test_template_does_not_import_solver
+  =========================== short test summary info ===========================
+  SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+  150 passed, 2 skipped in 21.33s
+собрано в test_workbook_convert.py: 100 tests collected in 0.63s
+собрано convert в test_cli.py: 7/26 tests collected (19 deselected) in 1.51s
+всего тестов: 2395 tests collected in 4.48s
+быстрый уровень (140 с):
+    See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+      fixturefunc = resolve_fixture_function(fixturedef, request)
+  
+  -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+  =========================== short test summary info ===========================
+  SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+  SKIPPED [1] tests\test_xlsx_reader.py:476: черновик руководителя вне git (решение 11)
+  2116 passed, 3 skipped, 276 deselected, 1 warning in 138.47s (0:02:18)
+порча кода плана (ждём failed в каждой строке):
+  пробелы по краям не срезаются (решение 20): 4 failed, 103 passed, 19 deselected in 3.97s
+  округление разностей, как пример 18 (решение 19): 2 failed, 105 passed, 19 deselected in 3.81s
+  целые поля не в int: 6 failed, 101 passed, 19 deselected in 4.02s
+  читаются все ячейки режима, не только своего (решение 16): 81 failed, 26 passed, 19 deselected in 3.90s
+  пустая строка таблицы — ошибка (решение 23): 4 failed, 103 passed, 19 deselected in 3.69s
+  постоянные слова не проверяются: 3 failed, 104 passed, 19 deselected in 3.78s
+  крайние строки RELPERM не проверяются: 5 failed, 102 passed, 19 deselected in 3.79s
+  крайние строки RELPERM — и после ошибки ячейки: 1 failed, 106 passed, 19 deselected in 3.94s
+  дата принимается числом: 4 failed, 103 passed, 19 deselected in 3.95s
+  формула без значения — как пустая ячейка: 4 failed, 103 passed, 19 deselected in 3.92s
+  только первая ошибка (решение 22): 3 failed, 104 passed, 19 deselected in 3.76s
+  единица не сверяется: 1 failed, 106 passed, 19 deselected in 3.83s
+  заголовки не сверяются: 2 failed, 105 passed, 19 deselected in 3.76s
+  пористость без пересчёта к p0: 2 failed, 105 passed, 19 deselected in 3.76s
+  φ0 > 1 не проверяется (умолчание 35, аудит 1): 1 failed, 106 passed, 19 deselected in 3.73s
+  общая формула — пустой текст в сообщении (аудит 1): 1 failed, 106 passed, 19 deselected in 3.78s
+  первая строка SCHEDULE не проверяется: 1 failed, 106 passed, 19 deselected in 3.81s
+  сравнение r_e > r_w при ошибке r_w: 10 failed, 97 passed, 19 deselected in 3.81s
+  непустой каталог не проверяется (решение 10): 3 failed, 104 passed, 19 deselected in 4.18s
+  командная строка не ловит WorkbookError: 2 failed, 105 passed, 19 deselected in 4.05s
+convert: код 0
+  Конфиг записан: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-035\probes\plan_tree\case\config.json
+  Таблицы gas_pvt.csv, oil_pvt.csv, relperm.csv — там же. Конфиг и таблицы целиком проверяются при расчёте: gpn-solver run D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-035\probes\plan_tree\case\config.json
+run: код 0, 28.6 с, строк предупреждений 0
+  === INPUT_TEMPLATE_v1 ===
+  Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-035\probes\plan_tree\case\config.json
+  
+  Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-035\probes\plan_tree\case\output\energy_balance.png
+    dE финал          = -9.9245e+09 Дж
+    Адиабатика финал  = -9.6927e+09 Дж
+  файлов вывода: 13 ['emf', 'energy_balance.png', 'mass_balance.png', 'pressure_profiles.png', 'profiles.csv', 'pvt.png', 'relperm.png', 'rs_profiles.png', 'saturation_profiles.png', 'temperature_profiles.png', 'well_history.csv', 'well_rates.png', 'wellbore_dynamics.png']

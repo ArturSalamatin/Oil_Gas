@@ -1,0 +1,5 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+16_well_shut_in h0=2: финал R_s[0] 4.7920, R_s[1] 5.5353; max(R_s - R_s^eq) 6.04e-14; max|R_s(43) - R_s(финал)| 1.03e-06; min ΔR_s(r_w) записи 16..53: -1.03e-06
+17_shut_in_strong_cooling h0=2: финал R_s[0] 79.5875, R_s[1] 93.1066; max(R_s - R_s^eq) 0.00e+00; max|R_s(43) - R_s(финал)| 3.57e-01; min ΔR_s(r_w) записи 16..53: +1.60e-07
+16_well_shut_in h0=0.11: финал R_s[0] 5.0847, R_s[1] 5.8480; max(R_s - R_s^eq) 7.46e-14; max|R_s(43) - R_s(финал)| 1.02e-06; min ΔR_s(r_w) записи 16..53: -1.17e-06
+17_shut_in_strong_cooling h0=0.11: финал R_s[0] 88.5826, R_s[1] 95.7924; max(R_s - R_s^eq) 0.00e+00; max|R_s(43) - R_s(финал)| 3.57e-01; min ΔR_s(r_w) записи 16..53: +8.66e-08

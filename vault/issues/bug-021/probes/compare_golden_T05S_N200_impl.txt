@@ -1,0 +1,21 @@
+﻿=== T05S_N200_DT5m: шагов принято 8689 -> 8675, отклонено 5 -> 4
+  step_log.csv: последовательность шагов расходится со строки 6 (с заголовком)
+    эталон: time_s_or_start=0.0, dt_s=15.0, accepted=False, newton_iterations=15, residual_inf=3.164823590457238e-05
+    эталон: time_s_or_start=0.0, dt_s=7.5, accepted=False, newton_iterations=15, residual_inf=6.338679441120257e-05
+    эталон: time_s_or_start=0.0, dt_s=3.75, accepted=False, newton_iterations=15, residual_inf=4.1690609298150607e-16
+    эталон: time_s_or_start=1.875, dt_s=1.875, accepted=True, newton_iterations=15, residual_inf=1.3433370592123147e-16
+    эталон: time_s_or_start=3.28125, dt_s=1.40625, accepted=True, newton_iterations=7, residual_inf=3.0378293630617393e-13
+    сейчас: time_s_or_start=0.0, dt_s=15.0, accepted=False, newton_iterations=15, residual_inf=3.16482344672701e-05
+    сейчас: time_s_or_start=0.0, dt_s=7.5, accepted=False, newton_iterations=15, residual_inf=6.338680278957281e-05
+    сейчас: time_s_or_start=3.75, dt_s=3.75, accepted=True, newton_iterations=19, residual_inf=4.170448708595842e-16
+    сейчас: time_s_or_start=6.5625, dt_s=2.8125, accepted=True, newton_iterations=6, residual_inf=3.425520067254495e-13
+    сейчас: time_s_or_start=9.796875, dt_s=3.2343749999999996, accepted=True, newton_iterations=6, residual_inf=5.0758593292052347e-14
+         сут  max|Δp|, бар   max|ΔSg|   max|ΔRs|   Δq_o, %   Δq_g, %   ΔGOR, %
+           0     0.000e+00  0.000e+00  0.000e+00  0.00e+00  0.00e+00  0.00e+00
+  0.000694444     2.321e-01  5.758e-04  7.276e-02  6.38e-01  7.23e-01  8.43e-02
+           1     1.353e-04  1.746e-05  4.386e-05 -5.04e-05 -1.10e-02 -1.09e-02
+           2     2.148e-05  7.231e-06  6.668e-06  1.04e-04 -5.14e-04 -6.18e-04
+           4     1.244e-05  6.962e-06  4.032e-06  2.79e-05  3.47e-05  6.75e-06
+           6     1.173e-05  3.101e-06  3.802e-06  1.61e-05  2.67e-05  1.06e-05
+          14     3.147e-06  9.267e-07  1.020e-06  7.47e-06 -2.63e-05 -3.38e-05
+          30     2.617e-06  2.786e-07  8.125e-07  8.64e-06  1.52e-05  6.55e-06

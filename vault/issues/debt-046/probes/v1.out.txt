@@ -1,0 +1,48 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+01_single_phase_no_jt/main.py                             1.95 с  OK
+01_single_phase_no_jt/spatial_convergence.py            пропущен (расчёт на верхнем уровне)
+02_single_phase_jt/check_slopes.py                        0.02 с  OK
+02_single_phase_jt/main.py                                0.02 с  OK
+03_standing_corey/main.py                                 0.03 с  OK
+04_table_table/grid_convergence.py                        0.01 с  OK
+04_table_table/main.py                                    0.00 с  OK
+04a_high_gas_saturation/grid_convergence.py               0.01 с  OK
+04a_high_gas_saturation/main.py                           0.00 с  OK
+04a_high_gas_saturation/plot_profiles_50k.py              0.01 с  OK
+04a_high_gas_saturation/rewrite_history.py                0.01 с  OK
+05_standing_table_rp/closed_form_convergence.py           0.01 с  OK
+05_standing_table_rp/main.py                              0.01 с  OK
+06_table_corey_rp/main.py                                 0.00 с  OK
+07_degassing_adiabatic_only/main.py                       0.00 с  OK
+08_degassing_jt/main.py                                   0.00 с  OK
+09_degassing_latent_heat/main.py                          0.00 с  OK
+10_deep_degassing/main.py                                 0.00 с  OK
+11_degassing_at_boundary/main.py                          0.00 с  OK
+12_large_drainage_radius/main.py                          0.00 с  OK
+13a_pwf_ramp_down/main.py                                 0.00 с  OK
+13b_pwf_alternating/main.py                               0.00 с  OK
+14_high_gor_cooling/main.py                               0.00 с  OK
+15_oil_rate_ramp_up/main.py                               0.00 с  OK
+16_well_shut_in/main.py                                   0.00 с  OK
+17_shut_in_strong_cooling/main.py                         0.00 с  OK
+19_rs150_cooling/main.py                                  0.00 с  OK
+20_rs300_cooling/main.py                                  0.00 с  OK
+21_rs100_cooling/main.py                                  0.00 с  OK
+check_energy_balance_all.py                               0.01 с  OK
+closed_form.py                                            0.02 с  OK
+compare_script_copies.py                                  0.02 с  OK
+convergence.py                                            0.00 с  OK
+energy_balance.py                                         0.01 с  OK
+energy_balance_convergence.py                             0.01 с  OK
+example_runner.py                                         0.02 с  OK
+figure_io.py                                              0.01 с  OK
+mass_balance.py                                           0.01 с  OK
+pvt_plot.py                                               0.02 с  OK
+relperm_plot.py                                           0.01 с  OK
+rs_analytics.py                                           0.01 с  OK
+run_all.py                                                0.01 с  OK
+temperature_asymptotics.py                                0.01 с  ['name в <genexpr>']
+two_phase_analytics.py                                    0.02 с  OK
+verify_balance_vs_solver.py                               0.02 с  OK
+Итого: 2.34 с, замечаний 1
+Повтор (модули загружены): 0.36 с

@@ -1,0 +1,7 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-025\numerical_solver
+Прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-025\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+предел округления в допуске: kappa = 0 (без подмены)
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-025\numerical_solver\gpn_multiphase_solver
+15_oil_rate_ramp_up orig: записей 361, отпечаток a6e91358e1482446, счёт 7.3 с
+15_oil_rate_ramp_up h0=0.44 first=0: записей 361, отпечаток 5d462f35ce3e39b9, счёт 10.9 с, подшагов 542, отказов 0, нарастаний 14 (m, h0: [(13, 0.4395)])
+  15_oil_rate_ramp_up h0=0.44 first=0 против штатного: max|ΔT(r_w)| = 0.0017 К (t = 14.0417 сут, 349.9503 → 349.9486); max|ΔRs(r_w)| = 0.08 (t = 14.0417 сут, 4.63 → 4.56); max|Δp(r_w)| = 0.256 бар (t = 14.0417 сут); на конце: ΔT = +0.0000 К

@@ -1,0 +1,4 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+03_standing_corey orig: записей 73, отпечаток 409ccfb8885b3587, счёт 0.3 с
+03_standing_corey h0=0.44 first=1: записей 73, отпечаток 42fb246cfe496d53, счёт 0.5 с, подшагов 85, отказов 0, нарастаний 1 (m, h0: [(13, 0.4395)])
+  03_standing_corey h0=0.44 first=1 против штатного: max|ΔT(r_w)| = 0.1718 К (t = 0.0417 сут, 350.6549 → 350.8267); max|ΔRs(r_w)| = 0.00 (t = 0.0417 сут, 41.48 → 41.48); max|Δp(r_w)| = 0.000 бар (t = 0.0417 сут); на конце: ΔT = +0.0000 К

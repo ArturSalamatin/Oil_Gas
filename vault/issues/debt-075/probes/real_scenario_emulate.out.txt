@@ -1,0 +1,6 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+режим: emulate; ОФП: relperm_to_001.csv; интервалов 6
+отказ (RuntimeError): [эмуляция] S_g вне [0, 1] после шага гидродинамики dt = 450 с к t = 450 с: ячейка 0, S_g = 6.58519; таких ячеек 2 из 50
+принятых подшагов: 1
+  t =    450.00 с, dt =   450.00 с, S_g[0] = 6.585189, max S_g = 6.585189

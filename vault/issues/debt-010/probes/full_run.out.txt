@@ -1,0 +1,5 @@
+﻿    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1679 passed, 1 warning in 636.66s (0:10:36)
+time: 638 s

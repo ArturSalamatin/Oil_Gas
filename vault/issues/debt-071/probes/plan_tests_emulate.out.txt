@@ -1,0 +1,10 @@
+﻿.....                                                                    [100%]
+============================== slowest durations ==============================
+2.84s call     vault/issues/debt-071/probes/plan_tests_emulate.py::TestStandingRelperm::test_relperm_above_table_before_failure
+0.27s call     vault/issues/debt-071/probes/plan_tests_emulate.py::TestStandingRelperm::test_standing_corey_silent
+0.21s call     vault/issues/debt-071/probes/plan_tests_emulate.py::TestStandingRelperm::test_initial_below_table_not_repeated
+0.05s call     vault/issues/debt-071/probes/plan_tests_emulate.py::TestStandingRelperm::test_checked_after_every_accepted_step
+0.01s setup    vault/issues/debt-071/probes/plan_tests_emulate.py::TestStandingRelperm::test_relperm_above_table_reported_alone
+
+(10 durations < 0.005s hidden.  Use -vv to show these durations.)
+5 passed in 4.70s

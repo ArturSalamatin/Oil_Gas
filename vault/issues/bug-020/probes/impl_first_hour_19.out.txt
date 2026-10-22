@@ -1,0 +1,4 @@
+﻿=== 19_rs150_cooling: 10 сут добычи, затем час останова (q_oil = 0) ===
+    код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-020\numerical_solver\gpn_multiphase_solver, D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\bug-020\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+  ступень 4: нет; первый час: подшагов 1, 0.4 с; p0 = 176.61 бар, 2ф = 263
+  ступень 4: да; первый час: подшагов 1, 0.6 с; p0 = 176.61 бар, 2ф = 263

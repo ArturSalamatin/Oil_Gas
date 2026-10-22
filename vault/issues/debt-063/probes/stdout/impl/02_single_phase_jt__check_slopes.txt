@@ -1,0 +1,23 @@
+[base] D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\02_single_phase_jt\check_slopes.py
+[base] пакеты: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\gpn_multiphase_solver\__init__.py | D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+Наклон профиля Дюпюи: C = dp/dlnr = 804556 Па
+
+Наклоны dT/dlnr, К (теория / измерено):
+       mu_JT      ближний (финал)      дальний (шаг 1)
+  -4.0e-07   -0.3218 /  -0.3216    0.0429 /   0.0428
+  -8.0e-07   -0.6436 /  -0.6433   -0.0358 /  -0.0359
+
+Отношение при удвоении mu_JT:
+  ближний наклон: 2.000  (ожидаем 2.000 — линеен по mu_JT)
+  дальний наклон: -0.839  (ожидаем -0.835 — растёт только через множитель адиабатики)
+
+Дрейф дальнего наклона (конвекция доходит до дальней зоны):
+    шаг    t, ч  mu=-4e-07  mu=-8e-07   отнош.
+      1     1.0     0.0428    -0.0359   -0.839
+      6     6.0     0.0425    -0.0365   -0.859
+     24    24.0     0.0413    -0.0384   -0.931
+     72    72.0     0.0382    -0.0437   -1.144
+  теория:                  0.0429    -0.0358   -0.835
+
+Сохранён: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\02_single_phase_jt\output\slopes.png
+EMF: 1 рис. в D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\02_single_phase_jt\output\emf (2.2 с)

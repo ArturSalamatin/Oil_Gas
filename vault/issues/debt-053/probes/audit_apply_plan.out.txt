@@ -1,0 +1,57 @@
+﻿Пар «до/после» в плане: 11
+
+1. Блоки «до:» в файлах
+  OK   шаг 2, simulator.py: вхождений 1
+  OK   шаг 2, factory.py: вхождений 1
+  OK   шаг 3, test_dt_convergence.py: вхождений 1
+  OK   шаг 4, test_energy_matrix_examples.py: вхождений 1
+  OK   шаг 4, test_energy_matrix_examples.py: вхождений 1
+  OK   шаг 4, test_energy_matrix_examples.py: вхождений 1
+  OK   шаг 4, test_energy_matrix_examples.py: вхождений 1
+  OK   шаг 4, test_energy_matrix_examples.py: вхождений 1
+  OK   шаг 4, test_rate_control.py: вхождений 1
+  OK   шаг 4, closed_form_convergence.py: вхождений 1
+  OK   шаг 5, модули-simulator-оркестратор.md: вхождений 1
+  OK   шаг 2: импорт OutputConfig найден
+  OK   шаг 3: удаляемый метод — последний в файле
+  OK   шаг 5: строка сигнатуры в заметке найдена
+
+2. Разбор и длина строк
+  OK   simulator.py: разбор, новых строк > 100 символов: 0
+  OK   factory.py: разбор, новых строк > 100 символов: 0
+  OK   test_dt_convergence.py: разбор, новых строк > 100 символов: 0
+  OK   test_energy_matrix_examples.py: разбор, новых строк > 100 символов: 0
+  OK   test_rate_control.py: разбор, новых строк > 100 символов: 0
+  OK   closed_form_convergence.py: разбор, новых строк > 100 символов: 0
+
+3. AST без строковых констант
+  OK   test_energy_matrix_examples.py: код не изменился
+  OK   test_rate_control.py: код не изменился
+  OK   closed_form_convergence.py: код не изменился
+  OK   test_dt_convergence.py: = исходный − DT_WITH_RETRY − тест
+       методы класса: ['test_temperature_converges_monotonically_in_dt', 'test_no_dt_deviates_from_linear_trend']
+  OK   simulator.py: = исходный − импорт − параметр
+  OK   factory.py: = исходный − аргумент output_config
+
+4. Итоговые grep по numerical_solver/ (без прототипа) после правок
+       output_config: gpn_multiphase_solver/simulator.py:117: # структура time.history. output_config удалён (DEBT-053): Simulator
+       A-retry: ['gpn_multiphase_solver/simulator.py:227', 'gpn_multiphase_solver/simulator.py:243', 'tests/test_energy_matrix_examples.py:769', 'tests/test_prototype_phase_switching.py:286', 'tests/test_simulator.py:525']
+  OK   A-retry — 5 строк (план: 5)
+  OK   бывшая :768 теперь :769
+  OK   output_config в пакете, тестах, примерах — 1 (план: 1)
+  OK   DT_WITH_RETRY — 0
+
+5. Сигнатура в заметке
+  OK   заметка = код: def __init__(self, grid: Grid, hydro: HydroSolver, energy: EnergySolver, pvt: HydroPVT, schedule: TimeSchedule, max_retries: int = 9):
+  OK   абзац об удалении на месте
+
+6. Расчёт
+       пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+  OK   фабрика — пропатченный модуль
+  OK   сигнатура: ['self', 'grid', 'hydro', 'energy', 'pvt', 'schedule', 'max_retries']
+  OK   фабрика берёт пропатченный Simulator
+  OK   ('07_degassing_adiabatic_only', 1, None): записей 2, побитово
+  OK   ('10_deep_degassing', None, None): записей 73, побитово
+  OK   ('10_deep_degassing', None, 0): 'RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/1 = 3.60e+03 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 50, max S_g = 0.000. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries (сейчас max_retries = 0, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или меньший time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине.' | 'RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/1 = 3.60e+03 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 50, max S_g = 0.000. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries (сейчас max_retries = 0, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или меньший time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине.'
+
+ИТОГ: все проверки пройдены

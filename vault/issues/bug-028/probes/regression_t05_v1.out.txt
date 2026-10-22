@@ -1,0 +1,22 @@
+﻿[T05S_N050_DT5m] running...
+[T05S_N050_DT5m] PASS: golden output reproduced; QC PASS
+[T05S_N100_DT5m] running...
+[T05S_N100_DT5m] PASS: golden output reproduced; QC PASS
+[T05S_N200_DT5m] running...
+[T05S_N200_DT5m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT60m] running...
+[T05T_N100_DT60m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT10m] running...
+[T05T_N100_DT10m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT3m] running...
+[T05T_N100_DT3m] PASS: golden output reproduced; QC PASS
+
+=== REGRESSION SUMMARY ===
+T05S_N050_DT5m       PASS
+T05S_N100_DT5m       PASS
+T05S_N200_DT5m       PASS
+T05T_N100_DT60m      PASS
+T05T_N100_DT10m      PASS
+T05T_N100_DT3m       PASS
+Passed 6/6 jobs
+Outputs: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\OUTPUT\REGRESSION_20261014_110933

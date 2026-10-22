@@ -1,0 +1,26 @@
+﻿F....................                                                    [100%]
+================================== FAILURES ===================================
+___________ TestStructure.test_required_files[13b_pwf_alternating] ____________
+
+self = <tests.test_examples.TestStructure object at 0x0000018163062A50>
+name = '13b_pwf_alternating'
+
+    @pytest.mark.parametrize("name", ALL_EXAMPLES)
+    def test_required_files(self, name):
+        """Каждый пример самодостаточен: конфиг, точка входа, описание."""
+        folder = EXAMPLES_DIR / name
+        for fname in ("config.json", "main.py", "README.md"):
+>           assert (folder / fname).is_file(), f"{name}: нет {fname}"
+E           AssertionError: 13b_pwf_alternating: нет README.md
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = (WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/.worktrees/feat-023/numerical_solver/examples/13b_pwf_alternating') / 'README.md').is_file
+
+tests\test_examples.py:105: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_examples.py::TestStructure::test_required_files[13b_pwf_alternating]
+1 failed, 20 passed, 291 deselected in 246.83s (0:04:06)
+test_examples exit 1
+..                                                                       [100%]
+2 passed, 19 deselected in 69.55s (0:01:09)
+matrix exit 0

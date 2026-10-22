@@ -1,0 +1,65 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+.venv\Scripts\python : Traceback (most recent call last):
+At line:1 char:323
++ ... cal_solver; .venv\Scripts\python ..\vault\issues\debt-071\probes\stan ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 317, in _advance
+    hydro_result = self._hydro.solve(state, h, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\hydro\prototype_adapter.py", line 
+325, in solve
+    raise HydroConvergenceError(
+    ...<5 lines>...
+        f"{_attempts_text(report)}")
+gpn_multiphase_solver.hydro.base.HydroConvergenceError: advance не сошёлся: dt = 7.031e+00 с, t = 0.0007 сут, итераций 
+7, невязка 9.41e-05 (допуск 1.25e-11), мера ячеек 3.73e-02 (порог numerics.newton_cell_tol = 1e-08), предел округления 
+9.55e-14, выход: линейный поиск не принял ни одной точки — не выполнены оба условия сходимости; числа — Ньютона 
+ступени 1; попытки ступеней: [1 — линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, 
+невязка 9.41e-05); 2 открыта — линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, 
+невязка 9.41e-05); 2 закрыта — линейный поиск не принял ни одной точки (итераций 5, проходов 1, переключений 0, 
+невязка 1.05e-02); 3 открыта — линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, 
+невязка 9.41e-05); 3 закрыта — линейный поиск не принял ни одной точки (итераций 8, проходов 1, переключений 0, 
+невязка 1.04e-02); 4 открыта — корень с S_g > 0.98 (итераций 2, проходов 1, переключений 0, невязка 5.49e-14); 4 
+закрыта — ветвь скважины несогласована (итераций 10)]
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-071\probes\standing_relperm_scan.py", line 203, in 
+<module>
+    scenarios()
+    ~~~~~~~~~^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-071\probes\standing_relperm_scan.py", line 186, in 
+scenarios
+    msgs = _run_logged(cfg)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-071\probes\standing_relperm_scan.py", line 109, in 
+_run_logged
+    sim.run(s0)
+    ~~~~~~~^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 235, in run
+    state, hydro_result = self._advance(
+                          ~~~~~~~~~~~~~^
+        state, dt, interval.bc, balance, mass,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        depth if step == 0 else 0)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 324, in _advance
+    raise RuntimeError(
+        self._failure_message(state, dt, exc, depth)) from exc
+RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0007 сут: двухфазных 
+ячеек 6 из 50, max S_g = 0.917. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries (сейчас max_retries 
+= 9, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или меньший 
+time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине. Последний отказ 
+гидродинамики: advance не сошёлся: dt = 7.031e+00 с, t = 0.0007 сут, итераций 7, невязка 9.41e-05 (допуск 1.25e-11), 
+мера ячеек 3.73e-02 (порог numerics.newton_cell_tol = 1e-08), предел округления 9.55e-14, выход: линейный поиск не 
+принял ни одной точки — не выполнены оба условия сходимости; числа — Ньютона ступени 1; попытки ступеней: [1 — 
+линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, невязка 9.41e-05); 2 открыта — 
+линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, невязка 9.41e-05); 2 закрыта — 
+линейный поиск не принял ни одной точки (итераций 5, проходов 1, переключений 0, невязка 1.05e-02); 3 открыта — 
+линейный поиск не принял ни одной точки (итераций 7, проходов 1, переключений 0, невязка 9.41e-05); 3 закрыта — 
+линейный поиск не принял ни одной точки (итераций 8, проходов 1, переключений 0, невязка 1.04e-02); 4 открыта — корень 
+с S_g > 0.98 (итераций 2, проходов 1, переключений 0, невязка 5.49e-14); 4 закрыта — ветвь скважины несогласована 
+(итераций 10)]

@@ -1,0 +1,13 @@
+каталог решателя: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-076\numerical_solver
+исходный конфиг: t = 2 сут, T(r_w) = 349.7666 K, min T = 349.7653, max T = 350.0000
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-076\vault\issues\debt-076\probes\density_sign.py", line 37, in <module>
+    cfg = c.load_config(CONFIG)            # отказа нет: знак плотности не проверяется
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-076\numerical_solver\gpn_multiphase_solver\io\config.py", line 450, in load_config
+    _validate(config)
+    ~~~~~~~~~^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-076\numerical_solver\gpn_multiphase_solver\io\config.py", line 572, in _validate
+    raise ValueError(
+        f"{name} = {value} кг/м³: плотность {phase} при стандартных "
+        f"условиях (не пластовая) должна быть > 0")
+ValueError: pvt.rho_o_std = -850.0 кг/м³: плотность нефти при стандартных условиях (не пластовая) должна быть > 0

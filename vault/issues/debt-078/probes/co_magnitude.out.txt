@@ -1,0 +1,29 @@
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+пример 03 (Стендинг), p_wf = 8 МПа, 6 ч
+
+  c_o = 0 1/Па: B_o(p_b) = 1.1672, B_o(p0) = 1.1672
+    расчёт прошёл (0.2 с): T(r_0) = 351.6415 К, max S_g = 0.0813
+    предупреждений: 0
+
+  c_o = 1.45e-09 1/Па: B_o(p_b) = 1.1672, B_o(p0) = 1.14944
+    расчёт прошёл (0.6 с): T(r_0) = 351.6710 К, max S_g = 0.0813
+    предупреждений: 0
+
+  c_o = 1e-05 1/Па: B_o(p_b) = 1.1672, B_o(p0) = 1.39804e-46
+    расчёт прошёл (1.1 с): T(r_0) = 350.3839 К, max S_g = 0.0000
+    предупреждений: 1
+      overflow encountered in dot
+
+  c_o = 0.0001 1/Па: B_o(p_b) = 1.1672, B_o(p0) = 0
+    отказ расчёта: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 150, max S_g = 0.000. Наименьший подшаг — ti
+    предупреждений: 5237
+      invalid value encountered in divide
+      divide by zero encountered in divide
+      divide by zero encountered in divide
+
+  c_o = 0.001 1/Па: B_o(p_b) = 1.1672, B_o(p0) = 0
+    отказ расчёта: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 150, max S_g = 0.000. Наименьший подшаг — ti
+    предупреждений: 5237
+      invalid value encountered in divide
+      divide by zero encountered in divide
+      divide by zero encountered in divide

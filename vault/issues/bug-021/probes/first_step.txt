@@ -1,0 +1,8 @@
+﻿03_standing_corey N=150 p_wf=4.0: подшагов 2 -> 2; max|Δp| 0 Па; 0.5 -> 0.4 с
+03_standing_corey N=150 p_wf=2.0: подшагов 16 -> 16; max|Δp| 0 Па; 2.8 -> 2.2 с
+03_standing_corey N=150 p_wf=0.5: подшагов 16 -> 16; max|Δp| 0 Па; 2.4 -> 2.2 с
+04a_high_gas_saturation N=300 p_wf=None: подшагов 2 -> 2; max|Δp| 0 Па; 2.0 -> 1.8 с
+04a_high_gas_saturation N=500 p_wf=None: подшагов 8 -> 8; max|Δp| 0 Па; 4.8 -> 4.5 с
+05_standing_table_rp N=None p_wf=5.0: подшагов 2 -> 2; max|Δp| 0 Па; 0.3 -> 0.2 с
+05_standing_table_rp N=None p_wf=4.0: подшагов 2 -> 1; max|Δp| 1.69e+03 Па; 0.3 -> 0.1 с
+05_standing_table_rp N=None p_wf=2.0: подшагов 1 -> 1; max|Δp| 0 Па; 0.3 -> 0.2 с

@@ -1,0 +1,7 @@
+дерево: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+01_single_phase_no_jt: предупреждений фабрики — 0
+02_single_phase_jt: предупреждений фабрики — 0
+03_standing_corey: предупреждений фабрики — 0
+04_table_table: предупреждений фабрики — 0
+05_standing_table_rp: предупреждений фабрики — 0
+18_prototype_input: предупреждений фабрики — 0

@@ -1,0 +1,594 @@
+﻿# Итог шага 3 (2026-10-18). Книги сохранил пользователь в Excel 16 (AppVersion 16.0300,
+# calcId 191029) с английскими настройками и десятичной точкой: лист traps — «Sheet1».
+# Ворота решения 9 пройдены: template_saved.xlsx (копия книги генератора с
+# fullCalcOnLoad="1") после сохранения в Excel — recalc_on_open = False, формула
+# MODEL!C3 =0.2/2 со значением 0.1.
+# Расхождения с ожиданием плана — от настроек Excel, не от разбора (XML прочитан как есть):
+#   A1 — введено формулой =1.5 (план: «1.5» → дата при десятичной запятой);
+#   A7 «01.05.2026» — общая строка t="s" (при английских настройках не дата);
+#   =ROW() — в A10, не B1:B3 (общей формулы нет — её проверяет правка XML в тестах).
+# Признак даты на настоящем Excel — A8 10:30, встроенный формат 20. Книг .xls и с паролем
+# пользователь не делал. Имя автора (docProps/core.xml) и абсолютный путь каталога
+# (x15ac:absPath в xl/workbook.xml) потом убраны — strip_personal.py; вывод ниже снят до этого,
+# значения ячеек от правки не зависят.
+разбор: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-034\numerical_solver\gpn_multiphase_solver\io\xlsx_reader.py
+numerical_solver/tests/data/feat034_excel/traps.xlsx: листов 1, recalc_on_open = False
+  Sheet1!A1    number  1.5                          date=False formula='1.5'
+  Sheet1!A2    string  '1,5'                        date=False formula=None
+  Sheet1!A3    string  '1,5'                        date=False formula=None
+  Sheet1!A4    bool    True                         date=False formula=None
+  Sheet1!A5    number  3.0555555555555554e-05       date=False formula='0.11/3600'
+  Sheet1!A6    error   '#DIV/0!'                    date=False formula='1/0'
+  Sheet1!A7    string  '01.05.2026'                 date=False formula=None
+  Sheet1!A8    number  0.4375                       date=True  formula=None
+  Sheet1!A9    number  0.05                         date=False formula=None
+  Sheet1!A10   number  10.0                         date=False formula='ROW()'
+numerical_solver/tests/data/feat034_excel/template_saved.xlsx: листов 8, recalc_on_open = False
+  MODEL!A1     string  'Key'                        date=False formula=None
+  MODEL!B1     string  'Parameter'                  date=False formula=None
+  MODEL!C1     string  'Value'                      date=False formula=None
+  MODEL!D1     string  'Unit'                       date=False formula=None
+  MODEL!E1     string  'Comment'                    date=False formula=None
+  MODEL!F1     string  'Комментарии'                date=False formula=None
+  MODEL!A2     string  'format_version'             date=False formula=None
+  MODEL!B2     string  'Format version'             date=False formula=None
+  MODEL!C2     number  1.0                          date=False formula=None
+  MODEL!D2     string  '-'                          date=False formula=None
+  MODEL!E2     string  'Workbook format; written by gpn-solver template, do not change.' date=False formula=None
+  MODEL!F2     string  'Версия формата книги. Её записывает gpn-solver template, значение не меняется.' date=False formula=None
+  MODEL!A3     string  'geometry.r_well'            date=False formula=None
+  MODEL!B3     string  'Wellbore radius (rw)'       date=False formula=None
+  MODEL!C3     number  0.1                          date=False formula='0.2/2'
+  MODEL!D3     string  'm'                          date=False formula=None
+  MODEL!E3     string  'Inner boundary of the radial model.' date=False formula=None
+  MODEL!F3     string  'Внутренняя граница расчётной области: стенка скважины.' date=False formula=None
+  MODEL!A4     string  'geometry.R_ext'             date=False formula=None
+  MODEL!B4     string  'Drainage radius (re)'       date=False formula=None
+  MODEL!C4     number  100.0                        date=False formula=None
+  MODEL!D4     string  'm'                          date=False formula=None
+  MODEL!E4     string  'Outer boundary of the radial model; greater than rw.' date=False formula=None
+  MODEL!F4     string  'Внешняя граница расчётной области, контур питания; больше rw.' date=False formula=None
+  MODEL!A5     string  'geometry.h'                 date=False formula=None
+  MODEL!B5     string  'Formation thickness (h)'    date=False formula=None
+  MODEL!C5     number  10.0                         date=False formula=None
+  MODEL!D5     string  'm'                          date=False formula=None
+  MODEL!E5     string  'Thickness of the formation open to flow.' date=False formula=None
+  MODEL!F5     string  'Толщина пласта, по которой идёт приток.' date=False formula=None
+  MODEL!A6     string  'rock.permeability'          date=False formula=None
+  MODEL!B6     string  'Absolute permeability (k)'  date=False formula=None
+  MODEL!C6     number  1.0                          date=False formula=None
+  MODEL!D6     string  'mD'                         date=False formula=None
+  MODEL!E6     string  'Uniform and isotropic.'     date=False formula=None
+  MODEL!F6     string  'Одинакова по всему пласту и во всех направлениях.' date=False formula=None
+  MODEL!A7     string  'rock.porosity_ref'          date=False formula=None
+  MODEL!B7     string  'Reference porosity (φref)'  date=False formula=None
+  MODEL!C7     number  0.2                          date=False formula=None
+  MODEL!D7     string  '-'                          date=False formula=None
+  MODEL!E7     string  'Porosity at the reference pressure pref; at pi it is φref·exp(cr·(pi - pref)).' date=False formula=None
+  MODEL!F7     string  'Пористость при опорном давлении pref. При начальном давлении pi пористость равна φref·exp(cr·(pi - pref)).' date=False formula=None
+  MODEL!A8     string  'rock.p_ref'                 date=False formula=None
+  MODEL!B8     string  'Reference pressure (pref)'  date=False formula=None
+  MODEL!C8     number  200.0                        date=False formula=None
+  MODEL!D8     string  'bar(a)'                     date=False formula=None
+  MODEL!E8     string  'Pressure at which φref is given.' date=False formula=None
+  MODEL!F8     string  'Давление, при котором задана пористость φref.' date=False formula=None
+  MODEL!A9     string  'rock.compressibility'       date=False formula=None
+  MODEL!B9     string  'Pore volume compressibility (cr)' date=False formula=None
+  MODEL!C9     number  4.5e-05                      date=False formula=None
+  MODEL!D9     string  '1/bar'                      date=False formula=None
+  MODEL!E9     string  'φ(p) = φi·exp(cr·(p - pi)); 0: incompressible pore volume.' date=False formula=None
+  MODEL!F9     string  'Пористость меняется с давлением как φ(p) = φi·exp(cr·(p - pi)); при нуле поровый объём не сжимается.' date=False formula=None
+  MODEL!A10    string  'pvt.rho_o_std'              date=False formula=None
+  MODEL!B10    string  'Oil density at standard conditions (ρo,sc)' date=False formula=None
+  MODEL!C10    number  800.0                        date=False formula=None
+  MODEL!D10    string  'kg/m3'                      date=False formula=None
+  MODEL!E10    string  'Stock-tank oil; used by the energy equation.' date=False formula=None
+  MODEL!F10    string  'Дегазированная нефть при стандартных условиях; нужна уравнению энергии.' date=False formula=None
+  MODEL!A11    string  'pvt.rho_g_std'              date=False formula=None
+  MODEL!B11    string  'Gas density at standard conditions (ρg,sc)' date=False formula=None
+  MODEL!C11    number  0.727                        date=False formula=None
+  MODEL!D11    string  'kg/m3'                      date=False formula=None
+  MODEL!E11    string  'Used by the energy equation.' date=False formula=None
+  MODEL!F11    string  'Нужна уравнению энергии.'   date=False formula=None
+  MODEL!A12    string  'initial_conditions.p0'      date=False formula=None
+  MODEL!B12    string  'Initial reservoir pressure (pi)' date=False formula=None
+  MODEL!C12    number  200.0                        date=False formula=None
+  MODEL!D12    string  'bar(a)'                     date=False formula=None
+  MODEL!E12    string  'Uniform at t = 0; also held constant at the drainage radius re.' date=False formula=None
+  MODEL!F12    string  'Одинаково по всему пласту в начальный момент; на контуре питания re поддерживается постоянным.' date=False formula=None
+  MODEL!A13    string  'initial_conditions.Rs0'     date=False formula=None
+  MODEL!B13    string  'Initial solution gas-oil ratio (Rsi)' date=False formula=None
+  MODEL!C13    number  50.0                         date=False formula=None
+  MODEL!D13    string  'Sm3/Sm3'                    date=False formula=None
+  MODEL!E13    string  'Uniform at t = 0 and in the inflow at re; within the Rs range of OIL_PVT, pi not below Pb(Rsi).' date=False formula=None
+  MODEL!F13    string  'Одинаково по всему пласту в начальный момент и в притоке через контур re. Лежит в диапазоне Rs таблицы OIL_PVT; начальное давление pi не ниже давления насыщения Pb(Rsi).' date=False formula=None
+  MODEL!A14    string  'initial_conditions.T0'      date=False formula=None
+  MODEL!B14    string  'Initial reservoir temperature (Ti)' date=False formula=None
+  MODEL!C14    number  350.0                        date=False formula=None
+  MODEL!D14    string  'K'                          date=False formula=None
+  MODEL!E14    string  'Uniform at t = 0; also held constant at the drainage radius re.' date=False formula=None
+  MODEL!F14    string  'Одинакова по всему пласту в начальный момент; на контуре питания re поддерживается постоянной.' date=False formula=None
+  MODEL!A15    string  'numerics.skin'              date=False formula=None
+  MODEL!B15    string  'Skin factor (S)'            date=False formula=None
+  MODEL!C15    number  0.0                          date=False formula=None
+  MODEL!D15    string  '-'                          date=False formula=None
+  MODEL!E15    string  'Well inflow resistance (hydraulics only); not included in the energy equation.' date=False formula=None
+  MODEL!F15    string  'Дополнительное сопротивление притоку у скважины. Учитывается только в гидродинамике, в уравнение энергии не входит.' date=False formula=None
+  THERMAL!A1   string  'Key'                        date=False formula=None
+  THERMAL!B1   string  'Parameter'                  date=False formula=None
+  THERMAL!C1   string  'Value'                      date=False formula=None
+  THERMAL!D1   string  'Unit'                       date=False formula=None
+  THERMAL!E1   string  'Comment'                    date=False formula=None
+  THERMAL!F1   string  'Комментарии'                date=False formula=None
+  THERMAL!A2   string  'rock.rho_solid'             date=False formula=None
+  THERMAL!B2   string  'Rock matrix density (ρma)'  date=False formula=None
+  THERMAL!C2   number  2650.0                       date=False formula=None
+  THERMAL!D2   string  'kg/m3'                      date=False formula=None
+  THERMAL!E2   string  'Solid grains, pore space excluded (quartz: 2650).' date=False formula=None
+  THERMAL!F2   string  'Плотность минеральных зёрен без учёта пор (кварц: 2650).' date=False formula=None
+  THERMAL!A3   string  'rock.c_solid'               date=False formula=None
+  THERMAL!B3   string  'Rock matrix specific heat capacity (cma)' date=False formula=None
+  THERMAL!C3   number  820.0                        date=False formula=None
+  THERMAL!D3   string  'J/(kg*K)'                   date=False formula=None
+  THERMAL!E3   string  'Solid grains (quartz at 350 K: 820). The energy equation uses ρma·cma.' date=False formula=None
+  THERMAL!F3   string  'Теплоёмкость минеральных зёрен (кварц при 350 K: 820). В уравнение энергии входит произведение ρma·cma.' date=False formula=None
+  THERMAL!A4   string  'rock.lambda_solid'          date=False formula=None
+  THERMAL!B4   string  'Rock matrix thermal conductivity (λma)' date=False formula=None
+  THERMAL!C4   number  2.5                          date=False formula=None
+  THERMAL!D4   string  'W/(m*K)'                    date=False formula=None
+  THERMAL!E4   string  'λeff = (1 - φi)·λma + φi·(So·λo + Sg·λg) is an upper (parallel) bound: choose λma so that λeff matches the measured conductivity of the saturated rock.' date=False formula=None
+  THERMAL!F4   string  'Эффективная теплопроводность считается как λeff = (1 - φi)·λma + φi·(So·λo + Sg·λg); такое осреднение даёт оценку сверху. λma подбирается так, чтобы λeff совпала с измеренной теплопроводностью насыщенной породы.' date=False formula=None
+  THERMAL!A5   string  'rock.lambda_oil'            date=False formula=None
+  THERMAL!B5   string  'Oil phase thermal conductivity (λo)' date=False formula=None
+  THERMAL!C5   number  0.13                         date=False formula=None
+  THERMAL!D5   string  'W/(m*K)'                    date=False formula=None
+  THERMAL!E5   string  'Reservoir oil.'             date=False formula=None
+  THERMAL!F5   string  'Пластовая нефть.'           date=False formula=None
+  THERMAL!A6   string  'rock.lambda_gas'            date=False formula=None
+  THERMAL!B6   string  'Gas phase thermal conductivity (λg)' date=False formula=None
+  THERMAL!C6   number  0.05                         date=False formula=None
+  THERMAL!D6   string  'W/(m*K)'                    date=False formula=None
+  THERMAL!E6   string  'Free gas at reservoir conditions.' date=False formula=None
+  THERMAL!F6   string  'Свободный газ в пластовых условиях.' date=False formula=None
+  THERMAL!A7   string  'thermal.c_p_oil'            date=False formula=None
+  THERMAL!B7   string  'Oil phase specific heat capacity (cp,o)' date=False formula=None
+  THERMAL!C7   number  2365.0                       date=False formula=None
+  THERMAL!D7   string  'J/(kg*K)'                   date=False formula=None
+  THERMAL!E7   string  'Reservoir oil with dissolved gas; constant.' date=False formula=None
+  THERMAL!F7   string  'Пластовая нефть с растворённым газом; принята постоянной.' date=False formula=None
+  THERMAL!A8   string  'thermal.c_p_gas'            date=False formula=None
+  THERMAL!B8   string  'Gas phase specific heat capacity (cp,g)' date=False formula=None
+  THERMAL!C8   number  2800.0                       date=False formula=None
+  THERMAL!D8   string  'J/(kg*K)'                   date=False formula=None
+  THERMAL!E8   string  'Free gas at reservoir conditions; constant.' date=False formula=None
+  THERMAL!F8   string  'Свободный газ в пластовых условиях; принята постоянной.' date=False formula=None
+  THERMAL!A9   string  'thermal.mu_JT_oil'          date=False formula=None
+  THERMAL!B9   string  'Oil Joule–Thomson coefficient (μJT,o)' date=False formula=None
+  THERMAL!C9   number  -0.4                         date=False formula=None
+  THERMAL!D9   string  'K/MPa'                      date=False formula=None
+  THERMAL!E9   string  '(∂T/∂p) at constant enthalpy; negative for oil: oil heats up when throttled.' date=False formula=None
+  THERMAL!F9   string  'Изменение температуры с давлением при постоянной энтальпии. У нефти отрицательный: при дросселировании нефть нагревается.' date=False formula=None
+  THERMAL!A10  string  'thermal.mu_JT_gas'          date=False formula=None
+  THERMAL!B10  string  'Gas Joule–Thomson coefficient (μJT,g)' date=False formula=None
+  THERMAL!C10  number  2.05                         date=False formula=None
+  THERMAL!D10  string  'K/MPa'                      date=False formula=None
+  THERMAL!E10  string  'Positive below the inversion pressure: gas cools when throttled.' date=False formula=None
+  THERMAL!F10  string  'Ниже давления инверсии положительный: при дросселировании газ охлаждается.' date=False formula=None
+  THERMAL!A11  string  'thermal.L_degas'            date=False formula=None
+  THERMAL!B11  string  'Heat of gas liberation from oil (L)' date=False formula=None
+  THERMAL!C11  number  230.0                        date=False formula=None
+  THERMAL!D11  string  'kJ/kg'                      date=False formula=None
+  THERMAL!E11  string  'Per kg of liberated gas; positive: liberation absorbs heat (cooling).' date=False formula=None
+  THERMAL!F11  string  'На килограмм выделившегося газа. Положительное значение: выделение газа поглощает тепло, пласт охлаждается.' date=False formula=None
+  NUMERICS!A1  string  'Key'                        date=False formula=None
+  NUMERICS!B1  string  'Parameter'                  date=False formula=None
+  NUMERICS!C1  string  'Value'                      date=False formula=None
+  NUMERICS!D1  string  'Unit'                       date=False formula=None
+  NUMERICS!E1  string  'Comment'                    date=False formula=None
+  NUMERICS!F1  string  'Комментарии'                date=False formula=None
+  NUMERICS!A2  string  'grid.N'                     date=False formula=None
+  NUMERICS!B2  string  'Grid cells (N)'             date=False formula=None
+  NUMERICS!C2  number  100.0                        date=False formula=None
+  NUMERICS!D2  string  '-'                          date=False formula=None
+  NUMERICS!E2  string  'Logarithmic radial grid from rw to re: cells are finer near the well.' date=False formula=None
+  NUMERICS!F2  string  'Ячейки сгущаются к скважине: сетка равномерна по ln r от rw до re.' date=False formula=None
+  NUMERICS!A3  string  'time.dt_integration'        date=False formula=None
+  NUMERICS!B3  string  'Integration time step (Δt)' date=False formula=None
+  NUMERICS!C3  number  1.0                          date=False formula=None
+  NUMERICS!D3  string  'h'                          date=False formula=None
+  NUMERICS!E3  string  'Each SCHEDULE interval is split into equal substeps not longer than Δt.' date=False formula=None
+  NUMERICS!F3  string  'Каждый интервал SCHEDULE делится на равные подшаги не длиннее Δt.' date=False formula=None
+  NUMERICS!A4  string  'time.dt_after_control_change' date=False formula=None
+  NUMERICS!B4  string  'First substep after control change (h0)' date=False formula=None
+  NUMERICS!C4  number  3.05555555555556e-05         date=False formula=None
+  NUMERICS!D4  string  'h'                          date=False formula=None
+  NUMERICS!E4  string  'After a change of well control (not at t = 0) the first substep shrinks to h0, rounded down to substep/2^m, then doubles. A value not less than Δt switches this off. 3.0556E-05 h = 0.11 s.' date=False formula=None
+  NUMERICS!F4  string  'После смены режима скважины (кроме момента t = 0) первый подшаг уменьшается до h0, округлённого вниз до подшага/2^m, и дальше удваивается. Значение не меньше Δt отключает уменьшение. 3.0556E-05 ч = 0,11 с.' date=False formula=None
+  NUMERICS!A5  string  'numerics.max_retries'       date=False formula=None
+  NUMERICS!B5  string  'Max step halvings'          date=False formula=None
+  NUMERICS!C5  number  9.0                          date=False formula=None
+  NUMERICS!D5  string  '-'                          date=False formula=None
+  NUMERICS!E5  string  'A substep where Newton fails is halved; the smallest substep is Δt/2^max_retries.' date=False formula=None
+  NUMERICS!F5  string  'Если Ньютон на подшаге не сошёлся, подшаг делится пополам; самый короткий подшаг равен Δt/2^max_retries.' date=False formula=None
+  NUMERICS!A6  string  'numerics.newton_max_iter'   date=False formula=None
+  NUMERICS!B6  string  'Newton max iterations'      date=False formula=None
+  NUMERICS!C6  number  15.0                         date=False formula=None
+  NUMERICS!D6  string  '-'                          date=False formula=None
+  NUMERICS!E6  string  'Limit of Newton iterations while the set of cells with free gas is fixed.' date=False formula=None
+  NUMERICS!F6  string  'Предел итераций Ньютона, пока набор ячеек со свободным газом не меняется.' date=False formula=None
+  NUMERICS!A7  string  'numerics.max_active_set_iter' date=False formula=None
+  NUMERICS!B7  string  'Max phase-set passes'       date=False formula=None
+  NUMERICS!C7  number  12.0                         date=False formula=None
+  NUMERICS!D7  string  '-'                          date=False formula=None
+  NUMERICS!E7  string  'After Newton converges, cells where free gas appeared or vanished are switched and Newton is repeated. This limits the repeats that switch gas on; repeats that only remove gas are not counted.' date=False formula=None
+  NUMERICS!F7  string  'После сходимости Ньютона проверяется, где свободный газ появился или исчез; если состав фаз в ячейках изменился, Ньютон повторяется. Параметр ограничивает число повторов, в которых газ появляется хотя бы в одной ячейке; повторы, где газ только исчезает, не считаются.' date=False formula=None
+  NUMERICS!A8  string  'numerics.newton_cell_tol'   date=False formula=None
+  NUMERICS!B8  string  'Newton cell tolerance'      date=False formula=None
+  NUMERICS!C8  number  1e-08                        date=False formula=None
+  NUMERICS!D8  string  '-'                          date=False formula=None
+  NUMERICS!E8  string  'Newton has converged only if in every cell the mass residual of the step is below this fraction of the cell pore volume.' date=False formula=None
+  NUMERICS!F8  string  'Ньютон считается сошедшимся, только если в каждой ячейке невязка массы за шаг меньше этой доли порового объёма ячейки.' date=False formula=None
+  NUMERICS!A9  string  'numerics.rs_switch_tol'     date=False formula=None
+  NUMERICS!B9  string  'Gas appearance tolerance'   date=False formula=None
+  NUMERICS!C9  number  1e-05                        date=False formula=None
+  NUMERICS!D9  string  'Sm3/Sm3'                    date=False formula=None
+  NUMERICS!E9  string  'Free gas appears in a cell when Rs exceeds the saturated Rs at the cell pressure by more than this value.' date=False formula=None
+  NUMERICS!F9  string  'Свободный газ появляется в ячейке, когда газосодержание Rs превышает равновесное при давлении ячейки больше чем на это значение.' date=False formula=None
+  NUMERICS!A10 string  'numerics.sg_switch_tol'     date=False formula=None
+  NUMERICS!B10 string  'Gas disappearance tolerance' date=False formula=None
+  NUMERICS!C10 number  1e-09                        date=False formula=None
+  NUMERICS!D10 string  '-'                          date=False formula=None
+  NUMERICS!E10 string  'Free gas is removed from a cell when its computed saturation Sg becomes negative by more than this value; smaller negative Sg is treated as round-off.' date=False formula=None
+  NUMERICS!F10 string  'Свободный газ в ячейке исчезает, когда расчётная насыщенность Sg становится отрицательной и по модулю больше этого значения. Меньшая по модулю отрицательная Sg считается погрешностью счёта.' date=False formula=None
+  NUMERICS!A11 string  'numerics.jacobian_mode'     date=False formula=None
+  NUMERICS!B11 string  'Jacobian mode'              date=False formula=None
+  NUMERICS!C11 string  'grouped'                    date=False formula=None
+  NUMERICS!D11 string  '-'                          date=False formula=None
+  NUMERICS!E11 string  'Fixed: the Jacobian is computed by finite differences over groups of columns.' date=False formula=None
+  NUMERICS!F11 string  'Значение постоянное: якобиан считается конечными разностями по группам столбцов.' date=False formula=None
+  NUMERICS!A12 string  'numerics.linear_solver'     date=False formula=None
+  NUMERICS!B12 string  'Linear solver'              date=False formula=None
+  NUMERICS!C12 string  'sparse'                     date=False formula=None
+  NUMERICS!D12 string  '-'                          date=False formula=None
+  NUMERICS!E12 string  'Fixed: sparse LU factorization.' date=False formula=None
+  NUMERICS!F12 string  'Значение постоянное: LU-разложение разреженной матрицы.' date=False formula=None
+  SCHEDULE!A1  string  'Time, day'                  date=False formula=None
+  SCHEDULE!B1  string  'Control mode'               date=False formula=None
+  SCHEDULE!C1  string  'BHP target, bar(a)'         date=False formula=None
+  SCHEDULE!D1  string  'Oil-rate target, Sm3/day'   date=False formula=None
+  SCHEDULE!E1  string  'Minimum BHP, bar(a)'        date=False formula=None
+  SCHEDULE!A2  number  0.0                          date=False formula=None
+  SCHEDULE!B2  string  'BHP'                        date=False formula=None
+  SCHEDULE!C2  number  150.0                        date=False formula=None
+  SCHEDULE!A3  number  0.000694444444444444         date=False formula=None
+  SCHEDULE!B3  string  'BHP'                        date=False formula=None
+  SCHEDULE!C3  number  150.0                        date=False formula=None
+  SCHEDULE!A4  number  1.0                          date=False formula=None
+  SCHEDULE!B4  string  'BHP'                        date=False formula=None
+  SCHEDULE!C4  number  150.0                        date=False formula=None
+  SCHEDULE!A5  number  2.0                          date=False formula=None
+  SCHEDULE!B5  string  'BHP'                        date=False formula=None
+  SCHEDULE!C5  number  150.0                        date=False formula=None
+  SCHEDULE!A6  number  4.0                          date=False formula=None
+  SCHEDULE!B6  string  'BHP'                        date=False formula=None
+  SCHEDULE!C6  number  150.0                        date=False formula=None
+  SCHEDULE!A7  number  5.0                          date=False formula=None
+  SCHEDULE!B7  string  'BHP'                        date=False formula=None
+  SCHEDULE!C7  number  120.0                        date=False formula=None
+  SCHEDULE!A8  number  5.00011574074074             date=False formula=None
+  SCHEDULE!B8  string  'BHP'                        date=False formula=None
+  SCHEDULE!C8  number  120.0                        date=False formula=None
+  SCHEDULE!A9  number  5.00023148148148             date=False formula=None
+  SCHEDULE!B9  string  'BHP'                        date=False formula=None
+  SCHEDULE!C9  number  120.0                        date=False formula=None
+  SCHEDULE!A10 number  5.00034722222222             date=False formula=None
+  SCHEDULE!B10 string  'BHP'                        date=False formula=None
+  SCHEDULE!C10 number  120.0                        date=False formula=None
+  SCHEDULE!A11 number  5.00046296296296             date=False formula=None
+  SCHEDULE!B11 string  'BHP'                        date=False formula=None
+  SCHEDULE!C11 number  120.0                        date=False formula=None
+  SCHEDULE!A12 number  5.0005787037037              date=False formula=None
+  SCHEDULE!B12 string  'BHP'                        date=False formula=None
+  SCHEDULE!C12 number  120.0                        date=False formula=None
+  SCHEDULE!A13 number  5.00069444444444             date=False formula=None
+  SCHEDULE!B13 string  'BHP'                        date=False formula=None
+  SCHEDULE!C13 number  120.0                        date=False formula=None
+  SCHEDULE!A14 number  6.0                          date=False formula=None
+  SCHEDULE!B14 string  'BHP'                        date=False formula=None
+  SCHEDULE!C14 number  120.0                        date=False formula=None
+  SCHEDULE!A15 number  14.0                         date=False formula=None
+  SCHEDULE!B15 string  'BHP'                        date=False formula=None
+  SCHEDULE!C15 number  120.0                        date=False formula=None
+  SCHEDULE!A16 number  15.0                         date=False formula=None
+  SCHEDULE!B16 string  'BHP'                        date=False formula=None
+  SCHEDULE!C16 number  100.0                        date=False formula=None
+  SCHEDULE!A17 number  15.0001157407407             date=False formula=None
+  SCHEDULE!B17 string  'BHP'                        date=False formula=None
+  SCHEDULE!C17 number  100.0                        date=False formula=None
+  SCHEDULE!A18 number  15.0002314814815             date=False formula=None
+  SCHEDULE!B18 string  'BHP'                        date=False formula=None
+  SCHEDULE!C18 number  100.0                        date=False formula=None
+  SCHEDULE!A19 number  15.0003472222222             date=False formula=None
+  SCHEDULE!B19 string  'BHP'                        date=False formula=None
+  SCHEDULE!C19 number  100.0                        date=False formula=None
+  SCHEDULE!A20 number  15.000462962963              date=False formula=None
+  SCHEDULE!B20 string  'BHP'                        date=False formula=None
+  SCHEDULE!C20 number  100.0                        date=False formula=None
+  SCHEDULE!A21 number  15.0005787037037             date=False formula=None
+  SCHEDULE!B21 string  'BHP'                        date=False formula=None
+  SCHEDULE!C21 number  100.0                        date=False formula=None
+  SCHEDULE!A22 number  15.0006944444444             date=False formula=None
+  SCHEDULE!B22 string  'BHP'                        date=False formula=None
+  SCHEDULE!C22 number  100.0                        date=False formula=None
+  SCHEDULE!A23 number  16.0                         date=False formula=None
+  SCHEDULE!B23 string  'BHP'                        date=False formula=None
+  SCHEDULE!C23 number  100.0                        date=False formula=None
+  SCHEDULE!A24 number  30.0                         date=False formula=None
+  OIL_PVT!A1   string  'Rs, Sm3/Sm3'                date=False formula=None
+  OIL_PVT!B1   string  'Pressure, bar(a)'           date=False formula=None
+  OIL_PVT!C1   string  'Bo, rm3/Sm3'                date=False formula=None
+  OIL_PVT!D1   string  'mu_o, cP'                   date=False formula=None
+  OIL_PVT!A2   number  5.0                          date=False formula=None
+  OIL_PVT!B2   number  24.507516328979              date=False formula=None
+  OIL_PVT!C2   number  1.04514631667819             date=False formula=None
+  OIL_PVT!D2   number  5.6450092402544              date=False formula=None
+  OIL_PVT!A3   number  5.0                          date=False formula=None
+  OIL_PVT!B3   number  49.507516328979              date=False formula=None
+  OIL_PVT!C3   number  1.04201557618695             date=False formula=None
+  OIL_PVT!D3   number  5.75185168126232             date=False formula=None
+  OIL_PVT!A4   number  5.0                          date=False formula=None
+  OIL_PVT!B4   number  74.507516328979              date=False formula=None
+  OIL_PVT!C4   number  1.03889421384293             date=False formula=None
+  OIL_PVT!D4   number  5.86071631686988             date=False formula=None
+  OIL_PVT!A5   number  5.0                          date=False formula=None
+  OIL_PVT!B5   number  124.507516328979             date=False formula=None
+  OIL_PVT!C5   number  1.03267951131156             date=False formula=None
+  OIL_PVT!D5   number  6.08466599166751             date=False formula=None
+  OIL_PVT!A6   number  5.0                          date=False formula=None
+  OIL_PVT!B6   number  300.0                        date=False formula=None
+  OIL_PVT!C6   number  1.01115960248163             date=False formula=None
+  OIL_PVT!D6   number  6.94062062147152             date=False formula=None
+  OIL_PVT!A7   number  10.0                         date=False formula=None
+  OIL_PVT!B7   number  45.4982821854944             date=False formula=None
+  OIL_PVT!C7   number  1.05496911285377             date=False formula=None
+  OIL_PVT!D7   number  4.65991245464173             date=False formula=None
+  OIL_PVT!A8   number  10.0                         date=False formula=None
+  OIL_PVT!B8   number  70.4982821854944             date=False formula=None
+  OIL_PVT!C8   number  1.05180894813242             date=False formula=None
+  OIL_PVT!D8   number  4.74811008202324             date=False formula=None
+  OIL_PVT!A9   number  10.0                         date=False formula=None
+  OIL_PVT!B9   number  95.4982821854944             date=False formula=None
+  OIL_PVT!C9   number  1.04865824969869             date=False formula=None
+  OIL_PVT!D9   number  4.83797701576006             date=False formula=None
+  OIL_PVT!A10  number  10.0                         date=False formula=None
+  OIL_PVT!B10  number  145.498282185494             date=False formula=None
+  OIL_PVT!C10  number  1.04238513835386             date=False formula=None
+  OIL_PVT!D10  number  5.02284577936822             date=False formula=None
+  OIL_PVT!A11  number  10.0                         date=False formula=None
+  OIL_PVT!B11  number  300.0                        date=False formula=None
+  OIL_PVT!C11  number  1.02323715528014             date=False formula=None
+  OIL_PVT!D11  number  5.63993730754341             date=False formula=None
+  OIL_PVT!A12  number  20.0                         date=False formula=None
+  OIL_PVT!B12  number  82.813259392784              date=False formula=None
+  OIL_PVT!C12  number  1.07513105012211             date=False formula=None
+  OIL_PVT!D12  number  3.4643521134975              date=False formula=None
+  OIL_PVT!A13  number  20.0                         date=False formula=None
+  OIL_PVT!B13  number  107.813259392784             date=False formula=None
+  OIL_PVT!C13  number  1.07191049022701             date=False formula=None
+  OIL_PVT!D13  number  3.52992150772942             date=False formula=None
+  OIL_PVT!A14  number  20.0                         date=False formula=None
+  OIL_PVT!B14  number  132.813259392784             date=False formula=None
+  OIL_PVT!C14  number  1.06869957753355             date=False formula=None
+  OIL_PVT!D14  number  3.59673192634889             date=False formula=None
+  OIL_PVT!A15  number  20.0                         date=False formula=None
+  OIL_PVT!B15  number  182.813259392784             date=False formula=None
+  OIL_PVT!C15  number  1.0623065782452              date=False formula=None
+  OIL_PVT!D15  number  3.73417023622264             date=False formula=None
+  OIL_PVT!A16  number  20.0                         date=False formula=None
+  OIL_PVT!B16  number  300.0                        date=False formula=None
+  OIL_PVT!C16  number  1.04747253444172             date=False formula=None
+  OIL_PVT!D16  number  4.07722125070953             date=False formula=None
+  OIL_PVT!A17  number  30.0                         date=False formula=None
+  OIL_PVT!B17  number  116.9397098221               date=False formula=None
+  OIL_PVT!C17  number  1.09590090359181             date=False formula=None
+  OIL_PVT!D17  number  2.76827699103872             date=False formula=None
+  OIL_PVT!A18  number  30.0                         date=False formula=None
+  OIL_PVT!B18  number  141.9397098221               date=False formula=None
+  OIL_PVT!C18  number  1.09261812750725             date=False formula=None
+  OIL_PVT!D18  number  2.82067185144028             date=False formula=None
+  OIL_PVT!A19  number  30.0                         date=False formula=None
+  OIL_PVT!B19  number  166.9397098221               date=False formula=None
+  OIL_PVT!C19  number  1.0893451849932              date=False formula=None
+  OIL_PVT!D19  number  2.87405838334198             date=False formula=None
+  OIL_PVT!A20  number  30.0                         date=False formula=None
+  OIL_PVT!B20  number  216.9397098221               date=False formula=None
+  OIL_PVT!C20  number  1.0828286829389              date=False formula=None
+  OIL_PVT!D20  number  2.98388189389923             date=False formula=None
+  OIL_PVT!A21  number  30.0                         date=False formula=None
+  OIL_PVT!B21  number  300.0                        date=False formula=None
+  OIL_PVT!C21  number  1.0720894841505              date=False formula=None
+  OIL_PVT!D21  number  3.17567535321494             date=False formula=None
+  OIL_PVT!A22  number  40.0                         date=False formula=None
+  OIL_PVT!B22  number  149.147548169977             date=False formula=None
+  OIL_PVT!C22  number  1.11720467055256             date=False formula=None
+  OIL_PVT!D22  number  2.31375526975003             date=False formula=None
+  OIL_PVT!A23  number  40.0                         date=False formula=None
+  OIL_PVT!B23  number  174.147548169977             date=False formula=None
+  OIL_PVT!C23  number  1.11385807893827             date=False formula=None
+  OIL_PVT!D23  number  2.35754744977911             date=False formula=None
+  OIL_PVT!A24  number  40.0                         date=False formula=None
+  OIL_PVT!B24  number  199.147548169977             date=False formula=None
+  OIL_PVT!C24  number  1.1105215120542              date=False formula=None
+  OIL_PVT!D24  number  2.40216847936577             date=False formula=None
+  OIL_PVT!A25  number  40.0                         date=False formula=None
+  OIL_PVT!B25  number  249.147548169977             date=False formula=None
+  OIL_PVT!C25  number  1.10387833245021             date=False formula=None
+  OIL_PVT!D25  number  2.49396013428935             date=False formula=None
+  OIL_PVT!A26  number  40.0                         date=False formula=None
+  OIL_PVT!B26  number  300.0                        date=False formula=None
+  OIL_PVT!C26  number  1.09716265344739             date=False formula=None
+  OIL_PVT!D26  number  2.59091527510286             date=False formula=None
+  OIL_PVT!A27  number  50.0                         date=False formula=None
+  OIL_PVT!B27  number  180.0                        date=False formula=None
+  OIL_PVT!C27  number  1.13898576612303             date=False formula=None
+  OIL_PVT!D27  number  1.99384701056588             date=False formula=None
+  OIL_PVT!A28  number  50.0                         date=False formula=None
+  OIL_PVT!B28  number  205.0                        date=False formula=None
+  OIL_PVT!C28  number  1.13557392913902             date=False formula=None
+  OIL_PVT!D28  number  2.03158432374619             date=False formula=None
+  OIL_PVT!A29  number  50.0                         date=False formula=None
+  OIL_PVT!B29  number  230.0                        date=False formula=None
+  OIL_PVT!C29  number  1.13217231232803             date=False formula=None
+  OIL_PVT!D29  number  2.07003588671523             date=False formula=None
+  OIL_PVT!A30  number  50.0                         date=False formula=None
+  OIL_PVT!B30  number  280.0                        date=False formula=None
+  OIL_PVT!C30  number  1.12539961685854             date=False formula=None
+  OIL_PVT!D30  number  2.14913609197767             date=False formula=None
+  OIL_PVT!A31  number  50.0                         date=False formula=None
+  OIL_PVT!B31  number  300.0                        date=False formula=None
+  OIL_PVT!C31  number  1.12270189633761             date=False formula=None
+  OIL_PVT!D31  number  2.1816161246037              date=False formula=None
+  OIL_PVT!A32  number  60.0                         date=False formula=None
+  OIL_PVT!B32  number  210.852451830023             date=False formula=None
+  OIL_PVT!C32  number  1.16076686169351             date=False formula=None
+  OIL_PVT!D32  number  1.67393875138173             date=False formula=None
+  OIL_PVT!A33  number  60.0                         date=False formula=None
+  OIL_PVT!B33  number  235.852451830023             date=False formula=None
+  OIL_PVT!C33  number  1.15728977933977             date=False formula=None
+  OIL_PVT!D33  number  1.70562119771327             date=False formula=None
+  OIL_PVT!A34  number  60.0                         date=False formula=None
+  OIL_PVT!B34  number  260.852451830023             date=False formula=None
+  OIL_PVT!C34  number  1.15382311260186             date=False formula=None
+  OIL_PVT!D34  number  1.73790329406469             date=False formula=None
+  OIL_PVT!A35  number  60.0                         date=False formula=None
+  OIL_PVT!B35  number  300.0                        date=False formula=None
+  OIL_PVT!C35  number  1.14824113922783             date=False formula=None
+  OIL_PVT!D35  number  1.77231697410453             date=False formula=None
+  GAS_PVT!A1   string  'Pressure, bar(a)'           date=False formula=None
+  GAS_PVT!B1   string  'Bg, rm3/Sm3'                date=False formula=None
+  GAS_PVT!C1   string  'mu_g, cP'                   date=False formula=None
+  GAS_PVT!A2   number  10.0                         date=False formula=None
+  GAS_PVT!B2   number  0.113716731005424            date=False formula=None
+  GAS_PVT!C2   number  0.0127198827764876           date=False formula=None
+  GAS_PVT!A3   number  20.0                         date=False formula=None
+  GAS_PVT!B3   number  0.0560470307800101           date=False formula=None
+  GAS_PVT!C3   number  0.0128612191598994           date=False formula=None
+  GAS_PVT!A4   number  30.0                         date=False formula=None
+  GAS_PVT!B4   number  0.0368541891865489           date=False formula=None
+  GAS_PVT!C4   number  0.013031582727123            date=False formula=None
+  GAS_PVT!A5   number  40.0                         date=False formula=None
+  GAS_PVT!B5   number  0.027281962748336            date=False formula=None
+  GAS_PVT!C5   number  0.0132267897417917           date=False formula=None
+  GAS_PVT!A6   number  50.0                         date=False formula=None
+  GAS_PVT!B6   number  0.0215590350342354           date=False formula=None
+  GAS_PVT!C6   number  0.0134449118486729           date=False formula=None
+  GAS_PVT!A7   number  75.0                         date=False formula=None
+  GAS_PVT!B7   number  0.0139919318901466           date=False formula=None
+  GAS_PVT!C7   number  0.0140838755340569           date=False formula=None
+  GAS_PVT!A8   number  100.0                        date=False formula=None
+  GAS_PVT!B8   number  0.0102802763524721           date=False formula=None
+  GAS_PVT!C8   number  0.0148476225818994           date=False formula=None
+  GAS_PVT!A9   number  125.0                        date=False formula=None
+  GAS_PVT!B9   number  0.00811204058606345          date=False formula=None
+  GAS_PVT!C9   number  0.0157238560253021           date=False formula=None
+  GAS_PVT!A10  number  150.0                        date=False formula=None
+  GAS_PVT!B10  number  0.00671379622979356          date=False formula=None
+  GAS_PVT!C10  number  0.0166968489784585           date=False formula=None
+  GAS_PVT!A11  number  175.0                        date=False formula=None
+  GAS_PVT!B11  number  0.00575210667575148          date=False formula=None
+  GAS_PVT!C11  number  0.0177482733307558           date=False formula=None
+  GAS_PVT!A12  number  200.0                        date=False formula=None
+  GAS_PVT!B12  number  0.00505920896438668          date=False formula=None
+  GAS_PVT!C12  number  0.0188593274804743           date=False formula=None
+  GAS_PVT!A13  number  225.0                        date=False formula=None
+  GAS_PVT!B13  number  0.00454160275494752          date=False formula=None
+  GAS_PVT!C13  number  0.0200126756217303           date=False formula=None
+  GAS_PVT!A14  number  250.0                        date=False formula=None
+  GAS_PVT!B14  number  0.00414334113369232          date=False formula=None
+  GAS_PVT!C14  number  0.0211935731021485           date=False formula=None
+  RELPERM!A1   string  'Sg'                         date=False formula=None
+  RELPERM!B1   string  'kro'                        date=False formula=None
+  RELPERM!C1   string  'krg'                        date=False formula=None
+  RELPERM!A2   number  0.0                          date=False formula=None
+  RELPERM!B2   number  1.0                          date=False formula=None
+  RELPERM!C2   number  0.0                          date=False formula=None
+  RELPERM!A3   number  0.02                         date=False formula=None
+  RELPERM!B3   number  1.0                          date=False formula=None
+  RELPERM!C3   number  0.0                          date=False formula=None
+  RELPERM!A4   number  0.04                         date=False formula=None
+  RELPERM!B4   number  1.0                          date=False formula=None
+  RELPERM!C4   number  0.0                          date=False formula=None
+  RELPERM!A5   number  0.06                         date=False formula=None
+  RELPERM!B5   number  0.951226947111721            date=False formula=None
+  RELPERM!C5   number  0.000487730528882792         date=False formula=None
+  RELPERM!A6   number  0.08                         date=False formula=None
+  RELPERM!B6   number  0.903673220545649            date=False formula=None
+  RELPERM!C6   number  0.00195092211553117          date=False formula=None
+  RELPERM!A7   number  0.1                          date=False formula=None
+  RELPERM!B7   number  0.857338820301783            date=False formula=None
+  RELPERM!C7   number  0.00438957475994513          date=False formula=None
+  RELPERM!A8   number  0.15                         date=False formula=None
+  RELPERM!B8   number  0.746837372351776            date=False formula=None
+  RELPERM!C8   number  0.0147538484987045           date=False formula=None
+  RELPERM!A9   number  0.2                          date=False formula=None
+  RELPERM!B9   number  0.643956713915562            date=False formula=None
+  RELPERM!C9   number  0.0312147538484987           date=False formula=None
+  RELPERM!A10  number  0.3                          date=False formula=None
+  RELPERM!B10  number  0.461057765584514            date=False formula=None
+  RELPERM!C10  number  0.0824264593811919           date=False formula=None
+  RELPERM!A11  number  0.4                          date=False formula=None
+  RELPERM!B11  number  0.308641975308642            date=False formula=None
+  RELPERM!C11  number  0.158024691358025            date=False formula=None
+  RELPERM!A12  number  0.5                          date=False formula=None
+  RELPERM!B12  number  0.186709343087944            date=False formula=None
+  RELPERM!C12  number  0.258009449778997            date=False formula=None
+  RELPERM!A13  number  0.6                          date=False formula=None
+  RELPERM!B13  number  0.0952598689224204           date=False formula=None
+  RELPERM!C13  number  0.382380734644109            date=False formula=None
+  RELPERM!A14  number  0.7                          date=False formula=None
+  RELPERM!B14  number  0.0342935528120713           date=False formula=None
+  RELPERM!C14  number  0.531138545953361            date=False formula=None
+  RELPERM!A15  number  0.8                          date=False formula=None
+  RELPERM!B15  number  0.00381039475689681          date=False formula=None
+  RELPERM!C15  number  0.704282883706752            date=False formula=None
+  RELPERM!A16  number  0.85                         date=False formula=None
+  RELPERM!B16  number  0.0                          date=False formula=None
+  RELPERM!C16  number  0.8                          date=False formula=None
+  RELPERM!A17  number  1.0                          date=False formula=None
+  RELPERM!B17  number  0.0                          date=False formula=None
+  RELPERM!C17  number  0.8                          date=False formula=None
+  COMMENTS!A1  string  'gpn-solver input workbook, format version 1' date=False formula=None
+  COMMENTS!C1  string  'Книга исходных данных gpn-solver, версия формата 1' date=False formula=None
+  COMMENTS!A3  string  'Template'                   date=False formula=None
+  COMMENTS!B3  string  'gpn-solver template my_case.xlsx writes this workbook with demonstration values. The command never overwrites an existing file.' date=False formula=None
+  COMMENTS!C3  string  'Команда gpn-solver template my_case.xlsx создаёт эту книгу с демонстрационными значениями. Существующий файл команда не перезаписывает.' date=False formula=None
+  COMMENTS!A4  string  'Fill in'                    date=False formula=None
+  COMMENTS!B4  string  'On MODEL, THERMAL and NUMERICS change only the Value column. Every row needs a value, even if it equals the program default; rows are not added or removed.' date=False formula=None
+  COMMENTS!C4  string  'На листах MODEL, THERMAL и NUMERICS меняется только столбец Value. Значение задаётся в каждой строке, даже если оно совпадает с принятым в программе по умолчанию; строки не добавляются и не удаляются.' date=False formula=None
+  COMMENTS!A5  string  'Protection'                 date=False formula=None
+  COMMENTS!B5  string  'MODEL, THERMAL, NUMERICS and RELPERM are protected without a password. Locked: Key, Unit, the format version, Jacobian mode, Linear solver and the fixed cells of RELPERM. Review > Unprotect Sheet removes the protection.' date=False formula=None
+  COMMENTS!C5  string  'Листы MODEL, THERMAL, NUMERICS и RELPERM защищены без пароля. Заблокированы Key, Unit, версия формата, Jacobian mode, Linear solver и постоянные ячейки RELPERM. Защиту снимает команда Рецензирование > Снять защиту листа.' date=False formula=None
+  COMMENTS!A6  string  'Units'                      date=False formula=None
+  COMMENTS!B6  string  'Units are fixed for every row and table column and are checked when the workbook is read; convert your data to these units. bar(a): absolute pressure in bar. Sm3: cubic metre at standard conditions; rm3: cubic metre at reservoir conditions.' date=False formula=None
+  COMMENTS!C6  string  'Единицы измерения заданы для каждой строки и каждого столбца таблиц и проверяются при чтении книги; данные приводятся к этим единицам. bar(a): абсолютное давление в барах. Sm3: кубический метр при стандартных условиях; rm3: кубический метр в пластовых условиях.' date=False formula=None
+  COMMENTS!A7  string  'Excel checks'               date=False formula=None
+  COMMENTS!B7  string  'Numeric cells carry Excel data validation with the program limits. Pasted values and cleared cells bypass it; the program checks every value again.' date=False formula=None
+  COMMENTS!C7  string  'У числовых ячеек есть проверка данных Excel с пределами программы. Вставка из буфера обмена и очистка ячейки её обходят, поэтому программа проверяет все значения ещё раз.' date=False formula=None
+  COMMENTS!A8  string  'SCHEDULE'                   date=False formula=None
+  COMMENTS!B8  string  "Row k sets the well control on [t_k, t_k+1]. The first row is t = 0; the last row only ends the run, its control cells are not used. Every row is a report time. Cells not used by the row's control mode are ignored." date=False formula=None
+  COMMENTS!C8  string  'Строка k задаёт режим скважины на отрезке [t_k, t_k+1]. В первой строке t = 0; последняя строка только завершает расчёт, режим в ней не читается. В каждый момент из таблицы записываются результаты. Ячейки, которые режим строки не использует, не читаются.' date=False formula=None
+  COMMENTS!A9  string  'Control modes'              date=False formula=None
+  COMMENTS!B9  string  'BHP: BHP target. OIL_RATE: Oil-rate target (stock-tank oil) and Minimum BHP. Shut-in: OIL_RATE with rate 0 and Minimum BHP 1.01325 bar(a).' date=False formula=None
+  COMMENTS!C9  string  'BHP: задано забойное давление (BHP target). OIL_RATE: заданы дебит нефти при стандартных условиях (Oil-rate target) и наименьшее забойное давление (Minimum BHP). Остановка скважины: OIL_RATE с дебитом 0 и Minimum BHP 1.01325 bar(a).' date=False formula=None
+  COMMENTS!A10 string  'Time steps'                 date=False formula=None
+  COMMENTS!B10 string  'Δt and h0 on NUMERICS are in hours. Each SCHEDULE interval is split into equal substeps not longer than Δt; after a change of control (not at t = 0) the first substep shrinks to h0, rounded down to substep/2^m, then doubles. h0 not less than Δt switches this off.' date=False formula=None
+  COMMENTS!C10 string  'Δt и h0 на листе NUMERICS задаются в часах. Каждый интервал SCHEDULE делится на равные подшаги не длиннее Δt. После смены режима (кроме t = 0) первый подшаг уменьшается до h0, округлённого вниз до подшага/2^m, и дальше удваивается; при h0 не меньше Δt подшаг не уменьшается.' date=False formula=None
+  COMMENTS!A11 string  'OIL_PVT'                    date=False formula=None
+  COMMENTS!B11 string  'PVTO-style table grouped by Rs: at least two Rs values, at least two rows each. The first row of each Rs is saturated (p = Pb(Rs)); higher pressures are undersaturated rows at fixed Rs, pressure increasing. Pb grows with Rs. Rsi on MODEL lies within the Rs range, pi not below Pb(Rsi).' date=False formula=None
+  COMMENTS!C11 string  'Таблица в форме PVTO, строки сгруппированы по Rs: не меньше двух значений Rs и не меньше двух строк на каждое. Первая строка группы описывает насыщенную нефть (p = Pb(Rs)), следующие, с ростом давления, недонасыщенную нефть при том же Rs. Давление насыщения Pb растёт с Rs. Rsi на листе MODEL лежит в диапазоне Rs таблицы, начальное давление pi не ниже Pb(Rsi).' date=False formula=None
+  COMMENTS!A12 string  'GAS_PVT'                    date=False formula=None
+  COMMENTS!B12 string  'At least two rows, pressure increasing.' date=False formula=None
+  COMMENTS!C12 string  'Не меньше двух строк, давление возрастает.' date=False formula=None
+  COMMENTS!A13 string  'RELPERM'                    date=False formula=None
+  COMMENTS!B13 string  'Sg increases from the first row, Sg = 0 with krg = 0, to the last row, Sg = 1 with kro = 0; these cells are locked. Add or remove intermediate points by inserting or deleting worksheet rows between the first and the last row.' date=False formula=None
+  COMMENTS!C13 string  'Sg возрастает от первой строки, Sg = 0 и krg = 0, до последней, Sg = 1 и kro = 0; эти ячейки заблокированы. Промежуточные точки добавляются и удаляются вставкой и удалением строк листа между первой и последней строкой.' date=False formula=None

@@ -1,0 +1,6 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver; h0 = 0.11 с
+energy across shut-in: PASSED
+mass through shut-in: PASSED
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver; h0 = 2 с
+energy across shut-in: PASSED
+mass through shut-in: PASSED

@@ -1,0 +1,11 @@
+﻿Проверяемое дерево: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-059\numerical_solver
+ОК     колесо прототипа содержит только пакет: ['radial_blackoil', 'radial_blackoil-1.0.3+gpn.1.dist-info']
+ОК     GPN объявляет radial-blackoil==1.0.3+gpn.1
+ОК     venv_wheels: pip check — No broken requirements found.
+ОК     venv_wheels: пакеты из site-packages окружения (D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-059\numerical_solver\build\debt059_acceptance\venv_wheels\Lib\site-packages\radial_blackoil\__init__.py; D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-059\numerical_solver\build\debt059_acceptance\venv_wheels\Lib\site-packages\gpn_multiphase_solver\__init__.py)
+ОК     venv_wheels: версия 1.0.3+gpn.1 (модуль) = 1.0.3+gpn.1 (дистрибутив) = 1.0.3+gpn.1
+ОК     venv_wheels: отпечаток примеров 03, 04, 05 побитово равен базовому
+ОК     venv_wheels: run_workbook — SUCCESS, results.xlsx и PNG на месте
+ОК     venv_editable: pip check — No broken requirements found.
+ОК     venv_editable: пакеты из проверяемого дерева (D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-059\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py; D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-059\numerical_solver\gpn_multiphase_solver\__init__.py)
+ПРИЁМКА: ПРОЙДЕНА

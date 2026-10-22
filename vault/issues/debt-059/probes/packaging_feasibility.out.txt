@@ -1,0 +1,33 @@
+﻿gpn_multiphase_solver-0.1.0-py3-none-any.whl: верхние каталоги ['gpn_multiphase_solver', 'gpn_multiphase_solver-0.1.0.dist-info']
+  Version: 0.1.0
+  Requires-Dist: numpy>=1.24
+  Requires-Dist: scipy>=1.10
+  Requires-Dist: matplotlib>=3.7
+  Requires-Dist: radial-blackoil==1.0.3+gpn.1
+  Requires-Dist: pytest>=7.0; extra == "dev"
+  Requires-Dist: XlsxWriter>=3.2; extra == "dev"
+radial_blackoil-1.0.3+gpn.1-py3-none-any.whl: верхние каталоги ['radial_blackoil', 'radial_blackoil-1.0.3+gpn.1.dist-info']
+  Version: 1.0.3+gpn.1
+  Requires-Dist: numpy>=1.24
+  Requires-Dist: scipy>=1.10
+  Requires-Dist: matplotlib>=3.7
+  Requires-Dist: XlsxWriter>=3.2
+venv_wheels: pip check — No broken requirements found.
+venv_wheels, импорты:
+gpn_multiphase_solver: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_feasibility\venv_wheels\Lib\site-packages\gpn_multiphase_solver\factory.py
+radial_blackoil: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_feasibility\venv_wheels\Lib\site-packages\radial_blackoil\__init__.py
+radial_blackoil.__version__ = 1.0.3+gpn.1; дистрибутив radial-blackoil: 1.0.3+gpn.1; numpy 2.5.2
+  03_standing_corey: 1.9 с
+текущее, импорты:
+gpn_multiphase_solver: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+radial_blackoil: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\__init__.py
+radial_blackoil.__version__ = 1.0.3; дистрибутив radial-blackoil: не установлен; numpy 2.5.2
+  03_standing_corey: 0.4 с
+отпечаток 03: СОВПАЛ
+03_standing_corey: записей 73, sha256 14050af404a5cd6a09af45d3716c9dd3a0cdafdcaebe74e64b5b5f03f8f2fcd9
+  p[0] = 8046561.079608719 Па, T[0] = 352.767995087974 К, q_o = 0.010854273305071048 м³ст/с
+venv_editable: pip check — No broken requirements found.
+venv_editable, импорты:
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_feasibility\proto\radial_blackoil\__init__.py
+D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\build\debt059_feasibility\gpn\gpn_multiphase_solver\__init__.py
+1.0.3+gpn.1

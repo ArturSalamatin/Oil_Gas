@@ -1,0 +1,60 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-046\numerical_solver
+проверка: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-046\numerical_solver\tests\test_example_scripts.py
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-046\numerical_solver\gpn_multiphase_solver\__init__.py
+Файлов: 45; зелёное состояние: помечено []
+
+удалено figure_io.export_emf: помечено 11
+  помечены: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '04a_high_gas_saturation/plot_profiles_50k.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: —
+
+удалено closed_form.solve_closed: помечено 3
+  помечены: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', 'two_phase_analytics.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: ['05_standing_table_rp/closed_form_convergence.py']
+
+удалено gpn_multiphase_solver.factory.SimulatorFactory: помечено 17
+  помечены: ['01_single_phase_no_jt/main.py', '01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04_table_table/main.py', '05_standing_table_rp/closed_form_convergence.py', '05_standing_table_rp/main.py', 'check_energy_balance_all.py', 'convergence.py', 'energy_balance.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: —
+
+удалено gpn_multiphase_solver.io.config.load_config: помечено 14
+  помечены: ['01_single_phase_no_jt/spatial_convergence.py', '02_single_phase_jt/check_slopes.py', '03_standing_corey/main.py', '04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', '05_standing_table_rp/closed_form_convergence.py', 'check_energy_balance_all.py', 'energy_balance.py', 'energy_balance_convergence.py', 'example_runner.py', 'mass_balance.py', 'temperature_asymptotics.py', 'two_phase_analytics.py', 'verify_balance_vs_solver.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: —
+
+удалено gpn_multiphase_solver.units.S_TO_DAY: помечено 4
+  помечены: ['01_single_phase_no_jt/spatial_convergence.py', 'energy_balance.py', 'energy_balance_convergence.py', 'mass_balance.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: ['04a_high_gas_saturation/plot_profiles_50k.py']
+
+удалено two_phase_analytics.report: помечено 3
+  помечены: ['03_standing_corey/main.py', '04_table_table/main.py', '05_standing_table_rp/main.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: ['04a_high_gas_saturation/grid_convergence.py', '14_high_gor_cooling/main.py', '15_oil_rate_ramp_up/main.py', 'closed_form.py', 'energy_balance.py', 'example_runner.py', 'pvt_plot.py', 'relperm_plot.py', 'rs_analytics.py', 'temperature_asymptotics.py', 'verify_balance_vs_solver.py']
+
+удалено two_phase_analytics.SG_EPS: помечено 3
+  помечены: ['03_standing_corey/main.py', '04_table_table/grid_convergence.py', '05_standing_table_rp/main.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: ['temperature_asymptotics.py']
+
+удалено temperature_asymptotics.single_phase_asymptote: помечено 3
+  помечены: ['02_single_phase_jt/main.py', '03_standing_corey/main.py', '05_standing_table_rp/main.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: —
+
+удалено two_phase_analytics.solve_closed: помечено 1
+  помечены: ['05_standing_table_rp/closed_form_convergence.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py', 'closed_form.py']
+
+удалено example_runner._PROTO_ROOT: помечено 2
+  помечены: ['04_table_table/grid_convergence.py', '04a_high_gas_saturation/grid_convergence.py']
+  лишние (в тексте нет имени): —
+  упоминают, но не помечены: —
+
+run_example(title → figure_title): помечено 22: ['01_single_phase_no_jt/main.py', '02_single_phase_jt/main.py', '03_standing_corey/main.py', '04_table_table/main.py', '04a_high_gas_saturation/main.py', '05_standing_table_rp/main.py', '06_table_corey_rp/main.py', '07_degassing_adiabatic_only/main.py', '08_degassing_jt/main.py', '09_degassing_latent_heat/main.py', '10_deep_degassing/main.py', '11_degassing_at_boundary/main.py', '12_large_drainage_radius/main.py', '13a_pwf_ramp_down/main.py', '13b_pwf_alternating/main.py', '14_high_gor_cooling/main.py', '15_oil_rate_ramp_up/main.py', '16_well_shut_in/main.py', '17_shut_in_strong_cooling/main.py', '19_rs150_cooling/main.py', '20_rs300_cooling/main.py', '21_rs100_cooling/main.py']
+
+convergence.py без строки 'from copy import deepcopy': ['run_series (строка 38): имя deepcopy не связано в модуле']
+
+03_standing_corey/main.py без строки 'import two_phase_analytics as tpa  # noqa: E402': ['overlay_temperature (строка 46): имя tpa не связано в модуле']

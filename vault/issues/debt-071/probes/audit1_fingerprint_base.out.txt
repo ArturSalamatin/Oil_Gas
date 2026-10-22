@@ -1,0 +1,25 @@
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+01_single_phase_no_jt          98a9e2de8144881b ОК
+02_single_phase_jt             283117b789e6cd3d ОК
+03_standing_corey              409ccfb8885b3587 ОК
+04_table_table                 9cb0ee07436b8644 ОК
+04a_high_gas_saturation        15dc354252c96fc0 ОК
+05_standing_table_rp           86665873bfb14643 ОК
+06_table_corey_rp              b745772a4b4570f5 ОК
+07_degassing_adiabatic_only    b3db76c84a0857ae ОК
+08_degassing_jt                1060c407784b5e27 ОК
+09_degassing_latent_heat       5dfd90365c77f9bc ОК
+10_deep_degassing              2b16f8c75773df90 ОК
+11_degassing_at_boundary       9677ccfca6c2eef6 ОК
+12_large_drainage_radius       7c88ff3f4ec7ad03 ОК
+13a_pwf_ramp_down              c777e48e26cbd4f5 ОК
+13b_pwf_alternating            041bc876f88d8cd1 ОК
+14_high_gor_cooling            d801857e833491c7 РАСХОЖДЕНИЕ, ожидалось 762bb8afd474ffa8
+15_oil_rate_ramp_up            a6e91358e1482446 ОК
+16_well_shut_in                87cd3498258184cf ОК
+17_shut_in_strong_cooling      1b97396204eff005 ОК
+18_prototype_input             9b429849070f30eb ОК
+19_rs150_cooling               bc6b6a0079e71ea9 ОК
+20_rs300_cooling               a3654c52e358fbf0 ОК
+21_rs100_cooling               103e639d7ba06def ОК
+итог: расхождений 1 из 23

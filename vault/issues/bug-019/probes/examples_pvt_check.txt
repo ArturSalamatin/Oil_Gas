@@ -1,0 +1,23 @@
+﻿пример                       PVT         R_s0 p_low, бар  p_b(R_s0)  min c_o,sat (30 т.)  min (2000 т.)     c_o,sat<0 при p, бар  c_g<0
+01_single_phase_no_jt        standing     0.0     150.00      -1.76 насыщенных состояний нет
+02_single_phase_jt           standing     0.0     150.00      -1.76 насыщенных состояний нет
+03_standing_corey            standing    50.0      80.00      94.26           +5.663e-03     +5.663e-03                        —      0
+04_table_table               table       30.0      80.00     150.00           +4.306e-04     +4.306e-04                        —      0
+04a_high_gas_saturation      table       30.0      40.00     150.00           +0.000e+00     +0.000e+00                        —      0
+05_standing_table_rp         standing    50.0      80.00      94.26           +5.663e-03     +5.663e-03                        —      0
+06_table_corey_rp            table       30.0      80.00     150.00           +4.306e-04     +4.306e-04                        —      0
+07_degassing_adiabatic_only  table       30.0      80.00     150.00           +4.306e-04     +4.306e-04                        —      0
+08_degassing_jt              table       30.0      80.00     150.00           +4.306e-04     +4.306e-04                        —      0
+09_degassing_latent_heat     table       30.0      80.00     150.00           +4.306e-04     +4.306e-04                        —      0
+10_deep_degassing            table       30.0      60.00     150.00           +4.306e-04     +4.306e-04                        —      0
+11_degassing_at_boundary     table       30.0      60.00     150.00           +4.306e-04     +4.306e-04                        —      0
+12_large_drainage_radius     table       30.0      60.00     150.00           +4.306e-04     +4.306e-04                        —      0
+13a_pwf_ramp_down            table       30.0      60.00     150.00           +4.306e-04     +4.306e-04                        —      0
+13b_pwf_alternating          table       30.0      60.00     150.00           +4.306e-04     +4.306e-04                        —      0
+14_high_gor_cooling          table      150.0      60.00     237.22           +1.164e-03     +1.164e-03                        —      0
+15_oil_rate_ramp_up          table       30.0       1.01     150.00           +0.000e+00     +0.000e+00                        —      0
+19_rs150_cooling             standing   150.0      30.00     241.85           +1.504e-03     +1.504e-03                        —      0
+20_rs500_cooling             standing   500.0      50.00     463.80           -5.601e-04     -5.601e-04              345.6…463.8      0
+21_rs100_cooling             standing   100.0      30.00     172.23           +2.826e-03     +2.826e-03                        —      0
+
+c_o,sat — в 1/бар; c_g<0 — число точек мелкой сетки, где B_g растёт с давлением

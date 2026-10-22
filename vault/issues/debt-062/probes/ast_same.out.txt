@@ -1,0 +1,3 @@
+﻿OK   numerical_solver/tests/test_energy_matrix_examples.py
+DIFF numerical_solver/tests/test_eq_references.py
+файлов: 2, с изменённой логикой: 1

@@ -1,0 +1,2 @@
+﻿конвертер без start_day == файл после strip: True
+float-полей (_FLOAT_FIELDS): 37

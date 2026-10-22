@@ -1,0 +1,30 @@
+﻿S1 шаг 1: 55 failed, 1431 passed, 271 deselected, 1 warning in 110.65s (0:01:50)  [ожидание 55 failed — OK]
+      5  tests/test_config.py::TestLiteralValidation
+     11  tests/test_config.py::TestNumericsWiredFields
+      9  tests/test_config.py::TestRemovedKeys
+     23  tests/test_examples.py::TestConfigs
+      2  tests/test_factory_prototype.py::TestFactoryTablePVT
+      1  tests/test_factory_prototype.py::TestInitialStateVsTable
+      3  tests/test_prototype_adapter.py::TestNewtonLimits
+      1  tests/test_rs_analytics.py::test_supersaturation_tolerance_from_config
+   strip: файлов: 31, меняется: 31 
+S2 + шаг 2: 31 failed, 1455 passed, 271 deselected, 1 warning in 100.63s (0:01:40)  [ожидание 31 failed — OK]
+      5  tests/test_config.py::TestLiteralValidation
+     11  tests/test_config.py::TestNumericsWiredFields
+      8  tests/test_config.py::TestRemovedKeys
+      2  tests/test_factory_prototype.py::TestFactoryTablePVT
+      1  tests/test_factory_prototype.py::TestInitialStateVsTable
+      3  tests/test_prototype_adapter.py::TestNewtonLimits
+      1  tests/test_rs_analytics.py::test_supersaturation_tolerance_from_config
+S3 + шаг 3: 8 failed, 1462 passed, 271 deselected, 1 warning in 103.73s (0:01:43)  [ожидание 8 failed — OK]
+      1  tests/test_config.py::TestNumericsWiredFields
+      2  tests/test_factory_prototype.py::TestFactoryTablePVT
+      1  tests/test_factory_prototype.py::TestInitialStateVsTable
+      3  tests/test_prototype_adapter.py::TestNewtonLimits
+      1  tests/test_rs_analytics.py::test_supersaturation_tolerance_from_config
+S4 + шаг 4: 1 failed, 1469 passed, 271 deselected, 1 warning in 99.63s (0:01:39)  [ожидание 1 failed — OK]
+      1  tests/test_rs_analytics.py::test_supersaturation_tolerance_from_config
+   пустых строк между SG_GAS и def rs_expected: 2
+S5 + шаг 5: 1470 passed, 271 deselected, 1 warning in 95.44s (0:01:35)  [ожидание 0 failed — OK]
+   fix_readmes: README меняется: 17 
+S6 + шаг 6: 1470 passed, 271 deselected, 1 warning in 93.57s (0:01:33)  [ожидание 0 failed — OK]

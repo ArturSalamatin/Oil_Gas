@@ -1,0 +1,9 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+Файлы с 'import *': —
+Зелёный прогон: 45 файлов, замечаний 0, 0.33 с
+
+Красное: convergence.py без строки 'from copy import deepcopy'
+  статическая (г): ['deepcopy в run_series (строка 38)']
+
+Красное: 03_standing_corey/main.py без строки 'import two_phase_analytics as tpa  # noqa: E402'
+  статическая (г): ['tpa в overlay_temperature (строка 46)']

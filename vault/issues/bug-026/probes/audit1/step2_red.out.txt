@@ -1,0 +1,7 @@
+FAILED tests/test_examples.py::TestWellShutIn::test_config_follows_decisions
+FAILED tests/test_examples.py::TestWellShutIn::test_gas_redissolves_and_rs_freezes
+FAILED tests/test_examples.py::TestWellShutIn::test_wellbore_heats_then_relaxes
+FAILED tests/test_examples.py::TestShutInStrongCooling::test_config_follows_decisions
+FAILED tests/test_examples.py::TestShutInStrongCooling::test_gas_dissolves_at_well_and_ring_remains
+FAILED tests/test_examples.py::TestShutInStrongCooling::test_wellbore_warms_monotonically
+6 failed, 13 passed, 451 deselected in 39.71s

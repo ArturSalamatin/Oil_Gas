@@ -1,0 +1,22 @@
+﻿01_single_phase_no_jt: побитово; время 0.5 → 0.3 с
+02_single_phase_jt: побитово; время 0.6 → 0.3 с
+03_standing_corey: побитово; время 0.6 → 0.4 с
+04_table_table: побитово; время 1.1 → 0.6 с
+04a_high_gas_saturation: побитово; время 21.5 → 17.0 с
+05_standing_table_rp: побитово; время 0.4 → 0.2 с
+06_table_corey_rp: побитово; время 1.2 → 0.8 с
+07_degassing_adiabatic_only: побитово; время 1.0 → 0.6 с
+08_degassing_jt: побитово; время 1.0 → 0.6 с
+09_degassing_latent_heat: побитово; время 1.0 → 0.6 с
+10_deep_degassing: побитово; время 1.9 → 1.3 с
+11_degassing_at_boundary: побитово; время 2.4 → 1.9 с
+12_large_drainage_radius: побитово; время 9.8 → 8.7 с
+13a_pwf_ramp_down: побитово; время 9.9 → 8.6 с
+13b_pwf_alternating: побитово; время 36.2 → 33.2 с
+14_high_gor_cooling: побитово; время 14.7 → 11.9 с
+15_oil_rate_ramp_up: побитово; время 9.6 → 7.4 с
+16_well_shut_in: побитово; время 19.3 → 15.2 с
+19_rs150_cooling: побитово; время 1.6 → 1.5 с
+20_rs300_cooling: побитово; время 5.8 → 4.9 с
+21_rs100_cooling: побитово; время 1.9 → 1.5 с
+итого: различий 0; время 142.1 → 117.7 с

@@ -1,0 +1,33 @@
+﻿.venv\Scripts\python : [WARNING] Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. 
+Endpoint value used; no extrapolation.
+At line:1 char:302
++ ... tch {} } }; .venv\Scripts\python ..\vault\issues\debt-079\probes\plan ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WARNING] Начал... extrapolation.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[WARNING] Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. Endpoint value used; no 
+extrapolation.
+[INFO] Расчет: 6 интервалов, T_total = 21600 с
+[INFO]   Интервал 1/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 2/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 3/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 4/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 5/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO]   Интервал 6/6: dt_hist=3600 с, 1 подшагов, dt_actual=3600.0 с
+[INFO] Симуляция завершена: 7 сохранённых шагов, T_final = 21600 с
+PASS test_relperm_mobile_gas_at_zero_raises: relperm.csv: k_rg в первой строке (S_g = 0) = 0.005, нужно 0. Ниже первой строки k_ro и k_rg берутся из неё: при k_rg > 0 свободный газ подвижен при S
+PASS test_relperm_rounding_noise_at_zero_raises: relperm.csv: k_rg в первой строке (S_g = 0) = 1e-30, нужно 0. Ниже первой строки k_ro и k_rg берутся из неё: при k_rg > 0 свободный газ подвижен при S
+PASS test_relperm_critical_gas_saturation_accepted: from_config прошёл
+PASS test_relperm_header_only_raises: relperm.csv: строк данных 0, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.
+PASS test_relperm_one_row_raises: relperm.csv: строк данных 1, нужно не меньше двух: k_ro и k_rg интерполируются по S_g.
+PASS test_relperm_sg_not_increasing_raises: relperm.csv: S_g не растёт строго: 0.2 после 0.4. Строки — по возрастанию S_g.
+PASS test_relperm_mobile_oil_at_edge_raises: relperm.csv: k_ro в последней строке (S_g = 0.8) = 0.05, нужно 0. Выше последней строки k_ro и k_rg берутся из неё: при k_ro > 0 нефть подвижна при лю
+PASS test_relperm_rounding_noise_at_edge_raises: relperm.csv: k_ro в последней строке (S_g = 0.8) = 1e-30, нужно 0. Выше последней строки k_ro и k_rg берутся из неё: при k_ro > 0 нефть подвижна при л
+PASS test_mobile_oil_edge_rejected_before_run: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-079\probes\work\relperm.csv: k_ro в последней строке (S_g = 0.01) = 0.98, нужно 0. Выше последней
+  (справка) обе ошибки: PASS первая строка раньше последней: relperm.csv: k_rg в первой строке (S_g = 0) = 0.005, нужно 0. Ниже первой строки k_ro и k_rg берутся из неё: при k_rg > 0 свободный газ подвижен при S
+PASS test_project_relperm_tables_accepted: 16 файлов в configs/examples/tests/data (нужно ≥ 16) + 1 в deliverables — приняты
+PASS прежняя таблица теста DEBT-071 отвергается: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-079\probes\work\relperm.csv: k_rg в первой строке (S_g = 0.05) = 0.005, нужно 0. Ниже первой стро
+PASS test_initial_below_table_not_repeated (0.05,0.9,0.0): Sg.min = 0.0, записи ['Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. Endpoint value used; no extrapolation.']
+
+итого: 12 PASS из 12

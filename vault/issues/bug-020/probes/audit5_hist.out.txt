@@ -1,0 +1,3 @@
+﻿13b_pwf_alternating: код D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver; 61 записей, 28.4 с → D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-020\probes\audit5_hist_13b_base.npz
+13b_pwf_alternating: код D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-020\probes\audit5\numerical_solver\gpn_multiphase_solver; 61 записей, 28.1 с → D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-020\probes\audit5_hist_13b_new.npz
+побитово: True; max|Δp| = 0.000e+00, max|ΔSg| = 0.000e+00, max|ΔRs| = 0.000e+00, max|ΔT| = 0.000e+00, max|Δregime| = 0.000e+00, max|Δt| = 0.000e+00, max|Δq_o| = 0.000e+00, max|Δq_g| = 0.000e+00

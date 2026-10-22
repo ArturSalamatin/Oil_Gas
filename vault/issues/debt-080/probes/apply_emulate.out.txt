@@ -1,0 +1,3 @@
+﻿hydro-prototype-анализ.md: CRLF до=True; после: CRLF 272, LF без CR 0; diff +45 -11
+открытые вопросы проектирования.md: CRLF до=True; после: CRLF 116, LF без CR 0; diff +2 -2
+нарушений сторожа: 0

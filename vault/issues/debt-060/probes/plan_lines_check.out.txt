@@ -1,0 +1,10 @@
+﻿solver: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+python-строк: 79, максимум 93 симв., нарушений: 0
+До найден: {'gpn_multiphase_solver/grid/log_radial.py': 1} — def _cell_centers_mass(r_left: np.ndarray, r_right: np.ndarr
+До найден: {'gpn_multiphase_solver/grid/log_radial.py': 1} — """Логарифмическая радиальная сетка с центрами масс.
+До найден: {'tests/test_grid.py': 1} — # Центр масс: r_j = r_R · sqrt(exp(-0.25·ln(0.25)/(1-0.25) -
+До найден: {'tests/test_grid.py': 1} — def test_flux_exact_for_any_N(self):
+До найден: {'tests/test_grid.py': 1} — # ── Центр масс: независимая верификация ───────────────────
+До найден: {'tests/test_prototype_adapter.py': 1} — Допуск ~2% из-за разных центров ячеек:
+До найден: {'tests/test_val001.py': 1} — def test_pressure_log_profile(self):
+блоков «До» найдено: 7 (ожидание 7, каждый — 1 раз)

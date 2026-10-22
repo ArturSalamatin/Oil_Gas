@@ -2,10 +2,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: текущий скрипт",
-            "type": "node-terminal",
+            // Запуск открытого скрипта на venv решателя.
+            "name": "Python: текущий скрипт (numerical_solver)",
+            "type": "debugpy",
             "request": "launch",
-            "command": "${workspaceFolder}/method_of_moments/.venv/Scripts/python.exe ${file}",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder}/numerical_solver/.venv/Scripts/python.exe",
+            "cwd": "${workspaceFolder}/numerical_solver"
+        },
+        {
+            // Старый venv метода моментов — подход завершён, оставлено для справки.
+            "name": "Python: текущий скрипт (method_of_moments)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder}/method_of_moments/.venv/Scripts/python.exe",
             "cwd": "${workspaceFolder}/method_of_moments"
         }
     ]

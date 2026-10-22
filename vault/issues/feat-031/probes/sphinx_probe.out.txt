@@ -1,0 +1,70 @@
+﻿Срез: D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice
+AUX: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\doc\problem_statement.aux, меток в таблице: 161 (eq: 130)
+sphinx 9.1.0, myst-parser 5.1.0, docutils 0.22.4
+Публичный интерфейс пробы: функций 31, классов 35, модулей 4
+
+=== language = 'ru'
+  sphinx-build: код 0
+  подписи полей: ['Параметры', 'Результат', 'Тип результата', 'Исключение', 'Type']
+  рубрики: ['Заметки', 'Примеры']
+  «Параметры» сырым текстом (раздел не распознан): False
+  в тексте '(68)': True
+  в тексте 'п. 4.1': True
+  в тексте 'eq:': False
+  в тексте 'ssec:': False
+  атрибут p_wf: True
+  предупреждений всего: 35
+  [README] myst.xref_missing: 26
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:14: WARNING: 'myst' cross-reference target not found: 'doc/problem_statement.tex' [myst.xref_missing]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:20: WARNING: 'myst' cross-reference target not found: 'gpn_multiphase_solver/' [myst.xref_missing]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:21: WARNING: 'myst' cross-reference target not found: 'HydroSolverPrototype/Prototype_1.0.3/' [myst.xref_missing]
+  [api] docutils: 9
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:11: WARNING: Definition list ends without a blank line; unexpected unindent. [docut
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:15: ERROR: Unexpected indentation. [docutils]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:19: WARNING: Block quote ends without a blank line; unexpected unindent. [docutils]
+  частые сообщения:
+         5  'myst' cross-reference target not found: 'HydroSolverPrototype/Prototy
+         4  'myst' cross-reference target not found: 'CHANGELOG.md' [myst.xref_mis
+         3  Unexpected indentation. [docutils]
+         3  Block quote ends without a blank line; unexpected unindent. [docutils]
+         2  Definition list ends without a blank line; unexpected unindent. [docut
+         2  'myst' cross-reference target not found: 'doc/problem_statement.tex' [
+         2  'myst' cross-reference target not found: 'examples/README.md' [myst.xr
+         2  'myst' cross-reference target not found: 'examples/18_prototype_input/
+         1  Undefined substitution referenced: "G^o". [docutils]
+         1  'myst' cross-reference target not found: 'gpn_multiphase_solver/' [mys
+         1  'myst' cross-reference target not found: 'examples/' [myst.xref_missin
+         1  'myst' cross-reference target not found: 'configs/' [myst.xref_missing
+
+=== language = 'en'
+  sphinx-build: код 0
+  подписи полей: ['Parameters', 'Returns', 'Return type', 'Raises', 'Type']
+  рубрики: ['Notes', 'Примеры']
+  «Параметры» сырым текстом (раздел не распознан): False
+  в тексте '(68)': True
+  в тексте 'п. 4.1': True
+  в тексте 'eq:': False
+  в тексте 'ssec:': False
+  атрибут p_wf: True
+  предупреждений всего: 35
+  [README] myst.xref_missing: 26
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:14: WARNING: 'myst' cross-reference target not found: 'doc/problem_statement.tex' [myst.xref_missing]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:20: WARNING: 'myst' cross-reference target not found: 'gpn_multiphase_solver/' [myst.xref_missing]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\slice\README.md:21: WARNING: 'myst' cross-reference target not found: 'HydroSolverPrototype/Prototype_1.0.3/' [myst.xref_missing]
+  [api] docutils: 9
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:11: WARNING: Definition list ends without a blank line; unexpected unindent. [docut
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:15: ERROR: Unexpected indentation. [docutils]
+      D:\Lessons\Grants\2026\GPN\Oil_Gas\dist\probe-feat031\venv\Lib\site-packages\gpn_multiphase_solver\io\output.py:docstring of gpn_multiphase_solver.io.output.plot_pvt_properties:19: WARNING: Block quote ends without a blank line; unexpected unindent. [docutils]
+  частые сообщения:
+         5  'myst' cross-reference target not found: 'HydroSolverPrototype/Prototy
+         4  'myst' cross-reference target not found: 'CHANGELOG.md' [myst.xref_mis
+         3  Unexpected indentation. [docutils]
+         3  Block quote ends without a blank line; unexpected unindent. [docutils]
+         2  Definition list ends without a blank line; unexpected unindent. [docut
+         2  'myst' cross-reference target not found: 'doc/problem_statement.tex' [
+         2  'myst' cross-reference target not found: 'examples/README.md' [myst.xr
+         2  'myst' cross-reference target not found: 'examples/18_prototype_input/
+         1  Undefined substitution referenced: "G^o". [docutils]
+         1  'myst' cross-reference target not found: 'gpn_multiphase_solver/' [mys
+         1  'myst' cross-reference target not found: 'examples/' [myst.xref_missin
+         1  'myst' cross-reference target not found: 'configs/' [myst.xref_missing

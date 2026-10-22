@@ -1,0 +1,3 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver; R_ext = 200 м, N = 800, newton_cell_tol = None; V_max/V_min = 3.925e+06, eps_маш*V_max/V_min = 8.71e-10
+R200_N800_none: прошёл; R_s(r_w) конец 74.32518, min dR_s на останове -2.85e-02
+  время 179 с, якобианов 17141, advance 1077 (отказов 150), отказов адаптера 140, из них «только ячейка» 0

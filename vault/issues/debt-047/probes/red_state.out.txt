@@ -1,0 +1,45 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py
+
+== load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 10 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           ПРОШЛИ: t = 24 ч, S_g max 0, T 348.17…350 К, конечны: True, max|T − T_эт| = 3.86 К
+c_p_oil_negative       ПРОШЛИ: t = 24 ч, S_g max 0, T -689.83…350 К, конечны: True, max|T − T_эт| = 1.04e+03 К
+c_p_oil_inf            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+                         предупреждение RuntimeWarning: invalid value encountered in scalar multiply
+c_p_gas_zero           ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+c_p_gas_negative       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+rho_cp_solid_zero      ПРОШЛИ: t = 24 ч, S_g max 0, T 349.09…352.49 К, конечны: True, max|T − T_эт| = 0.696 К
+rho_cp_solid_negative  ПРОШЛИ: t = 24 ч, S_g max 0, T -3.4071e+42…6.101e+37 К, конечны: True, max|T − T_эт| = 3.41e+42 К
+lambda_solid_negative  ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0.00336 К
+lambda_solid_inf       run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+                         предупреждение RuntimeWarning: invalid value encountered in scalar multiply
+lambda_oil_negative    ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 7.78e-05 К
+lambda_gas_negative    ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 0 К
+L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.78…352.4 К, конечны: True, max|T − T_эт| = 4.78e-10 К
+L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+
+== load_config, from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 11.783…350 К, конечны: True, max|T − T_эт| = 340 К
+c_p_oil_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T -7947.3…350 К, конечны: True, max|T − T_эт| = 8.3e+03 К
+c_p_oil_inf            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+                         предупреждение RuntimeWarning: invalid value encountered in scalar multiply
+c_p_gas_zero           ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0.0618 К
+c_p_gas_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0.128 К
+rho_cp_solid_zero      ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 348.86…352.43 К, конечны: True, max|T − T_эт| = 0.873 К
+rho_cp_solid_negative  ПРОШЛИ: t = 24 ч, S_g max 0.09991, T -7.0574e+42…1.0106e+41 К, конечны: True, max|T − T_эт| = 7.06e+42 К
+lambda_solid_negative  ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0.00484 К
+lambda_solid_inf       run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+                         предупреждение RuntimeWarning: invalid value encountered in scalar multiply
+lambda_oil_negative    ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0.000109 К
+lambda_gas_negative    ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 1.42e-06 К
+L_degas_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…355.13 К, конечны: True, max|T − T_эт| = 3.23 К
+L_degas_nan            run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+mu_JT_oil_nan          run: ValueError: array must not contain infs or NaNs  [_function_base_impl.py:684]
+
+== в обход _validate (правка после load_config), from_config и run: configs/baseline.json, один тепловой параметр подменён, 24 ч при p_wf = 6 МПа
+эталон (без подмены)   ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, конечны: True, max|T − T_эт| = 0 К
+c_p_oil_zero           ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 11.783…350 К, конечны: True, max|T − T_эт| = 340 К
+c_p_oil_negative       ПРОШЛИ: t = 24 ч, S_g max 0.09991, T -7947.3…350 К, конечны: True, max|T − T_эт| = 8.3e+03 К
+rho_cp_solid_negative  ПРОШЛИ: t = 24 ч, S_g max 0.09991, T -7.0574e+42…1.0106e+41 К, конечны: True, max|T − T_эт| = 7.06e+42 К

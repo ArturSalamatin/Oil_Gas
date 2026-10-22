@@ -1,241 +1,296 @@
 ---
 name: модули-simulator-оркестратор
-description: Simulator (Mediator) — цикл по времени, расписание BC, адаптация dt, SimulationState, SimulationHistory
+description: Simulator (Mediator) — цикл по времени, расписание BC, локальное дробление шага в _advance (DEBT-015), SimulationState, SimulationHistory
 metadata:
   type: project
 ---
 
 # Simulator — оркестратор (Mediator)
 
-## Класс Simulator
+> **Обновлено 2026-10-10 ([[DEBT-050]]):** цикл шага, конструктор, фабрика и `SimulationHistory` — по коду после [[DEBT-015]] (локальное дробление в `Simulator._advance`, параметр `max_retries`) и [[DEBT-047]] (`_check_temperature`); [[DEBT-075]] — `_check_hydro_state`.
+
+## Класс Simulator (реализовано: simulator.py)
 
 ```python
 class Simulator:
     """Координирует гидродинамику и теплоперенос.
 
-    Зависит только от абстракций: Grid, HydroSolver, EnergySolver.
-    Конкретные реализации передаются через конструктор (Dependency Injection).
+    Зависит только от абстракций: Grid, HydroSolver, EnergySolver, HydroPVT.
+    Конкретные реализации передаются через конструктор (DI).
     """
 
-    def __init__(self,
-                 grid: Grid,
-                 hydro: HydroSolver,
-                 energy: EnergySolver,
-                 schedule: WellSchedule,
-                 config: NumericsConfig,
-                 output_config: OutputConfig):
-        self.grid = grid
-        self.hydro = hydro
-        self.energy = energy
-        self.schedule = schedule
-        self.config = config
-        self.output_config = output_config
+    def __init__(self, grid: Grid, hydro: HydroSolver,
+                 energy: EnergySolver, pvt: HydroPVT,
+                 schedule: TimeSchedule,
+                 max_retries: int = 9):
+        ...
 
-    def run(self) -> SimulationHistory:
-        """Основной цикл по времени. Template Method."""
+    def run(self, initial_state: SimulationState) -> SimulationHistory:
+        """Основной цикл по времени."""
         ...
 ```
 
-## SimulationState — состояние системы
+pvt нужен для WellData (rho_o_std, rho_g_std → массовые дебиты).
+initial_state передаётся в run() — Factory создаёт его отдельно.
+max_retries — глубина локального дробления шага (DEBT-015): наименьший
+подшаг dt/2**max_retries. Фабрика передаёт `numerics.max_retries`
+(целое в [0, 20], по умолчанию 9 — проверка в `_validate`).
+Параметр output_config удалён в [[DEBT-053]]: Simulator его не читал;
+уровень журнала задаёт фабрика (`setup_logging(config.output.log_level)`).
+
+## SimulationState — состояние системы (реализовано: state.py)
 
 ```python
 @dataclass
 class SimulationState:
-    p: np.ndarray        # давление, [N], Па
-    Sg: np.ndarray       # газонасыщенность, [N]
-    Rs: np.ndarray       # фактическое газосодержание, [N], м³ст/м³ст
-    T: np.ndarray        # температура, [N], К
-    regime: np.ndarray   # режим ячейки: 1 или 2, [N], int
+    p: np.ndarray        # [N] давление, Па
+    Sg: np.ndarray       # [N] газонасыщенность
+    Rs: np.ndarray       # [N] газосодержание, м³ст/м³ст
+    T: np.ndarray        # [N] температура, К
+    regime: np.ndarray   # [N] int: 1=двухфазная, 2=однофазная
     t: float             # текущее время, с
-
-    def copy(self) -> 'SimulationState':
-        """Глубокая копия (numpy-массивы копируются)."""
-        return SimulationState(
-            p=self.p.copy(), Sg=self.Sg.copy(), Rs=self.Rs.copy(),
-            T=self.T.copy(), regime=self.regime.copy(), t=self.t)
 ```
 
-Начальное состояние (eq. 3 problem_statement.tex):
+Начальное состояние создаётся в Factory (не в Simulator):
 ```python
-def initial_state(self) -> SimulationState:
-    N = self.grid.N
-    return SimulationState(
-        p=np.full(N, self.config.p0),
-        Sg=np.zeros(N),
-        Rs=np.full(N, self.config.Rs0),
-        T=np.full(N, self.config.T0),
-        regime=np.full(N, 2, dtype=int),  # все ячейки однофазные
-        t=0.0)
+initial_state = SimulationState(
+    p=np.full(N, ic.p0), Sg=np.zeros(N), Rs=np.full(N, ic.Rs0),
+    T=np.full(N, ic.T0), regime=np.full(N, 2, dtype=int), t=0.0)
 ```
 
 ## Цикл по времени
 
-Двухуровневый цикл: внешний — по интервалам истории, внутренний — по подшагам интегрирования.
+Три уровня: интервалы истории (смена граничных условий) → шаги $dt$
+расписания (`TimeSchedule.substeps`) → подшаги $h$ локального дробления
+внутри `_advance` (DEBT-015). Записи истории — только на концах
+интервалов (DEBT-013).
 
 ```python
-def run(self) -> SimulationHistory:
-    state = self.initial_state()
+def run(self, initial_state: SimulationState) -> SimulationHistory:
     history = SimulationHistory()
-    history.append(state, well_data=None)  # начальное состояние
+    balance = EnergyBalanceAccumulator(self._grid)    # DEBT-013: всегда
+    mass = (MassBalanceAccumulator()                   # DEBT-039
+            if self._hydro.component_inventories(initial_state) is not None
+            else None)                                 # None — двойник без запаса
+    state = initial_state
+    history.append(t=state.t, state=state,
+                   hydro=self._zero_hydro(state),
+                   well=self._zero_well_data(state),
+                   mass_balance=self._mass_snapshot(mass, state))
 
-    t = 0.0
+    # ── Внешний цикл: по интервалам истории ──
+    for k, interval in enumerate(self._schedule.intervals):
+        n_sub, dt = self._schedule.substeps(k)
 
-    # Внешний цикл: по интервалам истории
-    for k, interval in enumerate(self.schedule.history):
-        p_wf = interval.p_wf
-        n_sub, dt = self.schedule.substeps(k)
-
-        # Внутренний цикл: подшаги интегрирования
+        # ── Внутренний цикл: шаги dt расписания ──
         for step in range(n_sub):
-            # 1. Гидродинамика → p, Sg, Rs + потоки G, Q
-            hydro_result = self.hydro.solve(
-                state, dt, p_wf, self.config.p0, self.config.Rs0)
+            # Шаг dt; не сошедшийся подшаг дробится внутри _advance
+            state, hydro_result = self._advance(
+                state, dt, interval.bc, balance, mass)
 
-            # 2. Температура (на известных p, Sg, Rs, Q, G)
-            T_new = self.energy.solve(
-                hydro_result, state, dt, self.config.T0)
-
-            # 3. Обновить состояние
-            t += dt
-            state = SimulationState(
-                p=hydro_result.state.p,
-                Sg=hydro_result.state.Sg,
-                Rs=hydro_result.state.Rs,
-                T=T_new,
-                regime=hydro_result.state.regime,
-                t=t)
-
-        # Сохранить результат на конце интервала истории
-        well_data = WellData(
-            q_o_std=-hydro_result.G_o[0],   # G_o[0] < 0 при добыче, дебит > 0
-            q_g_std=-hydro_result.G_g[0])
-        history.append(state, well_data)
+            # 4. Запись на конце интервала истории (DEBT-013)
+            if step == n_sub - 1:
+                history.append(t=state.t, state=state,
+                               hydro=hydro_result, well=WellData(...),
+                               balance=balance.snapshot(),
+                               mass_balance=self._mass_snapshot(mass, state))
 
     return history
 ```
 
-Результаты сохраняются **только на концах интервалов истории** — это то, что пользователь хочет видеть. Промежуточные подшаги не сохраняются (экономия памяти).
+### Шаг `_advance` — локальное дробление (DEBT-015)
 
-Число записей в history = len(schedule.history) + 1 (начальное состояние).
+```python
+def _advance(self, state, dt, bc, balance, mass
+             ) -> tuple[SimulationState, HydroResult]:
+    n_units = 2 ** self._max_retries  # dt в единицах наименьшего подшага
+    done = 0                          # пройдено единиц
+    size = n_units                    # текущий подшаг, единиц; степень двойки
+    while done < n_units:
+        h = dt / (n_units // size)    # деление на степень двойки — точно
 
-## TimeSchedule — история + шаг интегрирования
+        # 1. Гидродинамика; отказ сходимости — подшаг пополам, из того же state
+        try:
+            hydro_result = self._hydro.solve(state, h, bc)
+        except HydroConvergenceError as exc:
+            if size == 1:             # исчерпан наименьший подшаг dt/2**max_retries
+                raise RuntimeError(self._failure_message(state, dt, exc)) from exc
+            size //= 2
+            continue
+
+        # 1a. S_g вне [0, 1], p ≤ 0, R_s < 0 или не конечны → RuntimeError,
+        #     не дробится (DEBT-075)
+        self._check_hydro_state(hydro_result.state, h)
+
+        # Баланс массы — только принятый подшаг (DEBT-039)
+        if mass is not None:
+            mass.add_step(hydro_result)
+
+        # 2. Энергия на замороженных p, Sg, Rs подшага; коэффициенты СЛАУ —
+        #    в накопитель баланса энергии (DEBT-013)
+        T_new = self._energy.solve(hydro_result, state, h, bc, collect=balance)
+
+        # 2a. T ≤ 0 или не конечная → RuntimeError, не дробится (DEBT-047)
+        self._check_temperature(T_new, h, hydro_result.state.t)
+
+        # 3. Новое состояние: T из энергии, остальное из гидро
+        state = SimulationState(p=hydro_result.state.p, Sg=hydro_result.state.Sg,
+                                Rs=hydro_result.state.Rs, T=T_new,
+                                regime=hydro_result.state.regime,
+                                t=hydro_result.state.t)
+        done += size
+
+        # Рост ×2 — только если граница кратна удвоенному подшагу:
+        # подшаги всегда dt/2**k и стыкуются без остатка
+        if done < n_units and done % (2 * size) == 0:
+            size *= 2
+
+    # Были отказы — user_log.info: число подшагов, наименьший, число отказов
+    return state, hydro_result
+```
+
+Алгоритм G1a, пример и параметры — [[P4-адаптивный-шаг]]; замеры и
+почему локальное, а не равномерное — [[локальное дробление шага проходит останов при суточном dt_integration — равномерное падает на одном подшаге из 512]].
+
+Ключевые отличия от плана:
+- `run(initial_state)` — initial_state передаётся извне (Factory создаёт)
+- `interval.bc` — полный BoundaryConditions (WellControl + p_ext + T_ext + Rs_ext + Sg_ext)
+- `energy.solve` получает весь `bc`: $T_{ext}$ берётся из `bc.T_ext`, а не
+  из config (может меняться по интервалам)
+- отбор записей — только конец интервала (DEBT-013); второго механизма
+  (`save_every`) больше нет, частоту вывода задаёт расписание
+- дробление шага — в `Simulator`, а не в адаптере (DEBT-015): адаптер
+  делает один шаг и при отказе Ньютона бросает `HydroConvergenceError`,
+  `_advance` делит пополам только не сошедшийся подшаг. Энергия идёт
+  ровно по подшагам гидродинамики (BUG-010). Ловится только
+  `HydroConvergenceError` — иной `RuntimeError` из гидродинамики уходит
+  наружу без повторов. Отказ на наименьшем подшаге — `RuntimeError` с
+  текстом `_failure_message`: глубина дробления, $t$ подшага, число
+  двухфазных ячеек, $\max S_g$ и оба рычага (`numerics.max_retries`,
+  `time.dt_integration`); причину текст не называет. Начало текста
+  цитируют README примеров 03, 05, 06, 07, 10 и тесты. В конце — текст
+  отказа гидродинамики последнего подшага (DEBT-054): у прототипа он
+  называет, какое условие сходимости не выполнено
+- накопитель баланса энергии передаётся в `energy.solve(..., collect=)`
+  на **каждом** принятом подшаге и вызывается безусловно: баланс должен
+  считаться всегда, при любой структуре истории. См. [[модули-energy-tridiag]]
+- накопитель баланса массы `MassBalanceAccumulator` (DEBT-039,
+  `gpn_multiphase_solver/mass_balance.py`) создаётся, если решатель отдаёт
+  запас начального состояния (`HydroSolver.component_inventories` не `None`);
+  `_advance` добавляет в него `HydroResult.int_G_*` только принятого
+  подшага. Откатывать нечего: отказ гидродинамики случается до обоих
+  накопителей. На каждой записи `_mass_snapshot` берёт у решателя запас
+  текущего состояния. У двойников без запаса снимки — `None`
+- после каждого подшага энергии `_advance` проверяет температуру
+  (`_check_temperature`, DEBT-047): $T \le 0$ или не конечная $T$ →
+  `RuntimeError` с $\Delta t$ подшага, временем его конца, ячейкой, $r$ и
+  значением. Гидродинамика от $T$ не зависит, поэтому без проверки
+  нефизичная $T$ доходила до истории молча. Проверка одна на любой
+  `EnergySolver`; отказ не дробится — дробление ловит только
+  `HydroConvergenceError` (DEBT-015)
+- сразу после каждого принятого `hydro.solve`, до баланса массы и
+  энергии, `_advance` проверяет состояние гидродинамики
+  (`_check_hydro_state`, DEBT-075): $S_g \notin [0, 1]$, $p \le 0$,
+  $R_s < 0$ или не конечное значение → `RuntimeError` с $\Delta t$
+  подшага, временем его конца, ячейкой, $r$, величиной и значением.
+  Сравнение точное. Проверка одна на любой `HydroSolver`; от $S_o < 0$
+  раньше защищал только порог 0.98 в Ньютоне прототипа ([[DEBT-073]])
+
+Подробности: [[контейнер-simulation-history]].
+
+## TimeSchedule — runtime-обёртка над TimeConfig
 
 Аналог InjectorGPN: `t_minor_step` + `t_major_step`.
 
+**Данные** хранятся в `TimeConfig` (io/config.py): `dt_integration`, `history: list[HistoryInterval]` (`start_day` удалён, [[DEBT-008]]).
+`HistoryInterval` (config.py) содержит `dt`, `control`, `p_wf`, `q_oil`, `min_bhp` (последние два — управление по дебиту нефти, FEAT-020) — сырые данные из JSON.
+
+**Runtime**: Factory (фаза 6) создаёт `TimeSchedule` из `TimeConfig`, преобразуя
+каждый `HistoryInterval` → `WellControl` (`_create_well_control`: `control = "pressure"` →
+`PressureControl(p_wf)`, `"rate"` → `RateControl(q_oil, min_bhp)`; см. [[модули-bc-граничные-условия]]).
+
 ```python
 @dataclass
-class HistoryInterval:
-    """Один интервал истории."""
-    dt: float        # длительность интервала (шаг истории), с
-    p_wf: float      # забойное давление на интервале, Па
+class ScheduleInterval:
+    """Один интервал (runtime-уровень)."""
+    dt: float                  # длительность, с
+    bc: BoundaryConditions     # WellControl + p_ext + T_ext + Rs_ext + Sg_ext
 
 class TimeSchedule:
-    """Расписание: разбивка по интервалам истории + шаг интегрирования.
-
-    Аналог InjectorGPN: t_major_step + t_minor_step.
-    """
-
-    def __init__(self, dt_integration: float, history: list[HistoryInterval]):
-        self.dt_integration = dt_integration
-        self.history = history
+    def __init__(self, dt_integration: float,
+                 intervals: list[ScheduleInterval]):
+        ...
 
     def substeps(self, interval_idx: int) -> tuple[int, float]:
-        """Число подшагов и фактический шаг для интервала k.
+        """n_sub = ceil(dt/dt_int), dt_actual = dt/n_sub."""
+        ...
 
-        n_sub = ceil(dt_hist / dt_integration)
-        dt_actual = dt_hist / n_sub
+    def total_time(self) -> float: ...
 
-        Гарантии:
-        - dt_actual ≤ dt_integration
-        - n_sub · dt_actual = dt_hist ровно
-        """
-        dt_hist = self.history[interval_idx].dt
-        n_sub = int(np.ceil(dt_hist / self.dt_integration))
-        n_sub = max(n_sub, 1)
-        dt_actual = dt_hist / n_sub
-        return n_sub, dt_actual
-
-    def total_time(self) -> float:
-        return sum(iv.dt for iv in self.history)
+    @property
+    def n_intervals(self) -> int: ...
 ```
 
-Ключевое свойство: `n_sub · dt_actual = dt_hist` **точно**, без накопления ошибки округления. Каждый интервал истории покрывается целым числом одинаковых подшагов.
+Ключевое свойство: `n_sub · dt_actual = dt_hist` **точно**.
 
-## SimulationHistory — накопление результатов
+Factory создаёт TimeSchedule из TimeConfig, преобразуя `HistoryInterval` (данные: control, p_wf, q_oil, min_bhp) → `ScheduleInterval` (runtime: BoundaryConditions с WellControl).
+
+## SimulationHistory — контейнер результатов (реализовано: state.py)
 
 ```python
+@dataclass
 class SimulationHistory:
-    def __init__(self):
-        self.times: list[float] = []
-        self.states: list[SimulationState] = []
+    times: list[float]
+    states: list[SimulationState]
+    hydro_results: list[HydroResult]
+    well_data: list[WellData]
+    balance: list[dict]              # DEBT-013: члены баланса энергии
+    mass_balance: list[dict | None]  # DEBT-039: None — решатель массу не сохраняет
 
-    def append(self, state: SimulationState):
-        self.times.append(state.t)
-        self.states.append(state.copy())  # глубокая копия!
+    def append(self, t, state, hydro, well,
+               balance=None, mass_balance=None): ...  # balance=None → нулевой снимок
 
-    def to_arrays(self) -> dict:
-        """Упаковка в numpy-массивы для сохранения/визуализации."""
-        n_steps = len(self.times)
-        N = self.states[0].p.shape[0]
-        return {
-            'times': np.array(self.times),             # [n_steps]
-            'p': np.array([s.p for s in self.states]),  # [n_steps, N]
-            'T': np.array([s.T for s in self.states]),
-            'Sg': np.array([s.Sg for s in self.states]),
-            'Rs': np.array([s.Rs for s in self.states]),
-        }
+    @property
+    def n_saved(self) -> int: ...
 ```
 
-Глубокая копия при append — обязательна! Иначе все записи будут ссылаться на последнее состояние (мутабельные numpy-массивы).
+Simulator создаёт новый SimulationState на каждом шаге (не мутирует старый), поэтому глубокая копия при append не нужна. Подробности: [[контейнер-simulation-history]].
 
-## SimulatorFactory — фабрика
+## SimulatorFactory — фабрика (реализовано: factory.py)
 
 ```python
 class SimulatorFactory:
     @staticmethod
-    def from_json(path: str) -> Simulator:
-        config = load_config(path)
-
-        grid = LogRadialGrid(
-            r_well=config.geometry.r_well,
-            R_ext=config.geometry.R_ext,
-            h=config.geometry.h,
-            N=config.grid.N,
-            k=config.rock.permeability)
-
-        pvt = create_pvt(config)  # FullPVT (гидро + тепловые), см. [[P5-pvt-архитектура]]
-        relperm = create_relperm(config.relperm)       # RelPermModel
-
-        hydro = NewtonHydroSolver(grid, pvt, relperm, config.numerics)
-        energy = TridiagEnergySolver(grid, pvt, config.rock, config.thermal)
-
-        schedule = WellSchedule(config.boundary_conditions.schedule)
-
-        return Simulator(grid, hydro, energy, schedule,
-                         config.numerics, config.output)
+    def from_config(config: SimulationConfig) -> tuple[Simulator, SimulationState]:
+        grid = LogRadialGrid(...)
+        pvt = create_pvt(config)          # "standing" → StandingFullPVT
+        relperm = create_relperm(config)  # "corey" → CoreyRP
+        hydro = _create_prototype_hydro(config, grid, pvt, relperm)  # PrototypeHydroAdapter; до FEAT-014 — AnalyticalHydroSolver
+        energy = TridiagEnergySolver(grid, pvt, config.rock)
+        schedule = _create_schedule(config)
+        simulator = Simulator(grid, hydro, energy, pvt, schedule,
+                              max_retries=config.numerics.max_retries,
+                              relperm=relperm)
+        initial_state = SimulationState(p=p0, Sg=0, Rs=Rs0, T=T0, regime=2, t=0)
+        return simulator, initial_state
 ```
 
 Фабрика — единственное место, где создаются конкретные классы. Остальной код работает с абстракциями.
 
-Функции `create_pvt`, `create_relperm` — внутри фабрики, выбирают конкретный класс по `config.pvt.model`:
-```python
-def create_pvt(pvt_config, thermal_config):
-    if pvt_config.model == "standing":
-        return StandingPVT(pvt_config, thermal_config)
-    elif pvt_config.model == "table":
-        return TablePVT(pvt_config, thermal_config)
-    elif pvt_config.model == "custom":
-        module = importlib.import_module(pvt_config.module_path)
-        cls = getattr(module, pvt_config.class_name)
-        return cls(pvt_config, thermal_config)
-    else:
-        raise ValueError(f"Unknown PVT model: {pvt_config.model}")
-```
+Помощники `_create_prototype_hydro`, `_create_schedule`, `_create_well_control` — модульные функции в factory.py. `create_pvt`, `create_relperm` — публичные (DEBT-011, до него `_create_*`): по ним диагностика и примеры собирают PVT и ОФП без решателя.
+
+**Объекты задачи у `Simulator` (DEBT-011).** Свойства только для чтения `grid`, `pvt`, `relperm` — те же объекты, которыми считалась задача: `pvt` — общий у решателя энергии и гидродинамики, `relperm` — тот, что фабрика отдала гидродинамике (аргумент конструктора, необязательный: тестовые двойники его не передают, тогда `None`). Для Кори прототип получает ОФП таблицей на 101 узле, а `relperm` — формула `CoreyRP`. Примеры и диагностика обращаются к ним вместо `sim._grid`, `sim._energy._pvt`; страж — `tests/test_example_scripts.py::test_no_private_solver_access`.
+
+Сейчас поддерживаются: PVT = "standing" / "table", RelPerm = "corey" / "table", HydroSolver = `PrototypeHydroAdapter` (с FEAT-014 — всегда он; заглушка `AnalyticalHydroSolver` удалена из пакета в DEBT-005 и живёт как тестовый двойник `LogProfileHydroStub` в `tests/_doubles.py`).
 
 ## Связанные заметки
 
-- [[architecture-numerical-solver]]
+- [[архитектура библиотеки numerical_solver]]
 - [[модули-hydro-newton]] — HydroResult, HydroSolver
 - [[модули-energy-tridiag]] — EnergySolver
-- [[json-config-schema]] — WellSchedule из boundary_conditions
+- [[P4-адаптивный-шаг]] — локальное дробление шага в `_advance` (DEBT-015)
+- [[локальное дробление шага проходит останов при суточном dt_integration — равномерное падает на одном подшаге из 512]] — замеры G1a
+- [[нефизичная температура доходила до истории молча — проверка T ловит грубые ошибки, остальное проверка ввода]] — `_check_temperature` (DEBT-047)
+- [[контейнер-simulation-history]] — поля и наполнение истории
+- [[P8-формат-ввода-json]] — структура JSON, секция time
 - [[модули-io-вывод]] — сохранение и визуализация SimulationHistory

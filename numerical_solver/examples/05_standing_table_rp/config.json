@@ -1,0 +1,59 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 50.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 50,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-13,
+    "rho_cp_solid": 1250000.0,
+    "lambda_solid": 1.5,
+    "lambda_oil": 0.14,
+    "lambda_gas": 0.04
+  },
+  "pvt": {
+    "model": "standing",
+    "rho_o_std": 850.0,
+    "rho_g_std": 0.85
+  },
+  "relperm": {
+    "model": "table",
+    "file": "relperm.csv"
+  },
+  "thermal": {
+    "c_p_oil": 2000.0,
+    "c_p_gas": 1000.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 4e-06,
+    "L_degas": 168000.0
+  },
+  "initial_conditions": {
+    "p0": 20000000.0,
+    "T0": 350.0,
+    "Rs0": 50.0
+  },
+  "time": {
+    "dt_integration": 3600,
+    "history": [
+      {
+        "duration": 259200.0,
+        "dt_out": 3600.0,
+        "control": "pressure",
+        "p_wf": 8000000.0
+      }
+    ]
+  },
+  "numerics": {
+    "skin": 0.0
+  },
+  "output": {
+    "log_level": "INFO",
+    "title": "05: Standing PVT + Table ОФП",
+    "steady_state": true
+  }
+}

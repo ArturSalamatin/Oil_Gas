@@ -1,0 +1,3 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+15_oil_rate_ramp_up orig: записей 361, отпечаток a6e91358e1482446, счёт 7.0 с
+15_oil_rate_ramp_up first=0 h0=0.44: ОТКАЗ — не сошлось на наименьшем подшаге 8.583e-04 с, t = 2.000005 сут

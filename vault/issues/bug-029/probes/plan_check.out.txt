@@ -1,0 +1,64 @@
+пакет копии: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-029\probes\plan_copy\gpn_multiphase_solver\__init__.py
+=== База (копия без правок) ===
+......................                                                   [100%]
+22 passed, 295 deselected in 0.49s
+=== Шаг 1: только тесты (ожидание: 7 failed, 17 passed) ===
+tests\test_config.py:980: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  gpn_multiphase_solver:config.py:774 numerics.skin = 1000000.0 > 50: установившийся однофазный приток при той же депрессии — 0.0% от притока без скина (ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = 6.21). Проверьте значение.
+=========================== short test summary info ===========================
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[small]
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[damaged]
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[threshold]
+FAILED tests/test_config.py::TestValidationWell::test_skin_energy_warning_gives_drawdown_share
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[above]
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[1e3]
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[1e6]
+7 failed, 17 passed, 295 deselected in 0.88s
+--- test_config.py целиком (ожидание: 7 failed, 312 passed) ---
+tests\test_config.py:980: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  gpn_multiphase_solver:config.py:774 numerics.skin = 1000000.0 > 50: установившийся однофазный приток при той же депрессии — 0.0% от притока без скина (ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = 6.21). Проверьте значение.
+=========================== short test summary info ===========================
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[small]
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[damaged]
+FAILED tests/test_config.py::TestValidationWell::test_positive_skin_warns_energy[threshold]
+FAILED tests/test_config.py::TestValidationWell::test_skin_energy_warning_gives_drawdown_share
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[above]
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[1e3]
+FAILED tests/test_config.py::TestValidationWell::test_large_skin_warns[1e6]
+7 failed, 312 passed in 3.06s
+=== Шаг 2: io/config.py (ожидание: 24 passed; test_config 319 passed) ===
+........................                                                 [100%]
+24 passed, 295 deselected in 0.39s
+........................................................................ [ 22%]
+........................................................................ [ 45%]
+........................................................................ [ 67%]
+........................................................................ [ 90%]
+...............................                                          [100%]
+319 passed in 2.68s
+--- test_eq_references.py ---
+..........                                                               [100%]
+10 passed in 0.44s
+=== Шаг 3: state.py ===
+........................................................................ [ 21%]
+........................................................................ [ 43%]
+........................................................................ [ 65%]
+........................................................................ [ 87%]
+.........................................                                [100%]
+329 passed in 3.66s
+=== Проба шага 3 (warn_visible.py плана) ===
+код 0; stderr: (пусто)
+--- skin = 0: код возврата 0
+stdout: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-029\probes\plan_copy\gpn_multiphase_solver\__init__.py
+stderr: (пусто)
+--- skin = 2: код возврата 0
+stdout: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-029\probes\plan_copy\gpn_multiphase_solver\__init__.py
+stderr: numerics.skin = 2.0 > 0: скин учитывается только в гидродинамике (сопротивление забойной грани). В уравнении энергии его нет: дросселирование (эффект Джоуля–Томсона) и разгазирование на перепаде давления скин-зоны в температуру не входят, и температура забоя T_wf их не содержит. В установившемся однофазном притоке на скин-зону приходится 24.3% депрессии (s / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = 6.21).
+--- skin = 100: код возврата 0
+stdout: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\bug-029\probes\plan_copy\gpn_multiphase_solver\__init__.py
+stderr: numerics.skin = 100.0 > 50: установившийся однофазный приток при той же депрессии — 5.9% от притока без скина (ln(R_ext/r_w) / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = 6.21). Проверьте значение.
+numerics.skin = 100.0 > 0: скин учитывается только в гидродинамике (сопротивление забойной грани). В уравнении энергии его нет: дросселирование (эффект Джоуля–Томсона) и разгазирование на перепаде давления скин-зоны в температуру не входят, и температура забоя T_wf их не содержит. В установившемся однофазном притоке на скин-зону приходится 94.1% депрессии (s / (ln(R_ext/r_w) + s), ln(R_ext/r_w) = 6.21).
+
+=== Длины изменённых строк > 100 ===
+(конец списка)

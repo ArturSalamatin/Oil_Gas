@@ -1,0 +1,17 @@
+orig: режим orig, cap None, chop None
+  01_single_phase_no_jt            1.5 с  advance     72  отказов     0  запасной путь    0
+  02_single_phase_jt               1.0 с  advance     72  отказов     0  запасной путь    0
+  03_standing_corey                1.2 с  advance     72  отказов     0  запасной путь    1
+  04_table_table                   1.6 с  advance     72  отказов     0  запасной путь    0
+  04a_high_gas_saturation         99.8 с  advance   1896  отказов     9  запасной путь    0
+  05_standing_table_rp             0.6 с  advance     72  отказов     0  запасной путь    0
+  06_table_corey_rp                1.6 с  advance     72  отказов     0  запасной путь    0
+  07_degassing_adiabatic_only      1.6 с  advance     72  отказов     0  запасной путь    0
+  08_degassing_jt                  1.6 с  advance     72  отказов     0  запасной путь    0
+  09_degassing_latent_heat         1.4 с  advance     72  отказов     0  запасной путь    0
+  10_deep_degassing                2.5 с  advance     76  отказов     1  запасной путь    0
+  11_degassing_at_boundary         6.6 с  advance    107  отказов     4  запасной путь    0
+  12_large_drainage_radius        27.6 с  advance    622  отказов     7  запасной путь    0
+  13a_pwf_ramp_down               13.5 с  advance    360  отказов     0  запасной путь    0
+  14_high_gor_cooling             14.5 с  advance    360  отказов     0  запасной путь    0
+  15_oil_rate_ramp_up             12.9 с  advance    360  отказов     0  запасной путь    0

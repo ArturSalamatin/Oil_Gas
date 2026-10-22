@@ -1,0 +1,15 @@
+﻿........................................................................ [ 91%]
+........................................................................ [ 96%]
+..................................................................       [100%]
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+[lambda_plugin] подмена λ сработала для 8 примеров: ['03_standing_corey', '04_table_table', '04a_high_gas_saturation', '05_standing_table_rp', '06_table_corey_rp', '07_degassing_adiabatic_only', '08_degassing_jt', '09_degassing_latent_heat']
+1722 passed, 1 warning in 548.07s (0:09:08)

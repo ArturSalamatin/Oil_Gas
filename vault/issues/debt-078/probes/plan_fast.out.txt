@@ -1,0 +1,36 @@
+DEBT-078, эмуляция плана при планировании (2026-10-17)
+
+Временный worktree: git worktree add --detach .worktrees/debt-078-plan 8ddb08d (после замера удалён).
+Правки: python vault\issues\debt-078\probes\plan_apply.py .worktrees/debt-078-plan --write
+  записано файлов: 7
+  git diff --stat: factory.py +11; io/config.py 26 (+24 −2); test_config.py +58;
+  test_factory_standing_hydro.py +17; P8 9; json-config-schema.md 2; pvt-корреляции-стендинг.md 2
+  — 119 insertions, 6 deletions. Новых строк кода длиннее 95 символов нет.
+
+Python: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Scripts\python, pytest из numerical_solver worktree.
+
+1. Новые тесты по node id и сторож меток:
+   pytest tests/test_config.py::TestValidationOilCompressibility
+          tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_co_with_table_raises
+          tests/test_eq_references.py -q -rA
+   PASSED test_negative_co_rejected[silent_with_warning]
+   PASSED test_negative_co_rejected[sign_error_examples_17_20]
+   PASSED test_negative_co_rejected[tiny]
+   PASSED test_negative_co_rejected_for_table
+   PASSED test_nonnegative_co_accepted[zero_default]
+   PASSED test_nonnegative_co_accepted[examples_17_20]
+   PASSED test_co_with_table_raises
+   test_eq_references.py — 13 passed
+   20 passed in 1.71s
+
+2. Число тестов:
+   pytest tests/ --collect-only -q                 → 2027 tests collected (база 8ddb08d: 2020)
+   pytest tests/ --collect-only -q -m "not slow"   → 1751/2027 (база: 1744/2020)
+
+3. Быстрый уровень:
+   pytest tests/ -m "not slow" -q -p no:cacheprovider
+   1751 passed, 276 deselected, 1 warning in 139.70s (0:02:19)
+   Предупреждение — не из правленых файлов: tests/test_config.py и
+   tests/test_factory_standing_hydro.py отдельно — 342 passed без предупреждений.
+
+4. Проба «после» на коде эмуляции — co_after_emulate.out.txt.

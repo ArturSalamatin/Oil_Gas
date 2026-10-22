@@ -1,0 +1,17 @@
+always_cap03: режим always, cap 0.3, chop None
+  01_single_phase_no_jt            1.5 с  advance     72  отказов     0  запасной путь    0
+  02_single_phase_jt               0.9 с  advance     72  отказов     0  запасной путь    0
+  03_standing_corey                2.8 с  advance     90  отказов     3  запасной путь    2
+  04_table_table                   1.4 с  advance     72  отказов     0  запасной путь    0
+  04a_high_gas_saturation         38.1 с  advance    864  отказов     0  запасной путь    0
+  05_standing_table_rp             0.6 с  advance     72  отказов     0  запасной путь    0
+  06_table_corey_rp                1.6 с  advance     72  отказов     0  запасной путь    0
+  07_degassing_adiabatic_only      1.4 с  advance     72  отказов     0  запасной путь    0
+  08_degassing_jt                  1.5 с  advance     72  отказов     0  запасной путь    0
+  09_degassing_latent_heat         1.4 с  advance     72  отказов     0  запасной путь    0
+  10_deep_degassing                7.6 с  advance    205  отказов     6  запасной путь    0
+  11_degassing_at_boundary         2.7 с  advance     72  отказов     0  запасной путь    0
+  12_large_drainage_radius        13.3 с  advance    360  отказов     0  запасной путь    0
+  13a_pwf_ramp_down               13.7 с  advance    360  отказов     0  запасной путь    0
+  14_high_gor_cooling             15.0 с  advance    360  отказов     0  запасной путь    0
+  15_oil_rate_ramp_up             13.5 с  advance    360  отказов     0  запасной путь    0

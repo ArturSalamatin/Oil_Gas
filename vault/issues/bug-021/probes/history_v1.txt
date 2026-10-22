@@ -1,0 +1,23 @@
+﻿код подменён: вариант 1
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil | D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+01_single_phase_no_jt: 73 записей, 0.5 с
+02_single_phase_jt: 73 записей, 0.6 с
+03_standing_corey: 73 записей, 0.6 с
+04_table_table: 73 записей, 1.1 с
+04a_high_gas_saturation: 865 записей, 21.5 с
+05_standing_table_rp: 73 записей, 0.4 с
+06_table_corey_rp: 73 записей, 1.2 с
+07_degassing_adiabatic_only: 73 записей, 1.0 с
+08_degassing_jt: 73 записей, 1.0 с
+09_degassing_latent_heat: 73 записей, 1.0 с
+10_deep_degassing: 73 записей, 1.9 с
+11_degassing_at_boundary: 73 записей, 2.4 с
+12_large_drainage_radius: 16 записей, 9.8 с
+13a_pwf_ramp_down: 31 записей, 9.9 с
+13b_pwf_alternating: 61 записей, 36.2 с
+14_high_gor_cooling: 13 записей, 14.7 с
+15_oil_rate_ramp_up: 361 записей, 9.6 с
+16_well_shut_in: 54 записей, 19.3 с
+19_rs150_cooling: 31 записей, 1.6 с
+20_rs300_cooling: 77 записей, 5.8 с
+21_rs100_cooling: 31 записей, 1.9 с

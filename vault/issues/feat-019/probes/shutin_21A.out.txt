@@ -1,0 +1,24 @@
+﻿.venv\Scripts\python : Traceback (most recent call last):
+At line:1 char:302
++ ... tch {} } }; .venv\Scripts\python ..\vault\issues\feat-019\probes\shut ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-019\probes\shutin_probe.py", line 109, in <module>
+    h = sim.run(init)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 156, in run
+    state, hydro_result = self._advance(
+                          ~~~~~~~~~~~~~^
+        state, dt, interval.bc, balance)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 213, in _advance
+    hydro_result = self._hydro.solve(state, dt, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\hydro\prototype_adapter.py", line 
+142, in solve
+    raise RuntimeError(
+    ...<7 lines>...
+        f"не в его величине.")
+RuntimeError: HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02 s) на шаге с t = 10.0000 сут: двухфазных 
+ячеек 322 из 350, max S_g = 0.407. Если отказ вызван величиной шага, поможет больший numerics.max_retries (сейчас 9, 
+допустимо до 20); если шаг не сходится и при мелких подшагах, причина не в его величине.

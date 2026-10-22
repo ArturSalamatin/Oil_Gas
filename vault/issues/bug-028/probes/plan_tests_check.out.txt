@@ -1,0 +1,24 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+  orig: A 19_rs150_cooling 0.01: converged=False fallback=True passes=12 cells=0 p0=247.0000 exit=active_set
+  orig: A 19_rs150_cooling 1: converged=False fallback=True passes=12 cells=0 p0=247.0000 exit=active_set
+  orig: A 19_rs150_cooling 5.27: converged=False fallback=True passes=12 cells=0 p0=247.0000 exit=active_set
+  orig: A 21_rs100_cooling 1: converged=False fallback=True passes=12 cells=0 p0=177.0000 exit=active_set
+  orig: B1 0.01: ok
+  orig: B1 86400: ok
+  orig: C1: False active_set 2 7
+  orig: C2: ok
+  orig: C3: False active_set 3 14
+  orig: D1: RuntimeError: erics.newton_cell_tol = 1e-08), выход: набор фаз не установился; числа — Ньютона ступени 1
+  время 4.8 с
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+  plan: A 19_rs150_cooling 0.01: ok
+  plan: A 19_rs150_cooling 1: ok
+  plan: A 19_rs150_cooling 5.27: ok
+  plan: A 21_rs100_cooling 1: ok
+  plan: B1 0.01: ok
+  plan: B1 86400: ok
+  plan: C1: ok
+  plan: C2: ok
+  plan: C3: ok
+  plan: D1: ok
+  время 5.6 с

@@ -1,0 +1,22 @@
+SOLVER = D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+N = 50, r_w = 0.1, r[0] = 0.10641, r[-1] = 46.9873, R_ext = 50.0
+pb = 15.0000 МПа, p0 = 15.0500 МПа
+численный профиль, последняя запись: p[0] = 6.1174, p[-1] = 14.9820 МПа; ячеек с p < pb: 50 из 50
+  монотонность p по r: True
+замкнутое решение на сетке: p_ana[-1] = 14.9830 МПа; ячеек с p_ana < pb: 50 из 50
+  closed_form._front_radius (сетка примера) = 46.9873 м
+  closed_form._front_radius (мелкая сетка до R_ext) = 47.7338 м
+two_phase_analytics.degassing_front['r_b_interp'] = nan
+rs_analytics.front_radius = nan
+
+Синтетика, pb = 15 МПа, r = geomspace(0.1, 50, 6):
+  газа нет (все p > pb)              closed_form =        nan   две другие =        nan
+  газ до контура (все p < pb)        closed_form =    50.0000   две другие =        nan
+  пересечение в первой паре ячеек    closed_form =     0.3466   две другие =     0.3466
+  p[0] = pb ровно                    closed_form =        nan   две другие =        nan
+  p[-1] = pb ровно                   closed_form =    50.0000   две другие =    50.0000
+
+r_b замкнутого решения: сетка примера против мелкой сетки до R_ext:
+  03_standing_corey          N =  150: r_b = 0.1971 м, мелкая = 0.1971 м, откл. +0.01 %
+  04_table_table             N =   50: r_b = 2.5937 м, мелкая = 2.5933 м, откл. +0.02 %
+  04a_high_gas_saturation    N =  150: r_b = 1.4764 м, мелкая = 1.4758 м, откл. +0.04 %

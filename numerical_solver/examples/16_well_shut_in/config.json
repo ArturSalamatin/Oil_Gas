@@ -1,0 +1,77 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 200.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 50,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-13,
+    "rho_cp_solid": 1250000.0,
+    "lambda_solid": 1.5,
+    "lambda_oil": 0.14,
+    "lambda_gas": 0.04
+  },
+  "pvt": {
+    "model": "table",
+    "rho_o_std": 850.0,
+    "rho_g_std": 0.85,
+    "oil_pvt_file": "oil_pvt.csv",
+    "gas_pvt_file": "gas_pvt.csv"
+  },
+  "relperm": {
+    "model": "table",
+    "file": "relperm.csv"
+  },
+  "thermal": {
+    "c_p_oil": 2000.0,
+    "c_p_gas": 1000.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 4e-06,
+    "L_degas": 168000.0
+  },
+  "initial_conditions": {
+    "p0": 15500000.0,
+    "T0": 350.0,
+    "Rs0": 30.0
+  },
+  "time": {
+    "dt_integration": 3600,
+    "dt_after_control_change": 0.11,
+    "history": [
+      {
+        "duration": 1296000.0,
+        "dt_out": 86400.0,
+        "control": "pressure",
+        "p_wf": 6000000.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 1209600.0,
+        "dt_out": 86400.0,
+        "control": "rate",
+        "q_oil": 0.0,
+        "min_bhp": 101325.0
+      }
+    ]
+  },
+  "numerics": {
+    "skin": 0.0
+  },
+  "output": {
+    "log_level": "INFO",
+    "title": "16: останов скважины после 15 сут добычи",
+    "steady_state": false,
+    "n_profiles": 7
+  }
+}

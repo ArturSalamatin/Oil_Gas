@@ -1,0 +1,5 @@
+﻿solver: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+N = 20, t_end = 1.000 сут
+max |p/p_exact(r_ours) - 1| = 8.498e-04   (как в тесте)
+max |p/p_exact(r_geo)  - 1| = 0.000e+00   (центры прототипа)
+max |p_exact(r_ours)/p_exact(r_geo) - 1| = 8.505e-04   (разница эталонов)

@@ -1,0 +1,2882 @@
+EEEEEEEEEEEEEEEE.EEEEEEEEEEEEEEEEEEEEEEEEEEEE.EEE....................... [  6%]
+..........................F............................................. [ 13%]
+........................................................................ [ 20%]
+........................................................................ [ 27%]
+........................................................................ [ 34%]
+........FFFFFFFFFFF.FFFFFFFFFFFFFFFF...FFFF............................. [ 40%]
+........................................................................ [ 47%]
+........................................................................ [ 54%]
+........................................................................ [ 61%]
+..................................F..................................... [ 68%]
+........................................................................ [ 75%]
+........................................................................ [ 81%]
+..............FFFF.....................F................................ [ 88%]
+........................................................................ [ 95%]
+...FFF.........FFFFFFF.F.FF...................                           [100%]
+=================================== ERRORS ====================================
+_____________ ERROR at setup of TestBaselineGeometry.test_r_well ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineGeometry.test_R_ext ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ ERROR at setup of TestBaselineGeometry.test_h ________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________________ ERROR at setup of TestBaselineGrid.test_N __________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ ERROR at setup of TestBaselineGrid.test_type _________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineRock.test_porosity _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineRock.test_permeability _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineRock.test_rho_cp_solid _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineRock.test_lambda_solid _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineRock.test_lambda_oil ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineRock.test_lambda_gas ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ ERROR at setup of TestBaselinePVT.test_model _________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselinePVT.test_rho_o_std _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselinePVT.test_rho_g_std _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselinePVT.test_co_default ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____ ERROR at setup of TestBaselinePVT.test_mu_o_undersaturated_default ______
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineRelPerm.test_model _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ ERROR at setup of TestBaselineRelPerm.test_S_or _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ ERROR at setup of TestBaselineRelPerm.test_S_gc _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ ERROR at setup of TestBaselineRelPerm.test_n_o ________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ ERROR at setup of TestBaselineRelPerm.test_n_g ________________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineRelPerm.test_kro_max ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineRelPerm.test_krg_max ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineThermal.test_c_p_oil ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineThermal.test_c_p_gas ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineThermal.test_mu_JT_oil _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineThermal.test_mu_JT_gas _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineThermal.test_L_degas ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ ERROR at setup of TestBaselineInitialConditions.test_p0 ___________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ ERROR at setup of TestBaselineInitialConditions.test_T0 ___________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________ ERROR at setup of TestBaselineInitialConditions.test_Rs0 ___________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ ERROR at setup of TestBaselineTime.test_dt_integration ____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineTime.test_start_day ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestBaselineTime.test_history_count ____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________ ERROR at setup of TestBaselineTime.test_history_step_uniform _________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____ ERROR at setup of TestBaselineTime.test_history_control_is_pressure _____
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ ERROR at setup of TestBaselineTime.test_history_stage_1 ___________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ ERROR at setup of TestBaselineTime.test_history_stage_2 ___________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineNumerics.test_dt_min ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_________ ERROR at setup of TestBaselineNumerics.test_dt_max_default __________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineNumerics.test_skin _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______ ERROR at setup of TestBaselineNumerics.test_max_retries_default _______
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestBaselineOutput.test_log_level _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________ ERROR at setup of TestBaselineOutput.test_format _______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ ERROR at setup of TestConfigTypes.test_config_type ______________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ ERROR at setup of TestConfigTypes.test_geometry_type _____________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________ ERROR at setup of TestConfigTypes.test_history_interval_type _________
+
+    @pytest.fixture
+    def cfg():
+>       return load_config(BASELINE)
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+================================== FAILURES ===================================
+__________________ TestHistoryBlocks.test_baseline_as_blocks __________________
+
+self = <tests.test_config.TestHistoryBlocks object at 0x0000015C7ED8CD60>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_baseline_as_blocks0')
+
+    def test_baseline_as_blocks(self, tmp_path):
+        """Сценарий baseline.json краткой формой даёт тот же список интервалов.
+    
+        baseline — сутки при 15 МПа и трое суток при 10 МПа с записью раз
+        в час, 96 явных объектов (DEBT-014). Сам конфиг не меняется
+        (решение пользователя): проверяется, что две строки краткой формы
+        заменяют 96 объектов без изменения расчёта.
+        """
+>       raw = json.loads(BASELINE.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_config.py:633: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\pathlib\_local.py:537: FileNotFoundError
+________ TestFactoryTablePVT.test_from_config_creates_prototype_hydro _________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C33539090>
+
+    def test_from_config_creates_prototype_hydro(self):
+        """HydroSolver = PrototypeHydroAdapter при pvt.model='table'."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_________________ TestFactoryTablePVT.test_pvt_is_table_full __________________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C335391D0>
+
+    def test_pvt_is_table_full(self):
+        """PVT = TableFullPVT при pvt.model='table'."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ TestFactoryTablePVT.test_factory_passes_max_retries _____________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C333F6EA0>
+
+    def test_factory_passes_max_retries(self):
+        """Factory доносит numerics.max_retries до адаптера (DEBT-007).
+    
+        Корень DEBT-007 в том, что Factory создавала адаптер тремя
+        позиционными аргументами и лимит всегда оставался равным
+        значению по умолчанию. Тест закрывает именно эту дыру.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestFactoryTablePVT.test_factory_default_max_retries _____________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C333F6C40>
+
+    def test_factory_default_max_retries(self):
+        """Без правки конфига адаптер получает штатные 9, а не 5."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestFactoryTablePVT.test_relperm_is_prototype_adapter ____________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C3354CB90>
+
+    def test_relperm_is_prototype_adapter(self):
+        """RelPerm = PrototypeRPAdapter при relperm.model='table'."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestFactoryTablePVT.test_initial_state_shapes ________________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C33406CF0>
+
+    def test_initial_state_shapes(self):
+        """Начальное состояние: размеры массивов = N."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestFactoryTablePVT.test_config_dir_resolved _________________
+
+self = <tests.test_factory_prototype.TestFactoryTablePVT object at 0x0000015C33406E00>
+
+    def test_config_dir_resolved(self):
+        """config_dir заполнен при load_config."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:176: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________________ TestPipeline.test_run_produces_history ____________________
+
+self = <tests.test_factory_prototype.TestPipeline object at 0x0000015C33539310>
+
+    def test_run_produces_history(self):
+        """run() не падает, history содержит данные."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________________ TestPipeline.test_well_rate_positive _____________________
+
+self = <tests.test_factory_prototype.TestPipeline object at 0x0000015C33539450>
+
+    def test_well_rate_positive(self):
+        """Давление снижается (добыча идёт)."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestPVTConsistency.test_pvt_objects_are_same _________________
+
+self = <tests.test_factory_prototype.TestPVTConsistency object at 0x0000015C33539590>
+
+    def test_pvt_objects_are_same(self):
+        """proto_pvt в PrototypePVTAdapter и в RadialBlackOilModel — один объект."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:215: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________________ TestPVTConsistency.test_bo_consistency ____________________
+
+self = <tests.test_factory_prototype.TestPVTConsistency object at 0x0000015C335396D0>
+
+    def test_bo_consistency(self):
+        """Bo через обёртку и через прототип совпадают."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:230: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________ TestInitialStateVsTable.test_rs0_above_last_branch_raises __________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C33539950>
+
+    def test_rs0_above_last_branch_raises(self):
+        """Rs0 = 150 > 30: ошибка про диапазон таблицы, а не про пересыщение.
+    
+        Проверка диапазона идёт раньше проверки пересыщения: p_b(150) обрезан
+        до 15 МПа < p0, и сообщение о пересыщении было бы противоречивым.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________ TestInitialStateVsTable.test_rs0_below_guard_threshold_raises ________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C33539A90>
+
+    def test_rs0_below_guard_threshold_raises(self):
+        """Rs0 = 40: ниже порога 1.5·Rs_max = 45 пробного вектора Ньютона.
+    
+        До правки (после BUG-016) первый шаг молча «сходился» с давлением
+        111 МПа. Ловит проверку, ограниченную порогом решателя.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:322: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_________ TestInitialStateVsTable.test_rs0_below_first_branch_raises __________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C333F7230>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_rs0_below_first_branch_ra0')
+
+    def test_rs0_below_first_branch_raises(self, tmp_path):
+        """Таблица с ветками 5 и 30, Rs0 = 0 < 5: ошибка (решение 2 плана).
+    
+        Ниже первой ветки нефть молча не разгазируется никогда
+        (R_s^sat(p) >= 5 > Rs0), а B_o, μ_o берутся с ветки 5.
+        """
+>       config = _table_config_with_oil_csv(tmp_path, (
+            "Rs_sm3_sm3,pressure_Pa,Bo,mu_o_Pa_s\n"
+            "5.0,6000000,1.07,0.0028\n"
+            "5.0,30000000,1.06,0.0030\n"
+            "30.0,15000000,1.20,0.0015\n"
+            "30.0,30000000,1.18,0.0016\n"))
+
+tests\test_factory_prototype.py:333: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_factory_prototype.py:287: in _table_config_with_oil_csv
+    shutil.copy(TABLE_CONFIG.parent / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/gas_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_rs0_below_first_branch_ra0/gas_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\gas_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+___________ TestInitialStateVsTable.test_rs0_on_last_branch_passes ____________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C333F7100>
+
+    def test_rs0_on_last_branch_passes(self):
+        """Rs0 = 30 ровно на последней ветке, p0 = 20 МПа > p_b = 15 МПа — допустимо.
+    
+        Граница включается: R_s^eq(p0) = 30 ровно (обрезка), Rs0 = 30.
+        Так стоят 13 из 14 табличных примеров.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:349: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________ TestInitialStateVsTable.test_supersaturated_start_raises ___________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C3354E7B0>
+
+    def test_supersaturated_start_raises(self):
+        """Rs0 = 20 внутри таблицы, p0 = 10 МПа: R_s^eq(10 МПа) = 15 < 20 — ошибка.
+    
+        p_b(20) = 11.67 МПа > p0. Решатель стартует только из однофазного
+        состояния; без проверки давление на первом шаге скачком росло бы к p_b.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:359: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ TestInitialStateVsTable.test_p0_at_bubble_point_passes ____________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C33407020>
+
+    def test_p0_at_bubble_point_passes(self):
+        """p0 = p_b(30) = 15 МПа ровно: R_s^eq(p0) = Rs0 — допустимо (как пример 11, p0 = 15.05)."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:368: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ TestInitialStateVsTable.test_p0_1pa_below_pb_passes _____________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C33406AD0>
+
+    def test_p0_1pa_below_pb_passes(self):
+        """p0 на 1 Па ниже p_b(30): избыток Rs 3e-6 < допуска 1e-5 — округление ввода не ошибка."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:374: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________ TestInitialStateVsTable.test_dead_oil_below_table_pb0_passes _________
+
+self = <tests.test_factory_prototype.TestInitialStateVsTable object at 0x0000015C333ABC50>
+
+    def test_dead_oil_below_table_pb0_passes(self):
+        """Rs0 = 0, p0 = 3 МПа ниже табличного p_b(0) = 5 МПа — допустимо.
+    
+        R_s^eq(3 МПа) = 0 = Rs0: пересыщения нет, решатель газ не включит.
+        Ловит переход на формулировку p0 >= p_b(Rs0) — она дала бы ложную ошибку.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:384: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ TestInitialRangeWarnings.test_p0_above_tables_warns _____________
+
+self = <tests.test_factory_prototype.TestInitialRangeWarnings object at 0x0000015C33539BD0>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C3503B770>
+
+    def test_p0_above_tables_warns(self, caplog):
+        """p0 = 32 МПа выше газовой таблицы и веток нефти (до 30 МПа): два предупреждения.
+    
+        Расчёт допустим (Rs0 = 30 = R_s^eq), но B_g и B_o молча берутся с краёв
+        таблиц — пользователь должен это видеть.
+        """
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:399: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________ TestInitialRangeWarnings.test_in_range_no_warnings ______________
+
+self = <tests.test_factory_prototype.TestInitialRangeWarnings object at 0x0000015C33539D10>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C372A9310>
+
+    def test_in_range_no_warnings(self, caplog):
+        """Штатный табличный конфиг: начальное состояние внутри всех таблиц — предупреждений нет."""
+>       config = load_config(TABLE_CONFIG)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_prototype.py:410: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______ TestFactoryStandingHydro.test_standing_creates_prototype_hydro ________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C3353A0D0>
+
+    def test_standing_creates_prototype_hydro(self):
+        """HydroSolver = PrototypeHydroAdapter при pvt.model='standing'."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestFactoryStandingHydro.test_standing_pipeline_runs _____________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C3353A210>
+
+    def test_standing_pipeline_runs(self):
+        """baseline.json → Factory → run → history содержит данные."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________ TestFactoryStandingHydro.test_standing_well_rate_positive __________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C333F75C0>
+
+    def test_standing_well_rate_positive(self):
+        """Дебит нефти > 0 при добыче."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________ TestFactoryStandingHydro.test_standing_dupuit_pressure ____________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C333F7490>
+
+    def test_standing_dupuit_pressure(self):
+        """Профиль давления ≈ лог-профиль Дюпюи (однофазный, Newton).
+    
+        baseline.json: 2 интервала, последний p_wf=10e6. Newton даёт
+        нестационарное решение, rtol=1e-2.
+        """
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ TestFactoryStandingHydro.test_beal_reaches_pvt ________________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C3354E570>
+
+    def test_beal_reaches_pvt(self):
+        """pvt.mu_o_undersaturated = "beal" доходит до StandingFullPVT (FEAT-027).
+    
+        PVT baseline.json: 850 / 0.85 / 350 К / Rs0 = 50, p_b = 9.43 МПа.
+        При p = 20 МПа вязкость по Билу выше Беггса–Робинсона в 1.095309 раза
+        (проба vault/issues/feat-027/probes/val001_beal.py, μ(p_e)/μ_ob).
+        """
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestFactoryStandingHydro.test_beal_with_table_raises _____________
+
+self = <tests.test_factory_standing_hydro.TestFactoryStandingHydro object at 0x0000015C33407350>
+
+    def test_beal_with_table_raises(self):
+        """Опция Била при табличном PVT — ValueError (FEAT-027).
+    
+        У таблицы вязкость выше p_b задают её недонасыщенные ветви; молча
+        проигнорировать опцию нельзя — пользователь ждал бы эффекта.
+        """
+>       config = load_config(TABLE_PVT)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/config.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\config.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+__________ TestStandingInitialState.test_supersaturated_start_raises __________
+
+self = <tests.test_factory_standing_hydro.TestStandingInitialState object at 0x0000015C3353A710>
+
+    def test_supersaturated_start_raises(self):
+        """Rs0 = 80, p0 = 10 МПа < p_b(80) = 14.0 МПа — ошибка.
+    
+        Без проверки первый шаг молча поднимал давление до 13.78 МПа за час
+        (замер плана BUG-017, §1.2).
+        """
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestStandingInitialState.test_p0_1pa_below_pb_passes _____________
+
+self = <tests.test_factory_standing_hydro.TestStandingInitialState object at 0x0000015C3353A850>
+
+    def test_p0_1pa_below_pb_passes(self):
+        """p0 = p_b(50) − 1 Па: избыток ~6e-6 < 1e-5 — допустимо (округление ввода)."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:205: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestStandingInitialState.test_dead_oil_passes ________________
+
+self = <tests.test_factory_standing_hydro.TestStandingInitialState object at 0x0000015C333F76F0>
+
+    def test_dead_oil_passes(self):
+        """Rs0 = 0: p_b(0) = −0.176 МПа < 0 — допустимо при любом p0 (примеры 01, 02)."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:213: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ TestStandingInitialState.test_no_range_warnings _______________
+
+self = <tests.test_factory_standing_hydro.TestStandingInitialState object at 0x0000015C333F7820>
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C372A9310>
+
+    def test_no_range_warnings(self, caplog):
+        """Путь Стендинга не зовёт pvt_range_warnings (у адаптера нет газовой таблицы gp)."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_factory_standing_hydro.py:219: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________________ TestEndToEnd.test_baseline_to_npz ______________________
+
+self = <tests.test_output.TestEndToEnd object at 0x0000015C339C9450>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_baseline_to_npz0')
+
+    def test_baseline_to_npz(self, tmp_path):
+        """baseline.json → Simulator.run() → save_npz → load → проверка."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_output.py:381: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________ TestFactoryWarning.test_inconsistent_oil_table_warns _____________
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x0000015C34D0DA90>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_oil_table_wa0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C34FAE3F0>
+
+    def test_inconsistent_oil_table_warns(self, tmp_path, caplog):
+        # OIL_BAD: dB_o/dp = 0.35/1e7 = 3.5e-8 1/Па, dR_s/dp = 30/1e7 = 3e-6 1/Па,
+        # B_g линейна 0.020 → 0.008 на 5–15 МПа. c_ot < 0 там, где
+        # B_g < 3.5e-8/3e-6 = 0.011667, — выше 5 + 8.333e-3/1.2e-9 Па = 11.944 МПа
+>       msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_oil_table_wa0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+____________ TestFactoryWarning.test_inconsistent_gas_table_warns _____________
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x0000015C34CE8FC0>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_gas_table_wa0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C35257BF0>
+
+    def test_inconsistent_gas_table_warns(self, tmp_path, caplog):
+        # GAS_BAD: B_g растёт на 10–15 МПа — c_g < 0 там; c_ot остаётся > 0
+        # (B_g·dR_s/dp ≥ 3.6e-8 > dB_o/dp = 1.5e-8 1/Па)
+>       msgs = _pvt_warnings(_table_config(tmp_path, gas=GAS_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_gas_table_wa0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_______ TestFactoryWarning.test_inconsistent_undersaturated_table_warns _______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x0000015C34CE90F0>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_undersaturat0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C351FF350>
+
+    def test_inconsistent_undersaturated_table_warns(self, tmp_path, caplog):
+        # OIL_UNDER_BAD: выше p_b(30) = 15 МПа B_o растёт на 0.03 за 15 МПа —
+        # c_o = −(1/B_o)·dB_o/dp ≈ −1.7e-9 1/Па на всём диапазоне недонасыщенной
+        # нефти задачи: от p_b(R_s0 = 30) = 15 МПа до p0 = 20 МПа. Насыщенная
+        # кривая (первые точки веток) прежняя — c_ot и c_g не нарушены.
+>       msgs = _pvt_warnings(_table_config(tmp_path, oil=OIL_UNDER_BAD), caplog)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:204: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_inconsistent_undersaturat0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_____ TestFactoryWarning.test_consistent_table_with_degassing_no_warning ______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x0000015C34D5DA30>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_consistent_table_with_deg0')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C351FC490>
+
+    def test_consistent_table_with_degassing_no_warning(self, tmp_path, caplog):
+        # Штатные таблицы при p_wf = 5 МПа: насыщенная зона 5–15 МПа проверяется,
+        # нарушений нет (c_ot ≥ 4.3e-4 1/бар по замеру плана)
+>       assert _pvt_warnings(_table_config(tmp_path), caplog) == []
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:211: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_pvt_consistency.py:156: in _table_config
+    shutil.copy(TABLE_DIR / name, tmp_path / name)
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:428: in copy
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+src = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/table_pvt/oil_pvt.csv')
+dst = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_consistent_table_with_deg0/oil_pvt.csv')
+follow_symlinks = True
+
+    def copyfile(src, dst, *, follow_symlinks=True):
+        """Copy data from src to dst in the most efficient way possible.
+    
+        If follow_symlinks is not set and src is a symbolic link, a new
+        symlink will be created instead of copying the file it points to.
+    
+        """
+        sys.audit("shutil.copyfile", src, dst)
+    
+        if _samefile(src, dst):
+            raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+    
+        file_size = 0
+        for i, fn in enumerate([src, dst]):
+            try:
+                st = _stat(fn)
+            except OSError:
+                # File most likely does not exist
+                pass
+            else:
+                # XXX What about other special files? (sockets, devices...)
+                if stat.S_ISFIFO(st.st_mode):
+                    fn = fn.path if isinstance(fn, os.DirEntry) else fn
+                    raise SpecialFileError("`%s` is a named pipe" % fn)
+                if _WINDOWS and i == 0:
+                    file_size = st.st_size
+    
+        if not follow_symlinks and _islink(src):
+            os.symlink(os.readlink(src), dst)
+        else:
+>           with open(src, 'rb') as fsrc:
+                 ^^^^^^^^^^^^^^^
+E           FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\table_pvt\\oil_pvt.csv'
+
+C:\Users\Artur\AppData\Local\Programs\Python\Python313\Lib\shutil.py:260: FileNotFoundError
+_______ TestFactoryWarning.test_consistent_configs_no_warning[baseline] _______
+
+self = <tests.test_pvt_consistency.TestFactoryWarning object at 0x0000015C34D52DB0>
+config_path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x0000015C34D91A90>
+
+    @pytest.mark.parametrize("config_path", CONSISTENT_CONFIGS,
+                             ids=[p.parent.name if p.name == "config.json" else p.stem
+                                  for p in CONSISTENT_CONFIGS])
+    def test_consistent_configs_no_warning(self, config_path, caplog):
+        # Ложных срабатываний нет: все штатные примеры и базовый конфиг.
+        # Пример 20 с 2026-10-03 — R_s0 = 300, p_b = 30.29 МПа ниже границы
+        # 34.55 МПа, PVT согласована. Новый пример с несогласованной PVT уронит
+        # этот тест — намеренно: его README должен объяснить предупреждение.
+>       assert _pvt_warnings(load_config(config_path), caplog) == []
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_pvt_consistency.py:221: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________________ TestFactory.test_from_baseline ________________________
+
+self = <tests.test_simulator.TestFactory object at 0x0000015C34EF42D0>
+
+    def test_from_baseline(self):
+        """Factory создаёт Simulator из baseline.json, run() не падает."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_simulator.py:230: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_________________ TestFactory.test_initial_state_from_config __________________
+
+self = <tests.test_simulator.TestFactory object at 0x0000015C34EF4410>
+
+    def test_initial_state_from_config(self):
+        """Начальное состояние: p=p0, T=T0, Rs=Rs0, Sg=0, regime=2."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_simulator.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_____________________ TestFactory.test_well_rate_positive _____________________
+
+self = <tests.test_simulator.TestFactory object at 0x0000015C34CEB5C0>
+
+    def test_well_rate_positive(self):
+        """Дебит нефти > 0 при добыче."""
+>       config = load_config(BASELINE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_simulator.py:251: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/baseline.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\baseline.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+___________________ TestDupuitRate.test_rate_matches_dupuit ___________________
+
+self = <tests.test_val001.TestDupuitRate object at 0x0000015C34EF4CD0>
+
+    def test_rate_matches_dupuit(self):
+        """q_o_std = 2πkh·mob_o·Δp/ln(R/rw). mob_o = const → точная формула."""
+>       _, history = _run_val001()
+                     ^^^^^^^^^^^^^
+
+tests\test_val001.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+______________________ TestDupuitRate.test_rate_positive ______________________
+
+self = <tests.test_val001.TestDupuitRate object at 0x0000015C34EF4F50>
+
+    def test_rate_positive(self):
+        """Дебит при добыче > 0."""
+>       _, history = _run_val001()
+                     ^^^^^^^^^^^^^
+
+tests\test_val001.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestDupuitPressure.test_pressure_log_profile _________________
+
+self = <tests.test_val001.TestDupuitPressure object at 0x0000015C34EF5090>
+
+    def test_pressure_log_profile(self):
+        """p(r_j) = p_wf + Δp·ln(r_j/rw)/ln(R/rw) на центрах масс ячеек."""
+>       sim, history = _run_val001()
+                       ^^^^^^^^^^^^^
+
+tests\test_val001.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________________ TestStationaryFlux.test_G_o_constant _____________________
+
+self = <tests.test_val001.TestStationaryFlux object at 0x0000015C34EF51D0>
+
+    def test_G_o_constant(self):
+        """G_o одинаков на всех N+1 гранях (забой, внутренние, контур).
+    
+        При const mob_o проводимости T и перепады dp сокращаются:
+        G_o = -2πkh·mob_o·Δp/ln(R/rw) = const.
+        Знак: G_o < 0 (поток к скважине). См. конвенции-знаков.md.
+        """
+>       _, history = _run_val001()
+                     ^^^^^^^^^^^^^
+
+tests\test_val001.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________________ TestStationaryFlux.test_u_r_constant _____________________
+
+self = <tests.test_val001.TestStationaryFlux object at 0x0000015C34EF5310>
+
+    def test_u_r_constant(self):
+        """u_o·r = const — закон сохранения в цилиндрических координатах."""
+>       sim, history = _run_val001()
+                       ^^^^^^^^^^^^^
+
+tests\test_val001.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________________ TestMassBalance.test_oil_mass_balance ____________________
+
+self = <tests.test_val001.TestMassBalance object at 0x0000015C34EF5450>
+
+    def test_oil_mass_balance(self):
+        """Невязка G_o на каждой ячейке ≈ 0 (стационар)."""
+>       _, history = _run_val001()
+                     ^^^^^^^^^^^^^
+
+tests\test_val001.py:134: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_________________________ TestGOR.test_gor_equals_rs0 _________________________
+
+self = <tests.test_val001.TestGOR object at 0x0000015C34EF5590>
+
+    def test_gor_equals_rs0(self):
+        """−G_g[0] / (−G_o[0]) = Rs0. При Sg=0 свободного газа нет."""
+>       _, history = _run_val001()
+                     ^^^^^^^^^^^^^
+
+tests\test_val001.py:148: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:59: in _run_val001
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+____________________ TestPipeline.test_pipeline_roundtrip _____________________
+
+self = <tests.test_val001.TestPipeline object at 0x0000015C34EF5810>
+tmp_path = WindowsPath('C:/Users/Artur/AppData/Local/Temp/pytest-of-Artur/pytest-488/test_pipeline_roundtrip0')
+
+    def test_pipeline_roundtrip(self, tmp_path):
+        """JSON → Factory → run → save_npz → np.load → проверка."""
+>       config = load_config(VAL001_PATH)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_val001.py:209: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+________________ TestKirchhoffBeal.test_rate_matches_kirchhoff ________________
+
+self = <tests.test_val001.TestKirchhoffBeal object at 0x0000015C34EF5A90>
+
+    def test_rate_matches_kirchhoff(self):
+        """N = 20: дебит схемы против Кирхгофа, e = q/q_точн − 1 ≈ −1.02e-3.
+    
+        Знак минус: при притоке ячейка выше по потоку — внешняя, давление и
+        вязкость там выше, подвижность и дебит занижены. Если бы ветвь Била
+        не дошла до гидродинамики (прототип), было бы e ≈ +7.3 %.
+        """
+>       e = _run_val001_beal(20) / _q_kirchhoff_beal() - 1.0
+            ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_val001.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:243: in _run_val001_beal
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+_______________ TestKirchhoffBeal.test_first_order_convergence ________________
+
+self = <tests.test_val001.TestKirchhoffBeal object at 0x0000015C34CEBBB0>
+
+    def test_first_order_convergence(self):
+        """Ошибка убывает вдвое при удвоении N: e(20)/e(40) ≈ 1.973 (проба).
+    
+        Порядок 1 — подвижность против потока. Ошибка, не убывающая с
+        сеткой, значила бы, что эталон описывает не ту задачу (например,
+        разная вязкость на путях расчёта).
+        """
+        q_ex = _q_kirchhoff_beal()
+>       e20 = _run_val001_beal(20) / q_ex - 1.0
+              ^^^^^^^^^^^^^^^^^^^^
+
+tests\test_val001.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\test_val001.py:243: in _run_val001_beal
+    config = load_config(VAL001_PATH)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('D:/Lessons/Grants/2026/GPN/Oil_Gas/vault/issues/bug-020/probes/impl/numerical_solver/configs/val001.json')
+
+    def load_config(path: str | Path) -> SimulationConfig:
+        """Прочитать JSON-конфиг и вернуть SimulationConfig.
+    
+        Валидирует обязательные секции и физические ограничения.
+        Путь к CSV-файлам PVT — относительно расположения JSON.
+        """
+        path = Path(path)
+>       with open(path, encoding="utf-8") as f:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\vault\\issues\\bug-020\\probes\\impl\\numerical_solver\\configs\\val001.json'
+
+gpn_multiphase_solver\io\config.py:273: FileNotFoundError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_config.py::TestHistoryBlocks::test_baseline_as_blocks - Fil...
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_from_config_creates_prototype_hydro
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_pvt_is_table_full
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_factory_passes_max_retries
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_factory_default_max_retries
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_relperm_is_prototype_adapter
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_initial_state_shapes
+FAILED tests/test_factory_prototype.py::TestFactoryTablePVT::test_config_dir_resolved
+FAILED tests/test_factory_prototype.py::TestPipeline::test_run_produces_history
+FAILED tests/test_factory_prototype.py::TestPipeline::test_well_rate_positive
+FAILED tests/test_factory_prototype.py::TestPVTConsistency::test_pvt_objects_are_same
+FAILED tests/test_factory_prototype.py::TestPVTConsistency::test_bo_consistency
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_rs0_above_last_branch_raises
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_rs0_below_guard_threshold_raises
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_rs0_below_first_branch_raises
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_rs0_on_last_branch_passes
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_supersaturated_start_raises
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_p0_at_bubble_point_passes
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_p0_1pa_below_pb_passes
+FAILED tests/test_factory_prototype.py::TestInitialStateVsTable::test_dead_oil_below_table_pb0_passes
+FAILED tests/test_factory_prototype.py::TestInitialRangeWarnings::test_p0_above_tables_warns
+FAILED tests/test_factory_prototype.py::TestInitialRangeWarnings::test_in_range_no_warnings
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_standing_creates_prototype_hydro
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_standing_pipeline_runs
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_standing_well_rate_positive
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_standing_dupuit_pressure
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_beal_reaches_pvt
+FAILED tests/test_factory_standing_hydro.py::TestFactoryStandingHydro::test_beal_with_table_raises
+FAILED tests/test_factory_standing_hydro.py::TestStandingInitialState::test_supersaturated_start_raises
+FAILED tests/test_factory_standing_hydro.py::TestStandingInitialState::test_p0_1pa_below_pb_passes
+FAILED tests/test_factory_standing_hydro.py::TestStandingInitialState::test_dead_oil_passes
+FAILED tests/test_factory_standing_hydro.py::TestStandingInitialState::test_no_range_warnings
+FAILED tests/test_output.py::TestEndToEnd::test_baseline_to_npz - FileNotFoun...
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_oil_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_gas_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_inconsistent_undersaturated_table_warns
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_consistent_table_with_degassing_no_warning
+FAILED tests/test_pvt_consistency.py::TestFactoryWarning::test_consistent_configs_no_warning[baseline]
+FAILED tests/test_simulator.py::TestFactory::test_from_baseline - FileNotFoun...
+FAILED tests/test_simulator.py::TestFactory::test_initial_state_from_config
+FAILED tests/test_simulator.py::TestFactory::test_well_rate_positive - FileNo...
+FAILED tests/test_val001.py::TestDupuitRate::test_rate_matches_dupuit - FileN...
+FAILED tests/test_val001.py::TestDupuitRate::test_rate_positive - FileNotFoun...
+FAILED tests/test_val001.py::TestDupuitPressure::test_pressure_log_profile - ...
+FAILED tests/test_val001.py::TestStationaryFlux::test_G_o_constant - FileNotF...
+FAILED tests/test_val001.py::TestStationaryFlux::test_u_r_constant - FileNotF...
+FAILED tests/test_val001.py::TestMassBalance::test_oil_mass_balance - FileNot...
+FAILED tests/test_val001.py::TestGOR::test_gor_equals_rs0 - FileNotFoundError...
+FAILED tests/test_val001.py::TestPipeline::test_pipeline_roundtrip - FileNotF...
+FAILED tests/test_val001.py::TestKirchhoffBeal::test_rate_matches_kirchhoff
+FAILED tests/test_val001.py::TestKirchhoffBeal::test_first_order_convergence
+ERROR tests/test_config.py::TestBaselineGeometry::test_r_well - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineGeometry::test_R_ext - FileNotFoundEr...
+ERROR tests/test_config.py::TestBaselineGeometry::test_h - FileNotFoundError:...
+ERROR tests/test_config.py::TestBaselineGrid::test_N - FileNotFoundError: [Er...
+ERROR tests/test_config.py::TestBaselineGrid::test_type - FileNotFoundError: ...
+ERROR tests/test_config.py::TestBaselineRock::test_porosity - FileNotFoundErr...
+ERROR tests/test_config.py::TestBaselineRock::test_permeability - FileNotFoun...
+ERROR tests/test_config.py::TestBaselineRock::test_rho_cp_solid - FileNotFoun...
+ERROR tests/test_config.py::TestBaselineRock::test_lambda_solid - FileNotFoun...
+ERROR tests/test_config.py::TestBaselineRock::test_lambda_oil - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineRock::test_lambda_gas - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselinePVT::test_model - FileNotFoundError: ...
+ERROR tests/test_config.py::TestBaselinePVT::test_rho_o_std - FileNotFoundErr...
+ERROR tests/test_config.py::TestBaselinePVT::test_rho_g_std - FileNotFoundErr...
+ERROR tests/test_config.py::TestBaselinePVT::test_co_default - FileNotFoundEr...
+ERROR tests/test_config.py::TestBaselinePVT::test_mu_o_undersaturated_default
+ERROR tests/test_config.py::TestBaselineRelPerm::test_model - FileNotFoundErr...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_S_or - FileNotFoundErro...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_S_gc - FileNotFoundErro...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_n_o - FileNotFoundError...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_n_g - FileNotFoundError...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_kro_max - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineRelPerm::test_krg_max - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineThermal::test_c_p_oil - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineThermal::test_c_p_gas - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineThermal::test_mu_JT_oil - FileNotFoun...
+ERROR tests/test_config.py::TestBaselineThermal::test_mu_JT_gas - FileNotFoun...
+ERROR tests/test_config.py::TestBaselineThermal::test_L_degas - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineInitialConditions::test_p0 - FileNotF...
+ERROR tests/test_config.py::TestBaselineInitialConditions::test_T0 - FileNotF...
+ERROR tests/test_config.py::TestBaselineInitialConditions::test_Rs0 - FileNot...
+ERROR tests/test_config.py::TestBaselineTime::test_dt_integration - FileNotFo...
+ERROR tests/test_config.py::TestBaselineTime::test_start_day - FileNotFoundEr...
+ERROR tests/test_config.py::TestBaselineTime::test_history_count - FileNotFou...
+ERROR tests/test_config.py::TestBaselineTime::test_history_step_uniform - Fil...
+ERROR tests/test_config.py::TestBaselineTime::test_history_control_is_pressure
+ERROR tests/test_config.py::TestBaselineTime::test_history_stage_1 - FileNotF...
+ERROR tests/test_config.py::TestBaselineTime::test_history_stage_2 - FileNotF...
+ERROR tests/test_config.py::TestBaselineNumerics::test_dt_min - FileNotFoundE...
+ERROR tests/test_config.py::TestBaselineNumerics::test_dt_max_default - FileN...
+ERROR tests/test_config.py::TestBaselineNumerics::test_skin - FileNotFoundErr...
+ERROR tests/test_config.py::TestBaselineNumerics::test_max_retries_default - ...
+ERROR tests/test_config.py::TestBaselineOutput::test_log_level - FileNotFound...
+ERROR tests/test_config.py::TestBaselineOutput::test_format - FileNotFoundErr...
+ERROR tests/test_config.py::TestConfigTypes::test_config_type - FileNotFoundE...
+ERROR tests/test_config.py::TestConfigTypes::test_geometry_type - FileNotFoun...
+ERROR tests/test_config.py::TestConfigTypes::test_history_interval_type - Fil...
+51 failed, 956 passed, 235 deselected, 1 warning, 47 errors in 108.39s (0:01:48)

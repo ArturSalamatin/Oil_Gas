@@ -1,0 +1,100 @@
+﻿
+=== 01_single_phase_no_jt__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\01_single_phase_no_jt\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\01_single_phase_no_jt\config.json
+
+=== 02_single_phase_jt__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\02_single_phase_jt\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\02_single_phase_jt\config.json
+
+=== 03_standing_corey__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\03_standing_corey\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\03_standing_corey\config.json
+
+=== 04_table_table__grid_convergence
+  -   50       26   5.875953e-03     0.4472 %     1.96          23.58     2.6303   351.4915       0.6
+  +   50       26   5.875953e-03     0.4472 %     1.96          23.58     2.6303   351.4915       0.5
+
+=== 04_table_table__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\04_table_table\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\04_table_table\config.json
+
+=== 04a_high_gas_saturation__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\04a_high_gas_saturation\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\04a_high_gas_saturation\config.json
+
+=== 05_standing_table_rp__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\05_standing_table_rp\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\05_standing_table_rp\config.json
+
+=== 06_table_corey_rp__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\06_table_corey_rp\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\06_table_corey_rp\config.json
+
+=== 07_degassing_adiabatic_only__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\07_degassing_adiabatic_only\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\07_degassing_adiabatic_only\config.json
+
+=== 08_degassing_jt__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\08_degassing_jt\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\08_degassing_jt\config.json
+
+=== 09_degassing_latent_heat__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\09_degassing_latent_heat\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\09_degassing_latent_heat\config.json
+
+=== 10_deep_degassing__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\10_deep_degassing\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\10_deep_degassing\config.json
+
+=== 11_degassing_at_boundary__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\11_degassing_at_boundary\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\11_degassing_at_boundary\config.json
+
+=== 12_large_drainage_radius__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\12_large_drainage_radius\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\12_large_drainage_radius\config.json
+
+=== 13a_pwf_ramp_down__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\13a_pwf_ramp_down\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\13a_pwf_ramp_down\config.json
+
+=== 13b_pwf_alternating__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\13b_pwf_alternating\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\13b_pwf_alternating\config.json
+
+=== 14_high_gor_cooling__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\14_high_gor_cooling\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\14_high_gor_cooling\config.json
+
+=== 15_oil_rate_ramp_up__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\15_oil_rate_ramp_up\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\15_oil_rate_ramp_up\config.json
+
+=== 16_well_shut_in__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\16_well_shut_in\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\16_well_shut_in\config.json
+
+=== 17_shut_in_strong_cooling__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\17_shut_in_strong_cooling\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\17_shut_in_strong_cooling\config.json
+
+=== 18_prototype_input__main
+  -  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-063\probes\run_with_centers.py", line 26, in <module>
+  +  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\vault\issues\debt-063\probes\run_with_centers.py", line 30, in <module>
+  -  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\18_prototype_input\main.py", line 12, in <module>
+  +  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\18_prototype_input\main.py", line 12, in <module>
+
+=== 19_rs150_cooling__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\19_rs150_cooling\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\19_rs150_cooling\config.json
+
+=== 20_rs300_cooling__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\20_rs300_cooling\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\20_rs300_cooling\config.json
+
+=== 21_rs100_cooling__main
+  -Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\examples\21_rs100_cooling\config.json
+  +Конфиг: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-063\numerical_solver\examples\21_rs100_cooling\config.json
+
+sqrt → impl: скриптов с изменённым выводом: 24 из 28

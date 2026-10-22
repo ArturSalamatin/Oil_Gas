@@ -40,8 +40,27 @@ htmlcov/
 method_of_moments/results*
 method_of_moments/results/*.csv
 method_of_moments/results/*.png
+numerical_solver/results/*.csv
+numerical_solver/results/*.npz
+numerical_solver/results/*.png
+numerical_solver/results/*.xlsx
+numerical_solver/examples/**/output/
+# Соседний каталог вывода при занятом output/ (output_<дата>_<время>) и
+# временные имена очистки (output.check-<pid>, output.old-<pid>) — DEBT-082
+numerical_solver/examples/**/output[._]*/
+# vault/issues: тексты issue и скрипты проб — в git (нужны в worktree задачи);
+# выходы проб — истории и графики — воспроизводимы, не хранить
+vault/issues/**/*.npz
+vault/issues/**/*.png
+vault/issues/**/*.emf
+vault/issues/**/*.svg
+
+# Локальный эталон для сверки «до/после» при рефакторинге (DEBT-018).
+# Снимается вручную через BASELINE_WRITE=1, привязан к конкретному дереву.
+numerical_solver/tests/baseline_vectorization_T.npz
 
 # OS
 Thumbs.db
 desktop.ini
 .DS_Store
+numerical_solver/HydroSolverPrototype/Prototype_1.0.3/OUTPUT

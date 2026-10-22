@@ -1,0 +1,53 @@
+база numerical_scheme/implementation = ee2be23
+генератор: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-036\probes\plan_tree\numerical_solver\gpn_multiphase_solver\io\workbook_template.py 
+template examples/22_workbook_input/22_workbook_input.xlsx: код 0, 22489 байт 
+template configs/INPUT_TEMPLATE_v1.xlsx: код 0, 22489 байт 
+новые и затронутые тесты, сторожа:
+  ============================= slowest 8 durations =============================
+  7.37s call     tests/test_workbook_run.py::test_command_runs_workbook
+  7.04s call     tests/test_cli.py::test_run_from_foreign_directory
+  5.45s setup    tests/test_workbook_run.py::test_input_saved_and_output_cleared
+  4.85s call     tests/test_workbook_run.py::test_config_run_clears_output_after_run
+  2.10s call     tests/test_cli.py::test_report_import_has_no_side_effects
+  1.57s call     tests/test_packaging.py::TestNoPrototypePathInsertion::test_code_does_not_insert_prototype_path
+  1.16s call     tests/test_public_api.py::test_package_does_not_depend_on_examples
+  0.77s call     tests/test_cli.py::test_convert_does_not_import_solver
+  =========================== short test summary info ===========================
+  SKIPPED [1] tests\test_xlsx_reader.py:476: черновик руководителя вне git (решение 11)
+  SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+  508 passed, 3 skipped in 43.82s
+собрано в test_workbook_run.py: 17 tests collected in 1.57s
+всего тестов: 2461 tests collected in 4.23s
+быстрый уровень (173 с):
+    See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+      fixturefunc = resolve_fixture_function(fixturedef, request)
+  
+  -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+  =========================== short test summary info ===========================
+  SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+  SKIPPED [1] tests\test_xlsx_reader.py:476: черновик руководителя вне git (решение 11)
+  2174 passed, 3 skipped, 284 deselected, 1 warning in 171.60s (0:02:51)
+порча кода плана (ждём failed в каждой строке):
+  книга внутри каталога вывода не отвергается: 1 failed, 22 passed, 27 deselected in 20.77s
+  очистка до чтения книги (книга с ошибкой стирает вывод): 2 failed, 21 passed, 27 deselected in 21.50s
+  нет очистки до записи перевода: 4 failed, 19 passed, 27 deselected in 20.83s
+  очистка после расчёта и у книги (input/ стирается): 3 failed, 20 passed, 27 deselected in 19.86s
+  защита входных файлов и у книги: 3 failed, 17 passed, 27 deselected, 3 errors in 9.78s
+  печать «Конфиг:» вместо «Книга:»: 2 failed, 21 passed, 27 deselected in 20.11s
+  ошибка фабрики — с путём перевода, а не книги: 1 failed, 22 passed, 27 deselected in 20.01s
+  расширение с учётом регистра: 1 failed, 22 passed, 27 deselected in 20.18s
+  явный n_profiles не проверяется до перевода: 1 failed, 22 passed, 27 deselected in 20.22s
+  нет книги — сообщение ОС вместо «книга не найдена»: 2 failed, 21 passed, 27 deselected in 20.19s
+  очистка у конфига отключена (аудит 1): 1 failed, 22 passed, 27 deselected in 20.29s
+  отказ очистки (файл открыт) не ловится (аудит 1): 1 failed, 22 passed, 27 deselected in 19.81s
+  командная строка: «Ошибка конфига» и для книги: 2 failed, 21 passed, 27 deselected in 19.96s
+  нет строки «Run» на листе COMMENTS: 1 failed, 22 passed, 27 deselected in 20.20s
+пример 22 main.py: код 0, 21.4 с; вывод: ['energy_balance.png', 'input', 'mass_balance.png', 'pressure_profiles.png', 'profiles.csv', 'pvt.png', 'relperm.png', 'rs_profiles.png', 'saturation_profiles.png', 'temperature_profiles.png', 'versions.txt', 'well_history.csv', 'well_rates.png', 'wellbore_dynamics.png']; input/: ['config.json', 'gas_pvt.csv', 'oil_pvt.csv', 'relperm.csv']
+test_examples.py целиком (249 с):
+  ============================= slowest 5 durations =============================
+  29.71s call     tests/test_examples.py::TestPvtPlot::test_plot_pvt_all_examples
+  26.43s call     tests/test_examples.py::TestRunAll::test_completes[13b_pwf_alternating]
+  24.88s call     tests/test_examples.py::TestRunAll::test_completes[17_shut_in_strong_cooling]
+  15.86s call     tests/test_examples.py::TestRunAll::test_completes[16_well_shut_in]
+  14.83s setup    tests/test_examples.py::TestPrototypeInput::test_matches_prototype
+  487 passed in 247.29s (0:04:07)

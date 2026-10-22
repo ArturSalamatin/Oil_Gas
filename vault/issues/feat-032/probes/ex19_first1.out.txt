@@ -1,0 +1,3 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+19_rs150_cooling orig: записей 31, отпечаток bc6b6a0079e71ea9, счёт 1.2 с
+19_rs150_cooling first=1 h0=0.44: ОТКАЗ — не сошлось на наименьшем подшаге 6.437e-04 с, t = 0.000000 сут

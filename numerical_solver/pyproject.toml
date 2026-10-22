@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpn-multiphase-solver"
+# Номер — литерал gpn_multiphase_solver.__version__ ([tool.setuptools.dynamic]
+# ниже, FEAT-037); правило номеров — CHANGELOG.md
+dynamic = ["version"]
+description = "Near-wellbore non-isothermal Black Oil flow: energy equation solver coupled with the radial-blackoil hydrodynamic prototype"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    # Шаблон книги ввода Excel (gpn-solver template, FEAT-033). Граница — как
+    # у прототипа (его pyproject.toml): в общем окружении одна версия.
+    "XlsxWriter>=3.2",
+    # Прототип гидродинамики (HydroSolverPrototype/Prototype_1.0.3) — отдельный
+    # дистрибутив в этом же репозитории (DEBT-059). Ровно эта версия: с нашими
+    # правками прототипа совместима только она (тест test_packaging.py). Метка
+    # «+gpn.N» — локальная; PyPI таких версий не принимает, поэтому чужой
+    # пакет с тем же именем зависимость не удовлетворит. N и это требование
+    # повышает tools/release.py при выпуске (FEAT-038). Ставить вместе:
+    #   pip install -e HydroSolverPrototype/Prototype_1.0.3 -e ".[dev]"
+    "radial-blackoil==1.0.3+gpn.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    # Сборка HTML-документации из README и докстрингов (FEAT-031):
+    # python -m sphinx -W -b html doc/source doc/build/html. Нижние границы
+    # не проверялись; проверено на Sphinx 9.1, myst-parser 5.1. Свежие версии
+    # не ставятся границей: на Python 3.10 (requires-python) их нет
+    "sphinx>=7.2",
+    "myst-parser>=2.0",
+]
+
+[project.scripts]
+# Команда расчёта по конфигу (FEAT-030) — то же, что
+# python -m gpn_multiphase_solver run config.json. На Windows gpn-solver.exe
+# ложится в Scripts\ окружения: без активации venv её нет в PATH, тогда —
+# форма python -m.
+gpn-solver = "gpn_multiphase_solver.cli:main"
+
+[tool.setuptools.dynamic]
+# Единственный источник номера — литерал в gpn_multiphase_solver/__init__.py,
+# как у прототипа (DEBT-059). setuptools читает его разбором исходника, без
+# импорта пакета: в изолированной сборке numpy нет.
+version = {attr = "gpn_multiphase_solver.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gpn_multiphase_solver*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Прототип — из этого же дерева, а не установленный: venv общий для основного
+# каталога и worktree, установленный radial_blackoil указывает на основной
+# каталог, а тесты worktree обязаны проверять свой код (DEBT-059). Путь — от
+# каталога этого файла.
+pythonpath = ["HydroSolverPrototype/Prototype_1.0.3"]
+# slow — тяжёлые тесты: расчёт примеров на штатных конфигах или на
+# сгущённой сетке. Считаются по умолчанию (полный прогон, ~10 мин);
+# быстрый уровень после шага реализации: pytest -m "not slow" (~70 с).
+# Тесты на фикстуре results получают метку автоматически —
+# хук в tests/conftest.py (DEBT-032).
+markers = [
+    "slow: тяжёлый тест — расчёт примеров на штатных конфигах или на сгущённой сетке",
+]

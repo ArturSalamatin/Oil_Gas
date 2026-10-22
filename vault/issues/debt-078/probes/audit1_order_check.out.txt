@@ -1,0 +1,48 @@
+база: 0f8074d; файлы, общие с DEBT-076: numerical_solver/gpn_multiphase_solver/io/config.py, numerical_solver/tests/test_config.py, vault/knowledge/decisions/P8-формат-ввода-json.md
+
+A — сначала DEBT-078, затем DEBT-076:
+  078: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '    # Для Standing'
+  078: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '        raise ValueError(f"permeability должна быть > 0, пол'
+  078: OK  numerical_solver/tests/test_config.py: '- Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).'
+  078: OK  numerical_solver/tests/test_config.py: '            load_config(_write_json(tmp_path, raw))'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'CSV и JSON — в одной папке. Factory ищет CSV относительно ра'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| | `_validate` | геометрия, сетка, порода ('
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| `from_config` | `factory.py`: `_read_numeric_csv`, `_check'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'Порода — наш config (`_validate`, `io/config.py`): '
+  076: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '            f"объём с ростом давления не уменьшается (вероят'
+  076: OK  numerical_solver/tests/test_config.py: '        assert cfg.rock.compressibility == c_r'
+  076: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметр'
+  076: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'при $c_r \\ge 0$ $\\varphi(p) \\le$ `porosity`.'
+
+B — сначала DEBT-076, затем DEBT-078:
+  076: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '            f"объём с ростом давления не уменьшается (вероят'
+  076: OK  numerical_solver/tests/test_config.py: '        assert cfg.rock.compressibility == c_r'
+  076: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметр'
+  076: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'при $c_r \\ge 0$ $\\varphi(p) \\le$ `porosity`.'
+  078: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '    # Для Standing'
+  078: OK  numerical_solver/gpn_multiphase_solver/io/config.py: '        raise ValueError(f"permeability должна быть > 0, пол'
+  078: OK  numerical_solver/tests/test_config.py: '- Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).'
+  078: OK  numerical_solver/tests/test_config.py: '            load_config(_write_json(tmp_path, raw))'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'CSV и JSON — в одной папке. Factory ищет CSV относительно ра'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| | `_validate` | геометрия, сетка, порода ('
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| `from_config` | `factory.py`: `_read_numeric_csv`, `_check'
+  078: OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'Порода — наш config (`_validate`, `io/config.py`): '
+
+M — трёхстороннее слияние (git merge-file):
+  078 : OK  numerical_solver/gpn_multiphase_solver/io/config.py: '    # Для Standing'
+  078 : OK  numerical_solver/gpn_multiphase_solver/io/config.py: '        raise ValueError(f"permeability должна быть > 0, пол'
+  076 : OK  numerical_solver/gpn_multiphase_solver/io/config.py: '            f"объём с ростом давления не уменьшается (вероят'
+  numerical_solver/gpn_multiphase_solver/io/config.py: конфликтов 0
+  078 : OK  numerical_solver/tests/test_config.py: '- Порода: сжимаемость rock.compressibility ≥ 0 (DEBT-068).'
+  078 : OK  numerical_solver/tests/test_config.py: '            load_config(_write_json(tmp_path, raw))'
+  076 : OK  numerical_solver/tests/test_config.py: '        assert cfg.rock.compressibility == c_r'
+  numerical_solver/tests/test_config.py: конфликтов 0
+  078 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'CSV и JSON — в одной папке. Factory ищет CSV относительно ра'
+  078 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| | `_validate` | геометрия, сетка, порода ('
+  078 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: '| `from_config` | `factory.py`: `_read_numeric_csv`, `_check'
+  078 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'Порода — наш config (`_validate`, `io/config.py`): '
+  076 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'порода (`compressibility` ≥ 0 — DEBT-068), тепловые параметр'
+  076 : OK  vault/knowledge/decisions/P8-формат-ввода-json.md: 'при $c_r \\ge 0$ $\\varphi(p) \\le$ `porosity`.'
+  vault/knowledge/decisions/P8-формат-ввода-json.md: конфликтов 1
+
+итог: A OK, B OK

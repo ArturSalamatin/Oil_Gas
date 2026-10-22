@@ -1,0 +1,36 @@
+﻿[T00] PASS: golden output reproduced; QC PASS
+[T01] PASS: golden output reproduced; QC PASS
+[T02] PASS: golden output reproduced; QC PASS
+[T03] PASS: golden output reproduced; QC PASS
+[T04] PASS: golden output reproduced; QC PASS
+[T06] PASS: golden output reproduced; QC PASS
+[T07] PASS: golden output reproduced; QC PASS
+[T08c] PASS: golden output reproduced; QC PASS
+[T09] PASS: golden output reproduced; QC PASS
+[T10] PASS: golden output reproduced; QC PASS
+[T11] PASS: golden output reproduced; QC PASS
+[T05S_N050_DT5m] PASS: golden output reproduced; QC PASS
+[T05S_N100_DT5m] PASS: golden output reproduced; QC PASS
+[T05S_N200_DT5m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT60m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT10m] PASS: golden output reproduced; QC PASS
+[T05T_N100_DT3m] PASS: golden output reproduced; QC PASS
+T00                  PASS
+T01                  PASS
+T02                  PASS
+T03                  PASS
+T04                  PASS
+T06                  PASS
+T07                  PASS
+T08c                 PASS
+T09                  PASS
+T10                  PASS
+T11                  PASS
+T05S_N050_DT5m       PASS
+T05S_N100_DT5m       PASS
+T05S_N200_DT5m       PASS
+T05T_N100_DT60m      PASS
+T05T_N100_DT10m      PASS
+T05T_N100_DT3m       PASS
+Passed 17/17 jobs
+Outputs: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-027\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\OUTPUT\REGRESSION_20261014_141344

@@ -1,0 +1,7 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+05, p_wf = 4 МПа, R_s0 = 50, 6 ч: сошёлся; принятых 6, max S_g 0.06467; ; 0.17 с
+05, p_wf = 2 МПа, R_s0 = 50, 6 ч: сошёлся; принятых 6, max S_g 0.1032; S_g > 0.1: 1 ч; 0.26 с
+05, p_wf = 8 МПа, R_s0 = 100, 6 ч: сошёлся; принятых 6, max S_g 0.1022; S_g > 0.1: 1 ч; 0.31 с
+05, p_wf = 4 МПа, R_s0 = 100, 6 ч: сошёлся; принятых 6, max S_g 0.1245; S_g > 0.1: 1 ч; 0.31 с
+05, p_wf = 2 МПа, R_s0 = 100, 6 ч: сошёлся; принятых 6, max S_g 0.1496; S_g > 0.1: 1 ч; 0.32 с

@@ -1,0 +1,167 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 100.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 100,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 9.869233e-16,
+    "rho_cp_solid": 1250000.0,
+    "lambda_solid": 1.5,
+    "lambda_oil": 0.14,
+    "lambda_gas": 0.04,
+    "compressibility": 4.5000000000000005e-10
+  },
+  "pvt": {
+    "model": "table",
+    "rho_o_std": 850.0,
+    "rho_g_std": 0.85,
+    "oil_pvt_file": "oil_pvt.csv",
+    "gas_pvt_file": "gas_pvt.csv"
+  },
+  "relperm": {
+    "model": "table",
+    "file": "relperm.csv"
+  },
+  "thermal": {
+    "c_p_oil": 2000.0,
+    "c_p_gas": 2850.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 4e-06,
+    "L_degas": 230000.0
+  },
+  "initial_conditions": {
+    "p0": 20000000.0,
+    "T0": 350.0,
+    "Rs0": 50.0
+  },
+  "time": {
+    "start_day": 0.0,
+    "dt_integration": 86400.0,
+    "history": [
+      {
+        "dt": 60.0,
+        "control": "pressure",
+        "p_wf": 15000000.0
+      },
+      {
+        "dt": 86340.0,
+        "control": "pressure",
+        "p_wf": 15000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 15000000.0
+      },
+      {
+        "dt": 172800.0,
+        "control": "pressure",
+        "p_wf": 15000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 15000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 86340.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 691200.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 86400.0,
+        "control": "pressure",
+        "p_wf": 12000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 10.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 86340.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      },
+      {
+        "dt": 1209600.0,
+        "control": "pressure",
+        "p_wf": 10000000.0
+      }
+    ]
+  },
+  "numerics": {
+    "skin": 0.0,
+    "jacobian_mode": "grouped",
+    "linear_solver": "sparse"
+  },
+  "output": {
+    "log_level": "INFO"
+  }
+}

@@ -1,0 +1,10 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+.venv\Scripts\python : [INFO] Расчет: 1 интервалов, T_total = 1 с
+At line:1 char:358
++ ... cal_solver; .venv\Scripts\python ..\vault\issues\bug-028\probes\first ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([INFO] Расчет: ..., T_total = 1 с:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[INFO]   Интервал 1/1: dt_hist=1 с, 1 подшагов, dt_actual=1.0 с
+19_rs150_cooling dt = 1 с, max_retries = 9: ОТКАЗ, 8.0 с — advance не сошёлся: dt = 1.953e-03 с, t = 0.0000 сут, итераций 19, невязка 4.37e-03, мера ячеек 1.75e-09 (порог numerics.newton_cell_tol = 1e-08), выход: набор фаз не установился; числа — Ньютона ступени 1

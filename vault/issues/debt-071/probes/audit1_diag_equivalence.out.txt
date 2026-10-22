@@ -1,0 +1,6 @@
+﻿прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil\diagnostics.py
+«До» найдено 1 раз(а)
+«До» найдено 1 раз(а)
+газовая таблица 10…250 бар, R_s 5…50, p_b 24.51…180 бар, ОФП S_g 0…0.85
+сравнений pvt_range_warnings: 6000, все совпали побитово; состояний с записью ОФП: 2216
+встретились категории (9 из 9): ['GAS_PVT pressure above table', 'GAS_PVT pressure below table', 'OIL_PVT Rs above table', 'OIL_PVT Rs below table', 'OIL_PVT branch pressure above supplied range', 'OIL_PVT saturated locus above table', 'OIL_PVT saturated locus below table', 'RELPERM Sg above table', 'RELPERM Sg below table']

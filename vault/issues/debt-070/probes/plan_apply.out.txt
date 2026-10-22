@@ -1,0 +1,40 @@
+Проба плана DEBT-070 на HEAD (7420ab2); план: vault\plans\debt-070 statement-boundary-notation.md
+Правок в плане: 74 (T: 44, C: 13, V: 17)
+Каждая «До» найдена ровно один раз: да
+Изменено файлов: 12
+PDF: страниц 40, undefined 0, LaTeX Warning 0, Overfull 17
+    Overfull 75.08124 pt — строки 85--89
+    Overfull 75.08124 pt — строки 89--93
+    Overfull 75.08124 pt — строки 93--97
+    Overfull 75.08124 pt — строки 97--99
+    Overfull 75.08124 pt — строки 99--189
+    Overfull 5.31639 pt — строки 247--250
+    Overfull 23.70354 pt — строки 533--563
+    Overfull 3.89497 pt — строки 580--585
+    Overfull 41.27657 pt — строки 1386--1392
+    Overfull 22.29436 pt — строки 1793--1799
+    Overfull 1.77548 pt — строки 2128--2132
+    Overfull 2.2203 pt — строки 2169--2172
+    Overfull 10.01295 pt — строки 2253--2268
+    Overfull 14.11407 pt — строки 2274--2288
+    Overfull 0.77853 pt — строки 2530--2532
+    Overfull 19.2108 pt — строки 2936--2938
+    Overfull 12.0129 pt — строки 2990--2997
+  ssec:grid: страница 14
+  ssec:bc_disc: страница 24
+Запрещённые шаблоны в .tex: 0 
+Оставшиеся индексы ½ без минуса (ожидаются: правая грань ячейки 0, случай N = 1):
+    12: \newcommand{\half}{\tfrac{1}{2}}
+    1855: ячейки~$j = 0$ наравне с~потоками через правую грань~$G_{\half}$.
+    2060: $b_0^{\text{конв}} = -\Phi_{\half}^{-}$, и~$a_0 = 0$.
+    2087: + Q_{\lambda,\half}^T - \Phi_{\half}^{-},
+    2091: + Q_{\lambda,\half}^T\,\Tpl
+    2092: - \Phi_{\half}^{-}\,\Tpl
+Вхождений «-\half»: 82
+Запрещённые шаблоны в заметках vault: 0 
+  numerical_solver/gpn_multiphase_solver/energy/tridiag.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
+  numerical_solver/gpn_multiphase_solver/energy/balance.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
+  numerical_solver/tests/test_energy.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
+  numerical_solver/tests/test_energy_matrix_examples.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
+  numerical_solver/tests/test_rate_control.py: ast без докстрингов совпадает; новых строк длиннее 79: 0
+Сторож меток: 10 passed in 0.78s

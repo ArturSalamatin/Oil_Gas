@@ -1,0 +1,40 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+== до_правки: 1 passed, 15 failed из 16
+   FAIL test_gas_number_typo_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_decimal_comma_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_empty_file_raises: StopIteration: 
+   FAIL test_oil_inf_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_nan_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_no_header_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_number_typo_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_semicolon_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_short_row_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_swapped_header_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_oil_trailing_comma_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_relperm_bad_row_fails_in_from_config: Failed: DID NOT RAISE ValueError
+   FAIL test_relperm_error_in_krg_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_relperm_error_in_kro_raises: Failed: DID NOT RAISE ValueError
+   FAIL test_relperm_swapped_header_raises: Failed: DID NOT RAISE ValueError
+   ok   test_oil_bom_spaces_and_blank_rows_accepted
+== после_правки: 16 passed, 0 failed из 16
+   ok   test_gas_number_typo_raises
+   ok   test_oil_bom_spaces_and_blank_rows_accepted
+   ok   test_oil_decimal_comma_raises
+   ok   test_oil_empty_file_raises
+   ok   test_oil_inf_raises
+   ok   test_oil_nan_raises
+   ok   test_oil_no_header_raises
+   ok   test_oil_number_typo_raises
+   ok   test_oil_semicolon_raises
+   ok   test_oil_short_row_raises
+   ok   test_oil_swapped_header_raises
+   ok   test_oil_trailing_comma_raises
+   ok   test_relperm_bad_row_fails_in_from_config
+   ok   test_relperm_error_in_krg_raises
+   ok   test_relperm_error_in_kro_raises
+   ok   test_relperm_swapped_header_raises
+== Снимок 47 таблиц новыми ридерами: 47 таблиц, побитово совпадает
+== Сообщения
+   oil_pvt.csv: строка 2: число полей 5, а столбцов в заголовке 4 ('0.0,5000000,1,05,0.003'). Частые причины: десятичная запятая (1,20 вместо 1.20), запятая в конце строки, пропущенное значение.
+   gas_pvt.csv: заголовок 'pressure_Pa;Bg;mu_g_Pa_s', ожидается 'pressure_Pa,Bg,mu_g_Pa_s'. Столбцы читаются по порядку, поэтому заголовок обязателен. Разделитель столбцов — запятая, десятичный разделитель — точка.
+   relperm.csv: строка 3, столбец kro: 'nan' — не конечное число.

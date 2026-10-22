@@ -1,0 +1,26 @@
+﻿каталог: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+пакет:   D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\io\config.py
+examples/01_single_phase_no_jt/config.json: объектов 72 → 1, интервалов 72, строк 419 → 65
+examples/02_single_phase_jt/config.json: объектов 72 → 1, интервалов 72, строк 419 → 65
+examples/03_standing_corey/config.json: объектов 72 → 1, интервалов 72, строк 419 → 65
+examples/04_table_table/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/04a_high_gas_saturation/config.json: объектов 864 → 1, интервалов 864, строк 4382 → 68
+examples/05_standing_table_rp/config.json: объектов 72 → 1, интервалов 72, строк 414 → 60
+examples/06_table_corey_rp/config.json: объектов 72 → 1, интервалов 72, строк 421 → 67
+examples/07_degassing_adiabatic_only/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/08_degassing_jt/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/09_degassing_latent_heat/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/10_deep_degassing/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/11_degassing_at_boundary/config.json: объектов 72 → 1, интервалов 72, строк 416 → 62
+examples/12_large_drainage_radius/config.json: объектов 15 → 1, интервалов 15, строк 131 → 62
+examples/13a_pwf_ramp_down/config.json: объектов 30 → 15, интервалов 30, строк 206 → 146
+examples/13b_pwf_alternating/config.json: объектов 60 → 30, интервалов 60, строк 356 → 236
+examples/14_high_gor_cooling/config.json: объектов 12 → 1, интервалов 12, строк 117 → 63
+examples/15_oil_rate_ramp_up/config.json: объектов 360 → 15, интервалов 360, строк 2216 → 161
+examples/19_rs150_cooling/config.json: объектов 30 → 1, интервалов 30, строк 210 → 66
+examples/21_rs100_cooling/config.json: объектов 30 → 1, интервалов 30, строк 210 → 66
+configs/baseline.json: объектов 96 → 2, интервалов 96, строк 540 → 72
+configs/table_pvt/config.json: объектов 24 → 1, интервалов 24, строк 177 → 63
+configs/val001.json: объектов 24 → 1, интервалов 24, строк 181 → 67
+файлов: 22, объектов: 2337 → 80
+проверка без записи; для записи — --write

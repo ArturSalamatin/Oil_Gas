@@ -99,6 +99,8 @@ def load_config(path: str) -> SimulationConfig:
 
 ## output.py — сохранение результатов
 
+> **Эскизы проектного этапа; сверено с кодом в [[DEBT-052]] (2026-10-10).** Код в разделах «output.py» и «Визуализация» — замысел, не текущий `numerical_solver/gpn_multiphase_solver/io/output.py`. Метода `SimulationHistory.to_arrays` нет: упаковку в массивы делает функция `history_to_arrays(history)` того же модуля ([[контейнер-simulation-history]]). Текущие сигнатуры: `save_npz(history, grid, path)`, `save_csv(history, grid, path)`, `save_well_csv(history, path)`, `plot_profiles(history, grid, times_to_plot, field='T', ax=None)`, `plot_wellbore_dynamics(history, axes=None)`, `plot_well_rate(history, ax=None)`, `plot_2d_map(history, grid, field='T', ax=None)`, `plot_pvt_properties(pvt, Rs0, p_range, ...)`. Состав NPZ: `r`, `times`, `p`, `T`, `Sg`, `Rs`, `q_o_std`, `q_g_std`, `p_wf`, `T_wf`. Время на графиках — в сутках (плашка FEAT-022 в конце раздела «Визуализация»).
+
 ### NPZ (по умолчанию)
 
 ```python
@@ -175,7 +177,7 @@ def plot_well_rate(history, grid):
     # G_o нужно хранить в history или пересчитывать
 ```
 
-Вопрос: хранить ли потоки через грани в SimulationHistory? Они нужны для дебита, для проверки баланса масс, для визуализации потоков. Рекомендую хранить G_o_well и G_g_well (скаляры на каждом шаге) — это дебит нефти и газа.
+Решено (2026-08-28): SimulationHistory хранит полные HydroResult (11 массивов [N+1]) на каждом сохранённом шаге + WellData (дебиты, p_wf, T_wf). Дебиты берутся из WellData, профили потоков — из HydroResult. Подробности: [[контейнер-simulation-history]].
 
 ### 4. 2D карта r-t
 
@@ -191,8 +193,10 @@ def plot_2d_map(history, r, field='T'):
     fig.colorbar(c, label=field)
 ```
 
+> **2026-09-29, FEAT-022:** время на всех графиках — в сутках (`units.S_TO_DAY`): легенда `plot_profiles` («t = 0.5 сут»), оси `plot_wellbore_dynamics`, `plot_well_rate`, `plot_2d_map` («t, сут»), `energy_balance.png`. История (`SimulationHistory.times`) и аргумент `times_to_plot` по-прежнему в секундах — переводится только то, что рисуется. Эскизы выше с `'t, с'` — исходный проект, не текущий код. Правило пользователя: [[feat-022 daily-bhp-schedule-examples]].
+
 ## Связанные заметки
 
 - [[json-config-schema]] — структура JSON
 - [[модули-simulator-оркестратор]] — SimulationHistory
-- [[architecture-numerical-solver]] — общая архитектура
+- [[архитектура библиотеки numerical_solver]] — общая архитектура

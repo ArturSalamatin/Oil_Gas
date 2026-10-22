@@ -1,0 +1,335 @@
+﻿........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 29%]
+........................................................................ [ 36%]
+.............................................................F.....F.... [ 43%]
+.F.....F.....F.....F.....F.....F.....F.....F.....F...................... [ 51%]
+........................................................................ [ 58%]
+........................................................................ [ 65%]
+........................................................................ [ 72%]
+........................................................................ [ 80%]
+........................................................................ [ 87%]
+........................................................................ [ 94%]
+...................................................                      [100%]
+================================== FAILURES ===================================
+___________ TestTwoPhaseAllFields.test_field_matches_formula[G_o-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D367250>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74E9A510>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A730A0D70>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B7850>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC3E80>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'G_o'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 0.005447613779719913 ± 5.4e-15
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 0.005447613779719913 ± 5.4e-15
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[G_g-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D21FCE0>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF1610>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A730A07D0>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B4350>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC3BB0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'G_g'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 6.241769458752782 ± 6.2e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 6.241769458752782 ± 6.2e-12
+
+tests\test_fluxes.py:371: AssertionError
+_______ TestTwoPhaseAllFields.test_field_matches_formula[G_free_gas-0] ________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3C5710>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF1790>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A730A0410>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B46D0>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC28F0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'G_free_gas'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 6.017358862588135 ± 6.0e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 6.017358862588135 ± 6.0e-12
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[Q_o-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D257570>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF2C90>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A730A08C0>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B4C50>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC1860>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'Q_o'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 0.006239940395193793 ± 6.2e-15
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 0.006239940395193793 ± 6.2e-15
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[Q_g-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3E2510>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF1F10>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0ED50>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A735F0B50>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC11D0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'Q_g'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 0.09239293337739861 ± 9.2e-14
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 0.09239293337739861 ± 9.2e-14
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[u_o-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3AA210>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF0650>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0F200>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733679D0>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC02D0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'u_o'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 0.000993117358493887 ± 9.9e-16
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 0.000993117358493887 ± 9.9e-16
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[u_g-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3AA5D0>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF3F50>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0FF20>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B7BD0>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78FC1EA0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'u_g'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 0.014704792053773154 ± 1.5e-14
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 0.014704792053773154 ± 1.5e-14
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[m_o-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3A9900>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF0950>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0E3F0>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A733B68D0>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78F4CF50>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'm_o'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 4.821220719501875 ± 4.8e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 4.821220719501875 ± 4.8e-12
+
+tests\test_fluxes.py:371: AssertionError
+___________ TestTwoPhaseAllFields.test_field_matches_formula[m_g-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3AABC0>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF1190>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0F020>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A735F0D50>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78F4F8E0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'm_g'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 5.114755033199915 ± 5.1e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 5.114755033199915 ± 5.1e-12
+
+tests\test_fluxes.py:371: AssertionError
+__________ TestTwoPhaseAllFields.test_field_matches_formula[Gm_o-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3AAF80>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A74EF3A10>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A7331D400>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A7334EF50>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78F4FCA0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'Gm_o'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 4.630471712761926 ± 4.6e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 4.630471712761926 ± 4.6e-12
+
+tests\test_fluxes.py:371: AssertionError
+__________ TestTwoPhaseAllFields.test_field_matches_formula[Gm_g-0] ___________
+
+self = <tests.test_fluxes.TestTwoPhaseAllFields object at 0x0000013A6D3AB340>
+result_2ph = HydroResult(state=SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0....y([ 0.        , -1.80086758, -1.17977887, -1.4065459 , -0.58255674,
+       -0.62346531]), p_wf=8000000.0, n_substeps=1)
+state_2ph = SimulationState(p=array([ 8000000., 10000000., 13000000., 16000000., 19000000.]), Sg=array([0.3 , 0.2 , 0.1 , 0.05, 0....73.20400873, 93.72849267, 50.        ]), T=array([350., 350., 350., 350., 350.]), regime=array([1, 1, 1, 1, 2]), t=0.0)
+grid_2ph = <gpn_multiphase_solver.grid.log_radial.LogRadialGrid object at 0x0000013A70E78350>
+pvt = <gpn_multiphase_solver.pvt.standing.StandingFullPVT object at 0x0000013A70D0F020>
+relperm = <gpn_multiphase_solver.pvt.relperm.CoreyRP object at 0x0000013A7334E250>
+bc_2ph = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x0000013A78F4FFC0>, p_ext=20000000.0, T_ext=350.0, Rs_ext=50.0, Sg_ext=0.0)
+f = 0, field = 'Gm_g'
+
+    @pytest.mark.parametrize("f", [0, 1, 2, 3, 4, 5])
+    @pytest.mark.parametrize("field", FIELDS)
+    def test_field_matches_formula(self, result_2ph, state_2ph, grid_2ph,
+                                    pvt, relperm, bc_2ph, f, field):
+        ref = _compute_reference_face(pvt, relperm, grid_2ph,
+                                       state_2ph, bc_2ph, f)
+        actual = getattr(result_2ph, field)[f]
+>       assert actual == pytest.approx(ref[field], rel=1e-12, abs=1e-30)
+E       assert np.float64(0.0) == 5.305504039939865 ± 5.3e-12
+E         
+E         comparison failed
+E         Obtained: 0.0
+E         Expected: 5.305504039939865 ± 5.3e-12
+
+tests\test_fluxes.py:371: AssertionError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[G_o-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[G_g-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[G_free_gas-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[Q_o-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[Q_g-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[u_o-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[u_g-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[m_o-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[m_g-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[Gm_o-0]
+FAILED tests/test_fluxes.py::TestTwoPhaseAllFields::test_field_matches_formula[Gm_g-0]
+11 failed, 976 passed, 223 deselected, 1 warning in 88.74s (0:01:28)

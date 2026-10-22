@@ -1,0 +1,9 @@
+﻿файл: exists=True; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work\well_history.csv (НЕ каталог); mkdir: FileExistsError errno=17 winerror=183 'Cannot create a file when that file already exists'
+файл-предок: exists=False; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work\well_history.csv (НЕ каталог); mkdir: FileExistsError errno=17 winerror=183 'Cannot create a file when that file already exists'
+файл-предок, глубже: exists=False; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work\well_history.csv (НЕ каталог); mkdir: FileExistsError errno=17 winerror=183 'Cannot create a file when that file already exists'
+нет пути, предок — каталог: exists=False; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work\dir (каталог); mkdir: создан
+существующий каталог: exists=True; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work\dir (каталог); mkdir: создан
+нет диска Q:: exists=False; первый существующий=None (None); mkdir: FileNotFoundError errno=2 winerror=3 'The system cannot find the path specified'
+недопустимый символ: exists=False; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-083\probes\_work (каталог); mkdir: OSError errno=22 winerror=123 'The filename, directory name, or volume label syntax is incorrect'
+относительный путь: exists=False; первый существующий=D:\Lessons\Grants\2026\GPN\Oil_Gas (каталог); mkdir: —
+диски: ['C', 'D', 'E']

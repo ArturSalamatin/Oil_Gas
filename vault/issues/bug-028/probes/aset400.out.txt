@@ -1,0 +1,9 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+19_rs150_cooling dt = 0.01 с, max_active_set_iter = 400: сошёлся, 1.6 с — p(r_w) = 78.13 бар, S_g(r_w) = 0.403, двухфазных ячеек 30
+19_rs150_cooling dt = 1 с, max_active_set_iter = 400: сошёлся, 0.8 с — p(r_w) = 38.38 бар, S_g(r_w) = 0.447, двухфазных ячеек 98
+19_rs150_cooling dt = 5.27 с, max_active_set_iter = 400: сошёлся, 0.5 с — p(r_w) = 34.84 бар, S_g(r_w) = 0.446, двухфазных ячеек 129
+19_rs150_cooling dt = 120 с, max_active_set_iter = 400: сошёлся, 0.2 с — p(r_w) = 32.24 бар, S_g(r_w) = 0.439, двухфазных ячеек 190
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+21_rs100_cooling dt = 0.01 с, max_active_set_iter = 400: сошёлся, 1.5 с — p(r_w) = 69.14 бар, S_g(r_w) = 0.368, двухфазных ячеек 23
+21_rs100_cooling dt = 1 с, max_active_set_iter = 400: сошёлся, 1.0 с — p(r_w) = 36.28 бар, S_g(r_w) = 0.414, двухфазных ячеек 82
+21_rs100_cooling dt = 5.27 с, max_active_set_iter = 400: сошёлся, 0.6 с — p(r_w) = 33.48 бар, S_g(r_w) = 0.414, двухфазных ячеек 112

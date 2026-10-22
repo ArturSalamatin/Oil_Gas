@@ -1,0 +1,251 @@
+........................................................................ [  6%]
+........................................................................ [ 13%]
+....................F................................................... [ 20%]
+........................................................................ [ 27%]
+........................................................................ [ 34%]
+........................................................................ [ 41%]
+........................................................................ [ 48%]
+........................................................................ [ 55%]
+........................................................................ [ 62%]
+........................................................................ [ 69%]
+........................................................................ [ 76%]
+.......................FF..F............................................ [ 83%]
+........................................................................ [ 90%]
+........................................................................ [ 97%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_____________ test_matrix_matches_reference[14_high_gor_cooling] ______________
+
+example = '14_high_gor_cooling'
+
+    @pytest.mark.parametrize("example", ALL_EXAMPLES)
+    def test_matrix_matches_reference(example):
+        """Коэффициенты СЛАУ совпадают с эталоном на каждом вызове solve.
+    
+        Условия: штатный конфиг примера без урезания сетки и расписания.
+        Ожидание: a, b, c, d совпадают с эталоном при rtol=1e-13; границы
+        a[0] и c[N-1] равны нулю точно.
+    
+        Сверка идёт НА ЛЕТУ, внутри пробы: накапливать нельзя — у 04a 1375
+        вызовов при N=150, список из четырёх векторов на вызов дал бы сотни
+        мегабайт.
+        """
+        cfg = load_config(EXAMPLES_DIR / example / "config.json")
+        cfg.output.log_level = "ERROR"
+        simulator, initial = SimulatorFactory.from_config(cfg)
+    
+        n_calls = [0]
+    
+        def probe(a, b, c, d, dt, T_old, hydro_result, state_prev, bc):
+            ref_a, ref_b, ref_c, ref_d = build_reference(
+                simulator._grid, simulator._pvt, cfg.rock,
+                hydro_result, state_prev, dt, bc)
+    
+            where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"
+            np.testing.assert_allclose(a, ref_a, rtol=RTOL, atol=0.0,
+                                       err_msg=f"{where}, поддиагональ a")
+            np.testing.assert_allclose(b, ref_b, rtol=RTOL, atol=0.0,
+                                       err_msg=f"{where}, главная диагональ b")
+            np.testing.assert_allclose(c, ref_c, rtol=RTOL, atol=0.0,
+                                       err_msg=f"{where}, наддиагональ c")
+            np.testing.assert_allclose(d, ref_d, rtol=RTOL, atol=0.0,
+                                       err_msg=f"{where}, правая часть d")
+    
+            # Границы — структура схемы, а не арифметика: строгое равенство.
+            # a[0] = 0: на забое Нейман, кондуктивный поток через левую грань
+            # обнулён, связи с ячейкой слева нет.
+            assert a[0] == 0.0, f"{where}: a[0] обязан быть нулём (Нейман на забое)"
+            # c[N-1] = 0: на контуре Дирихле, T_ext известна и ушла в d.
+            assert c[-1] == 0.0, f"{where}: c[N-1] обязан быть нулём (Дирихле на контуре)"
+    
+            n_calls[0] += 1
+    
+        simulator._energy.matrix_probe = probe
+>       simulator.run(initial)
+
+tests\test_energy_matrix_examples.py:676: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gpn_multiphase_solver\simulator.py:156: in run
+    state, hydro_result = self._advance(
+gpn_multiphase_solver\simulator.py:240: in _advance
+    T_new = self._energy.solve(
+gpn_multiphase_solver\energy\tridiag.py:153: in solve
+    self.matrix_probe(a=a, b=b, c=c, d=d, dt=dt,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = array([    0.        , -3537.96107019, -3537.98319996, -3538.00782595,
+       -3538.03240246, -3538.05657854, -3538.07...8475204,
+       -3552.88475204, -3552.88475204, -3552.88475204, -3552.88475204,
+       -3552.88475204, -3552.88475204])
+b = array([ 24784.85869606,  28318.6232919 ,  28314.48205765,  28310.37370652,
+        28306.29502392,  28302.24355244,  2...9,
+       660178.55870666, 688283.51741392, 717636.43761961, 748292.73345865,
+       780310.27966653, 817354.21736905])
+c = array([-24784.65861535, -24780.45325339, -24776.28060392, -24772.13792836,
+       -24768.02453943, -24763.93831255, -2...6,
+       -23681.08442033, -23681.08602886, -23681.087336  , -23681.08831149,
+       -23681.088923  ,      0.        ])
+d = array([-1.46202783e+03, -1.48268111e+03, -1.46273477e+03, -1.44283880e+03,
+       -1.42303722e+03, -1.40347042e+03, -1...8,
+        2.21556313e+08,  2.31391394e+08,  2.41662073e+08,  2.52387530e+08,
+        2.63587951e+08,  2.84834517e+08])
+dt = 86400.0
+T_old = array([339.75565883, 339.81739058, 339.88890122, 339.96114303,
+       340.0328319 , 340.10379392, 340.17401964, 340.24...47448, 350.04331232,
+       350.04027984, 350.03606533, 350.03041543, 350.02323308,
+       350.01465028, 350.00501547])
+hydro_result = HydroResult(state=SimulationState(p=array([ 6048153.62807279,  6143635.79210486,  6238436.02672025,
+        6332558.67...   -1.31270867, -1.31270878, -1.31270886, -1.31270893, -1.31270897,
+       -1.31270898]), p_wf=6000000.0, n_substeps=1)
+state_prev = SimulationState(p=array([ 6048158.95319323,  6143651.6169979 ,  6238462.20973013,
+        6332595.07111347,  6426054.5... 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), t=13737600.0)
+bc = BoundaryConditions(well=<gpn_multiphase_solver.bc.PressureControl object at 0x000001A22DFD7980>, p_ext=24500000.0, T_ext=350.0, Rs_ext=150.0, Sg_ext=0.0)
+
+    def probe(a, b, c, d, dt, T_old, hydro_result, state_prev, bc):
+        ref_a, ref_b, ref_c, ref_d = build_reference(
+            simulator._grid, simulator._pvt, cfg.rock,
+            hydro_result, state_prev, dt, bc)
+    
+        where = f"{example}: вызов {n_calls[0]}, dt={dt:g} с"
+        np.testing.assert_allclose(a, ref_a, rtol=RTOL, atol=0.0,
+                                   err_msg=f"{where}, поддиагональ a")
+        np.testing.assert_allclose(b, ref_b, rtol=RTOL, atol=0.0,
+                                   err_msg=f"{where}, главная диагональ b")
+        np.testing.assert_allclose(c, ref_c, rtol=RTOL, atol=0.0,
+                                   err_msg=f"{where}, наддиагональ c")
+>       np.testing.assert_allclose(d, ref_d, rtol=RTOL, atol=0.0,
+                                   err_msg=f"{where}, правая часть d")
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-13, atol=0
+E       14_high_gor_cooling: вызов 159, dt=86400 с, правая часть d
+E       Mismatched elements: 1 / 350 (0.286%)
+E       Mismatch at index:
+E        [61]: -0.3324608207946085 (ACTUAL), -0.33246082079472217 (DESIRED)
+E       Max absolute difference among violations: 1.13686838e-13
+E       Max relative difference among violations: 3.41955595e-13
+E        ACTUAL: array([-1.462028e+03, -1.482681e+03, -1.462735e+03, -1.442839e+03,
+E              -1.423037e+03, -1.403470e+03, -1.383922e+03, -1.364380e+03,
+E              -1.344837e+03, -1.325282e+03, -1.305845e+03, -1.286433e+03,...
+E        DESIRED: array([-1.462028e+03, -1.482681e+03, -1.462735e+03, -1.442839e+03,
+E              -1.423037e+03, -1.403470e+03, -1.383922e+03, -1.364380e+03,
+E              -1.344837e+03, -1.325282e+03, -1.305845e+03, -1.286433e+03,...
+
+tests\test_energy_matrix_examples.py:663: AssertionError
+_ TestFirstStepConverges.test_example14_fine_grid_first_step[100-0.2242-6.196104] _
+
+self = <tests.test_prototype_globalization.TestFirstStepConverges object at 0x000001A22BDB8190>
+N = 100, sg0 = 0.2242, p0_MPa = 6.196104
+
+    @pytest.mark.parametrize("N, sg0, p0_MPa", [
+        (100, 0.224200, 6.196104),
+        (150, 0.224420, 6.130659),
+    ])
+    def test_example14_fine_grid_first_step(self, N, sg0, p0_MPa):
+        """Пример 14 (R_s0 = 150), скачок p_wf 24.5 -> 6 МПа, сутки — без дробления.
+    
+        \u0414\u043e \u0444\u0438\u043a\u0441\u0430: RuntimeError \u043f\u043e\u0441\u043b\u0435 512 \u043f\u043e\u0434\u0448\u0430\u0433\u043e\u0432 (N = 100: 512 \xd7 169 \u0441;
+        N = 150 \u043d\u0435 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u0438 4096 \xd7 0.88 \u0441). \u0417\u0430\u043c\u0435\u0440 \u043f\u043b\u0430\u043d\u0430 BUG-016 (\xa71.4):
+        S_g[0], p[0] ниже; N = 50 — 0.223531 / 6.392927 МПа (сходится и без
+        третьей ступени). Допуски — порядка точности Ньютона.
+        """
+        _, res = _first_step("14_high_gor_cooling", N=N)
+        assert res.n_substeps == 1
+>       assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
+E       assert np.float64(0....5979195242747) == 0.2242 ± 1.0e-05
+E         
+E         comparison failed
+E         Obtained: 0.24935979195242747
+E         Expected: 0.2242 ± 1.0e-05
+
+tests\test_prototype_globalization.py:74: AssertionError
+_ TestFirstStepConverges.test_example14_fine_grid_first_step[150-0.22442-6.130659] _
+
+self = <tests.test_prototype_globalization.TestFirstStepConverges object at 0x000001A22BDB8050>
+N = 150, sg0 = 0.22442, p0_MPa = 6.130659
+
+    @pytest.mark.parametrize("N, sg0, p0_MPa", [
+        (100, 0.224200, 6.196104),
+        (150, 0.224420, 6.130659),
+    ])
+    def test_example14_fine_grid_first_step(self, N, sg0, p0_MPa):
+        """Пример 14 (R_s0 = 150), скачок p_wf 24.5 -> 6 МПа, сутки — без дробления.
+    
+        \u0414\u043e \u0444\u0438\u043a\u0441\u0430: RuntimeError \u043f\u043e\u0441\u043b\u0435 512 \u043f\u043e\u0434\u0448\u0430\u0433\u043e\u0432 (N = 100: 512 \xd7 169 \u0441;
+        N = 150 \u043d\u0435 \u043f\u0440\u043e\u0445\u043e\u0434\u0438\u0442 \u0438 4096 \xd7 0.88 \u0441). \u0417\u0430\u043c\u0435\u0440 \u043f\u043b\u0430\u043d\u0430 BUG-016 (\xa71.4):
+        S_g[0], p[0] ниже; N = 50 — 0.223531 / 6.392927 МПа (сходится и без
+        третьей ступени). Допуски — порядка точности Ньютона.
+        """
+        _, res = _first_step("14_high_gor_cooling", N=N)
+        assert res.n_substeps == 1
+>       assert res.state.Sg[0] == pytest.approx(sg0, abs=1e-5)
+E       assert np.float64(0....2614474258765) == 0.22442 ± 1.0e-05
+E         
+E         comparison failed
+E         Obtained: 0.24962614474258765
+E         Expected: 0.22442 ± 1.0e-05
+
+tests\test_prototype_globalization.py:74: AssertionError
+_________ TestFirstStepConverges.test_sg_step_limited_in_third_stage __________
+
+self = <tests.test_prototype_globalization.TestFirstStepConverges object at 0x000001A22BD97E30>
+
+    def test_sg_step_limited_in_third_stage(self):
+        """В третьей ступени |dS_g| между итерациями Ньютона <= 0.2.
+    
+        Пример 14, N = 100, первый суточный шаг прямо на модели прототипа:
+        исходный путь и запасной отказывают, решает третья ступень. Точки, где
+        считается якобиан, — итерации Ньютона; они собираются по вызовам
+        _newton_fixed_active_set (набор фаз внутри вызова фиксирован) и только
+        при включённом ограничителе, то есть в третьей ступени.
+        """
+        cfg = load_config(EXAMPLES_DIR / "14_high_gor_cooling" / "config.json")
+        cfg.grid.N = 100
+        sim, init = SimulatorFactory.from_config(cfg)
+        model = sim._hydro._model
+        _, dt = sim._schedule.substeps(0)
+        model.set_bhp_control(cfg.time.history[0].p_wf / 1e5)   # Па -> бар
+    
+        calls = []
+        orig_newton = model._newton_fixed_active_set
+        orig_jac = model.finite_difference_jacobian
+    
+        def newton(z0, state_old, dt_s, gas_active, **kw):
+            calls.append([])
+            return orig_newton(z0, state_old, dt_s, gas_active, **kw)
+    
+        def jac(z, state_old, dt_s, gas_active, **kw):
+            if model._sg_step_max is not None:
+                calls[-1].append((z.copy(), gas_active.copy()))
+            return orig_jac(z, state_old, dt_s, gas_active, **kw)
+    
+        # Подмена на экземпляре: _advance_phases и _newton_fixed_active_set
+        # вызывают self.<метод>, поэтому перехватываются оба
+        model._newton_fixed_active_set = newton
+        model.finite_difference_jacobian = jac
+        s0 = BlackOilState(pressure_bar=init.p / 1e5, rs_sm3_sm3=init.Rs.copy(),
+                           sg=init.Sg.copy(), gas_active=(init.regime == 1))
+        _, rep = model.advance(s0, dt)
+>       assert rep.converged and rep.globalized
+E       AssertionError: assert (True and False)
+E        +  where True = BlackOilNewtonReport(converged=True, iterations=19, residual_inf=4.060879237044457e-16, active_set_iterations=3, phase_switches=101, well_branch='open', well_switches=0, fallback=False, globalized=False).converged
+E        +  and   False = BlackOilNewtonReport(converged=True, iterations=19, residual_inf=4.060879237044457e-16, active_set_iterations=3, phase_switches=101, well_branch='open', well_switches=0, fallback=False, globalized=False).globalized
+
+tests\test_prototype_globalization.py:128: AssertionError
+============================== warnings summary ===============================
+tests/test_val002.py::TestCaseC_MeshConvergence::test_error_decreases
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\.venv\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_energy_matrix_examples.py::test_matrix_matches_reference[14_high_gor_cooling]
+FAILED tests/test_prototype_globalization.py::TestFirstStepConverges::test_example14_fine_grid_first_step[100-0.2242-6.196104]
+FAILED tests/test_prototype_globalization.py::TestFirstStepConverges::test_example14_fine_grid_first_step[150-0.22442-6.130659]
+FAILED tests/test_prototype_globalization.py::TestFirstStepConverges::test_sg_step_limited_in_third_stage
+4 failed, 1031 passed, 1 warning in 542.11s (0:09:02)
+exit 1 time 544 s

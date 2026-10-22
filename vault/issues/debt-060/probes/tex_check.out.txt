@@ -1,0 +1,9 @@
+﻿solver: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver
+errors: 0
+undefined: 0
+overfull: 18
+Output written on problem_statement.pdf (37 pages, 582553 bytes).
+eq:log_grid: ур. 37, с. 14
+eq:cell_center_def: ур. 38, с. 14
+eq:cell_center: ур. 39, с. 14
+eq:volume: ур. 40, с. 15

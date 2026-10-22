@@ -1,0 +1,7 @@
+﻿max p_b = 180 бар, газовая таблица 10–250 бар, R_s ветвей 5–50, R_s0 = 50
+исходное состояние: []
+S_g = 0, free_gas_sg = None: ['OIL_PVT saturated locus above table: gas-active max P=181 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation.']
+S_g = 0, free_gas_sg = 1e-06: []
+S_g = 0.02, free_gas_sg = None: ['OIL_PVT saturated locus above table: gas-active max P=181 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation.']
+S_g = 0.02, free_gas_sg = 1e-06: ['OIL_PVT saturated locus above table: free gas Sg up to 0.02 at P up to 181 bar, max Pb=180 bar. Endpoint Rs used, the gas cannot dissolve; no extrapolation.']
+категории: True OIL_PVT branch pressure above supplied range

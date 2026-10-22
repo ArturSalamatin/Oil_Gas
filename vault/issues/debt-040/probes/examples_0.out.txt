@@ -1,0 +1,23 @@
+    код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver, D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+01_single_phase_no_jt           0.3 с  отпечаток d3b971afd10493d9  ступени {1: 72}  «открыта» {}
+02_single_phase_jt              0.3 с  отпечаток 970bffc3a8bce9bd  ступени {1: 72}  «открыта» {}
+03_standing_corey               0.4 с  отпечаток 0f95c6eff3baebbe  ступени {1: 71, 2: 1}  «открыта» {(False, True): 1}
+04_table_table                  0.8 с  отпечаток 32c4139c7325800f  ступени {1: 72}  «открыта» {}
+04a_high_gas_saturation        18.3 с  отпечаток 62e5afc33f9ca834  ступени {1: 863, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+05_standing_table_rp            0.3 с  отпечаток 52748f56d1a21b52  ступени {1: 72}  «открыта» {}
+06_table_corey_rp               0.8 с  отпечаток 4b0b1440bfba316f  ступени {1: 72}  «открыта» {}
+07_degassing_adiabatic_only     0.7 с  отпечаток 72d0d246396e8d93  ступени {1: 72}  «открыта» {}
+08_degassing_jt                 0.7 с  отпечаток 5c44a34ca6d8f998  ступени {1: 72}  «открыта» {}
+09_degassing_latent_heat        0.7 с  отпечаток cce80173c5f39d5b  ступени {1: 72}  «открыта» {}
+10_deep_degassing               1.7 с  отпечаток 0783a76b95dc50b0  ступени {0: 1, 1: 75}  «открыта» {(False, False): 3}
+11_degassing_at_boundary        2.1 с  отпечаток 941eea0f0a005317  ступени {1: 71, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+12_large_drainage_radius        8.2 с  отпечаток ec0db01f88694d93  ступени {1: 359, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+13a_pwf_ramp_down               7.8 с  отпечаток 8a9a8bc9eed1a9ee  ступени {1: 360}  «открыта» {}
+13b_pwf_alternating            31.8 с  отпечаток 4deb61f2fbdb642f  ступени {1: 704, 2: 14, 3: 2}  «открыта» {(False, False): 2, (False, True): 16}
+14_high_gor_cooling            11.3 с  отпечаток 9005c45b81501712  ступени {1: 359, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+15_oil_rate_ramp_up             7.6 с  отпечаток 69fbfced2088f758  ступени {1: 360}  «открыта» {}
+16_well_shut_in                15.5 с  отпечаток 200807cb0ba45a4b  ступени {1: 717, 2: 1, 3: 1, 4: 1}  «открыта» {(False, False): 1, (False, True): 1}
+19_rs150_cooling                1.4 с  отпечаток 7d70d92347309bf8  ступени {1: 29, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+20_rs300_cooling                4.7 с  отпечаток 280897660f6559c8  ступени {1: 74, 3: 2}  «открыта» {(False, False): 2, (False, True): 2}
+21_rs100_cooling                1.4 с  отпечаток 1cc433e787ffff46  ступени {1: 29, 3: 1}  «открыта» {(False, False): 1, (False, True): 1}
+перепись «открыта» по всем (условие варианта 2, принято): {(False, True): 26, (False, False): 14}

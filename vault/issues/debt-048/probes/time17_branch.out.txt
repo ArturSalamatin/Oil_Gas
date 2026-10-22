@@ -1,0 +1,6 @@
+    код: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-048\numerical_solver\gpn_multiphase_solver, D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-048\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+full     23.54 с   T(r_w) кон. = 377.308 К
+prod      7.26 с   T(r_w) кон. = 365.017 К
+shut3    11.44 с   T(r_w) кон. = 375.259 К
+daily     3.99 с   T(r_w) кон. = 377.237 К
+добыча 31% времени; первые 3 сут останова 18%; остальные 12 сут останова 51%

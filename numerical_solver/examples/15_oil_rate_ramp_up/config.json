@@ -1,0 +1,162 @@
+{
+  "geometry": {
+    "r_well": 0.1,
+    "R_ext": 200.0,
+    "h": 10.0
+  },
+  "grid": {
+    "N": 50,
+    "type": "log_radial"
+  },
+  "rock": {
+    "porosity": 0.2,
+    "permeability": 1e-13,
+    "rho_cp_solid": 1250000.0,
+    "lambda_solid": 1.5,
+    "lambda_oil": 0.14,
+    "lambda_gas": 0.04
+  },
+  "pvt": {
+    "model": "table",
+    "rho_o_std": 850.0,
+    "rho_g_std": 0.85,
+    "oil_pvt_file": "oil_pvt.csv",
+    "gas_pvt_file": "gas_pvt.csv"
+  },
+  "relperm": {
+    "model": "table",
+    "file": "relperm.csv"
+  },
+  "thermal": {
+    "c_p_oil": 2000.0,
+    "c_p_gas": 1000.0,
+    "mu_JT_oil": -4e-07,
+    "mu_JT_gas": 4e-06,
+    "L_degas": 168000.0
+  },
+  "initial_conditions": {
+    "p0": 15500000.0,
+    "T0": 350.0,
+    "Rs0": 30.0
+  },
+  "time": {
+    "dt_integration": 3600,
+    "history": [
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.00020833333333333335,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0004166666666666667,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.000625,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0008333333333333334,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0010416666666666667,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.00125,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0014583333333333334,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0016666666666666668,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.001875,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0020833333333333333,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0022916666666666667,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0025,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.0027083333333333334,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.002916666666666667,
+        "min_bhp": 101325.0
+      },
+      {
+        "duration": 86400.0,
+        "dt_out": 3600.0,
+        "control": "rate",
+        "q_oil": 0.003125,
+        "min_bhp": 101325.0
+      }
+    ]
+  },
+  "numerics": {
+    "skin": 0.0
+  },
+  "output": {
+    "log_level": "INFO",
+    "title": "15: пуск скважины с линейно растущим дебитом нефти",
+    "steady_state": true,
+    "n_profiles": 6,
+    "closed_form_overlays": []
+  }
+}

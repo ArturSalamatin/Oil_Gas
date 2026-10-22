@@ -1,0 +1,4 @@
+﻿1 файл без FILE_SHARE_DELETE: rename: отказ WinError 5, осталось ['a.png', 'well_history.csv', 'z.csv']; rmtree: отказ WinError 32, осталось ['well_history.csv', 'z.csv']
+2 файл с FILE_SHARE_DELETE: rename: отказ WinError 5, осталось ['a.png', 'well_history.csv', 'z.csv']; rmtree: прошло
+3 дескриптор каталога (Проводник): rename: прошло; rmtree: прошло
+4 текущий каталог процесса: rename: отказ WinError 32, осталось ['a.png', 'well_history.csv', 'z.csv']; rmtree: отказ WinError 32, осталось []

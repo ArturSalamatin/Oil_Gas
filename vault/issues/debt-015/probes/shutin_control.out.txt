@@ -1,0 +1,5 @@
+﻿
+19_rs150_cooling B dt_int=86400 base max_retries=9: ✗ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02 s) на шаге с t = 10.0000 сут: двухфазных ячеек 332 из 350, max S_g = 0.441. Если ; счёт 6.3 с, в advance 6.2 с; advance принято 16, отказов 10
+21_rs100_cooling B dt_int=86400 base max_retries=9: ✗ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02 s) на шаге с t = 10.0000 сут: двухфазных ячеек 322 из 350, max S_g = 0.407. Если ; счёт 9.7 с, в advance 9.7 с; advance принято 27, отказов 10
+20_rs300_cooling A dt_int=86400 base max_retries=9: ✗ HydroSolver не сошёлся после 512 подшагов (dt_sub=1.69e+02 s) на шаге с t = 10.0000 сут: двухфазных ячеек 289 из 350, max S_g = 0.448. Если ; счёт 24.1 с, в advance 24.0 с; advance принято 26, отказов 10
+20_rs300_cooling B dt_int=86400 base max_retries=11: ✓; счёт 406.7 с, в advance 393.5 с; advance принято 5155, отказов 27

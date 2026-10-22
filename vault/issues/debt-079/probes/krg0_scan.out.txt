@@ -1,0 +1,65 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+прототип: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+
+═══ A: configs/table_pvt, 24 ч, первая строка ОФП 0.0,1.0,k ═══
+
+--- p_wf = 15 МПа, k_rg[0] = 0 ---
+  λg/λo(S_g=0): контур 0, забой 0 м³ст/м³ст
+  t =    1 ч: q_o =  258.928 м³ст/сут, ГФ =   30.0000, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 0, max S_g = 0, T[0] = 350.3226 К
+  t =   24 ч: q_o =  240.562 м³ст/сут, ГФ =   30.0000, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 0, max S_g = 0, T[0] = 350.9434 К
+
+--- p_wf = 15 МПа, k_rg[0] = 0.0001 ---
+  λg/λo(S_g=0): контур 1.79, забой 1.607 м³ст/м³ст
+  t =    1 ч: q_o =  258.839 м³ст/сут, ГФ =   31.6834, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 4.53e-05, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 11, max S_g = 4.53e-05, T[0] = 350.3176 К
+  t =   24 ч: q_o =  240.553 м³ст/сут, ГФ =   31.7486, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 8.63e-05, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 19, max S_g = 8.63e-05, T[0] = 350.9336 К
+  ΔT[0] против k_rg[0] = 0: -0.0098 К
+  журнал: Состояние при t = 0.04167 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 4.53e-05 at P up to 175.42622 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrap
+  журнал: Состояние при t = 0.8333 сут вне таблиц: OIL_PVT Rs above table: max Rs=30.000008, table max=30. Endpoint branch used; no extrapolation.
+
+--- p_wf = 15 МПа, k_rg[0] = 0.001 ---
+  λg/λo(S_g=0): контур 17.9, забой 16.07 м³ст/м³ст
+  t =    1 ч: q_o =  258.079 м³ст/сут, ГФ =   46.8289, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.000485, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 11, max S_g = 0.000485, T[0] = 350.2729 К
+  t =   24 ч: q_o =  240.458 м³ст/сут, ГФ =   47.4698, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.000918, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 19, max S_g = 0.000918, T[0] = 350.8458 К
+  ΔT[0] против k_rg[0] = 0: -0.0976 К
+  журнал: Состояние при t = 0.04167 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 0.000485 at P up to 178.02372 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrap
+
+--- p_wf = 15 МПа, k_rg[0] = 0.01 ---
+  λg/λo(S_g=0): контур 179, забой 160.7 м³ст/м³ст
+  t =    1 ч: q_o =  245.336 м³ст/сут, ГФ =  197.1801, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.0182, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 11, max S_g = 0.0182, T[0] = 349.8828 К
+  t =   24 ч: q_o =  235.846 м³ст/сут, ГФ =  202.2429, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.0324, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 19, max S_g = 0.0324, T[0] = 350.0361 К
+  ΔT[0] против k_rg[0] = 0: -0.9073 К
+  журнал: Состояние при t = 0.02083 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 0.015 at P up to 175.96031 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrapola
+
+--- p_wf = 17 МПа, k_rg[0] = 0 ---
+  λg/λo(S_g=0): контур 0, забой 0 м³ст/м³ст
+  t =    1 ч: q_o =  154.882 м³ст/сут, ГФ =   30.0000, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 0, max S_g = 0, T[0] = 350.1377 К
+  t =   24 ч: q_o =  143.886 м³ст/сут, ГФ =   30.0000, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 0, max S_g = 0, T[0] = 350.5087 К
+
+--- p_wf = 17 МПа, k_rg[0] = 0.0001 ---
+  λg/λo(S_g=0): контур 1.79, забой 1.67 м³ст/м³ст
+  t =    1 ч: q_o =  154.825 м³ст/сут, ГФ =   31.7174, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 2.71e-05, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 10, max S_g = 2.71e-05, T[0] = 350.1351 К
+  t =   24 ч: q_o =  143.884 м³ст/сут, ГФ =   31.7581, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 5.17e-05, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 16, max S_g = 5.17e-05, T[0] = 350.5032 К
+  ΔT[0] против k_rg[0] = 0: -0.0055 К
+  журнал: Состояние при t = 0.04167 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 2.71e-05 at P up to 183.67401 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrap
+
+--- p_wf = 17 МПа, k_rg[0] = 0.001 ---
+  λg/λo(S_g=0): контур 17.9, забой 16.7 м³ст/м³ст
+  t =    1 ч: q_o =  154.340 м³ст/сут, ГФ =   47.1718, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.00029, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 10, max S_g = 0.00029, T[0] = 350.1118 К
+  t =   24 ч: q_o =  143.860 м³ст/сут, ГФ =   47.5726, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.000551, R_s[0] = 30.0000, max R_s = 30.0000, ячеек с газом 16, max S_g = 0.000551, T[0] = 350.4542 К
+  ΔT[0] против k_rg[0] = 0: -0.0545 К
+  журнал: Состояние при t = 0.04167 сут вне таблиц: OIL_PVT saturated locus above table: free gas Sg up to 0.00029 at P up to 185.23558 bar, max Pb=150 bar. Endpoint Rs used, the gas cannot dissolve; no extrapo
+
+--- p_wf = 17 МПа, k_rg[0] = 0.01 ---
+  отказ: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0704 сут: двухфазных ячеек 6 из 20, max S_g = 0.105. Наименьший подшаг — tim
+
+═══ B: пример 05 (Стендинг), 6 ч, таблица теста DEBT-071 ═══
+
+--- первая строка 0.05,0.9,0.005 ---
+  t =    6 ч: q_o =  868.474 м³ст/сут, ГФ =   96.9621, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.0825, R_s[0] = 42.0544, max R_s = 62.3336, ячеек с газом 14, max S_g = 0.0825, T[0] = 350.8304 К
+  Sg.min() последнего состояния == 0.0: True
+  записи WARNING (1): ['Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. Endpoint value used; no extrapolation.']
+
+--- первая строка 0.05,0.9,0.0 ---
+  t =    6 ч: q_o =  848.861 м³ст/сут, ГФ =   50.0000, R_s[0] + λg/λo(S_g=0) =       nan, S_g[0] = 0.0564, R_s[0] = 41.9860, max R_s = 50.0000, ячеек с газом 6, max S_g = 0.0564, T[0] = 351.6111 К
+  Sg.min() последнего состояния == 0.0: True
+  записи WARNING (1): ['Начальное состояние вне таблиц: RELPERM Sg below table: min Sg=0, table min=0.05. Endpoint value used; no extrapolation.']

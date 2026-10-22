@@ -1,0 +1,17 @@
+﻿   strip: файлов: 31, меняется: 31 
+   пустых строк между SG_GAS и def rs_expected: 2
+   fix_readmes: README меняется: 17 
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-008\probes\plan_tree\gpn_multiphase_solver
+1. 12 абсурдных значений: отказ — grid.type: поддерживается только "log_radial", получено 'ЭТО_ЧУШЬ_А_НЕ_СЕТКА'
+2. dt_min = NaN: проходит
+3. log_level = 'DEBG': setup_logging ставит INFO; _validate — отказ — output.log_level должен быть одним из DEBUG, INFO, WARNING, ERROR, CRITICAL (регистр не важен), получено 'DEBG'
+4. rs_switch_tol = 1e-6, избыток ~3e-6: отказ — Начальное состояние пересыщено газом: Rs0 = 30 м³ст/м³ст бол…
+5. конфиг 7/5/2e-5/3e-9: адаптер max_newton = 7, max_active_iter = 5; модель rs_switch_tol = 2e-05, sg_switch_tol = 3e-09
+6. frozen/config.json: загружен, предупреждений 3
+    time.start_day удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: время р…
+    numerics.dt_min удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: шаг за…
+    numerics.dt_max удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: шаг за…
+ [WARNING] time.start_day удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: время расчёта отсчитывается от начала истории, t = 0.
+[WARNING] numerics.dt_min удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: шаг задаёт time.dt_integration, глубину дробления шага — numerics.max_retries.
+[WARNING] numerics.dt_max удалён из конфига (DEBT-008) и пропущен — решатель его не читал, результат не меняется: шаг задаёт time.dt_integration, глубину дробления шага — numerics.max_retries.
+

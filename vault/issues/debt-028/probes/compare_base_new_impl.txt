@@ -1,0 +1,21 @@
+﻿01_single_phase_no_jt: побитово
+02_single_phase_jt: побитово
+03_standing_corey: побитово
+04_table_table: побитово
+04a_high_gas_saturation: побитово
+05_standing_table_rp: побитово
+06_table_corey_rp: побитово
+07_degassing_adiabatic_only: побитово
+08_degassing_jt: побитово
+09_degassing_latent_heat: побитово
+10_deep_degassing: побитово
+11_degassing_at_boundary: побитово
+12_large_drainage_radius: побитово
+13a_pwf_ramp_down: побитово
+13b_pwf_alternating: побитово
+14_high_gor_cooling: побитово
+15_oil_rate_ramp_up: побитово
+19_rs150_cooling: побитово
+20_rs300_cooling: побитово
+21_rs100_cooling: побитово
+итого: различий 0

@@ -1,0 +1,28 @@
+﻿ПРЕДУПРЕЖДЕНИЕ: HEAD (номер 1.0.1.dev0) — не выпуск: заказчику передаётся только архив из метки выпуска tools/release.py
+1. Срез HEAD → dist\handover-1.0.1.dev0/gpn-multiphase-solver-1.0.1.dev0
+2. PDF постановки, таблица номеров уравнений
+   Таблица совпадает с .aux (161 меток)
+3. HTML-документация (sphinx -W)
+4. Архив gpn-multiphase-solver-1.0.1.dev0.zip: файлов 528, 4.1 МБ, SHA256 b398edf924a1be3ac11c949ba3534f89fe17fde9b2851a4e35b9d4f2f9479f9b
+5. Приёмка на распакованной копии
+Приёмка копии: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-031\dist\handover-1.0.1.dev0\check\gpn-multiphase-solver-1.0.1.dev0
+Посторонний каталог: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-031\dist\handover-1.0.1.dev0\check\gpn-multiphase-solver-1.0.1.dev0-acceptance
+ОК     в копии нет .venv (приёмка — на свежей копии: распакуйте архив заново)
+ОК     setup.bat: код 0 (91 с)
+ОК     gpn-solver --version: 'gpn-multiphase-solver 1.0.1.dev0', в коде 1.0.1.dev0
+ОК     radial-blackoil: '1.0.3+gpn.2', требуется 1.0.3+gpn.2
+       окружение: Python 3.13.3, numpy 2.5.4, scipy 1.18.1
+ОК     тесты: 2612 passed, 4 skipped in 655.20s (0:10:55) (657 с)
+       пропущено 1: нет problem_statement.aux — таблицу сверить нечем
+       пропущено 2: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+       пропущено 1: черновик руководителя вне git (решение 11)
+ОК     пропуски только с известными причинами
+ОК     документация без предупреждений: код 0
+ОК     шаблон книги: код 0
+ОК     расчёт по книге: код 0, нет файлов: —
+ОК     versions.txt: {'gpn-multiphase-solver': '1.0.1.dev0', 'radial-blackoil': '1.0.3+gpn.2', 'Python': '3.13.3', 'numpy': '2.5.4', 'scipy': '1.18.1'}
+ОК     расчёт по конфигурации (06_table_corey_rp): код 0, нет файлов: —
+Время приёмки: 811 с (Windows-10-10.0.19045-SP0)
+ПРИЁМКА: ПРОЙДЕНА
+Передача 1.0.1.dev0: архив D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\feat-031\dist\handover-1.0.1.dev0\gpn-multiphase-solver-1.0.1.dev0.zip (SHA256 b398edf924a1be3ac11c949ba3534f89fe17fde9b2851a4e35b9d4f2f9479f9b); приёмка — пройдена; 827 с
+exit: 0

@@ -1,0 +1,15 @@
+HEAD b4232c4
+--collect-only -q:
+  tests/test_xlsx_reader.py::test_imex_formulas_and_escaped_format
+  tests/test_xlsx_reader.py::test_generator_book_matches_test_reader
+  tests/test_xlsx_reader.py::test_draft_book_matches_xlsxio
+  tests/test_xlsx_reader.py::test_reader_imports_only_stdlib
+  
+  2276 tests collected in 5.72s
+-m not slow -q -rs:
+  
+  -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+  =========================== short test summary info ===========================
+  SKIPPED [2] tests\test_eq_references.py:80: нет vault/knowledge/ — копия без vault (поставка, FEAT-031)
+  SKIPPED [1] tests\test_xlsx_reader.py:476: черновик руководителя вне git (решение 11)
+  1997 passed, 3 skipped, 276 deselected, 1 warning in 143.46s (0:02:23)

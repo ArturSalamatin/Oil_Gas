@@ -1,0 +1,22 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\factory.py
+тест                                             шаг  до   после  S5   ожидание до
+test_prototype_pvt_adapter_proto_pvt               2  ✗    ✓     ✓    ✗  
+test_table_full_pvt_hydro                          2  ✗    ✓     ✓    ✗  
+test_prototype_rp_adapter_proto_rp                 2  ✗    ✓     ✓    ✗  
+test_accessors_read_only                           2  ✗    ✓     ✓    ✗  
+test_pvt_branch_ignores_private_field_names        3  ✗    ✓     ✓    ✗  
+test_rp_branch_ignores_private_field_names         3  ✗    ✓     ✓    ✗  
+test_proto_pvt_shared_for_table                    3  ✓    ✓     ✓    ✓  
+test_proto_rp_shared_for_table                     3  ✓    ✓     ✓    ✓  
+test_prototype_relperm_from_csv                    3  ✓    ✓     ✓    ✓  
+test_pvt_objects_are_same                          4  ✗    ✓     ✓    ✗  
+test_bo_consistency                                4  ✓    ✓     ✓    ✓  
+test_standing_pvt_shared                           4  ✓    ✓     ✓    ✓  
+test_relperm_nodes_from_csv                        5  ✓    ✓     ✓    ✓  
+test_relperm_nodes_none_for_corey                  5  ✓    ✓     ✓    ✓  
+test_pvt_nodes_none_for_standing                   5  ✓    ✓     ✓    ✓  
+test_p_branch_follows_rs0_row                      5  ✓    ✓     ✓    ✓  
+Расхождений с планом: 0
+отпечаток 03_standing_corey: совпал  a9e942cd9b706ff5
+отпечаток 04_table_table: совпал  cb0c1dce8f857f1e
+отпечаток 05_standing_table_rp: совпал  9f5ed783194312eb

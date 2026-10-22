@@ -1,0 +1,4 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+13a_pwf_ramp_down orig: записей 31, отпечаток c777e48e26cbd4f5, счёт 6.5 с
+13a_pwf_ramp_down h0=0.44 first=1: записей 31, отпечаток d2c18e24dc4b77be, счёт 10.9 с, подшагов 555, отказов 0, нарастаний 15 (m, h0: [(13, 0.4395)])
+  13a_pwf_ramp_down h0=0.44 first=1 против штатного: max|ΔT(r_w)| = 0.0002 К (t = 0.5000 сут, 349.9913 → 349.9915); max|ΔRs(r_w)| = 0.00 (t = 1.5000 сут, 26.45 → 26.45); max|Δp(r_w)| = 0.000 бар (t = 1.5000 сут); на конце: ΔT = +0.0001 К

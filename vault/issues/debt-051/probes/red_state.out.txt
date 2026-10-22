@@ -1,0 +1,73 @@
+﻿Код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py
+
+== Раздел A, NaN в полях вне thermal, p_wf = 6 МПа: 24 ч
+эталон (без подмены)               ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+geometry.r_well                    from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+geometry.R_ext                     from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+geometry.h                         from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+rock.porosity                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+rock.permeability                  from_config: ValueError: invalid radial grid parameters  [grid.py:8]
+rock.p_ref                         ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+rock.compressibility               run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+pvt.rho_o_std                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+pvt.rho_g_std                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+pvt.co_undersaturated              run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+relperm.S_or                       from_config: ValueError: S_or must be in [0, 1), got nan  [relperm.py:14]
+relperm.S_gc                       from_config: ValueError: S_gc must be in [0, 1), got nan  [relperm.py:16]
+relperm.n_o                        run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+relperm.n_g                        run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+relperm.kro_max                    from_config: ValueError: kro_max, krg_max must be in (0, 1]  [relperm.py:22]
+relperm.krg_max                    from_config: ValueError: kro_max, krg_max must be in (0, 1]  [relperm.py:22]
+initial_conditions.p0              run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+initial_conditions.T0              run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+initial_conditions.Rs0             run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+time.dt_integration                run: ValueError: cannot convert float NaN to integer  [simulator.py:75]
+time.start_day                     ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.dt_min                    ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.dt_max                    ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.skin                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+numerics.newton_rtol               ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.newton_atol               ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.rs_switch_tol             ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.sg_switch_tol             ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+history.dt                         run: ValueError: cannot convert float NaN to integer  [simulator.py:75]
+history.p_wf                       run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+
+== Раздел B, ±inf, p_wf = 6 МПа: 24 ч
+geometry.R_ext = inf               run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+geometry.h = inf                   run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+rock.permeability = inf            run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+rock.compressibility = inf         run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+pvt.rho_o_std = inf                from_config: ValueError: Начальное состояние пересыщено газом: Rs0 = 50 м³ст/м³ст больше равновесного Rs_eq(p0) = 0.382748 при p0 = 20 МПа (давление насыщения p_b(Rs0) = 1151.  [factory.py:294]
+pvt.co_undersaturated = inf        run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+relperm.n_o = inf                  run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+initial_conditions.p0 = inf        run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+initial_conditions.T0 = inf        from_config: ValueError: Начальное состояние пересыщено газом: Rs0 = 50 м³ст/м³ст больше равновесного Rs_eq(p0) = 0 при p0 = 20 МПа (давление насыщения p_b(Rs0) = inf МПа). Ре  [factory.py:294]
+initial_conditions.Rs0 = inf       from_config: ValueError: Начальное состояние пересыщено газом: Rs0 = inf м³ст/м³ст больше равновесного Rs_eq(p0) = 122.319 при p0 = 20 МПа (давление насыщения p_b(Rs0) = inf М  [factory.py:294]
+time.dt_integration = inf          ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+numerics.skin = inf                ПРОШЛИ: t = 24 ч, S_g max 0, T 350…350 К, p 20…20 МПа, конечны: True
+numerics.skin = -inf               ПРОШЛИ: t = 24 ч, S_g max 0, T 350…350 К, p 20…20 МПа, конечны: True
+history.dt = inf                   run: OverflowError: cannot convert float infinity to integer  [simulator.py:75]
+history.p_wf = inf                 ПРОШЛИ: t = 24 ч, S_g max 0, T 350…350 К, p 20…20 МПа, конечны: True
+
+== Раздел C, управление по дебиту: 50 м³ст/сут при min_bhp = 6 МПа и 1000 м³ст/сут при min_bhp = 15 МПа: 24 ч
+эталон rate (без подмены)          ПРОШЛИ: t = 24 ч, S_g max 0, T 349.98…350.09 К, p 19.37…20 МПа, конечны: True
+history.q_oil                      run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+history.min_bhp                    ПРОШЛИ: t = 24 ч, S_g max 0, T 349.98…350.09 К, p 19.37…20 МПа, конечны: True
+history.q_oil = inf                ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+эталон rate_hi (без подмены)       ПРОШЛИ: t = 24 ч, S_g max 0, T 349.87…351.07 К, p 15.03…20 МПа, конечны: True
+history.min_bhp, rate_hi           ПРОШЛИ: t = 24 ч, S_g max 0.09086, T 349.74…352.34 К, p 7.121…20 МПа, конечны: True
+
+== Раздел D, краткая форма {duration, dt_out}, p_wf = 6 МПа: 24 ч
+эталон блока (без подмены)         ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True
+history.duration                   load_config: ValueError: cannot convert float NaN to integer  [config.py:239]
+history.dt_out                     load_config: ValueError: cannot convert float NaN to integer  [config.py:239]
+
+== Раздел E, нечисловые значения, p_wf = 6 МПа: 24 ч
+rock.porosity = '0.2'              load_config: TypeError: '<=' not supported between instances of 'str' and 'int'  [config.py:348]
+time.dt_integration = '3600'       load_config: TypeError: '<=' not supported between instances of 'str' and 'int'  [config.py:421]
+initial_conditions.p0 = 'abc'      load_config: TypeError: '<=' not supported between instances of 'str' and 'int'  [config.py:414]
+geometry.h = None                  load_config: TypeError: '<=' not supported between instances of 'NoneType' and 'int'  [config.py:341]
+rock.permeability = True           run: RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 7.03e+00 с на подшаге с t = 0.0000 сут: двухфазных ячеек 0 из 100, max S_g = 0.000. Наименьший п  [simulator.py:258]
+pvt.rho_o_std = '850'              from_config: TypeError: unsupported operand type(s) for /: 'str' and 'float'  [standing.py:21]
+numerics.skin = '0'                ПРОШЛИ: t = 24 ч, S_g max 0.09991, T 349.73…352.24 К, p 6.095…20 МПа, конечны: True

@@ -1,0 +1,7 @@
+24660 True ['--case']
+21384 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05S_N050_DT5m.xlsx']
+3196 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05S_N100_DT5m.xlsx']
+7556 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05S_N200_DT5m.xlsx']
+24544 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05T_N100_DT60m.xlsx']
+27104 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05T_N100_DT10m.xlsx']
+3752 True ['D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05T_N100_DT3m.xlsx']

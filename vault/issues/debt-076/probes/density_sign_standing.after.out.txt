@@ -1,0 +1,5 @@
+каталог решателя: D:\Lessons\Grants\2026\GPN\Oil_Gas\.worktrees\debt-076\numerical_solver
+pvt.rho_o_std = -850.0: отказ в load_config: ValueError: pvt.rho_o_std = -850.0 кг/м³: плотность нефти при стандартных условиях (не пластовая) должна быть > 0
+pvt.rho_o_std = 0.0: отказ в load_config: ValueError: pvt.rho_o_std = 0.0 кг/м³: плотность нефти при стандартных условиях (не пластовая) должна быть > 0
+pvt.rho_g_std = -0.85: отказ в load_config: ValueError: pvt.rho_g_std = -0.85 кг/м³: плотность газа при стандартных условиях (не пластовая) должна быть > 0
+pvt.rho_g_std = 0.0: отказ в load_config: ValueError: pvt.rho_g_std = 0.0 кг/м³: плотность газа при стандартных условиях (не пластовая) должна быть > 0

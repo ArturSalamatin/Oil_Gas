@@ -1,0 +1,3 @@
+n_fraction.xlsx: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\feat-036\probes\n_fraction.xlsx: книга не переведена, ошибок — 1:
+  NUMERICS!C2 (Grid cells (N)): 20.5 — нужно целое число ≥ 1
+rs0_70.xlsx: перевод прошёл

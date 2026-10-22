@@ -1,0 +1,11 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\HydroSolverPrototype\Prototype_1.0.3\radial_blackoil
+сейчас    A: НЕ проходит  (False, 0, 0.0, 1, 0, 'open', 1, True, True)
+сейчас    B: НЕ проходит  (False, 13, 4e-05, 4, 9, '', 0, True, True)
+сейчас    C: проходит  (True, 17, 2e-16, 2, 15, 'shut', 0, True, True)
+по плану  A: проходит  (False, 15, 2.5e-07, 2, 21, 'open', 1, True, True)
+по плану  B: проходит  (False, 15, 2.5e-07, 2, 21, '', 0, True, True)
+по плану  C: проходит  (True, 17, 2e-16, 2, 15, 'shut', 0, True, True)
+мутант    A: проходит  (False, 15, 2.5e-07, 2, 21, 'open', 1, True, True)
+мутант    B: проходит  (False, 15, 2.5e-07, 2, 21, '', 0, True, True)
+мутант    C: НЕ проходит  (True, 15, 2.5e-07, 2, 21, 'shut', 0, True, True)

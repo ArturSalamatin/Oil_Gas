@@ -1,0 +1,53 @@
+﻿План: debt-068 rock-compressibility-sign.md; правок: 10 (1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3)
+Пакет в pytest копии: D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\debt-068\probes\plan_check_tmp\numerical_solver\gpn_multiphase_solver\__init__.py
+
+Шаг 1 — тесты:
+  правка 1.1 → test_config.py: «до» найдено 1 раз
+  правка 1.2 → test_config.py: «до» найдено 1 раз
+_ TestValidationRock.test_negative_compressibility_rejected[sign_error_example18] _
+    ], ids=["sign_error_example18", "above_minus_c_o", "below_minus_c_o", "tiny"])
+        """c_r < 0 → ValueError с полным именем поля и значением (DEBT-068).
+>       with pytest.raises(ValueError, match="rock.compressibility") as exc:
+E       Failed: DID NOT RAISE ValueError
+tests\test_config.py:395: Failed
+    ], ids=["sign_error_example18", "above_minus_c_o", "below_minus_c_o", "tiny"])
+        """c_r < 0 → ValueError с полным именем поля и значением (DEBT-068).
+>       with pytest.raises(ValueError, match="rock.compressibility") as exc:
+E       Failed: DID NOT RAISE ValueError
+tests\test_config.py:395: Failed
+    ], ids=["sign_error_example18", "above_minus_c_o", "below_minus_c_o", "tiny"])
+        """c_r < 0 → ValueError с полным именем поля и значением (DEBT-068).
+>       with pytest.raises(ValueError, match="rock.compressibility") as exc:
+E       Failed: DID NOT RAISE ValueError
+tests\test_config.py:395: Failed
+    ], ids=["sign_error_example18", "above_minus_c_o", "below_minus_c_o", "tiny"])
+        """c_r < 0 → ValueError с полным именем поля и значением (DEBT-068).
+>       with pytest.raises(ValueError, match="rock.compressibility") as exc:
+E       Failed: DID NOT RAISE ValueError
+tests\test_config.py:395: Failed
+FAILED tests/test_config.py::TestValidationRock::test_negative_compressibility_rejected[sign_error_example18]
+FAILED tests/test_config.py::TestValidationRock::test_negative_compressibility_rejected[above_minus_c_o]
+FAILED tests/test_config.py::TestValidationRock::test_negative_compressibility_rejected[below_minus_c_o]
+FAILED tests/test_config.py::TestValidationRock::test_negative_compressibility_rejected[tiny]
+4 failed, 5 passed in 0.64s
+
+Шаг 2 — проверка в _validate:
+  правка 2.1 → config.py: «до» найдено 1 раз
+  правка 2.2 → config.py: «до» найдено 1 раз
+9 passed in 0.13s
+317 passed in 2.78s
+
+Ссылки в новом коде: метки ['eq:Cp', 'eq:porosity'], не объявлены: []; запрещённые формы: []
+
+Шаг 3 — постановка:
+  правка 3.1 → problem_statement.tex: «до» найдено 1 раз
+  правка 3.2 → problem_statement.tex: «до» найдено 1 раз
+  правка 3.3 → problem_statement.tex: «до» найдено 1 раз
+  pdflatex: 39 стр., строк с «undefined»: 0
+
+Шаг 4 — vault:
+  правка 4.1 → P8-формат-ввода-json.md: «до» найдено 1 раз
+  правка 4.2 → P8-формат-ввода-json.md: «до» найдено 1 раз
+  правка 4.3 → json-config-schema.md: «до» найдено 1 раз
+
+Готово.

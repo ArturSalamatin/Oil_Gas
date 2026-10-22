@@ -1,0 +1,21 @@
+﻿
+пакет: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+
+предупреждений журнала решателя: 0
+pvt_range_warnings на записях истории (уникальные):
+   [впервые t = 1 ч] GAS_PVT pressure below table: min P=22.695388 bar, table min=50 bar. Endpoint value used; no 
+extrapolation.
+   [впервые t = 1 ч] OIL_PVT saturated locus below table: gas-active min P=22.695388 bar, min Pb=50 bar. Endpoint Rs 
+used; no extrapolation.
+   [впервые t = 1 ч] OIL_PVT saturated locus above table: gas-active max P=153.78543 bar, max Pb=150 bar. Endpoint Rs 
+used; no extrapolation.
+конец: p(r_w) = 2.254 МПа, S_g(r_w) = 0.0219, R_s(r_w) = 0.0000, ячеек ниже 5 МПа: 6, газовых ячеек выше 15 МПа: 0
+
+предупреждений журнала решателя: 0
+pvt_range_warnings на записях истории (уникальные):
+   [впервые t = 1 ч] OIL_PVT saturated locus above table: gas-active max P=154.35233 bar, max Pb=150 bar. Endpoint Rs 
+used; no extrapolation.
+конец: p(r_w) = 8.166 МПа, S_g(r_w) = 0.0147, R_s(r_w) = 9.4978, ячеек ниже 5 МПа: 0, газовых ячеек выше 15 МПа: 1
+   они: j = [26], p = [15.0405] МПа, S_g = [0.0], R_s = [30.0]
+
+

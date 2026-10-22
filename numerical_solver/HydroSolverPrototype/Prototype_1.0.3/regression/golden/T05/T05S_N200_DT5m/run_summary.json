@@ -3,11 +3,11 @@
   "prototype_version": "1.0.3",
   "build_id": "1.0.3-prebeta-final-regression-20260825a",
   "input_format_version": "1.0.3",
-  "input": "/mnt/data/work103/regression/inputs/T05/T05S_N200_DT5m.xlsx",
+  "input": "D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\.worktrees\\bug-021\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\regression\\inputs\\T05\\T05S_N200_DT5m.xlsx",
   "input_filename": "T05S_N200_DT5m.xlsx",
   "input_sha256": "daa9a3eb0c9ffebc24137c4ba566f7fb1d8fb42610634901a2ee936a87b5ad79",
-  "output": "/mnt/data/work103/OUTPUT/FINAL_REGRESSION_20260825a/T05/T05S_N200_DT5m",
-  "wall_seconds": 248.76378963800016,
+  "output": "D:\\Lessons\\Grants\\2026\\GPN\\Oil_Gas\\.worktrees\\bug-021\\numerical_solver\\HydroSolverPrototype\\Prototype_1.0.3\\OUTPUT\\REGRESSION_20261007_065601\\T05\\T05S_N200_DT5m",
+  "wall_seconds": 99.14277569999967,
   "model": {
     "grid_cells_N": 200,
     "simulation_time_day": 30.0,
@@ -17,8 +17,8 @@
     "jacobian_mode": "grouped",
     "linear_solver": "sparse"
   },
-  "accepted_steps": 8689,
-  "rejected_steps": 5,
+  "accepted_steps": 8675,
+  "rejected_steps": 4,
   "pb_max_rs_bar": 180.0,
   "requested_report_days": [
     0.0,
@@ -42,7 +42,7 @@
   ],
   "schedule_rows_drive_reports": true,
   "warnings": [
-    "OIL_PVT saturated locus above table: gas-active max P=190.20171 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation."
+    "OIL_PVT saturated locus above table: gas-active max P=189.90641 bar, max Pb=180 bar. Endpoint Rs used; no extrapolation."
   ],
   "warning_count": 1,
   "qc": {
@@ -51,7 +51,7 @@
     "state_and_control_issues": [],
     "material_balance_pass": true,
     "material_balance_tolerance_pct_initial": 0.0001,
-    "max_abs_oil_balance_error_pct_initial": 1.4310110682718574e-09,
-    "max_abs_gas_balance_error_pct_initial": 2.354450924715078e-07
+    "max_abs_oil_balance_error_pct_initial": 1.431998361522765e-09,
+    "max_abs_gas_balance_error_pct_initial": 2.3549692057199471e-07
   }
 }

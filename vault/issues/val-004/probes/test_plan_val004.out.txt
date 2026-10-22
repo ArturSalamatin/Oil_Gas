@@ -1,0 +1,8 @@
+﻿.........                                                                [100%]
+============================== warnings summary ===============================
+..\vault\issues\val-004\probes\test_plan_val004.py:46
+  D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\test_plan_val004.py:46: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.slow
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+9 passed, 1 warning in 76.84s (0:01:16)

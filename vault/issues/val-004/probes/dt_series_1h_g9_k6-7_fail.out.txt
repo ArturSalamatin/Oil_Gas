@@ -1,0 +1,44 @@
+﻿код: D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver
+останов 1 ч, k = 6..7; первый час нарастающими шагами от 3600/2**9, всё делится на 2**k
+k=6 h=  56.2500 с | 1 ч: p0=185.4211 бар T0=398.0221 К 2ф=254 maxSg=0.2245 | добыча побитово да; отказов 0; подшаги: 0.109863×128, 0.219727×64, 0.439453×64, 0.878906×64, 1.75781×64, 3.51562×64, 7.03125×64, 14.0625×64, 28.125×64; счёт 24.9 с
+.venv\Scripts\python : Traceback (most recent call last):
+At line:1 char:302
++ ... tch {} } }; .venv\Scripts\python ..\vault\issues\val-004\probes\dt_se ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 248, in _advance
+    hydro_result = self._hydro.solve(state, h, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 75, in solve
+    r = orig(state, dt, bc)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\hydro\prototype_adapter.py", line 
+110, in solve
+    raise HydroConvergenceError(
+    ...<2 lines>...
+        f"невязка {report.residual_inf:.2e}")
+gpn_multiphase_solver.hydro.base.HydroConvergenceError: advance не сошёлся: dt = 1.073e-04 с, t = 10.0000 сут, 
+итераций 4, невязка 5.00e-09
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 135, in <module>
+    main()
+    ~~~~^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 113, in main
+    out, el, acc, nf, h = run(W_h, k, m)
+                          ~~~^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\vault\issues\val-004\probes\dt_series.py", line 86, in run
+    hist = sim.run(s0)
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 172, in run
+    state, hydro_result = self._advance(
+                          ~~~~~~~~~~~~~^
+        state, dt, interval.bc, balance, mass)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Lessons\Grants\2026\GPN\Oil_Gas\numerical_solver\gpn_multiphase_solver\simulator.py", line 255, in _advance
+    raise RuntimeError(self._failure_message(state, dt)) from exc
+RuntimeError: HydroSolver не сошёлся при дроблении шага до dt/512 = 1.07e-04 с на подшаге с t = 10.0000 сут: 
+двухфазных ячеек 332 из 350, max S_g = 0.409. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries 
+(сейчас max_retries = 9, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или 
+меньший time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине.

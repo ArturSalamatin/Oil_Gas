@@ -217,17 +217,22 @@ class TestNoPrototypePathInsertion:
 # Пункт – номер задачи (у правки без задачи – область, «README») жирным и
 # суть, затем абзацы-блоки с курсивными метками; форма – /implement, фаза 4.1.
 # Проверяется только текущий раздел: прошлые выпуски написаны до DEBT-086 и
-# не переписываются (решение пользователя 2026-10-22)
+# не переписываются (решение пользователя 2026-10-22). Знаки (длинное тире,
+# десятичная запятая) проверяются ещё в шапке журнала (DEBT-087)
 CHANGELOG_SUBSECTIONS = ("### Добавлено", "### Изменено", "### Исправлено", "### Удалено")
 CHANGELOG_ITEM_RE = re.compile(r"- \*\*([^*]+)\.\*\* \S")     # «- **FEAT-040.** Суть»
 CHANGELOG_TASK_ID_RE = re.compile(r"(BUG|DEBT|FEAT|VAL)-\d{3}")
 CHANGELOG_LABEL_RE = re.compile(r"  \*([^*]+)\.\* \S")        # «  *Было.* Текст»
 CHANGELOG_LABEL_SETS = (["Было", "Стало"], ["Было", "Стало", "Числа"])
-CHANGELOG_EM_DASH = chr(0x2014)      # длинное тире U+2014: в тексте раздела запрещено (CLAUDE.md, «Тире»)
+CHANGELOG_EM_DASH = chr(0x2014)      # длинное тире U+2014: в тексте раздела и шапки запрещено (CLAUDE.md, «Тире»)
 # Вывод программ (сообщения решателя, команды) цитируется дословно в `…`:
 # в 177 строковых литералах пакета есть «—», поэтому тире и десятичная
 # запятая внутри обратных кавычек не проверяются
 CHANGELOG_CODE_SPAN_RE = re.compile(r"`[^`]*`")
+# Заголовок раздела выпуска: «## Не выпущено» до выпуска, «## X.Y.Z — дата»
+# в дереве метки. Первый такой заголовок закрывает шапку журнала – вступление
+# и «## Правило номеров» (DEBT-087)
+CHANGELOG_RELEASE_HEAD_RE = re.compile(r"## (Не выпущено|\d+\.\d+\.\d+)( |$)")
 
 
 def _current_changelog_section() -> list:
@@ -244,6 +249,30 @@ def _current_changelog_section() -> list:
     return lines[starts[0] + 1:end]
 
 
+def _changelog_header(lines: list) -> list:
+    """Строки шапки журнала – до первого заголовка раздела выпуска (CHANGELOG_RELEASE_HEAD_RE)."""
+    end = next((i for i, s in enumerate(lines) if CHANGELOG_RELEASE_HEAD_RE.match(s)), None)
+    assert end is not None, "в журнале нет раздела «## Не выпущено» или «## X.Y.Z — <дата>»"
+    return lines[:end]
+
+
+def _changelog_symbol_problems(n: int, line: str) -> list:
+    """Длинное тире и десятичная запятая в строке n журнала вне цитат `…`; пусто – знаков нет."""
+    plain = CHANGELOG_CODE_SPAN_RE.sub("", line)      # без цитат вывода программ
+    problems = []
+    if CHANGELOG_EM_DASH in plain:
+        problems.append(f"строка {n}: длинное тире (U+2014), нужно «–»")
+    if re.search(r"\d,\d", plain):
+        problems.append(f"строка {n}: десятичная запятая, нужна точка")
+    return problems
+
+
+def _changelog_header_problems(lines: list) -> list:
+    """Знаки шапки журнала по _changelog_symbol_problems; номера строк – от начала файла."""
+    return [p for n, s in enumerate(_changelog_header(lines), 1)
+            for p in _changelog_symbol_problems(n, s)]
+
+
 def _changelog_format_problems(lines: list) -> list:
     """Нарушения формы пунктов в строках раздела журнала без заголовка «## …»; пусто – форма верна."""
     problems, subsections, labels, prev = [], [], [], ""
@@ -255,11 +284,7 @@ def _changelog_format_problems(lines: list) -> list:
                             "и, если изменяются результаты, «Числа» – по порядку")
 
     for n, line in enumerate(lines, 1):
-        plain = CHANGELOG_CODE_SPAN_RE.sub("", line)      # без цитат вывода программ
-        if CHANGELOG_EM_DASH in plain:
-            problems.append(f"строка {n}: длинное тире (U+2014), нужно «–»")
-        if re.search(r"\d,\d", plain):
-            problems.append(f"строка {n}: десятичная запятая, нужна точка")
+        problems += _changelog_symbol_problems(n, line)
         label = CHANGELOG_LABEL_RE.match(line)
         if line.startswith("#"):
             close_item()
@@ -327,7 +352,7 @@ _BAD = {   # нарушение → подстрока сообщения
 
 
 class TestChangelogFormat:
-    """Форма пунктов текущего раздела журнала (DEBT-086): её читает получатель выпуска на GitHub."""
+    """Форма пунктов текущего раздела журнала (DEBT-086) и знаки шапки (DEBT-087): их читает получатель выпуска."""
 
     def test_changelog_current_section_format(self):
         """Пункты текущего раздела – по форме /implement 4.1; в дереве метки – раздел выпуска."""
@@ -369,3 +394,33 @@ class TestChangelogFormat:
         lines, expected = _BAD[case]
         problems = _changelog_format_problems(lines)
         assert any(expected in p for p in problems), problems
+
+    def test_changelog_header_symbols(self):
+        """Шапка журнала – вступление и правило номеров – без длинного тире и десятичной запятой вне `…` (DEBT-087)."""
+        # Форма пунктов к шапке не относится: в ней нет подразделов и пунктов
+        # «- **ID.**». Тире в `## <номер> — <дата>` – служебный формат заголовка
+        # выпуска (его разбирает tools/release.py), оно в обратных кавычках.
+        # Тот же тест идёт в самопроверке выпуска: в дереве метки шапку
+        # закрывает «## X.Y.Z — <дата>»
+        lines = (SOLVER / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+        assert "## Правило номеров" in _changelog_header(lines)   # граница – не первый же «## »
+        assert _changelog_header_problems(lines) == []
+
+    def test_changelog_header_sample(self):
+        """На образце в форме дерева метки шапка кончается перед заголовком выпуска, найдены ровно её знаки."""
+        # «## Правило номеров» границей не считается; тире заголовка выпуска и
+        # пункта за границей к шапке не относятся; тире и запятая в `…` не
+        # замечаются. Без образца проверка знаков шапки не исполнялась бы на
+        # нарушении: исправленная шапка чиста, и тест шапки прошёл бы и с
+        # проверкой, которая ничего не находит. Граница по заголовку
+        # «## X.Y.Z — дата» иначе исполнялась бы только при выпуске
+        d = CHANGELOG_EM_DASH
+        lines = ["# Журнал", "", "Текст – норма.", "", "## Правило номеров", "",
+                 f"Номер {d} три числа.", f"Заголовок `## <номер> {d} <дата>`.",
+                 "Число 1,5 и интервал `[0,1]`.", "",
+                 f"## 1.0.7 {d} 2026-10-23", "", f"- **FEAT-001.** А {d} Б."]
+        assert len(_changelog_header(lines)) == 10
+        assert _changelog_header_problems(lines) == [
+            "строка 7: длинное тире (U+2014), нужно «–»",
+            "строка 9: десятичная запятая, нужна точка",
+        ]

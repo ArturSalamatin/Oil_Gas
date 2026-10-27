@@ -19,21 +19,25 @@ Black Oil, вода отсутствует) совместно с расчёто
 подставить; папка `D:\gpn` – пример. Нужны Python 3.10 или новее и доступ к
 PyPI или к его зеркалу.
 
+Выпуск содержит обе поставки, всего шесть файлов. После скачивания (§1,
+«Из выпуска») они лежат в папке `release-X.Y.Z`.
+
 | Случай | Что получено | Для чего |
 |---|---|---|
-| поставка для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
-| поставка для расчётов | папка `release-X.Y.Z` с пятью файлами: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
+| поставка для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` из папки выпуска | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
+| поставка для расчётов | остальные пять файлов папки выпуска: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
 | папка с кодом без установки | папка с исходным кодом решателя и прототипа: распакованный архив поставки для разработки или его копия | вызов функций решателя из своих скриптов и команда расчёта без установки пакетов решателя и прототипа; готовый пример – `examples\23_source_tree_run` |
 
 ### Поставка для разработки
 
-Архив положен в `D:\gpn`.
+Папка выпуска `release-X.Y.Z` положена в `D:\gpn`.
 
-1. Распаковать архив – появится папка `D:\gpn\gpn-multiphase-solver-X.Y.Z`:
+1. Распаковать архив поставки для разработки – появится папка
+   `D:\gpn\gpn-multiphase-solver-X.Y.Z`:
 
    ```powershell
    cd D:\gpn
-   Expand-Archive D:\gpn\gpn-multiphase-solver-X.Y.Z.zip -DestinationPath D:\gpn
+   Expand-Archive D:\gpn\release-X.Y.Z\gpn-multiphase-solver-X.Y.Z.zip -DestinationPath D:\gpn
    ```
 
 2. Установить решатель и прототип в режиме разработки (с pytest и
@@ -181,13 +185,16 @@ PyPI или к его зеркалу.
 
 ### Поставка для расчётов
 
-Папка `release-X.Y.Z` с пятью файлами положена в `D:\gpn`. Решатель
-ставится без группы `[dev]` (pytest, Sphinx), с зависимостями numpy, scipy,
-matplotlib и XlsxWriter.
+Папка выпуска `release-X.Y.Z` положена в `D:\gpn`. Решатель ставится без
+группы `[dev]` (pytest, Sphinx), с зависимостями numpy, scipy, matplotlib и
+XlsxWriter.
 
-1. Проверить файлы – пять файлов: `docs-vX.Y.Z.zip`,
-   `examples-vX.Y.Z.zip`, `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`:
+1. Проверить файлы – шесть файлов: `docs-vX.Y.Z.zip`,
+   `examples-vX.Y.Z.zip`, `gpn-multiphase-solver-X.Y.Z.zip`,
+   `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
+   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`. Архив
+   `gpn-multiphase-solver-X.Y.Z.zip` – поставка для разработки, для
+   расчётов он не нужен:
 
    ```powershell
    cd D:\gpn
@@ -557,11 +564,13 @@ python -m venv .venv
 .venv\Scripts\python -m pip install HydroSolverPrototype\Prototype_1.0.3 .
 ```
 
-**Из выпуска** (пакеты без исходного кода, для расчётов). Выпуски
-публикуются в разделе Releases репозитория `ArturSalamatin/Oil_Gas`; состав
-выпуска – таблица раздела «Начало работы» (в выпусках до 1.0.2 включительно
-нет `README.md` и `docs-vX.Y.Z.zip`). При доступе к репозиторию выпуск
-скачивается GitHub CLI, авторизованным командой `gh auth login`:
+**Из выпуска.** Выпуски публикуются в разделе Releases репозитория
+`ArturSalamatin/Oil_Gas`, и каждый выпуск содержит обе поставки. Состав
+выпуска – таблица раздела «Начало работы». В выпусках до 1.0.2 включительно нет
+`README.md` и `docs-vX.Y.Z.zip`, а до 1.0.6 включительно – архива поставки
+для разработки `gpn-multiphase-solver-X.Y.Z.zip`. При доступе к репозиторию
+выпуск скачивается целиком GitHub CLI, авторизованным командой
+`gh auth login`:
 
 ```powershell
 mkdir D:\gpn -Force
@@ -569,7 +578,7 @@ cd D:\gpn
 gh release download vX.Y.Z --repo ArturSalamatin/Oil_Gas --dir D:\gpn\release-X.Y.Z
 ```
 
-Дальше – раздел «Начало работы», «Поставка для расчётов», с шага 1.
+Дальше – раздел «Начало работы»: «Поставка для расчётов» или «Поставка для разработки», с шага 1.
 
 **На компьютере без доступа к PyPI.** На компьютере, где доступ есть,
 соберите в каталог `wheels` установочные файлы (формат wheel, `.whl`)

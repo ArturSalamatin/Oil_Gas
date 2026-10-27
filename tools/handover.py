@@ -180,8 +180,10 @@ def main(argv: list[str]) -> int:
         if not RELEASE_TAG_RE.fullmatch(treeish) or ".dev" in version:
             print(f"ПРЕДУПРЕЖДЕНИЕ: {treeish} (номер {version}) — не выпуск: заказчику "
                   "передаётся только архив из метки выпуска tools/release.py")
-        top = f"gpn-multiphase-solver-{version}"
-        out = ROOT / "dist" / f"handover-{version}"      # dist/ — в .gitignore
+        # Путь архива – общий с выпуском: tools/release.py берёт архив отсюда
+        # в файлы выпуска (шаг 3) и называет его в описании выпуска
+        archive = release.handover_archive(version)
+        out, top = archive.parent, archive.stem      # dist/handover-<версия>, имя среза
         if out.exists():
             shutil.rmtree(out)
         out.mkdir(parents=True)
@@ -200,7 +202,6 @@ def main(argv: list[str]) -> int:
         print("3. HTML-документация (sphinx -W)", flush=True)
         build_html(slice_dir, out / "doctrees")
 
-        archive = out / f"{top}.zip"
         n = make_zip(slice_dir, archive)
         print(f"4. Архив {archive.name}: файлов {n}, {archive.stat().st_size / 1e6:.1f} МБ",
               flush=True)

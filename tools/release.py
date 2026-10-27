@@ -345,6 +345,14 @@ def apply_dev_edits(root: Path, version: str) -> str:
 
 # ── Шаг 3: сборка из метки ──
 
+def handover_archive(version: str) -> Path:
+    """Архив передачи tools/handover.py: dist/handover-<версия>/gpn-multiphase-solver-<версия>.zip."""
+    # Один источник пути для выпуска и передачи: handover.py импортирует
+    # release, обратный импорт невозможен (этот файл при запуске – __main__)
+    top = f"gpn-multiphase-solver-{version}"
+    return ROOT / "dist" / f"handover-{version}" / f"{top}.zip"      # dist/ – в .gitignore
+
+
 def extract(treeish: str, dest: Path) -> Path:
     """Дерево numerical_solver из git (метка), не из рабочего каталога; путь к нему."""
     # Из рабочего каталога в колесо попали бы неотслеживаемые .py пакета и

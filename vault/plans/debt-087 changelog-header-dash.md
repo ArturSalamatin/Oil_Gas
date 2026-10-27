@@ -6,7 +6,7 @@ date: 2026-10-22
 issue: DEBT-087
 github: 145
 branch: refactor/debt-087/changelog-header-dash
-status: в процессе
+status: реализован
 worktree: .worktrees/debt-087
 audit:
   date: 2026-10-22

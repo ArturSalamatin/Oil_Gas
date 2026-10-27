@@ -282,6 +282,10 @@ def prototype_changed(base: str) -> bool:
 
 def preflight(version: str) -> dict:
     """Все проверки шага 1; ничего не меняет. Результат — номера выпуска."""
+    # PDF постановки собирает передача в шаге 3 – уже после коммита и метки
+    # (DEBT-089): без pdflatex выпуск отказывает здесь, а не откатом
+    if shutil.which("pdflatex") is None:
+        raise ReleaseError("нет pdflatex в PATH (MiKTeX или TeX Live): PDF постановки в передаче")
     if shutil.which("gh") is None:
         raise ReleaseError("нет команды gh (GitHub CLI)")
     if run(["gh", "auth", "status"]).returncode != 0:
@@ -297,9 +301,13 @@ def preflight(version: str) -> dict:
     behind = int(git("rev-list", "--count", f"HEAD..origin/{BRANCH}"))
     if behind:
         raise ReleaseError(f"ветка позади origin на {behind} коммитов: git pull")
-    dirty = git("status", "--porcelain", "--untracked-files=no", "--", SOLVER)
+    # Весь репозиторий, не только numerical_solver: файл выпуска собирает и
+    # tools/handover.py рабочего каталога, а правки vault коммитятся до
+    # выпуска (решение пользователя 2026-10-27). Неотслеживаемые файлы не
+    # мешают: сборка идёт из метки
+    dirty = git("status", "--porcelain", "--untracked-files=no")
     if dirty:
-        raise ReleaseError(f"незакоммиченные правки в {SOLVER}/:\n{dirty}")
+        raise ReleaseError(f"незакоммиченные правки отслеживаемых файлов:\n{dirty}")
 
     current = read_version(ROOT / SOLVER_INIT)
     released = released_versions()

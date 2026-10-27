@@ -98,3 +98,16 @@ def test_skip_reason_allowed_in_acceptance():
     # как ошибку, и выяснится это только при передаче
     acceptance = _load("acceptance")
     assert acceptance.disallowed_skips([(1, SKIP_REASON)]) == []
+
+
+def test_preflight_requires_pdflatex(monkeypatch):
+    """Без pdflatex в PATH выпуск отказывает первой проверкой шага 1 – до вызовов gh и git."""
+    # PDF постановки собирает передача в шаге 3, уже после коммита и метки:
+    # отказ там стоил бы отката. run подменён – вызов gh или git до
+    # проверки pdflatex попал бы в calls
+    calls = []
+    monkeypatch.setattr(release.shutil, "which", lambda name: None if name == "pdflatex" else name)
+    monkeypatch.setattr(release, "run", lambda cmd, cwd=None: calls.append(cmd))
+    with pytest.raises(release.ReleaseError, match="pdflatex"):
+        release.preflight("1.0.7")
+    assert calls == []

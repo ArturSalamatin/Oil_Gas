@@ -88,6 +88,7 @@ EDITED = (SOLVER_INIT, PROTO_INIT, SOLVER_PYPROJECT, CHANGELOG)   # всё, чт
 # Всё, из чего собирается колесо прототипа: изменение повышает +gpn.N
 PROTO_WHEEL_SOURCES = (f"{PROTO}/radial_blackoil", f"{PROTO}/pyproject.toml")
 FIRST_BASE = "29a1ffa"     # DEBT-059: введён номер 1.0.3+gpn.1 — база первого выпуска
+HANDOVER = Path(__file__).resolve().parent / "handover.py"   # передача, шаг 3 (DEBT-089)
 
 UNRELEASED = "## Не выпущено"
 # Пример 18 читает книги и эталон CMG IMEX из дерева прототипа — в архиве
@@ -434,8 +435,29 @@ def build_wheels(tree: Path, wheels: Path, version: str, proto_version: str) -> 
     return [wheels / name for name in expected]
 
 
-def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
-    """Шаг 3: архив примеров, README, документация, заметки, самопроверка и колёса из метки в out."""
+def run_handover(tag: str, version: str, acceptance: bool) -> Path:
+    """tools/handover.py для метки tag отдельным процессом; путь архива передачи."""
+    # Отдельный процесс, не импорт: handover.py импортирует release, а этот
+    # файл при запуске – модуль __main__, импорт загрузил бы его второй раз.
+    # Вывод не перехватывается: прогресс передачи (с приёмкой – около 15 мин)
+    # идёт сразу в консоль. PYTHONUTF8 не ставится: дочерний Python пишет в
+    # тот же канал в той же кодировке, что и этот процесс (| Tee-Object, >)
+    cmd = [sys.executable, HANDOVER, tag] + (["--acceptance"] if acceptance else [])
+    sys.stdout.flush()      # строки выпуска – раньше вывода передачи и при выводе в канал
+    code = subprocess.run([str(c) for c in cmd], cwd=ROOT).returncode
+    if code != 0:
+        raise ReleaseError(f"передача {tag}: код {code}, причина – в выводе выше")
+    # Код проверяется до архива: при отказе в dist/ может лежать архив прошлой
+    # попытки того же номера, и выпуск не должен его взять. Код 0 без архива
+    # при нынешнем handover.py невозможен – проверка на случай его правки
+    archive = handover_archive(version)
+    if not archive.is_file():
+        raise ReleaseError(f"передача {tag}: нет архива {archive.relative_to(ROOT)}")
+    return archive
+
+
+def build(tag: str, out: Path, version: str, proto_version: str, acceptance: bool) -> list[Path]:
+    """Шаг 3: архив примеров, README, документация, заметки, самопроверка, колёса и передача из метки."""
     if out.exists():          # остаток прошлой неудачной попытки с тем же номером
         shutil.rmtree(out)
     tree = extract(tag, out / "src")
@@ -453,7 +475,11 @@ def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
     print(f"  самопроверка метки: {selfcheck(tree)}")
     wheels = build_wheels(tree, out / "wheels", version, proto_version)
     print("  колёса: " + ", ".join(p.name for p in wheels))
-    return wheels + [examples_zip, readme, docs_zip]
+    # Передача – последней: она дольше всех (с приёмкой – около 15 мин), и
+    # отказ более быстрой сборки откатывает выпуск, не дожидаясь её
+    print(f"  передача: tools/handover.py {tag}" + (" --acceptance" if acceptance else ""))
+    archive = run_handover(tag, version, acceptance)
+    return wheels + [examples_zip, readme, docs_zip, archive]
 
 
 # ── Откат ──
@@ -478,11 +504,14 @@ def main(argv: list[str]) -> int:
     # обрывает выпуск трассировкой (как _print_safe в examples/run_all.py)
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
-    if len(argv) != 1:
+    # Приёмка архива передачи – только по явному ключу, как у tools/handover.py
+    args = [a for a in argv if a != "--acceptance"]
+    with_acceptance = len(args) != len(argv)
+    if len(args) != 1 or args[0].startswith("-"):
         print(__doc__)
         return 2
     try:
-        p = preflight(argv[0])
+        p = preflight(args[0])
     except ReleaseError as e:
         print(f"Отказ (ничего не изменено): {e}")
         return 1
@@ -492,7 +521,8 @@ def main(argv: list[str]) -> int:
     proto = p["proto_new"]
     print(f"Выпуск {version}: решатель {p['current']} → {version}, прототип "
           + (f"{p['proto_old']} → {proto} (изменён с {p['base']})" if proto != p["proto_old"]
-             else f"{proto} (не менялся с {p['base']})"))
+             else f"{proto} (не менялся с {p['base']})")
+          + ("; с приёмкой архива передачи" if with_acceptance else ""))
     push_started = False
     try:
         print("Шаг 2: номера, коммит и метка (локально)")
@@ -500,7 +530,7 @@ def main(argv: list[str]) -> int:
         git("commit", "-m", f"release: {version}", "--", *EDITED)
         git("tag", "-a", tag, "-m", f"Выпуск {version}")
         print(f"Шаг 3: сборка из метки в {out.relative_to(ROOT)}")
-        assets = build(tag, out, version, proto)
+        assets = build(tag, out, version, proto, with_acceptance)
         print("Шаг 4: следующая разработка (локально)")
         dev = apply_dev_edits(ROOT, version)
         git("commit", "-m", f"release: начало {dev}", "--", SOLVER_INIT, CHANGELOG)
@@ -519,7 +549,8 @@ def main(argv: list[str]) -> int:
         try:
             rollback(start, tag)
             print(f"Отказ: {e}\nОткат выполнен: ветка на {start[:7]}, метки {tag} нет; "
-                  f"сборка — {out.relative_to(ROOT)}")
+                  f"сборка – {out.relative_to(ROOT)}, передача – "
+                  f"{handover_archive(version).parent.relative_to(ROOT)}")
         except ReleaseError as e2:
             print(f"Отказ: {e}\nОткат не удался: {e2}\nВручную: git tag -d {tag}; "
                   f"git reset --keep {start}")

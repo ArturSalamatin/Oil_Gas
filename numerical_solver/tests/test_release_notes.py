@@ -1,4 +1,4 @@
-"""Описание выпуска tools/release.py: строки абзацев журнала склеиваются (DEBT-086).
+"""tools/release.py: описание выпуска (DEBT-086), разбор аргументов и вызов передачи (DEBT-089).
 
 tools/release.py лежит в корне репозитория, вне numerical_solver: в срезе
 заказчика (tools/handover.py, FEAT-031) его нет – тесты пропускаются, причина
@@ -8,6 +8,8 @@ tools/ тоже нет, и считает пропуск отказом.
 """
 
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -111,3 +113,68 @@ def test_preflight_requires_pdflatex(monkeypatch):
     with pytest.raises(release.ReleaseError, match="pdflatex"):
         release.preflight("1.0.7")
     assert calls == []
+
+
+@pytest.mark.parametrize("argv", [[], ["--acceptance"], ["1.0.7", "1.0.8"], ["-h"],
+                                  ["1.0.7", "--accept"]])
+def test_main_rejects_bad_arguments(argv, monkeypatch, capsys):
+    """Неверный набор аргументов – докстринг и код 2, проверки шага 1 не начинаются."""
+    # Опечатка в ключе («--accept») – второй позиционный аргумент, а не
+    # номер: выпуск не начинается, а не идёт молча без приёмки
+    monkeypatch.setattr(release, "preflight", lambda version: pytest.fail("вызван preflight"))
+    assert release.main(argv) == 2
+    assert "Порядок:" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("argv", [["1.0.7"], ["1.0.7", "--acceptance"], ["--acceptance", "1.0.7"]])
+def test_main_passes_version_to_preflight(argv, monkeypatch, capsys):
+    """Ключ --acceptance в любом месте не принимается за номер: в шаг 1 идёт только номер."""
+    # preflight подменён отказом: дальше шага 1 тест не идёт, git не вызывается
+    seen = []
+
+    def fake_preflight(version):
+        seen.append(version)
+        raise release.ReleaseError("стоп")
+
+    monkeypatch.setattr(release, "preflight", fake_preflight)
+    assert release.main(argv) == 1
+    assert seen == ["1.0.7"]
+    assert "Отказ (ничего не изменено): стоп" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("acceptance, tail", [(False, []), (True, ["--acceptance"])])
+def test_run_handover_command_and_archive(acceptance, tail, monkeypatch, tmp_path):
+    """Передача – handover.py метки тем же интерпретатором из корня, вывод не перехватывается; результат – архив."""
+    # Имя архива записано буквально: его называют README и описание выпуска.
+    # Без capture_output и env вывод передачи идёт в консоль выпуска сразу
+    # и в той же кодировке, что и вывод самого выпуска
+    monkeypatch.setattr(release, "ROOT", tmp_path)
+    archive = tmp_path / "dist" / "handover-1.2.3" / "gpn-multiphase-solver-1.2.3.zip"
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        archive.parent.mkdir(parents=True)
+        archive.write_bytes(b"zip")
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(release.subprocess, "run", fake_run)
+    assert release.run_handover("v1.2.3", "1.2.3", acceptance) == archive
+    [(cmd, kwargs)] = calls
+    assert cmd == [sys.executable, str(release.HANDOVER), "v1.2.3", *tail]
+    assert kwargs == {"cwd": tmp_path}
+
+
+@pytest.mark.parametrize("code, old_archive", [(1, True), (0, False)])
+def test_run_handover_failure(code, old_archive, monkeypatch, tmp_path):
+    """Отказ передачи или код 0 без архива – ReleaseError, то есть откат выпуска до push."""
+    # Архив прошлой неудачной попытки того же номера отказ не отменяет
+    monkeypatch.setattr(release, "ROOT", tmp_path)
+    if old_archive:
+        archive = release.handover_archive("1.2.3")
+        archive.parent.mkdir(parents=True)
+        archive.write_bytes(b"old")
+    monkeypatch.setattr(release.subprocess, "run",
+                        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, code))
+    with pytest.raises(release.ReleaseError, match="передача v1.2.3"):
+        release.run_handover("v1.2.3", "1.2.3", False)

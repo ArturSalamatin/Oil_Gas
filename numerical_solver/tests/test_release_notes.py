@@ -84,14 +84,16 @@ def test_unwrap_keeps_words_of_changelog():
 
 
 def test_release_notes_unwrapped_with_tail():
-    """Описание выпуска – раздел своего номера со склеенными строками и NOTES_TAIL; соседние разделы не входят."""
+    """Описание выпуска – раздел своего номера со склеенными строками и NOTES_TAIL с именем архива передачи; соседние разделы не входят."""
     # «—» в заголовках выпусков – служебный маркер, его разбирает release.py
     text = ("# Журнал\n\n## Не выпущено\n\n"
             "## 1.2.3 — 2026-10-22\n\n### Добавлено\n\n"
             "- **FEAT-001.** Суть\n  одной фразой.\n\n"
             "## 1.2.2 — 2026-10-21\n\n- **FEAT-000.** Прошлый.\n")
+    # Имя архива передачи – буквально: описание выпуска называет архив этого номера
+    tail = release.NOTES_TAIL.format(archive="gpn-multiphase-solver-1.2.3.zip")
     assert release.release_notes(text, "1.2.3") == (
-        "### Добавлено\n\n- **FEAT-001.** Суть одной фразой.\n\n" + release.NOTES_TAIL + "\n")
+        "### Добавлено\n\n- **FEAT-001.** Суть одной фразой.\n\n" + tail + "\n")
 
 
 def test_skip_reason_allowed_in_acceptance():

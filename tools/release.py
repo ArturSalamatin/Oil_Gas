@@ -96,7 +96,13 @@ UNRELEASED = "## Не выпущено"
 # считает из папки с исходным кодом решателя и прототипа (FEAT-040) – в
 # поставке для расчётов её нет
 EXCLUDED_EXAMPLES = ("18_prototype_input", "23_source_tree_run")
-NOTES_TAIL = ("Архив примеров – без примеров 18 (`18_prototype_input`) и 23 "
+# Хвост описания выпуска; {archive} – имя архива передачи этого номера
+NOTES_TAIL = ("Архив `{archive}` содержит поставку для разработки: исходный код "
+              "решателя и прототипа, тесты, все примеры, собранные HTML-документацию "
+              "и PDF постановки. Остальные пять файлов составляют поставку для "
+              "расчётов. Порядок работы с обеими поставками описан в README, раздел "
+              "«Начало работы». "
+              "Архив примеров – без примеров 18 (`18_prototype_input`) и 23 "
               "(`23_source_tree_run`): примеру 18 нужны книги и эталон CMG IMEX "
               "из дерева прототипа, примеру 23 – исходный код решателя и прототипа.")
 
@@ -246,7 +252,7 @@ def unwrap_paragraphs(text: str) -> str:
 def release_notes(text: str, version: str) -> str:
     """Описание выпуска: раздел «## X.Y.Z — …» журнала со склеенными строками и NOTES_TAIL."""
     notes = unwrap_paragraphs(section_body(text, f"## {version} — "))
-    return f"{notes}\n\n{NOTES_TAIL}\n"
+    return f"{notes}\n\n{NOTES_TAIL.format(archive=handover_archive(version).name)}\n"
 
 
 # ── Шаг 1: проверки ──

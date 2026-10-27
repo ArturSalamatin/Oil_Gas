@@ -7,7 +7,8 @@ issue: DEBT-087
 github: 145
 branch: refactor/debt-087/changelog-header-dash
 status: реализован
-worktree: .worktrees/debt-087
+worktree: .worktrees/debt-087; удалён после влития
+merged: 11f31b8 (2026-10-27)
 audit:
   date: 2026-10-22
   round: 1

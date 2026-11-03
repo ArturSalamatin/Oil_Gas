@@ -1,4 +1,4 @@
-"""Передача команде разработки заказчика: python tools/handover.py [<метка>] [--acceptance] (FEAT-031).
+"""Поставка для разработки: python tools/handover.py [<метка>] [--acceptance] (FEAT-031).
 
 Срез numerical_solver из метки выпуска (git archive — только файлы под git,
 вместе с атрибутами .gitattributes), PDF постановки, HTML-документация и
@@ -15,6 +15,12 @@ packaging), нужны pdflatex в PATH, для приёмки – доступ 
 
 Без метки берётся последний выпуск – локальная метка vX.Y.Z с
 наибольшим номером; меток выпуска нет – отказ.
+
+Выпуск tools/release.py вызывает передачу сам, в шаге 3, и публикует архив
+вместе с поставкой для расчётов (DEBT-089). Отдельный запуск нужен, чтобы
+выполнить приёмку или пересобрать архив уже опубликованной метки и чтобы
+проверить сам скрипт на коммите ветки. Пересобранный архив побайтно
+отличается от опубликованного: PDF и HTML собираются заново.
 
 Порядок:
   1. метка — коммит; версия — литерал __version__ решателя в метке;
@@ -180,8 +186,10 @@ def main(argv: list[str]) -> int:
         if not RELEASE_TAG_RE.fullmatch(treeish) or ".dev" in version:
             print(f"ПРЕДУПРЕЖДЕНИЕ: {treeish} (номер {version}) — не выпуск: заказчику "
                   "передаётся только архив из метки выпуска tools/release.py")
-        top = f"gpn-multiphase-solver-{version}"
-        out = ROOT / "dist" / f"handover-{version}"      # dist/ — в .gitignore
+        # Путь архива – общий с выпуском: tools/release.py берёт архив отсюда
+        # в файлы выпуска (шаг 3) и называет его в описании выпуска
+        archive = release.handover_archive(version)
+        out, top = archive.parent, archive.stem      # dist/handover-<версия>, имя среза
         if out.exists():
             shutil.rmtree(out)
         out.mkdir(parents=True)
@@ -200,7 +208,6 @@ def main(argv: list[str]) -> int:
         print("3. HTML-документация (sphinx -W)", flush=True)
         build_html(slice_dir, out / "doctrees")
 
-        archive = out / f"{top}.zip"
         n = make_zip(slice_dir, archive)
         print(f"4. Архив {archive.name}: файлов {n}, {archive.stat().st_size / 1e6:.1f} МБ",
               flush=True)

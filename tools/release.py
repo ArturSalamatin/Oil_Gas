@@ -1,4 +1,4 @@
-"""Выпуск решателя для испытаний внутри команды: python tools/release.py X.Y.Z (FEAT-038).
+"""Выпуск решателя с обеими поставками: python tools/release.py X.Y.Z [--acceptance] (FEAT-038).
 
 Перед запуском раздел «## Не выпущено» в numerical_solver/CHANGELOG.md
 заполнен и закоммичен. Пункты задач пишет /implement (фаза 4.1, там же форма
@@ -6,24 +6,33 @@
 git log от прошлой метки в ту же форму, вместо номера – область:
 «- **README.** …». Форму проверяет tests/test_packaging.py -k changelog из
 numerical_solver – после правки раздела и в самопроверке шага 3.
-Запуск — из корня репозитория, интерпретатором venv решателя
+Запуск – из корня репозитория, интерпретатором venv решателя
 (нужны packaging, pytest и Sphinx – группа [dev]), в основном каталоге на ветке
-numerical_scheme/implementation:
+numerical_scheme/implementation; нужен pdflatex в PATH (PDF постановки в
+передаче, шаг 3):
 
     numerical_solver\\.venv\\Scripts\\python tools\\release.py 1.0.0
+    numerical_solver\\.venv\\Scripts\\python tools\\release.py 1.0.0 --acceptance
 
-Не запускать, пока другая сессия вливает ветку в базовую (/merge): скрипт
-коммитит в ту же ветку. Push уносит на origin и все прежние локальные
-коммиты базовой ветки.
+С ключом --acceptance в шаге 3 ещё идёт приёмка архива передачи на
+распакованной копии (tools/acceptance.py): около 15 мин, нужен доступ к
+PyPI. Отказ приёмки откатывает выпуск, как любой отказ шагов 2–5.
+
+Не запускать, пока другая сессия может коммитить в базовую ветку (/merge,
+коммит материалов задачи в /implement): скрипт коммитит в ту же ветку, а
+откат к исходному коммиту снял бы с ветки и чужие коммиты. С ключом
+--acceptance это окно длиннее на время приёмки. Push уносит на origin и все
+прежние локальные коммиты базовой ветки.
 
 Порядок:
-  1. Проверки, до любых изменений: gh установлен и авторизован; в venv
-     есть pytest и Sphinx; ветка
-     numerical_scheme/implementation, не позади origin; в numerical_solver/
-     нет незакоммиченных правок отслеживаемых файлов (неотслеживаемые не
-     мешают: сборка идёт из метки); X.Y.Z — три числа без суффикса, больше
-     текущего номера и прошлого выпуска; метки vX.Y.Z нет ни локально, ни на
-     origin; в «Не выпущено» есть хотя бы один пункт «- ».
+  1. Проверки, до любых изменений: pdflatex в PATH; gh установлен и
+     авторизован; в venv есть pytest и Sphinx; ветка
+     numerical_scheme/implementation, не позади origin; во всём репозитории
+     нет незакоммиченных правок отслеживаемых файлов – ни в numerical_solver/,
+     ни в tools/, ни в vault/ (неотслеживаемые не мешают: сборка идёт из
+     метки); X.Y.Z – три числа без суффикса, больше текущего номера и
+     прошлого выпуска; метки vX.Y.Z нет ни локально, ни на origin; в «Не
+     выпущено» есть хотя бы один пункт «- ».
   2. Номера — локальный коммит «release: X.Y.Z» и метка vX.Y.Z:
      __version__ = "X.Y.Z"; «## Не выпущено» → «## X.Y.Z — <дата>»; если с
      прошлого выпуска (у первого — с 29a1ffa, DEBT-059) изменились
@@ -34,24 +43,31 @@ numerical_scheme/implementation:
      примеров 18 и 23) → README.md решателя → HTML-документация (sphinx -W),
      архив docs-vX.Y.Z.zip → самопроверка tests/test_packaging.py дерева
      метки → pip wheel --no-deps: ровно два колеса с ожидаемыми номерами
-     в именах.
+     в именах → передача: tools/handover.py vX.Y.Z [--acceptance] отдельным
+     процессом собирает архив поставки для разработки
+     dist/handover-X.Y.Z/gpn-multiphase-solver-X.Y.Z.zip (срез метки, PDF
+     постановки со сверкой номеров уравнений, HTML-документация; с ключом –
+     и приёмка).
   4. Следующая разработка — локальный коммит «release: начало X.Y.(Z+1).dev0»:
      __version__ = "X.Y.(Z+1).dev0" (заглушка: номер следующего выпуска
      задаёт аргумент команды), пустой раздел «Не выпущено»; самопроверка
      рабочего каталога.
   5. Один push: ветка и метка вместе (--atomic).
-  6. Публикация: gh release create vX.Y.Z — пять файлов: два колеса, архив
-     примеров, README.md решателя и архив HTML-документации; заметки —
-     раздел выпуска из журнала, строки каждого абзаца склеены в одну:
-     перенос строки в описании выпуска GitHub показывает как <br> (DEBT-086).
+  6. Публикация: gh release create vX.Y.Z – шесть файлов: два колеса, архив
+     примеров, README.md решателя, архив HTML-документации и архив поставки
+     для разработки; заметки – раздел выпуска из журнала, строки каждого
+     абзаца склеены в одну: перенос строки в описании выпуска GitHub
+     показывает как <br> (DEBT-086).
 
-Отказ на шагах 2–5 — скрипт откатывает свои коммиты и метку (git tag -d,
-git reset --keep к исходному коммиту; другие незакоммиченные файлы, например
-vault, не трогаются) и завершается с кодом 1; dist/vX.Y.Z/ остаётся для
-разбора. Отказ шага 6 — ветка и метка уже на origin: скрипт печатает команду
-gh для повтора. Опубликованный выпуск не меняется; исправление — новый выпуск.
+Отказ на шагах 2–5 – скрипт откатывает свои коммиты и метку (git tag -d,
+git reset --keep к исходному коммиту; незакоммиченные правки других файлов,
+внесённые во время выпуска, не трогаются) и завершается с кодом 1; dist/vX.Y.Z/ и
+dist/handover-X.Y.Z/ остаются для разбора. Отказ шага 6 – ветка и метка уже
+на origin: скрипт печатает команду gh для повтора. В ней путь архива в
+dist/handover-X.Y.Z/, поэтому до повтора этот каталог не удалять.
+Опубликованный выпуск не меняется; исправление – новый выпуск.
 
-Установка у получателя – README решателя, раздел «Начало работы», «Поставка для расчётов».
+Установка у получателя – README решателя, раздел «Начало работы».
 """
 
 from __future__ import annotations
@@ -88,6 +104,7 @@ EDITED = (SOLVER_INIT, PROTO_INIT, SOLVER_PYPROJECT, CHANGELOG)   # всё, чт
 # Всё, из чего собирается колесо прототипа: изменение повышает +gpn.N
 PROTO_WHEEL_SOURCES = (f"{PROTO}/radial_blackoil", f"{PROTO}/pyproject.toml")
 FIRST_BASE = "29a1ffa"     # DEBT-059: введён номер 1.0.3+gpn.1 — база первого выпуска
+HANDOVER = Path(__file__).resolve().parent / "handover.py"   # передача, шаг 3 (DEBT-089)
 
 UNRELEASED = "## Не выпущено"
 # Пример 18 читает книги и эталон CMG IMEX из дерева прототипа — в архиве
@@ -95,7 +112,13 @@ UNRELEASED = "## Не выпущено"
 # считает из папки с исходным кодом решателя и прототипа (FEAT-040) – в
 # поставке для расчётов её нет
 EXCLUDED_EXAMPLES = ("18_prototype_input", "23_source_tree_run")
-NOTES_TAIL = ("Архив примеров – без примеров 18 (`18_prototype_input`) и 23 "
+# Хвост описания выпуска; {archive} – имя архива передачи этого номера
+NOTES_TAIL = ("Архив `{archive}` содержит поставку для разработки: исходный код "
+              "решателя и прототипа, тесты, все примеры, собранные HTML-документацию "
+              "и PDF постановки. Остальные пять файлов составляют поставку для "
+              "расчётов. Порядок работы с обеими поставками описан в README, раздел "
+              "«Начало работы». "
+              "Архив примеров – без примеров 18 (`18_prototype_input`) и 23 "
               "(`23_source_tree_run`): примеру 18 нужны книги и эталон CMG IMEX "
               "из дерева прототипа, примеру 23 – исходный код решателя и прототипа.")
 
@@ -245,7 +268,7 @@ def unwrap_paragraphs(text: str) -> str:
 def release_notes(text: str, version: str) -> str:
     """Описание выпуска: раздел «## X.Y.Z — …» журнала со склеенными строками и NOTES_TAIL."""
     notes = unwrap_paragraphs(section_body(text, f"## {version} — "))
-    return f"{notes}\n\n{NOTES_TAIL}\n"
+    return f"{notes}\n\n{NOTES_TAIL.format(archive=handover_archive(version).name)}\n"
 
 
 # ── Шаг 1: проверки ──
@@ -282,6 +305,10 @@ def prototype_changed(base: str) -> bool:
 
 def preflight(version: str) -> dict:
     """Все проверки шага 1; ничего не меняет. Результат — номера выпуска."""
+    # PDF постановки собирает передача в шаге 3 – уже после коммита и метки
+    # (DEBT-089): без pdflatex выпуск отказывает здесь, а не откатом
+    if shutil.which("pdflatex") is None:
+        raise ReleaseError("нет pdflatex в PATH (MiKTeX или TeX Live): PDF постановки в передаче")
     if shutil.which("gh") is None:
         raise ReleaseError("нет команды gh (GitHub CLI)")
     if run(["gh", "auth", "status"]).returncode != 0:
@@ -297,9 +324,13 @@ def preflight(version: str) -> dict:
     behind = int(git("rev-list", "--count", f"HEAD..origin/{BRANCH}"))
     if behind:
         raise ReleaseError(f"ветка позади origin на {behind} коммитов: git pull")
-    dirty = git("status", "--porcelain", "--untracked-files=no", "--", SOLVER)
+    # Весь репозиторий, не только numerical_solver: файл выпуска собирает и
+    # tools/handover.py рабочего каталога, а правки vault коммитятся до
+    # выпуска (решение пользователя 2026-10-27). Неотслеживаемые файлы не
+    # мешают: сборка идёт из метки
+    dirty = git("status", "--porcelain", "--untracked-files=no")
     if dirty:
-        raise ReleaseError(f"незакоммиченные правки в {SOLVER}/:\n{dirty}")
+        raise ReleaseError(f"незакоммиченные правки отслеживаемых файлов:\n{dirty}")
 
     current = read_version(ROOT / SOLVER_INIT)
     released = released_versions()
@@ -344,6 +375,14 @@ def apply_dev_edits(root: Path, version: str) -> str:
 
 
 # ── Шаг 3: сборка из метки ──
+
+def handover_archive(version: str) -> Path:
+    """Архив передачи tools/handover.py: dist/handover-<версия>/gpn-multiphase-solver-<версия>.zip."""
+    # Один источник пути для выпуска и передачи: handover.py импортирует
+    # release, обратный импорт невозможен (этот файл при запуске – __main__)
+    top = f"gpn-multiphase-solver-{version}"
+    return ROOT / "dist" / f"handover-{version}" / f"{top}.zip"      # dist/ – в .gitignore
+
 
 def extract(treeish: str, dest: Path) -> Path:
     """Дерево numerical_solver из git (метка), не из рабочего каталога; путь к нему."""
@@ -418,8 +457,29 @@ def build_wheels(tree: Path, wheels: Path, version: str, proto_version: str) -> 
     return [wheels / name for name in expected]
 
 
-def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
-    """Шаг 3: архив примеров, README, документация, заметки, самопроверка и колёса из метки в out."""
+def run_handover(tag: str, version: str, acceptance: bool) -> Path:
+    """tools/handover.py для метки tag отдельным процессом; путь архива передачи."""
+    # Отдельный процесс, не импорт: handover.py импортирует release, а этот
+    # файл при запуске – модуль __main__, импорт загрузил бы его второй раз.
+    # Вывод не перехватывается: прогресс передачи (с приёмкой – около 15 мин)
+    # идёт сразу в консоль. PYTHONUTF8 не ставится: дочерний Python пишет в
+    # тот же канал в той же кодировке, что и этот процесс (| Tee-Object, >)
+    cmd = [sys.executable, HANDOVER, tag] + (["--acceptance"] if acceptance else [])
+    sys.stdout.flush()      # строки выпуска – раньше вывода передачи и при выводе в канал
+    code = subprocess.run([str(c) for c in cmd], cwd=ROOT).returncode
+    if code != 0:
+        raise ReleaseError(f"передача {tag}: код {code}, причина – в выводе выше")
+    # Код проверяется до архива: при отказе в dist/ может лежать архив прошлой
+    # попытки того же номера, и выпуск не должен его взять. Код 0 без архива
+    # при нынешнем handover.py невозможен – проверка на случай его правки
+    archive = handover_archive(version)
+    if not archive.is_file():
+        raise ReleaseError(f"передача {tag}: нет архива {archive.relative_to(ROOT)}")
+    return archive
+
+
+def build(tag: str, out: Path, version: str, proto_version: str, acceptance: bool) -> list[Path]:
+    """Шаг 3: архив примеров, README, документация, заметки, самопроверка, колёса и передача из метки."""
     if out.exists():          # остаток прошлой неудачной попытки с тем же номером
         shutil.rmtree(out)
     tree = extract(tag, out / "src")
@@ -437,7 +497,11 @@ def build(tag: str, out: Path, version: str, proto_version: str) -> list[Path]:
     print(f"  самопроверка метки: {selfcheck(tree)}")
     wheels = build_wheels(tree, out / "wheels", version, proto_version)
     print("  колёса: " + ", ".join(p.name for p in wheels))
-    return wheels + [examples_zip, readme, docs_zip]
+    # Передача – последней: она дольше всех (с приёмкой – около 15 мин), и
+    # отказ более быстрой сборки откатывает выпуск, не дожидаясь её
+    print(f"  передача: tools/handover.py {tag}" + (" --acceptance" if acceptance else ""))
+    archive = run_handover(tag, version, acceptance)
+    return wheels + [examples_zip, readme, docs_zip, archive]
 
 
 # ── Откат ──
@@ -462,11 +526,14 @@ def main(argv: list[str]) -> int:
     # обрывает выпуск трассировкой (как _print_safe в examples/run_all.py)
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
-    if len(argv) != 1:
+    # Приёмка архива передачи – только по явному ключу, как у tools/handover.py
+    args = [a for a in argv if a != "--acceptance"]
+    with_acceptance = len(args) != len(argv)
+    if len(args) != 1 or args[0].startswith("-"):
         print(__doc__)
         return 2
     try:
-        p = preflight(argv[0])
+        p = preflight(args[0])
     except ReleaseError as e:
         print(f"Отказ (ничего не изменено): {e}")
         return 1
@@ -476,7 +543,8 @@ def main(argv: list[str]) -> int:
     proto = p["proto_new"]
     print(f"Выпуск {version}: решатель {p['current']} → {version}, прототип "
           + (f"{p['proto_old']} → {proto} (изменён с {p['base']})" if proto != p["proto_old"]
-             else f"{proto} (не менялся с {p['base']})"))
+             else f"{proto} (не менялся с {p['base']})")
+          + ("; с приёмкой архива передачи" if with_acceptance else ""))
     push_started = False
     try:
         print("Шаг 2: номера, коммит и метка (локально)")
@@ -484,7 +552,7 @@ def main(argv: list[str]) -> int:
         git("commit", "-m", f"release: {version}", "--", *EDITED)
         git("tag", "-a", tag, "-m", f"Выпуск {version}")
         print(f"Шаг 3: сборка из метки в {out.relative_to(ROOT)}")
-        assets = build(tag, out, version, proto)
+        assets = build(tag, out, version, proto, with_acceptance)
         print("Шаг 4: следующая разработка (локально)")
         dev = apply_dev_edits(ROOT, version)
         git("commit", "-m", f"release: начало {dev}", "--", SOLVER_INIT, CHANGELOG)
@@ -503,7 +571,8 @@ def main(argv: list[str]) -> int:
         try:
             rollback(start, tag)
             print(f"Отказ: {e}\nОткат выполнен: ветка на {start[:7]}, метки {tag} нет; "
-                  f"сборка — {out.relative_to(ROOT)}")
+                  f"сборка – {out.relative_to(ROOT)}, передача – "
+                  f"{handover_archive(version).parent.relative_to(ROOT)}")
         except ReleaseError as e2:
             print(f"Отказ: {e}\nОткат не удался: {e2}\nВручную: git tag -d {tag}; "
                   f"git reset --keep {start}")

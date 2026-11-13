@@ -327,7 +327,7 @@ status: готов к реализации
 ### 5.2. Обновить связи
 
 1. В реестре: `- **План:** [[<имя плана>]]`
-2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Файлы и код»):
+2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Files and Code»):
    ```powershell
    gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/03-comment-plan.md
    ```
@@ -354,7 +354,7 @@ status: готов к реализации
 
 - Не создавай коммитов – пользователь коммитит сам
 - Не начинай реализацию – только план
-- Язык: русский
+- Язык: русский или английский; постановки моделей и отчёты для заказчика – на русском
 - Tolerance – обоснованный, не произвольный
 - Избыточность лучше недосказанности
 - Если >15 шагов – разбить на под-задачи

@@ -429,7 +429,7 @@ gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file vault/is
 
 - Если `gh` не авторизован – предложи `gh auth login --web`
 - Не используй спецсимволы PowerShell в теле issue – пиши в файл, передавай через `--body-file`
-- Язык issue и vault-записей: русский
+- Язык issue и vault-записей: русский или английский
 - Не создавай коммитов – только issue, комментарий и vault-записи. Пользователь коммитит сам
 - **Файлы для `gh --body-file`.** `gh` принимает многострочный markdown только файлом: в PowerShell спецсимволы и кириллица в аргументе ломаются. Эти файлы – в папке проекта, `vault/issues/<id-lowercase>/`, с нумерацией по порядку публикации:
 
@@ -441,7 +441,7 @@ gh issue comment <номер> --repo ArturSalamatin/Oil_Gas --body-file vault/is
   | `04-comment-audit.md` | «Аудит плана» | `/audit-plan` |
   | `05-comment-done.md` | результат реализации | `/implement` |
 
-  ⚠️ **Не использовать scratchpad, `/tmp` и другие временные каталоги** – прямой запрет AGENTS.md, раздел «Файлы и код». Побочная польза от хранения в репозитории: видно, что именно опубликовано в issue и когда, без обращения к GitHub. Описание папки – `vault/issues/README.md`
+  ⚠️ **Не использовать scratchpad, `/tmp` и другие временные каталоги** – прямой запрет AGENTS.md, раздел «Files and Code». Побочная польза от хранения в репозитории: видно, что именно опубликовано в issue и когда, без обращения к GitHub. Описание папки – `vault/issues/README.md`
 - PATH для gh может потребовать обновления: `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`
 
 ---

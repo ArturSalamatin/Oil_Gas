@@ -264,7 +264,7 @@ Frontmatter: tags, date, issue, github, branch, status: готов к реали
 
 ### 5.2. Обновить связи
 1. В реестре: `- **План:** [[<имя плана>]]`
-2. GitHub issue: комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Файлы и код»)
+2. GitHub issue: комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Files and Code»)
 3. `vault/00-home/index.md` – секция Plans
 
 ### 5.3. Зафиксировать новые проблемы
@@ -279,7 +279,7 @@ Frontmatter: tags, date, issue, github, branch, status: готов к реали
 
 - Не создавай коммитов – пользователь коммитит сам
 - Не начинай реализацию – только план
-- Язык: русский
+- Язык: русский или английский; постановки моделей и отчёты для заказчика – на русском
 - Избыточность лучше недосказанности
 - Если >15 шагов – разбить на под-задачи
 - PATH для gh: `$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")`

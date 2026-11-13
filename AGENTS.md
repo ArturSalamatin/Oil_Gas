@@ -1,546 +1,542 @@
-# Инструкции для Codex
+# Instructions for Codex
 
-Этот файл содержит актуальные правила проекта. Перед работой прочитай `AGENTS.md` целиком с диска, включая разделы, которые могли не попасть в автоматически загруженный контекст.
+This file contains the current project rules. Before starting work, read `AGENTS.md` in full from disk, including sections that may not have been loaded automatically into the context.
 
-Упоминания Claude, Agent, Workflow, Read, Edit, offset и limit ниже относятся к исходной среде. Для Codex соблюдай их смысл доступными инструментами; запрет делегирования действует и на субагентов Codex. Команды `/issue`, `/plan-*`, `/implement`, `/merge` и другие ниже описывают процессы проекта, но сами по себе не устанавливают команды или навыки Codex. При их вызове проверь доступность соответствующего навыка; при отсутствии используй соответствующую инструкцию в `.claude/commands/`, если она применима, с учётом возможностей и ограничений текущей среды. Не предполагай, что действия выполнены автоматически.
+References below to Claude, Agent, Workflow, Read, Edit, offset and limit belong to the original environment. In Codex, follow their intent using available tools; the delegation ban also applies to Codex subagents. Commands such as `/issue`, `/plan-*`, `/implement` and `/merge` describe project processes, but do not themselves install Codex commands or skills. When invoked, check whether the corresponding skill is available. If it is not, use the applicable instruction in `.claude/commands/`, accounting for the capabilities and limits of the current environment. Do not assume that actions have been performed automatically.
 
----
-# Правила работы для проекта Oil_Gas
+# Oil_Gas Project Rules
 
-Этот файл – контракт для работы в проекте. Читай перед тем, как трогать файлы. Эти правила переопределяют поведение по умолчанию.
+This file is the contract for work in the project. Read it before touching files. These rules override default behavior.
 
-## Описание проекта
+## Project Description
 
-Теоретическая разработка математической модели призабойной зоны пласта (ПЗП) в окрестности нефтедобывающей скважины. Модель фильтрации в рамках подхода Black Oil. При необходимости уточнить детали, читай two_phase_energy.tex. Он находится в папке method_of_moments.
+The project develops a theoretical mathematical model of the near-wellbore region around an oil production well. Filtration is modeled using the Black Oil approach. For details when needed, read `method_of_moments/two_phase_energy.tex`.
 
-- **Фазы:** нефть с растворённым газом (o) и свободный газ (g). Воды нет.
-- **Температура:** определяется балансом энергии многофазной системы. Ключевые эффекты: Джоуля--Томсона, адиабатический, скрытая теплота разгазирования, изменение фазового состава.
-- **Стадия проекта:** проектирование и реализация PDE-солвера `numerical_solver/` (FVM на радиальной сетке). Метод моментов (`method_of_moments/`) – завершённый, нерабочий подход; только для справки, никаких зависимостей от него.
-- **Язык документов:** русский (LaTeX).
-- **Язык кода:** Python 3.10+ (numpy, scipy, matplotlib).
+- **Phases:** oil containing dissolved gas (o) and free gas (g). There is no water.
+- **Temperature:** determined by the energy balance of the multiphase system. Key effects: Joule–Thomson, adiabatic, latent heat of degassing, and changes in phase composition.
+- **Stage:** design and implementation of the PDE solver `numerical_solver/` (FVM on a radial grid). The method of moments (`method_of_moments/`) is a completed, non-working approach, retained only for reference; do not introduce dependencies on it.
+- **Language:** chat, plans and GitHub posts may be in English. Customer reports and model formulations must be in Russian (LaTeX). Other project texts may be in English.
+- **Code:** Python 3.10+ (numpy, scipy, matplotlib).
 
-## Структура проекта
+## Project Structure
 
-| Папка / файл | Содержание |
+| Folder / file | Contents |
 |---|---|
-| `simplefied_approaches/cooling_models.tex` | Основной документ: иерархия моделей охлаждения (М.1–М.6), от алгебраических оценок до PDE (GORM + температура) |
-| `GORM_2/trapped_gas.tex` | Безнапорная фильтрация с запертой газовой шапкой (уравнение Буссинеска + нелокальное замыкание давления газа) |
-| `method_of_moments_isotermal/integral_relations_method.tex` | Метод интегральных соотношений Баренблатта для двухфазной фильтрации Black Oil |
-| `method_of_moments/two_phase_energy.tex` | Двухфазная фильтрация с уравнением энергии – текущая рабочая постановка |
-| `method_of_moments/moments_method.tex` | Метод моментов – формулы, реализуемые в коде |
-| `method_of_moments/src/` | Python-код решателя (см. секцию «Python») |
-| `method_of_moments/tests/` | pytest-тесты |
-| `method_of_moments/configs/` | JSON-конфиги задач (baseline.json и др.) |
-| `method_of_moments/results/` | Выходные данные (.csv, .png) |
-| `Постановка/` | Отчёты и постановки задач (.docx, .pdf) |
-| `Refs/` | Литература: Каневская, Баснеев, Шарафутдинов, Мускат, OPM Flow Manual и др. |
-| `Refs/GORM/` | Статьи по модели GORM (Konieczek 1990, Mjaavatten 2008) |
-| `black_oil_gas_mass.html` | Интерактивная заметка: масса выделившегося газа в модели Black Oil |
-| `tools/release.py` | Выпуск решателя с обеими поставками: номера, метка, в Releases – два колеса, архивы примеров и документации, README и архив поставки для разработки (`tools/handover.py` в шаге 3, до push); приёмка архива – только с `--acceptance`; порядок – в докстринге (FEAT-038, DEBT-089) |
-| `tools/handover.py` | Поставка для разработки: срез из метки выпуска, PDF постановки, HTML-документация, архив; выпуск вызывает её сам, отдельный запуск – приёмка или пересборка архива существующей метки; без метки – последний выпуск; приёмка на распакованной копии – только с `--acceptance`; git не меняет (FEAT-031) |
-| `tools/acceptance.py` | Приёмка копии в свежем окружении; запускает `handover.py --acceptance` – отдельно или из выпуска `release.py --acceptance` (по умолчанию без приёмки); заказчику не передаётся (решение 2026-10-19) |
+| `simplefied_approaches/cooling_models.tex` | Main document: hierarchy of cooling models (М.1–М.6), from algebraic estimates to PDEs (GORM + temperature) |
+| `GORM_2/trapped_gas.tex` | Unconfined filtration with a trapped gas cap (Boussinesq equation + nonlocal gas pressure closure) |
+| `method_of_moments_isotermal/integral_relations_method.tex` | Barenblatt integral relations method for two-phase Black Oil filtration |
+| `method_of_moments/two_phase_energy.tex` | Two-phase filtration with energy equation – current working formulation |
+| `method_of_moments/moments_method.tex` | Method of moments – formulas implemented in code |
+| `method_of_moments/src/` | Python solver code (see the Python section) |
+| `method_of_moments/tests/` | pytest tests |
+| `method_of_moments/configs/` | JSON problem configurations (`baseline.json`, etc.) |
+| `method_of_moments/results/` | Output data (.csv, .png) |
+| `Постановка/` | Reports and problem formulations (.docx, .pdf) |
+| `Refs/` | Literature: Kanevskaya, Basniev, Sharafutdinov, Muskat, OPM Flow Manual and others |
+| `Refs/GORM/` | Papers on GORM (Konieczek 1990, Mjaavatten 2008) |
+| `black_oil_gas_mass.html` | Interactive note: mass of gas released in the Black Oil model |
+| `tools/release.py` | Solver release with both deliverables: version numbers, tag, two wheels, example and documentation archives, README and development handover archive in Releases (`tools/handover.py` in step 3, before push); acceptance only with `--acceptance`; sequence in the docstring (FEAT-038, DEBT-089) |
+| `tools/handover.py` | Development handover: snapshot from the release tag, formulation PDF, HTML documentation and archive; called by the release script, or separately for acceptance or rebuilding an existing tag; without a tag uses the latest release; acceptance in an unpacked copy only with `--acceptance`; does not change git (FEAT-031) |
+| `tools/acceptance.py` | Acceptance of a copy in a fresh environment; runs `handover.py --acceptance` separately or through `release.py --acceptance` (no acceptance by default); not delivered to the customer (decision 2026-10-19) |
 
-## Обозначения и нотация
+## Symbols and Notation
 
-Единый словарь символов для всех документов проекта. При создании новых разделов и документов – придерживаться этих обозначений.
+This is the common symbol dictionary for all project documents. Follow it when creating new sections and documents.
 
-### Координаты и время
+### Coordinates and Time
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $r$ | радиальная координата (расстояние от оси скважины), м |
-| $x$ | горизонтальная координата (перпендикулярно скважине, в модели GORM), м |
-| $z$ | вертикальная координата (вверх от подошвы), м |
-| $t$ | время, с |
+| $r$ | radial coordinate (distance from well axis), m |
+| $x$ | horizontal coordinate (perpendicular to the well, in GORM), m |
+| $z$ | vertical coordinate (upward from the bottom), m |
+| $t$ | time, s |
 
-### Давление и температура
+### Pressure and Temperature
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $p$ | давление, Па |
-| $p_b$ | давление насыщения (bubble point) |
-| $p_{wf}$ | забойное давление |
-| $p_0$ | начальное пластовое давление; в `numerical_solver/doc/problem_statement.tex` – $p_{\text{пл}}$, там $p_0$, $T_0$ – значения в ячейке 0 у забоя (DEBT-070) |
-| $T$ | температура, К |
-| $T_{\text{пл}}$ | пластовая температура (невозмущённая) |
+| $p$ | pressure, Pa |
+| $p_b$ | bubble-point pressure |
+| $p_{wf}$ | bottomhole pressure |
+| $p_0$ | initial reservoir pressure; in `numerical_solver/doc/problem_statement.tex` reservoir pressure is $p_{\text{пл}}$, while $p_0$, $T_0$ are values in cell 0 at the well (DEBT-070) |
+| $T$ | temperature, K |
+| $T_{\text{пл}}$ | undisturbed reservoir temperature |
 
-### Фазы и насыщенности
+### Phases and Saturations
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| индекс $o$ | нефтяная (жидкая) фаза |
-| индекс $g$ | газовая фаза |
-| индекс ст | стандартные условия |
-| $S_o$, $S_g$ | насыщенности (объёмные доли); $S_o + S_g = 1$ |
-| $x_g$ | массовая доля свободного газа |
+| subscript $o$ | oil (liquid) phase |
+| subscript $g$ | gas phase |
+| subscript ст | standard conditions |
+| $S_o$, $S_g$ | saturations (volume fractions); $S_o + S_g = 1$ |
+| $x_g$ | mass fraction of free gas |
 
-### PVT-свойства
+### PVT Properties
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $R_s(p,T)$ | газосодержание, м³ст/м³ст нефти |
-| $B_o(p)$ | объёмный коэффициент нефти |
-| $B_g(p)$ | объёмный коэффициент газа |
-| $\rho_o$, $\rho_g$ | плотности фаз при пластовых условиях, кг/м³ |
-| $\mu_o$, $\mu_g$ | вязкости фаз, Па·с |
-| $c_{p,o}$, $c_{p,g}$ | удельные теплоёмкости, Дж/(кг·К) |
+| $R_s(p,T)$ | gas content, м³ст/м³ст oil |
+| $B_o(p)$ | oil formation volume factor |
+| $B_g(p)$ | gas formation volume factor |
+| $\rho_o$, $\rho_g$ | phase densities at reservoir conditions, kg/m³ |
+| $\mu_o$, $\mu_g$ | phase viscosities, Pa·s |
+| $c_{p,o}$, $c_{p,g}$ | specific heat capacities, J/(kg·K) |
 
-### Пористая среда
+### Porous Medium
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $\phi$ | пористость |
-| $k$ | абсолютная проницаемость, м² |
-| $k_{ro}$, $k_{rg}$ | относительные фазовые проницаемости (ОФП) |
-| $\lambda_{\text{eff}}$ | эффективная теплопроводность (флюид + порода), Вт/(м·К) |
-| $(\rho c_p)_s$ | объёмная теплоёмкость скелета породы, Дж/(м³·К) |
+| $\phi$ | porosity |
+| $k$ | absolute permeability, m² |
+| $k_{ro}$, $k_{rg}$ | relative phase permeabilities |
+| $\lambda_{\text{eff}}$ | effective thermal conductivity (fluid + rock), W/(m·K) |
+| $(\rho c_p)_s$ | volumetric heat capacity of the rock skeleton, J/(m³·K) |
 
-### Термодинамика
+### Thermodynamics
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $h_o$, $h_g$ | удельные энтальпии фаз, Дж/кг |
-| $h_{\text{mix}}$ | удельная энтальпия смеси, Дж/кг |
-| $L$ | удельная теплота дегазации (испарения), Дж/кг газа |
-| $\mu_{\text{JT}}$ | коэффициент Джоуля--Томсона, К/Па |
-| $\alpha$ | коэффициент теплового расширения, К⁻¹ |
+| $h_o$, $h_g$ | phase specific enthalpies, J/kg |
+| $h_{\text{mix}}$ | mixture specific enthalpy, J/kg |
+| $L$ | specific heat of degassing (vaporization), J/kg of gas |
+| $\mu_{\text{JT}}$ | Joule–Thomson coefficient, K/Pa |
+| $\alpha$ | thermal expansion coefficient, K⁻¹ |
 
-### Геометрия скважины и пласта
+### Well and Reservoir Geometry
 
-| Символ | Смысл |
+| Symbol | Meaning |
 |---|---|
-| $r_w$ | радиус скважины, м |
-| $r_e$ | радиус контура питания, м |
-| $h$ | толщина нефтяного слоя (в модели GORM), м |
-| $H$ | высота кровли пласта, м |
-| $W$ | полуширина области дренирования, м |
+| $r_w$ | well radius, m |
+| $r_e$ | outer reservoir boundary radius, m |
+| $h$ | oil layer thickness (in GORM), m |
+| $H$ | reservoir roof height, m |
+| $W$ | drainage area half-width, m |
 
-### Конвенция знаков (numerical_solver)
+### Sign Convention (numerical_solver)
 
-**Положительное направление – от скважины, в сторону роста радиальной координаты r.**
+**The positive direction is away from the well, toward increasing radial coordinate r.**
 
-Это относится ко всем величинам:
+This applies to all quantities:
 
-| Величина | Обозначение | > 0 означает | При типичном потоке |
+| Quantity | Symbol | > 0 means | For typical flow |
 |---|---|---|---|
-| Скорость Дарси | $u_\alpha$ | от скважины | < 0 |
-| Объёмный расход фазы | $Q_\alpha$ | от скважины | < 0 |
-| Поток компонента | $G^o$, $G^g$ | от скважины | < 0 |
-| Массовый расход фазы | $m_\alpha$ | от скважины | < 0 |
-| Конвективный коэффициент | $\Phi_\alpha$ | от скважины | < 0 |
+| Darcy velocity | $u_\alpha$ | away from the well | < 0 |
+| Phase volumetric flow rate | $Q_\alpha$ | away from the well | < 0 |
+| Component flux | $G^o$, $G^g$ | away from the well | < 0 |
+| Phase mass flow rate | $m_\alpha$ | away from the well | < 0 |
+| Convective coefficient | $\Phi_\alpha$ | away from the well | < 0 |
 
-Дебит скважины: $q_{o,\text{ст}} = -G^o_{\text{забой}} > 0$.
+Well production rate: $q_{o,\text{ст}} = -G^o_{\text{забой}} > 0$.
 
-Невязка баланса массы: $F_j = \text{accum} + G_{j+1} - G_j$.
+Mass balance residual: $F_j = \text{accum} + G_{j+1} - G_j$.
 
-Подробности: `vault/knowledge/decisions/конвенции-знаков.md`, `vault/knowledge/decisions/словарь-код-физика.md`.
+Details: `vault/knowledge/decisions/конвенции-знаков.md`, `vault/knowledge/decisions/словарь-код-физика.md`.
 
-## Физическая суть задачи
+## Physical Problem
 
-Моделируемые процессы:
-1. **Фильтрация нефти с растворённым газом** – закон Дарси, ОФП, PVT-свойства (Black Oil).
-2. **Разгазирование** – при $P < P_{b}$ газ выделяется из нефти; газосодержание $R_s(P,T)$ по корреляции Стендинга.
-3. **Теплоперенос** – конвекция, теплопроводность, эффект Джоуля--Томсона, скрытая теплота дегазации.
-4. **Динамика газовой шапки** – материальный баланс (0D) или приближение Дюпюи (PDE).
+Processes modeled:
+1. **Oil filtration with dissolved gas** – Darcy's law, relative permeability and PVT properties (Black Oil).
+2. **Degassing** – gas evolves from oil when $P < P_{b}$; gas content $R_s(P,T)$ follows the Standing correlation.
+3. **Heat transfer** – convection, thermal conduction, Joule–Thomson effect and latent heat of degassing.
+4. **Gas cap dynamics** – material balance (0D) or Dupuit approximation (PDE).
 
-Рассматриваемые варианты моделей (simplefied_approaches/cooling_models.tex):
-- М.1: JT-оценка (алгебраическая)
-- М.2: Энергобаланс разгазирования (алгебраическая)
-- М.3: Стационарный энтальпийный баланс (нелинейное уравнение)
-- М.4: Нестационарный энтальпийный баланс (система ОДУ)
-- М.5: Пространственная задача с заданным давлением (1 PDE для T)
-- М.6: GORM + дегазация + температура (2–3 PDE)
+Model variants in `simplefied_approaches/cooling_models.tex`:
+- М.1: JT estimate (algebraic)
+- М.2: Degassing energy balance (algebraic)
+- М.3: Steady enthalpy balance (nonlinear equation)
+- М.4: Transient enthalpy balance (ODE system)
+- М.5: Spatial problem with prescribed pressure (one PDE for T)
+- М.6: GORM + degassing + temperature (2–3 PDEs)
 
-Дополнительные подходы:
-- Безнапорная фильтрация с запертым газом (GORM_2/)
-- Метод интегральных соотношений Баренблатта (method_of_moments_isotermal/)
+Additional approaches:
+- Unconfined filtration with trapped gas (GORM_2/)
+- Barenblatt integral relations method (method_of_moments_isotermal/)
 
-## Стиль общения – научный спарринг-партнёр
+## Communication Style – Scientific Sparring Partner
 
-1. Не соглашайся ради вежливости. Если подход физически или математически некорректен – говори прямо.
-2. Указывай на слабые места: неучтённые граничные условия, некорректные допущения, проблемы замыкания.
-3. Если не уверен в корректности формулы или подхода – скажи об этом и предложи верификацию.
-4. Никаких "отличный вопрос!", "конечно!", "с удовольствием!". Начинай с сути.
-5. Если пользователь ищет подтверждение вместо истины – скажи об этом.
-6. Предпочитай ссылки на конкретные уравнения, книги и статьи из `Refs/`.
-7. Тире – только среднее «–» в любом тексте: ответы, документы, заметки, комментарии в коде, коммиты. В LaTeX – `~--`. Исключения – в правиле «Тире» раздела «Качество формулировок».
+1. Do not agree out of politeness. If an approach is physically or mathematically incorrect, say so directly.
+2. Point out weak spots: missing boundary conditions, invalid assumptions and closure problems.
+3. If unsure about a formula or approach, say so and propose verification.
+4. No «отличный вопрос!», «конечно!», «с удовольствием!». Start with the substance.
+5. If the user seeks confirmation instead of truth, say so.
+6. Prefer references to specific equations, books and papers in `Refs/`.
+7. Use only the en dash «–» in all text: replies, documents, notes, code comments and commits. In LaTeX use `~--`. Exceptions are in the “Dashes” rule in the Formulation Quality section.
 
-## Роль
+## Role
 
-Ты эксперт в области высопроизводительных вычислений в области математической физики, прикладной математики, у тебя высококлассные компетенции в области программирования, численных методов,
-прикладной математики, физики, разработки прикладного программного обеспечения. Ты высококлассный,
-эрудирвоанный специалист в перечисленных областях знаний. Ты скептик, склонен все проверять, 
-не принимаешь ничего на веру, требуешь факты, подтверждения.
+Act as an expert in high-performance computing for mathematical physics, applied mathematics, programming, numerical methods, physics and applied software development. Be skeptical, verify claims and require facts and evidence rather than accepting assertions on trust.
 
-## Субагенты запрещены
+## Subagents Forbidden
 
-Не использовать Agent, Workflow и другие формы делегирования. Вся работа – в основном разговоре.
+Do not use Agent, Workflow or other forms of delegation. All work is performed in the main conversation.
 
-Причина: при поиске литературы и исследовательских задачах Claude запускает параллельных агентов, каждый из которых перечитывает контекст с нуля. Это сжирает токены без пользы. Вся работа – последовательно, в одном разговоре.
+Reason: for literature searches and research tasks Claude launches parallel agents, each of which rereads the context from scratch, consuming tokens without benefit. Work sequentially in one conversation.
 
-## Экономия токенов
+## Token Economy
 
-### Чтение файлов
-1. Читай только нужные фрагменты. Используй `offset` + `limit`, а не весь файл.
-2. Не перечитывай файл после Edit – инструмент подтверждает успех.
-3. Не перечитывай файлы, уже загруженные в контекст.
-4. Grep перед Read. Сначала найди нужный фрагмент, потом читай.
-5. LaTeX-файлы в `simplefied_approaches/`, `GORM_2/`, `method_of_moments_isotermal/`, `method_of_moments/` большие – всегда offset + limit.
+### File Reading
+1. Read only the required fragments. Use `offset` + `limit` rather than the whole file.
+2. Do not reread a file after Edit – the tool confirms success.
+3. Do not reread files already loaded in context.
+4. Grep before Read: locate the relevant fragment first.
+5. LaTeX files in `simplefied_approaches/`, `GORM_2/`, `method_of_moments_isotermal/`, `method_of_moments/` are large – always use offset + limit.
 
-### Вызовы инструментов
-6. Batch независимых вызовов в одно сообщение.
-7. Grep дешевле Read для поиска. Используй `-C 3` вместо чтения файла целиком.
-8. Edit дешевле Write для существующих файлов.
-9. Накапливай связанные правки, применяй минимальным числом Edit-вызовов.
+### Tool Calls
+6. Batch independent calls in one message.
+7. Grep is cheaper than Read for searching. Use `-C 3` instead of reading the entire file.
+8. Edit is cheaper than Write for existing files.
+9. Group related changes and use the minimum number of Edit calls.
 
-### Ответы
-10. Кратко по умолчанию. Статус – одно предложение. Итог – два-три.
-11. Не описывай, что собираешься прочитать – просто читай.
-12. Не пересказывай, что только что сделал, если работа тривиальна.
+### Responses
+10. Concise by default. Status – one sentence. Final response – two or three.
+11. Do not describe what you are about to read – just read it.
+12. Do not recap trivial work.
 
 ## LaTeX
 
-Основной инструмент проекта – LaTeX. Все математические выкладки, постановки задач и отчёты пишутся в `.tex`.
+LaTeX is the main project tool. Mathematical derivations, model formulations and reports are written in `.tex`.
 
-Правила:
-- Язык документов: русский.
-- Кодировка: UTF-8, пакеты `inputenc`, `fontenc` (T2A), `babel` (russian).
-- Формулы: `amsmath`, `amssymb`. Ключевые формулы в `\boxed{}`.
-- Нумерация уравнений: `\eqref{}` для ссылок.
-- Перекрёстные ссылки между моделями: указывать номер уравнения и модели.
-- **Без англицизмов.** Использовать русские термины. Конкретные замены:
+Rules:
+- Model formulations and customer reports: Russian. Other documents may be in English.
+- Encoding: UTF-8; packages `inputenc`, `fontenc` (T2A), `babel` (russian).
+- Formulas: `amsmath`, `amssymb`. Put key formulas in `\boxed{}`.
+- Equation references: use `\eqref{}`.
+- Cross-references between models: specify equation and model number.
+- **No anglicisms in Russian text.** Use Russian terminology. Specific replacements:
   - transmissibility / трансмиссибильность → **проводимость грани**
   - upstream / upwind → **против потока**, **выше по потоку** (ячейка)
   - ghost cell → **фиктивная ячейка**
   - damping → **демпфирование** или **ограничение шага**
   - solver → **решатель**
   - baseline → **базовый вариант**
-  Если русский аналог неочевиден – спросить пользователя, не транслитерировать.
+  If the Russian equivalent is not obvious, ask the user rather than transliterating it.
 
-Сборка:
+Build:
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\simplefied_approaches
 pdflatex -interaction=nonstopmode cooling_models.tex
 ```
 
-## Качество формулировок
+## Formulation Quality
 
-Правила действуют для всех текстов проекта, включая чат, vault, документацию и сообщения коммитов. Сначала формулируй мысль, затем излагай её. Утверждения подтверждай источником, формулой или расчётом, не обобщай частный случай и не подменяй отсутствие данных свойством явления. Излагай посылки до выводов, избегай оценочности, пустых оборотов и неоднозначных отсылок. Ссылки на страницы сверки храни в заметках источников vault.
+The rules apply to all project texts, including chat, vault, documentation and commit messages. Formulate the thought before writing it. Support assertions with a source, formula or calculation; do not generalize a special case or present a lack of data as a property of a phenomenon. State premises before conclusions, and avoid evaluative language, empty phrases and ambiguous references. Record pages used for source verification in vault source notes.
 
-Тире – среднее «–», в LaTeX `~--`; исключения служебных форматов сохранены в полных правилах. Суть ответа в чате ставь в первое предложение. Полные правила: `.agents/skills/scientific-style/references/formulations.md`.
+Use the en dash «–», or `~--` in LaTeX; exceptions for service formats are in the full rules. Put the essence of a chat reply in the first sentence. Full rules: `.agents/skills/scientific-style/references/formulations.md`.
 
-## Перевод и кальки
+## Translation and Calques
 
-Передавай смысл источника без добавлений и пропусков, используй термины профильной литературы и перестраивай кальки целиком. Правила и проверка английского текста: `.agents/skills/scientific-style/references/translation-calques.md`.
+Convey the source's meaning without additions or omissions, use established terminology from the relevant literature and rewrite calques as complete sentences. Rules and English-text checks: `.agents/skills/scientific-style/references/translation-calques.md`.
 
-## Стиль научного текста
+## Scientific Text Style
 
-Перед написанием, правкой или проверкой научного текста используй навык `.agents/skills/scientific-style/SKILL.md` и его справочные файлы. Правила строения научного текста не распространяются на vault, README и журнал изменений. Старую постановку перестраивай при правке соответствующего раздела, без отдельной массовой переработки. Частоты считаются на документ. Проверка изменённых документов: `python .claude/text-check.py <файлы>`.
+Before writing, editing or reviewing scientific text, use `.agents/skills/scientific-style/SKILL.md` and its references. Rules governing the structure of scientific prose do not apply to vault, README or the changelog. Restructure the old formulation when editing the corresponding section, without a separate wholesale rewrite. Frequencies are counted per document. Check modified documents: `python .claude/text-check.py <файлы>`.
 
-Для любого связного текста и развёрнутых ответов читай правила формулировок навыка, для перевода и английского текста также правила перевода. Эти файлы доступны и при работе в Claude. Навык не заменяет правила проекта о проверках, разрешениях и действиях с Git.
+For any continuous text and substantive chat replies, read the skill's formulation rules; for translation and English text, also read the translation rules. These files are also available when working in Claude. The skill does not replace project rules on checks, permissions or Git actions.
 
 ## Python
 
-Реализация метода моментов. Код в `method_of_moments/src/`, тесты в `method_of_moments/tests/`.
+Method of moments implementation. Code in `method_of_moments/src/`, tests in `method_of_moments/tests/`.
 
-### Структура src/
+### src/ Structure
 
 ```
 src/
-├── pvt/                # PVT-свойства Black Oil
-│   ├── correlations.py # Rs(p,T), Bo, Bg, μ – корреляции Стендинга и др.
-│   └── black_oil.py    # BlackOilFluid: все PVT + ОФП в одном классе
-├── profiles/           # Параметризация профилей p(r), Sg(r), T(r)
+├── pvt/                # Black Oil PVT properties
+│   ├── correlations.py # Rs(p,T), Bo, Bg, μ – Standing and other correlations
+│   └── black_oil.py    # BlackOilFluid: all PVT + relative permeability in one class
+├── profiles/           # Parameterization of p(r), Sg(r), T(r) profiles
 │   ├── pressure.py     # Φ(η), dp/dr, γ(rb) – §4.2 moments_method.tex
 │   ├── saturation.py   # Sg(r) = Sg,w·(1−η)^β – §4.3
 │   └── temperature.py  # Ψ(ζ), ΔTw – §4.4
-├── integrals.py        # I_Φ^(n), I_Ψ^(n), I_S^(n) – §5.4, замкнутые формулы
-├── coefficients.py     # A_ij, F_i – §5.1–5.4, матрица и правая часть ODE
-├── ode_system.py       # Правая часть для solve_ivp
-├── initial.py          # Начальная асимптотика §6: rb(tε), Sg,w^eq
-├── solver.py           # Обёртка: параметры → решение (rb(t), Sg,w(t), ΔTw(t))
-└── main.py             # CLI: JSON-конфиг → решение → вывод
+├── integrals.py        # I_Φ^(n), I_Ψ^(n), I_S^(n) – §5.4, closed-form formulas
+├── coefficients.py     # A_ij, F_i – §5.1–5.4, ODE matrix and right-hand side
+├── ode_system.py       # Right-hand side for solve_ivp
+├── initial.py          # Initial asymptotics §6: rb(tε), Sg,w^eq
+├── solver.py           # Wrapper: parameters → solution (rb(t), Sg,w(t), ΔTw(t))
+└── main.py             # CLI: JSON config → solution → output
 ```
 
-### Запуск
+### Running
 
 ```powershell
 cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-.venv\Scripts\python -m pytest tests/ -v          # тесты
-.venv\Scripts\python src/main.py configs/baseline.json  # решатель
+.venv\Scripts\python -m pytest tests/ -v          # tests
+.venv\Scripts\python src/main.py configs/baseline.json  # solver
 ```
 
-### Зависимости
+### Dependencies
 
-`pyproject.toml` в `method_of_moments/`. Установка: `pip install -e ".[dev]"`.
+`pyproject.toml` in `method_of_moments/`. Installation: `pip install -e ".[dev]"`.
 
 ### math vs numpy
 
-Всегда `numpy`, никогда `math`. Весь код работает с массивами (`solve_ivp`, PVT-корреляции на сетке), `numpy` покрывает и скаляры, и массивы. Использовать `np.log`, `np.exp`, `np.sqrt` и т.д. Если в коде или плане встречается `math.*` – заменять на `np.*`.
+Always use `numpy`, never `math`. All code works with arrays (`solve_ivp`, PVT correlations on the grid), and `numpy` covers both scalars and arrays. Use `np.log`, `np.exp`, `np.sqrt`, etc. If `math.*` appears in code or a plan, replace it with `np.*`.
 
-### Связь формула → код
+### Formula-to-Code Links
 
-Каждая функция в `src/` содержит в docstring ссылку на уравнение из `.tex`:
+Each function in `src/` references an equation from `.tex` in its docstring:
 ```python
 def compute_Cp(p, T, Sg, fluid, rock):
     """Коэффициент ёмкости C_p. Ур. (eq:Cp) moments_method.tex."""
 ```
 
-Ссылка даётся **меткой** `\label{}` – `Ур. (eq:<метка>) <файл>.tex` в докстринге, `(eq:<метка>)` в комментарии, – не номером уравнения (`eq. 12`), не номером рядом с меткой (`eq:x (74)`, DEBT-062) и не номером строки (`problem_statement.tex:1334`): номера сдвигаются молча при любой вставке выше по документу (DEBT-010: к моменту проверки все 27 числовых ссылок `numerical_solver/` указывали не туда). Формула без собственной метки – ссылкой на ближайшую: «определение под `eq:<метка>`». Уравнение чужой статьи – словами: «формула (5) у Coats 1999». В `numerical_solver/` правило проверяет `tests/test_eq_references.py` (докстринги, комментарии, тесты, примеры, README примеров); он же – заметки `vault/knowledge/`, кроме `literature/` (DEBT-074): ссылка на постановку там тоже меткой, параграф – `ssec:<метка>`.
+Use a `\label{}` **label** – `Ур. (eq:<метка>) <файл>.tex` in a docstring, `(eq:<метка>)` in a comment – not an equation number (`eq. 12`), a number next to a label (`eq:x (74)`, DEBT-062), or a line number (`problem_statement.tex:1334`): numbers silently shift after any insertion above the document location (DEBT-010: when checked, all 27 numerical references in `numerical_solver/` pointed to the wrong place). If a formula has no label of its own, refer to the nearest label: «определение под `eq:<метка>`». Refer to an equation from another author's paper in words: «формула (5) у Coats 1999». In `numerical_solver/` this rule is checked by `tests/test_eq_references.py` (docstrings, comments, tests, examples and example READMEs); it also checks `vault/knowledge/` notes, except `literature/` (DEBT-074): references to the formulation there also use labels, with `ssec:<метка>` for a section.
 
-При изменении формулы в `.tex` – обновить соответствующую функцию.
+When changing a formula in `.tex`, update the corresponding function.
 
-Таблица соответствий поддерживается в планах `/plan-feature` (секция «Связь формула → код»).
+The correspondence table is maintained in `/plan-feature` plans (section «Связь формула → код»).
 
-## numerical_solver (PDE-солвер)
+## numerical_solver (PDE Solver)
 
-Новая библиотека: FVM на радиальной логарифмической сетке. Постановка: `numerical_solver/doc/problem_statement.tex`.
+New library: FVM on a logarithmic radial grid. Formulation: `numerical_solver/doc/problem_statement.tex`.
 
-Код: `numerical_solver/gpn_multiphase_solver/`. Имя пакета: `gpn_multiphase_solver` (pip: `gpn-multiphase-solver`). Полностью независим от `method_of_moments/`.
+Code: `numerical_solver/gpn_multiphase_solver/`. Package name: `gpn_multiphase_solver` (pip: `gpn-multiphase-solver`). Completely independent of `method_of_moments/`.
 
-Расчёт по конфигу: `python -m gpn_multiphase_solver run <config.json>` (или `gpn-solver run …`), результаты – `output/` рядом с конфигом (FEAT-030); по книге Excel – `run <книга.xlsx>`, перевод сохраняется в `output/input/`, каталог вывода очищается до расчёта (FEAT-036).
+Run from a config: `python -m gpn_multiphase_solver run <config.json>` (or `gpn-solver run …`); results go to `output/` next to the config (FEAT-030). For an Excel workbook use `run <книга.xlsx>`; its converted input is saved in `output/input/`, and the output directory is cleared before the calculation (FEAT-036).
 
-HTML-документация (FEAT-031): `python -m sphinx -W -b html doc/source doc/build/html` из `numerical_solver/`, главный файл `doc/build/html/index.html` – README, техническое описание (докстринги пакета и подпакетов), публичный интерфейс. Перечень публичного интерфейса – `doc/source/api.rst`; правило докстрингов и сборку без предупреждений проверяет `tests/test_docs.py`. После правки `problem_statement.tex` и сборки PDF – `tools/eq_numbers.py` (таблица «метка → номер» для HTML). Установка для разработки – `setup.bat`; приёмка копии в свежем окружении – `tools/acceptance.py <копия>` из корня (заказчику не передаётся, в срез не входит); выпуск с обеими поставками – `tools/release.py X.Y.Z [--acceptance]` из корня репозитория (архив поставки для разработки собирает вызванный им `tools/handover.py`), отдельный запуск `tools/handover.py <метка выпуска>` – приёмка или пересборка архива существующей метки.
+HTML documentation (FEAT-031): `python -m sphinx -W -b html doc/source doc/build/html` from `numerical_solver/`; the main file `doc/build/html/index.html` contains the README, technical description (package and subpackage docstrings) and public API. Public API inventory: `doc/source/api.rst`; `tests/test_docs.py` checks the docstring rule and a warning-free build. After editing `problem_statement.tex` and building the PDF, run `tools/eq_numbers.py` (label-to-number table for HTML). Development installation: `setup.bat`; acceptance of a copy in a fresh environment: `tools/acceptance.py <копия>` from the root (not delivered to the customer and not included in the snapshot); release with both deliverables: `tools/release.py X.Y.Z [--acceptance]` from the repository root (it calls `tools/handover.py` to build the development handover archive); run `tools/handover.py <метка выпуска>` separately for acceptance or to rebuild the archive for an existing tag.
 
-Архитектурные решения, контракты модулей, конвенции знаков: `vault/knowledge/decisions/`.
+Architectural decisions, module contracts and sign conventions: `vault/knowledge/decisions/`.
 
-Ключевые заметки:
-- `архитектура библиотеки numerical_solver.md` – модули, паттерны, ABC
-- `словарь-код-физика.md` – соответствие переменных кода и физики
-- `конвенции-знаков.md` – положительное направление = от скважины (рост r)
-- `порядок-реализации-модулей.md` – 9 фаз реализации
+Key notes:
+- `архитектура библиотеки numerical_solver.md` – modules, patterns, ABCs
+- `словарь-код-физика.md` – correspondence between code variables and physics
+- `конвенции-знаков.md` – positive direction = away from well (increasing r)
+- `порядок-реализации-модулей.md` – 9 implementation phases
 
-## Тестирование
+## Testing
 
-Пирамида тестов (pytest):
+Test pyramid (pytest):
 
-| Уровень | Что тестирует | Пример |
+| Level | What it tests | Example |
 |---|---|---|
-| Unit | Один модуль изолированно | `test_pvt.py`: Rs(p,T) при известных p,T |
-| Граничные | Предельные случаи | Sg=0, p=pb, T=T0 |
-| Согласованность | Физические инварианты | So+Sg=1, энергобаланс |
-| Интеграционный | solve_ivp с полной системой | `test_solver.py`: rb растёт, Sg∈[0,1] |
-| Валидационный | Сравнение с эталоном | VAL-001: Дюпюи, VAL-002: vs PDE |
+| Unit | One isolated module | `test_pvt.py`: Rs(p,T) at known p,T |
+| Boundary | Limiting cases | Sg=0, p=pb, T=T0 |
+| Consistency | Physical invariants | So+Sg=1, energy balance |
+| Integration | solve_ivp with the complete system | `test_solver.py`: rb grows, Sg∈[0,1] |
+| Validation | Comparison with a reference | VAL-001: Dupuit, VAL-002: vs PDE |
 
-Правила:
-- Тест пишется **до или одновременно** с реализацией.
-- Новый код не мёржится без зелёных тестов.
-- Регрессии блокируют работу – сначала починить.
+Rules:
+- Write the test **before or alongside** the implementation.
+- New code is not merged without green tests.
+- Regressions block work – fix them first.
 
-Уровни прогона (DEBT-032, `numerical_solver`, команды из `numerical_solver/`):
+Run levels (DEBT-032, `numerical_solver`, commands from `numerical_solver/`):
 
-| Уровень | Команда | Время | Когда |
+| Level | Command | Time | When |
 |---|---|---|---|
-| Число тестов | `.venv\Scripts\python -m pytest tests/ --collect-only -q` | ~3 с | baseline в `/audit-plan`; шаги, меняющие только документы |
-| Быстрый | `.venv\Scripts\python -m pytest tests/ -m "not slow" -q` | ~70 с | после каждого шага; baseline в `/implement` |
-| Полный | `.venv\Scripts\python -m pytest tests/ -q` | ~10 мин | конец `/implement`; шаги с «Регресс: полный» |
+| Test count | `.venv\Scripts\python -m pytest tests/ --collect-only -q` | ~3 s | baseline in `/audit-plan`; documentation-only steps |
+| Fast | `.venv\Scripts\python -m pytest tests/ -m "not slow" -q` | ~70 s | after every step; baseline in `/implement` |
+| Full | `.venv\Scripts\python -m pytest tests/ -q` | ~10 min | end of `/implement`; steps marked «Регресс: полный» |
 
-- Метка `slow`: тесты на фикстуре `results` (`tests/test_examples.py`; ставится автоматически хуком в `tests/conftest.py`), `test_matrix_matches_reference`, тесты на сгущённой сетке.
-- После падения – `pytest tests/ --lf -q`: только упавшие в прошлый раз.
-- Ключ `-q`, не `-v`: построчный вывод 1100+ тестов засоряет контекст.
+- `slow` mark: tests using the `results` fixture (`tests/test_examples.py`; assigned automatically by a hook in `tests/conftest.py`), `test_matrix_matches_reference`, and refined-grid tests.
+- After a failure use `pytest tests/ --lf -q`: only tests that failed on the previous run.
+- Use `-q`, not `-v`: line-by-line output from 1100+ tests clutters the context.
 
-## Файлы и код
+## Files and Code
 
-- Не трогай существующие файлы без явной просьбы.
-- Можешь создавать новые файлы, если задача этого требует.
-- **Все новые файлы – только в папке проекта.** Не использовать scratchpad, `/tmp` и другие временные каталоги. Скрипты постобработки, промежуточные результаты, одноразовые утилиты – всё рядом с примером или в подходящей папке проекта.
-- Не добавляй абстракции и обобщения сверх задачи.
-- Docstring внутреннего кода – одна строка + ссылка на уравнение. Без многострочных описаний.
-- Docstring публичного интерфейса пакета `gpn_multiphase_solver` – в стиле NumPy: краткая строка, ссылка на уравнение, разделы параметров, результата и исключений с единицами. **Заголовки разделов – на русском** (имена задаёт конфигурация сборки FEAT-031). Публичный интерфейс – объекты `doc/source/api.rst`: README §4, `tests/test_public_api.py`, функции, которые вызывают скрипты примеров, абстрактные классы для расширения (PVT, ОФП, сетка, режим скважины); правило проверяет `tests/test_docs.py`. Из этих докстрингов собирается HTML-документация Sphinx, в которую включается README; прототип и примеры в неё не входят (решения пользователя 2026-10-17, FEAT-031).
+- Do not touch existing files without an explicit request.
+- You may create new files if the task requires them.
+- **All new files must be inside the project directory.** Do not use scratchpad, `/tmp` or other temporary directories. Post-processing scripts, intermediate results and one-off utilities belong next to the example or in an appropriate project folder.
+- Do not add abstractions or generalizations beyond the task.
+- Internal code docstring: one line + an equation reference. No multiline descriptions.
+- Public API docstrings in `gpn_multiphase_solver`: NumPy style, with a short line, equation reference, parameter, result and exception sections including units. **Section headings must be in Russian** (names are set by the build configuration, FEAT-031). The public API consists of objects in `doc/source/api.rst`: README §4, `tests/test_public_api.py`, functions called by example scripts, and abstract extension classes (PVT, relative permeability, grid, well control); `tests/test_docs.py` checks the rule. The Sphinx HTML documentation is built from these docstrings and includes the README; the prototype and examples are excluded (user decisions 2026-10-17, FEAT-031).
 
-### Комментарии в коде
+### Code Comments
 
-Комментарии нужны и полезны. Не удаляй существующие комментарии без причины. Пиши комментарии в следующих случаях:
+Comments are needed and useful. Do not remove existing comments without a reason. Write comments for:
 
-- **Физический смысл:** что вычисляет формула, к какому уравнению относится, какие единицы.
-- **Почему так:** неочевидные решения, ограничения, workaround-ы.
-- **Структура:** разделение логических блоков (`# ── Внутренние грани ──`, `# ── Забой ──`).
-- **Тесты:** что именно проверяется, какие физические условия заданы, какой результат ожидается и почему. Тест без комментария через месяц непонятен.
-- **Конвенция знаков:** при вычислении потоков всегда указывать, какой знак ожидается и почему.
-- **Upstream-логика:** какая ячейка выбирается и при каком условии.
+- **Physical meaning:** what a formula computes, which equation it refers to, and units.
+- **Why:** non-obvious decisions, constraints and workarounds.
+- **Structure:** separating logical blocks (`# ── Внутренние грани ──`, `# ── Забой ──`).
+- **Tests:** what exactly is checked, the physical conditions, the expected result and why. A test without a comment is unclear a month later.
+- **Sign convention:** whenever computing fluxes, state the expected sign and why.
+- **Upstream logic:** which cell is selected and under what condition.
 
-Не пиши комментарии, которые дублируют код: `x = x + 1  # увеличить x на 1`.
+Do not write comments that duplicate code: `x = x + 1  # увеличить x на 1`.
 
-## Коммиты
+## Commits
 
-Пользователь коммитит сам. Никогда не создавай коммиты без явной просьбы. Не используй `git add`, `git commit`, `git push` без прямого указания.
-Исключения: `/implement` и `/merge` коммитят автоматически (это часть их контракта):
-- `/implement` – сначала коммитит в базовую ветку план и материалы задачи, подготовленные до реализации; затем работает в отдельном worktree `.worktrees/<id>` и коммитит код и vault задачи на её ветке. Новые задачи, обнаруженные по ходу, регистрируются в базовой ветке.
-- `/merge` – запускается по слову пользователя «мерж»: push ветки задачи, `--no-ff` в базовую ветку, удаление worktree (**ветка задачи остаётся**), отметка «влит» в vault, push базовой ветки, закрытие issue. Это единственный случай, когда push делается без отдельной просьбы; `--force` – никогда.
-- `tools/release.py` (FEAT-038) – выпуск: коммиты `release: X.Y.Z` и `release: начало X.Y.(Z+1).dev0` и метка в базовой ветке, один push ветки с меткой, публикация в Releases. Запускает пользователь или Claude по прямой просьбе; `/implement` его не запускает.
+The user makes commits. Never create commits without an explicit request. Do not use `git add`, `git commit` or `git push` without a direct instruction.
+Exceptions: `/implement` and `/merge` commit automatically as part of their contract:
+- `/implement` first commits the plan and task materials prepared before implementation to the base branch; then works in a separate worktree `.worktrees/<id>` and commits code and the task's vault materials on its branch. New tasks found during implementation are registered on the base branch.
+- `/merge` is invoked by the user's word «мерж»: push the task branch, `--no-ff` into the base branch, remove the worktree (**the task branch remains**), mark «влит» in vault, push the base branch and close the issue. This is the only case where push is performed without a separate request; never use `--force`.
+- `tools/release.py` (FEAT-038) performs releases: commits `release: X.Y.Z` and `release: начало X.Y.(Z+1).dev0` and a tag on the base branch, one push of the branch with the tag, publication in Releases. Run by the user or Claude on direct request; `/implement` does not run it.
 
-Если пользователь попросит коммит:
-- Формат: `<тип>: <краткое описание>`
-- Типы: `feat`, `fix`, `refactor`, `test`, `docs`, `vault`, `release` (только коммиты `tools/release.py`)
-- В сообщениях коммитов не упоминай себя (без "Co-Authored-By", без "Claude")
-- Vault-изменения – отдельным коммитом от кода
-- Stage по имени файла, не `git add .` или `git add -A`
-- Не пропускай хуки (`--no-verify`) без явной просьбы
-- Рабочие ветки стартуют от **базовой ветки своего направления** в отдельном worktree `.worktrees/<id>` и мёржатся обратно в неё (`--no-ff`, `/merge`); ветки после влития не удаляются
+If the user asks for a commit:
+- Format: `<тип>: <краткое описание>`
+- Types: `feat`, `fix`, `refactor`, `test`, `docs`, `vault`, `release` (only commits by `tools/release.py`)
+- Do not mention yourself in commit messages (no "Co-Authored-By", no "Claude")
+- Commit vault changes separately from code
+- Stage by filename, not `git add .` or `git add -A`
+- Do not bypass hooks (`--no-verify`) without an explicit request
+- Task branches start from **the base branch of their workstream** in a separate worktree `.worktrees/<id>` and merge back into it (`--no-ff`, `/merge`); branches are not deleted after merging
 
-### Базовые ветки
+### Base Branches
 
-Ветки `main` в репозитории нет. Базовая ветка зависит от направления работы:
+The repository has no `main` branch. The base branch depends on the workstream:
 
-| Направление работы | Базовая ветка |
+| Workstream | Base branch |
 |---|---|
-| `numerical_solver/` – PDE-солвер (текущая разработка) | `numerical_scheme/implementation` |
-| `method_of_moments/` – метод моментов (завершён) | `master` |
-| Только vault / LaTeX без кода | `numerical_scheme/implementation` |
+| `numerical_solver/` – PDE solver (current development) | `numerical_scheme/implementation` |
+| `method_of_moments/` – method of moments (completed) | `master` |
+| Vault / LaTeX only, no code | `numerical_scheme/implementation` |
 
-⚠️ **`master` не содержит каталога `numerical_solver/`.** Ветка `numerical_scheme/implementation` опережает `master` на десятки коммитов и содержит всю разработку солвера. Ветвление задачи солвера от `master` даст дерево без библиотеки.
+⚠️ **`master` does not contain `numerical_solver/`.** `numerical_scheme/implementation` is dozens of commits ahead of `master` and contains all solver development. Branching a solver task from `master` produces a tree without the library.
 
-Проверка перед созданием ветки:
+Check before creating a branch:
 ```powershell
 git ls-tree <кандидат> --name-only | Select-String numerical_solver
 ```
 
-## Что не коммитить
+## What Not to Commit
 
-Эти файлы – только локально, не в git:
+These files are local only, not in git:
 
 - `.venv/`, `__pycache__/`, `*.py[cod]`, `*.egg-info/`
 - `.pytest_cache/`, `.ruff_cache/`, `htmlcov/`, `*.coverage`
 - `build/`, `dist/`
 - `method_of_moments/results/*.csv`, `method_of_moments/results/*.png`
-- выходы проб в `vault/issues/`: истории `*.npz`, графики `*.png`, `*.emf`, `*.svg` (тексты issue и скрипты проб – в git)
+- Probe outputs in `vault/issues/`: histories `*.npz`, plots `*.png`, `*.emf`, `*.svg` (issue texts and probe scripts are in git)
 - `*.aux`, `*.log`, `*.synctex.gz`, `*.fls`, `*.fdb_latexmk`
 - `*.pdf`, `*.djvu`, `*.doc`, `*.docx`
 
-## Литература
+## Literature
 
-Доступные источники в `Refs/`:
-- Каневская – мат. моделирование пластовых систем
-- Баснеев – подземная гидромеханика
-- Гиматудинов – физика нефтяного и газового пласта
-- Шарафутдинов, Канафин, Хабиров (2019) – численное исследование температурного поля в скважине с многопластовой системой при движении газированной нефти (ПМТФ, т. 60, №5)
-- Мирзаджанзаде – основы технологии добычи газа
-- Мускат – течение однородных жидкостей в пористых средах
+Available sources in `Refs/`:
+- Каневская – mathematical modeling of reservoir systems
+- Баснеев – underground hydromechanics
+- Гиматудинов – physics of oil and gas reservoirs
+- Шарафутдинов, Канафин, Хабиров (2019) – numerical study of the temperature field in a well with a multilayer system during flow of gas-bearing oil (ПМТФ, vol. 60, no. 5)
+- Мирзаджанзаде – fundamentals of gas production technology
+- Мускат – flow of homogeneous fluids in porous media
 - OPM Flow Reference Manual 2025-10
 - Konieczek 1990 (SPE 20722) – Gas Coning, Critical Rate
-- Mjaavatten et al. 2008 (SPE 102390) – GORM для нефтяной оторочки
+- Mjaavatten et al. 2008 (SPE 102390) – GORM for an oil rim
 
-При обсуждении физики и математики ссылайся на конкретные источники.
+When discussing physics and mathematics, cite specific sources.
 
 ## Vault (Obsidian)
 
-Структурированная база знаний проекта.
+Structured project knowledge base.
 
 ```
 vault/
 ├── 00-home/
-│   └── index.md                    # Навигационный хаб – ссылки на все разделы
+│   └── index.md                    # Navigation hub – links to all sections
 ├── knowledge/
-│   ├── literature/                 # ~70 заметок: расширенные обзоры + краткие из контекста цитирования
-│   │   ├── index-literature.md     # Тематический индекс (6 разделов + расширенные обзоры)
-│   │   ├── cited-references.md     # ~60 записей – алфавитный индекс кратких заметок
-│   │   └── Автор Год – тема.md     # Заметки (расширенные и краткие)
-│   ├── science/                    # Физика, модели, формулы
-│   ├── decisions/                  # Решения с обоснованием
-│   ├── debugging/                  # Расследования багов в коде
-│   ├── validation/                 # Верификационные кейсы (результаты VAL-*)
-│   └── numerics/                   # Численные заметки (жёсткость ODE, замораживание PVT, ...)
-├── plans/                          # Детальные планы из /plan-* команд
-├── roadmap/                        # Реестры задач (BUG/DEBT/FEAT/VAL)
+│   ├── literature/                 # ~70 notes: extended reviews + brief citation-context notes
+│   │   ├── index-literature.md     # Topic index (6 sections + extended reviews)
+│   │   ├── cited-references.md     # ~60 entries – alphabetical index of brief notes
+│   │   └── Автор Год – тема.md     # Notes (extended and brief)
+│   ├── science/                    # Physics, models, formulas
+│   ├── decisions/                  # Decisions with rationale
+│   ├── debugging/                  # Code bug investigations
+│   ├── validation/                 # Verification cases (VAL-* results)
+│   └── numerics/                   # Numerical notes (ODE stiffness, frozen PVT, ...)
+├── plans/                          # Detailed plans from /plan-* commands
+├── roadmap/                        # Task registries (BUG/DEBT/FEAT/VAL)
 │   ├── известные баги и технический долг.md
-│   ├── планируемые фичи.md         # FEAT-001..008 – дорожная карта реализации
+│   ├── планируемые фичи.md         # FEAT-001..008 – implementation roadmap
 │   └── валидационные кейсы.md       # VAL-001..003
-├── inbox/                          # Необработанные мысли
+├── inbox/                          # Unprocessed ideas
 ├── ref_spe202436.md                # (legacy)
 └── ref_moments_method.md           # (legacy)
 ```
 
-### Правила именования заметок
+### Note Naming
 
-Название = утверждение, не категория: `эффект JT доминирует при разгазировании в ПЗП.md`, не `температура.md`.
+A title is an assertion, not a category: `эффект JT доминирует при разгазировании в ПЗП.md`, not `температура.md`.
 
-### Команды
+### Commands
 
-**Литература:**
+**Literature:**
 
-| Команда | Назначение |
+| Command | Purpose |
 |---|---|
-| `/review-paper <файл>` | Обзор PDF статьи → расширенная заметка + краткие для цитируемых работ + индексы |
-| `/review-after [автор год]` | Пост-обработка: полнота заметки, перекрёстные ссылки, покрытие библиографии |
-| `/review-book <файл> [глава N]` | Обзор книги/монографии по главам (книги большие – читать по частям) |
-| `/literature-synthesis [тема]` | Синтез обзоров → сводная таблица, пробелы, LaTeX-фрагмент для Related Work |
-| `/card <описание>` | Быстрая карточка: факт, решение, наблюдение → в соответствующую папку vault |
+| `/review-paper <файл>` | Review a paper PDF → extended note + brief notes for cited works + indexes |
+| `/review-after [автор год]` | Post-processing: note completeness, cross-references, bibliography coverage |
+| `/review-book <файл> [глава N]` | Review a book/monograph by chapter (books are large – read in parts) |
+| `/literature-synthesis [тема]` | Synthesize reviews → summary table, gaps, LaTeX fragment for Related Work |
+| `/card <описание>` | Quick card: fact, decision, observation → appropriate vault folder |
 
-**Разработка:**
+**Development:**
 
-| Команда | Назначение |
+| Command | Purpose |
 |---|---|
-| `/issue <описание>` | Создание задачи (BUG/DEBT/FEAT/VAL) → GitHub issue + vault + комментарий |
-| `/plan-fix <BUG-NNN>` | План исправления бага: воспроизведение, причина, шаги, тесты |
-| `/plan-improve <DEBT-NNN>` | План рефакторинга / миграции / улучшения |
-| `/plan-feature <FEAT-NNN>` | План фичи: формулы из .tex, модуль, зависимости, тесты |
-| `/plan-validate <VAL-NNN>` | План верификации: эталон, сценарий, tolerance, метрики |
-| `/audit-plan <ID>` | Аудит плана по 7 измерениям перед /implement |
-| `/implement <ID>` | Реализация плана в worktree: коммит материалов в базу → baseline → код + тесты → проверка → vault |
-| `/merge <ID>` | Влитие по слову «мерж»: push ветки → `--no-ff` в базу → проверка итога → удаление worktree (ветка остаётся) → «влит» в vault → push базы → закрытие issue |
-| `/run [config]` | Запуск решателя, визуализация, физическая проверка |
+| `/issue <описание>` | Create task (BUG/DEBT/FEAT/VAL) → GitHub issue + vault + comment |
+| `/plan-fix <BUG-NNN>` | Bug fix plan: reproduction, cause, steps, tests |
+| `/plan-improve <DEBT-NNN>` | Refactoring / migration / improvement plan |
+| `/plan-feature <FEAT-NNN>` | Feature plan: formulas from .tex, module, dependencies, tests |
+| `/plan-validate <VAL-NNN>` | Verification plan: reference, scenario, tolerance, metrics |
+| `/audit-plan <ID>` | Audit a plan along 7 dimensions before /implement |
+| `/implement <ID>` | Implement a plan in a worktree: commit materials to base → baseline → code + tests → checks → vault |
+| `/merge <ID>` | Merge upon «мерж»: push task branch → `--no-ff` into base → check result → remove worktree (branch remains) → «влит» in vault → push base → close issue |
+| `/run [config]` | Run solver, visualize and check physics |
 
-### Реестры задач (vault/roadmap/)
+### Task Registries (vault/roadmap/)
 
-Каждая задача **сначала регистрируется** в локальном vault-реестре. Реестр – единственный источник правды о списке задач проекта. GitHub issue создаётся позже командой `/issue` и ссылается на запись в реестре.
+Each task is **first registered** in the local vault registry. The registry is the sole source of truth for the project task list. A GitHub issue is created later by `/issue` and links to the registry entry.
 
-**Три файла реестра** (разделение по категориям):
+**Three registry files** (separated by category):
 
-| Файл | Типы задач | Шаблон ID |
+| File | Task types | ID pattern |
 |---|---|---|
 | `vault/roadmap/известные баги и технический долг.md` | BUG, DEBT | `BUG-NNN`, `DEBT-NNN` |
 | `vault/roadmap/планируемые фичи.md` | FEAT | `FEAT-NNN` |
 | `vault/roadmap/валидационные кейсы.md` | VAL | `VAL-NNN` |
 
-**Как зарегистрировать задачу:**
+**How to register a task:**
 
-1. Определи тип: BUG (дефект), DEBT (техдолг/рефакторинг), FEAT (новая функциональность), VAL (верификационный кейс).
-2. Открой соответствующий файл реестра.
-3. Найди максимальный номер существующих записей (grep `### <PREFIX>-`), присвой следующий.
-4. Добавь секцию `### <ID>: Краткое описание` по шаблону из заголовка файла (секция «Формат записи»).
-5. Статус новой записи: `🔴 ОТКРЫТ`.
+1. Determine the type: BUG (defect), DEBT (technical debt/refactoring), FEAT (new functionality), VAL (verification case).
+2. Open the corresponding registry file.
+3. Find the maximum existing entry number (grep `### <PREFIX>-`) and assign the next one.
+4. Add section `### <ID>: Краткое описание` using the template in the file header (section «Формат записи»).
+5. Set the new entry's status to `🔴 ОТКРЫТ`.
 
-**Что обязательно заполнить при регистрации** (минимум):
-- **BUG:** симптом, файл, воспроизведение
-- **DEBT:** текущее состояние, мотивация, затронутые модули
-- **FEAT:** описание, формулы (ссылки на уравнения из `.tex`), модуль
-- **VAL:** эталон, сценарий, метрика
+**Required fields at registration** (minimum):
+- **BUG:** symptom, file, reproduction
+- **DEBT:** current state, motivation, affected modules
+- **FEAT:** description, formulas (references to equations in `.tex`), module
+- **VAL:** reference, scenario, metric
 
-Поля **GitHub:**, **Ветка:**, **План:** – заполняются позже соответствующими командами (`/issue`, `/plan-*`).
+Fields **GitHub:**, **Ветка:**, **План:** are filled later by the corresponding commands (`/issue`, `/plan-*`).
 
-Нумерация сквозная внутри каждого префикса. BUG и DEBT живут в одном файле, но нумеруются независимо.
+Numbering is continuous within each prefix. BUG and DEBT share a file but are numbered independently.
 
-### Порядок работы над задачей
+### Task Workflow
 
-Обязательная последовательность. Не пропускай шаги, не перескакивай.
+This sequence is mandatory. Do not skip steps or jump ahead.
 
-0. **Регистрация** – записать задачу в vault-реестр (см. «Реестры задач» выше). Без записи в реестре нельзя переходить к `/issue`.
-1. **`/issue <ID>`** – создать GitHub issue по записи в реестре. `/issue` также принимает свободный текст – тогда регистрация и создание issue происходят за один вызов.
-2. **`/plan-*`** – детальный план (`/plan-feature`, `/plan-fix`, `/plan-improve`, `/plan-validate`).
-3. **`/audit-plan`** – аудит плана перед реализацией.
-4. **`/implement`** – реализация по плану.
-5. **`/run`** – запуск и проверка.
-6. **`/merge <ID>`** – по слову пользователя «мерж»: push ветки задачи, влитие в базовую ветку, удаление worktree, push базовой ветки, закрытие issue.
+0. **Registration** – record the task in the vault registry (see Task Registries above). Do not proceed to `/issue` without a registry entry.
+1. **`/issue <ID>`** – create the GitHub issue from the registry entry. `/issue` also accepts free text, in which case registration and issue creation happen in one invocation.
+2. **`/plan-*`** – detailed plan (`/plan-feature`, `/plan-fix`, `/plan-improve`, `/plan-validate`).
+3. **`/audit-plan`** – audit the plan before implementation.
+4. **`/implement`** – implement according to the plan.
+5. **`/run`** – run and check.
+6. **`/merge <ID>`** – upon the user's word «мерж»: push task branch, merge into base, remove worktree, push base, close issue.
 
-Когда пользователь спрашивает «что дальше» – определи, на каком шаге остановилась задача, и предложи следующий шаг. Если для задачи нет записи в реестре – предложи зарегистрировать. Если запись есть, но нет GitHub issue – предложи `/issue`.
+When the user asks «что дальше», determine the step where the task stopped and propose the next one. If the task is not registered, propose registration. If it is registered but has no GitHub issue, propose `/issue`.
 
-### Текущий план реализации
+### Current Implementation Plan
 
-Проект перешёл от метода моментов (ODE) к численному решателю (PDE на радиальной сетке). Актуальный план с блоками и сроками: `vault/plans/numerical-solver-plan.md`. При работе над задачами сверяйся с этим планом.
+The project moved from the method of moments (ODE) to a numerical solver (PDE on a radial grid). The current plan with blocks and schedule: `vault/plans/numerical-solver-plan.md`. Consult this plan when working on tasks.
 
-### Форматы заметок
+### Note Formats
 
-Два типа литературных заметок:
-- **Расширенная** (из PDF): frontmatter + Задача + Метод + Результаты + Замечания + Значение для проекта + Цитируется в + Ссылается на
-- **Краткая** (из контекста цитирования): warning-плашка + аннотация 2–3 предложения
+Two types of literature notes:
+- **Extended** (from PDF): frontmatter + Задача + Метод + Результаты + Замечания + Значение для проекта + Цитируется в + Ссылается на
+- **Brief** (from citation context): warning callout + 2–3 sentence abstract
 
-Категории цитируемых работ: **A** (методологическая), **B** (прикладная), **C** (обзорная/справочная).
+Categories of cited works: **A** (methodological), **B** (applied), **C** (review/reference).
 
-**Повышение из краткой в расширенную:** если при `/review-paper` обнаружена краткая заметка на ту же работу – перезаписать расширенной версией, обновить `status`, перенести из `cited-references.md` в `index-literature.md`.
+**Promoting a brief note to an extended note:** if `/review-paper` finds a brief note for the same work, replace it with the extended version, update `status`, and move it from `cited-references.md` to `index-literature.md`.
 
-## Когда непонятно
+## When Unclear
 
-1. Проверь структуру `simplefied_approaches/`, `GORM_2/`, `method_of_moments_isotermal/`, `method_of_moments/` – там текущие варианты моделей.
-2. Проверь `Постановка/` – там отчёты и постановки.
-3. Проверь `vault/knowledge/` – там накопленные знания.
-4. Спроси пользователя – не выдумывай ограничения молча.
+1. Check `simplefied_approaches/`, `GORM_2/`, `method_of_moments_isotermal/`, `method_of_moments/` – they contain current model variants.
+2. Check `Постановка/` – reports and problem formulations are there.
+3. Check `vault/knowledge/` – accumulated knowledge is there.
+4. Ask the user – do not silently invent constraints.

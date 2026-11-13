@@ -7,7 +7,8 @@ issue: DEBT-089
 github: 146
 branch: refactor/debt-089/release-with-handover
 status: реализован
-worktree: .worktrees/debt-089
+worktree: .worktrees/debt-089; удалён после влития
+merged: e000a3b (2026-11-03)
 audit:
   date: 2026-10-27
   round: 1

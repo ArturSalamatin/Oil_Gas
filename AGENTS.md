@@ -1,10 +1,14 @@
 # Instructions for AI assistants
 
-Use project skills for the named workflows. Check whether the requested skill is available. Do not assume an unavailable skill was executed. Subagents are forbidden in this project.
+Use project skills for the named workflows. Do not assume a skill was executed without performing its steps. Subagents are forbidden in this project.
 
 # Oil_Gas Project Rules
 
 This file is the contract for work in the project. Read it before touching files. These rules override default behavior.
+
+## Current priority
+
+Transfer all project commands into skills under `.agents/skills/`, following `vault/plans/перенос команд в навыки и сохранение контекста задач.md`. The user is transferring commands sequentially. Treat the commands as available skills for this work. `.claude/commands/` and `CLAUDE.md` remain archival. Do not modify the commands or substantially revise `CLAUDE.md` as part of this migration.
 
 ## Project Description
 
@@ -258,7 +262,8 @@ The vault registry is the source of truth for tasks. Read `.agents/project/vault
 
 | Command | Purpose |
 |---|---|
-| `/issue <описание>` | Create task (BUG/DEBT/FEAT/VAL) → GitHub issue + vault + comment |
+| `/draft <описание>` | Register a task locally in vault and preserve its discussion context without a GitHub issue |
+| `/issue <ID>` | Publish a registered task as a GitHub issue and update vault |
 | `/plan-fix <BUG-NNN>` | Bug fix plan: reproduction, cause, steps, tests |
 | `/plan-improve <DEBT-NNN>` | Refactoring / migration / improvement plan |
 | `/plan-feature <FEAT-NNN>` | Feature plan: formulas from .tex, module, dependencies, tests |
@@ -272,8 +277,8 @@ The vault registry is the source of truth for tasks. Read `.agents/project/vault
 
 This sequence is mandatory. Do not skip steps or jump ahead.
 
-0. **Registration** – record the task in the vault registry (see Task Registries above). Do not proceed to `/issue` without a registry entry.
-1. **`/issue <ID>`** – create the GitHub issue from the registry entry. `/issue` also accepts free text, in which case registration and issue creation happen in one invocation.
+0. **`/draft <описание>`** – register the task in the vault registry and preserve its context locally. Do not proceed to `/issue` without a registry entry.
+1. **`/issue <ID>`** – create the GitHub issue from the registered task. Free text alone does not initiate publication.
 2. **`/plan-*`** – detailed plan (`/plan-feature`, `/plan-fix`, `/plan-improve`, `/plan-validate`).
 3. **`/audit-plan`** – audit the plan before implementation.
 4. **`/implement`** – implement according to the plan.

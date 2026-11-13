@@ -32,7 +32,7 @@ A title is an assertion, not a category: `эффект JT доминирует �
 
 ### Task Registries (vault/roadmap/)
 
-Each task is **first registered** in the local vault registry. The registry is the sole source of truth for the project task list. A GitHub issue is created later by `/issue` and links to the registry entry.
+Each task is **first registered** locally with `/draft` in the vault registry, with its discussion context saved in `vault/issues/<id-lowercase>/00-draft.md`. The registry is the sole source of truth for the project task list. A GitHub issue is created later by a separate `/issue <ID>` request and links to the registry entry.
 
 **Three registry files** (separated by category):
 

@@ -70,7 +70,7 @@ ls vault/plans/<id-lowercase>*
 
 1. **Эталонные формулы:** найди в `moments_method.tex`, `Refs/`, vault/knowledge/science/
 2. **Предельные случаи:** какие упрощения дают аналитическое решение?
-3. **Нотация:** проверь соответствие с CLAUDE.md (5 таблиц символов)
+3. **Нотация:** проверь соответствие с AGENTS.md (5 таблиц символов)
 4. **Литература:** обзоры статей по теме валидации
 
 ### 1.6. Исследовать код
@@ -327,7 +327,7 @@ status: готов к реализации
 ### 5.2. Обновить связи
 
 1. В реестре: `- **План:** [[<имя плана>]]`
-2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет CLAUDE.md, раздел «Файлы и код»):
+2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Файлы и код»):
    ```powershell
    gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/03-comment-plan.md
    ```

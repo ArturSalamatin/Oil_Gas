@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Механические проверки по разделу «Стиль научного текста» (CLAUDE.md).
+"""Механические проверки по разделу «Стиль научного текста» (AGENTS.md).
 
 Предложения: точка с запятой, два «что» в предложении, длина предложения,
 частота связок, связка внутри предложения. Строение текста (.tex): списки
 enumerate/itemize, заголовки абзацев (\\paragraph, жирное начало абзаца),
-подразделы короче нормы. Слова: настоящее время пассива («Время изложения»),
+подразделы короче нормы. Подписи к рисункам и таблицам проверяются отдельно.
+Слова: настоящее время пассива («Время изложения»),
 наращения при числах и десятичная запятая («Числа»), «меняет» («Регистр»),
 «например» без запятой, длинное тире и `---` в .tex («Тире»), номер страницы
 в ссылке – `\\citet[p.~5]`, «(Connolly, 1990, с. 97)» («Страницы в ссылках»).
@@ -45,6 +46,10 @@ WORDS = [
     (re.compile(r'\b\d+-(?:ти|х|и|ми)\b'), 'наращение при числе'),
     (re.compile(r'(?<![а-яё])меня(?:ет|ется|ют|ются)', re.I), '«меняет» → «изменяет»'),
     (re.compile(r'(?<![а-яё])например(?=\s)', re.I), '«например» без запятой'),
+    (re.compile(r'(?<![а-яё])(?:львин[а-яё]*\s+дол[а-яё]*|скромн[а-яё]*|впечатля[а-яё]*|налицо|увы)(?![а-яё])', re.I),
+     'оценочное или разговорное слово'),
+    (re.compile(r'(?<![а-яё])игра(?:ет|ют|ть|вш[а-яё]*|ющ[а-яё]*)\s+(?:важную|ключевую|существенную|решающую|определяющую|значительную|большую|главную|первостепенную)\s+роль', re.I),
+     'пустой оборот'),
     # «Тире»: без исключений. LaTeX-запись --- проверяется отдельно, только в .tex.
     (re.compile('—'), 'длинное тире → среднее (–)'),
     # «Числа»: норма – точка. Если журнал решил ставить запятую, находки этой проверки – норма.
@@ -82,8 +87,12 @@ def clean_tex(text):
 
 
 def units_tex(path):
-    """Абзацы .tex (разделены пустой строкой) с номером первой строки."""
-    lines = strip_comments(io.open(path, encoding='utf-8').read())
+    """Абзацы и подписи в окружениях рисунков и таблиц с номером первой строки."""
+    text = '\n'.join(strip_comments(io.open(path, encoding='utf-8').read()))
+    env_re = re.compile(r'\\begin\{(figure|table)\*?\}.*?\\end\{\1\*?\}', re.S)
+    # Сохраняем переносы строк, чтобы номера абзацев оставались прежними.
+    body = env_re.sub(lambda m: re.sub(r'[^\n]', ' ', m.group()), text)
+    lines = body.split('\n')
     start, buf = None, []
     for i, l in enumerate(lines + [''], 1):
         if l.strip():
@@ -93,6 +102,14 @@ def units_tex(path):
         elif buf:
             yield start, clean_tex(' '.join(buf))
             start, buf = None, []
+
+    # Окружения рисунков удаляются из абзацев, поэтому подписи проверяем отдельно.
+    for env in env_re.finditer(text):
+        for caption in re.finditer(r'\\caption\s*(?:\[[^\]]*\])?\s*\{', env.group()):
+            start = env.start() + caption.end() - 1
+            end = skip_braced(text, start)
+            if end <= env.end() and text[end - 1] == '}':
+                yield text.count('\n', 0, start) + 1, clean_tex(text[start + 1:end - 1])
 
 
 def units_md(path):
@@ -116,6 +133,13 @@ def pages(path, is_tex):
         for rx in PAGE_RE:
             for m in rx.finditer(l):
                 yield '%s:%d' % (path, i), l[max(0, m.start() - 20):m.end() + 20]
+
+
+def tex_decimal_commas(path):
+    """Десятичные запятые с группой {,} в исходном LaTeX."""
+    for i, line in enumerate(strip_comments(io.open(path, encoding='utf-8').read()), 1):
+        for match in re.finditer(r'(?<!\d)\d+\{,\}\d+', line):
+            yield '%s:%d' % (path, i), line[max(0, match.start() - 20):match.end() + 20]
 
 
 def sentences(text):
@@ -180,6 +204,8 @@ def main(paths):
         is_tex = path.endswith('.tex')
         if is_tex:
             out.extend(structure_tex(path))
+            for where, s in tex_decimal_commas(path):
+                out.append((where, 'десятичная запятая {,}', s))
         for where, s in pages(path, is_tex):
             out.append((where, 'страница в ссылке', s))
         units =units_tex(path) if is_tex else units_md(path)

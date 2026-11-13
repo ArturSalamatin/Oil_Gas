@@ -81,7 +81,7 @@ ls vault/plans/<id-lowercase>*
 ### 1.5. Загрузить физику/математику
 
 1. **Формулы:** прочитай раздел `moments_method.tex`, связанный с фичей
-2. **Нотация:** проверь таблицы символов в CLAUDE.md (5 таблиц: геометрия, давление, газ, нефть, тепло)
+2. **Нотация:** проверь таблицы символов в AGENTS.md (5 таблиц: геометрия, давление, газ, нефть, тепло)
 3. **Иерархия моделей:** прочитай `simplefied_approaches/cooling_models.tex` – к какой модели М.N относится фича?
 4. **Ссылки:** vault/knowledge/science/ – связанные научные заметки
 5. **Литература:** vault/knowledge/literature/ – обзоры статей по теме
@@ -210,7 +210,7 @@ ls vault/plans/<id-lowercase>*
 1. **Подготовка** – ветка, ТЗ
 2. **Реализация**
 3. **Тесты**
-4. **Документация** – vault, CLAUDE.md (если меняется workflow)
+4. **Документация** – vault, AGENTS.md (если меняется workflow)
 
 ### 3.2. Структура шага
 
@@ -316,7 +316,7 @@ ls vault/plans/<id-lowercase>*
 ### Раунд 2: Корректность
 
 - [ ] Формулы в плане совпадают с moments_method.tex
-- [ ] Обозначения из нотации CLAUDE.md
+- [ ] Обозначения из нотации AGENTS.md
 - [ ] Размерности корректны
 - [ ] Функции/классы, на которые ссылается план, существуют (grep)
 - [ ] Import-пути верные
@@ -357,7 +357,7 @@ status: готов к реализации
 ### 5.2. Обновить связи
 
 1. В реестре фичей: `- **План:** [[<имя плана>]]`
-2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет CLAUDE.md, раздел «Файлы и код»):
+2. Если есть GitHub issue – комментарий через `--body-file`, файл в `vault/issues/<id-lowercase>/03-comment-plan.md` (папка проекта, не scratchpad – запрет AGENTS.md, раздел «Файлы и код»):
    ```powershell
    gh issue comment <N> --repo ArturSalamatin/Oil_Gas --body-file vault/issues/<id-lowercase>/03-comment-plan.md
    ```

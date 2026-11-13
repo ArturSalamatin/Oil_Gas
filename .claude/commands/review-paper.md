@@ -39,8 +39,8 @@
 - Метод моментов Баренблатта     → method_of_moments/moments_method.tex
 - Модели охлаждения ПЗП (М.1–М.6) → simplefied_approaches/cooling_models.tex
 - Модель GORM                    → Refs/GORM/, simplefied_approaches/cooling_models.tex
-- PVT-свойства Black Oil         → CLAUDE.md (нотация), method_of_moments/two_phase_energy.tex
-- Температурные эффекты           → CLAUDE.md (нотация: JT, дегазация, энтальпия)
+- PVT-свойства Black Oil         → AGENTS.md (нотация), method_of_moments/two_phase_energy.tex
+- Температурные эффекты           → AGENTS.md (нотация: JT, дегазация, энтальпия)
 - Расширенные обзоры литературы   → vault/knowledge/literature/index-literature.md
 ```
 
@@ -183,6 +183,6 @@ source: контекст цитирования
 - Язык: русский.
 - Критический анализ, не пересказ абстракта.
 - Конкретные формулы, номера уравнений, таблиц, рисунков из статьи.
-- Расхождения в нотации с проектом (см. CLAUDE.md, секция «Обозначения и нотация») – отметить.
+- Расхождения в нотации с проектом (см. AGENTS.md, секция «Обозначения и нотация») – отметить.
 - Не хвалить – указывать на ограничения.
 - Связь с моделями М.1–М.6 из simplefied_approaches/cooling_models.tex – указывать, если релевантно.

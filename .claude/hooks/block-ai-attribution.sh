@@ -1,7 +1,7 @@
 #!/bin/bash
 # PreToolUse hook: блокировать git commit / gh pr с упоминанием ИИ в сообщении.
 #
-# CLAUDE.md запрещает упоминать Claude в сообщениях коммитов. Основная защита –
+# AGENTS.md запрещает упоминать Claude в сообщениях коммитов. Основная защита –
 # "attribution": {"commit": "", "pr": ""} в ~/.claude/settings.json: она не даёт
 # трейлеру появиться вовсе. Этот хук – страховка на случай, если строка попадёт
 # в сообщение другим путём (heredoc, -m, шаблон, ручной ввод).
@@ -36,7 +36,7 @@ fi
 # `.*`, а не `[^\n]*`: в POSIX ERE `[^\n]` – «не `\` и не `n`», и подпись
 # с `noreply@anthropic.com` проходила (буква `n` между двоеточием и именем).
 if printf '%s' "$COMMAND" | grep -qiE 'co-authored-by:.*(claude|anthropic)|generated with.*claude|🤖'; then
-  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"В сообщениях коммитов и PR нельзя упоминать ИИ (CLAUDE.md). Убери строку Co-Authored-By / Generated with Claude и повтори."}}'
+  echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"В сообщениях коммитов и PR нельзя упоминать ИИ (AGENTS.md). Убери строку Co-Authored-By / Generated with Claude и повтори."}}'
   exit 0
 fi
 

@@ -1,8 +1,6 @@
-# Instructions for Codex
+# Instructions for AI assistants
 
-This file contains the current project rules. Before starting work, read `AGENTS.md` in full from disk, including sections that may not have been loaded automatically into the context.
-
-References below to Claude, Agent, Workflow, Read, Edit, offset and limit belong to the original environment. In Codex, follow their intent using available tools; the delegation ban also applies to Codex subagents. Commands such as `/issue`, `/plan-*`, `/implement` and `/merge` describe project processes, but do not themselves install Codex commands or skills. When invoked, check whether the corresponding skill is available. If it is not, use the applicable instruction in `.claude/commands/`, accounting for the capabilities and limits of the current environment. Do not assume that actions have been performed automatically.
+Use project skills for the named workflows. Check whether the requested skill is available. Do not assume an unavailable skill was executed. Subagents are forbidden in this project.
 
 # Oil_Gas Project Rules
 
@@ -18,103 +16,7 @@ The project develops a theoretical mathematical model of the near-wellbore regio
 - **Language:** chat, plans and GitHub posts may be in English. Customer reports and model formulations must be in Russian (LaTeX). Other project texts may be in English.
 - **Code:** Python 3.10+ (numpy, scipy, matplotlib).
 
-## Project Structure
-
-| Folder / file | Contents |
-|---|---|
-| `simplefied_approaches/cooling_models.tex` | Main document: hierarchy of cooling models (М.1–М.6), from algebraic estimates to PDEs (GORM + temperature) |
-| `GORM_2/trapped_gas.tex` | Unconfined filtration with a trapped gas cap (Boussinesq equation + nonlocal gas pressure closure) |
-| `method_of_moments_isotermal/integral_relations_method.tex` | Barenblatt integral relations method for two-phase Black Oil filtration |
-| `method_of_moments/two_phase_energy.tex` | Two-phase filtration with energy equation – current working formulation |
-| `method_of_moments/moments_method.tex` | Method of moments – formulas implemented in code |
-| `method_of_moments/src/` | Python solver code (see the Python section) |
-| `method_of_moments/tests/` | pytest tests |
-| `method_of_moments/configs/` | JSON problem configurations (`baseline.json`, etc.) |
-| `method_of_moments/results/` | Output data (.csv, .png) |
-| `Постановка/` | Reports and problem formulations (.docx, .pdf) |
-| `Refs/` | Literature: Kanevskaya, Basniev, Sharafutdinov, Muskat, OPM Flow Manual and others |
-| `Refs/GORM/` | Papers on GORM (Konieczek 1990, Mjaavatten 2008) |
-| `black_oil_gas_mass.html` | Interactive note: mass of gas released in the Black Oil model |
-| `tools/release.py` | Solver release with both deliverables: version numbers, tag, two wheels, example and documentation archives, README and development handover archive in Releases (`tools/handover.py` in step 3, before push); acceptance only with `--acceptance`; sequence in the docstring (FEAT-038, DEBT-089) |
-| `tools/handover.py` | Development handover: snapshot from the release tag, formulation PDF, HTML documentation and archive; called by the release script, or separately for acceptance or rebuilding an existing tag; without a tag uses the latest release; acceptance in an unpacked copy only with `--acceptance`; does not change git (FEAT-031) |
-| `tools/acceptance.py` | Acceptance of a copy in a fresh environment; runs `handover.py --acceptance` separately or through `release.py --acceptance` (no acceptance by default); not delivered to the customer (decision 2026-10-19) |
-
-## Symbols and Notation
-
-This is the common symbol dictionary for all project documents. Follow it when creating new sections and documents.
-
-### Coordinates and Time
-
-| Symbol | Meaning |
-|---|---|
-| $r$ | radial coordinate (distance from well axis), m |
-| $x$ | horizontal coordinate (perpendicular to the well, in GORM), m |
-| $z$ | vertical coordinate (upward from the bottom), m |
-| $t$ | time, s |
-
-### Pressure and Temperature
-
-| Symbol | Meaning |
-|---|---|
-| $p$ | pressure, Pa |
-| $p_b$ | bubble-point pressure |
-| $p_{wf}$ | bottomhole pressure |
-| $p_0$ | initial reservoir pressure; in `numerical_solver/doc/problem_statement.tex` reservoir pressure is $p_{\text{пл}}$, while $p_0$, $T_0$ are values in cell 0 at the well (DEBT-070) |
-| $T$ | temperature, K |
-| $T_{\text{пл}}$ | undisturbed reservoir temperature |
-
-### Phases and Saturations
-
-| Symbol | Meaning |
-|---|---|
-| subscript $o$ | oil (liquid) phase |
-| subscript $g$ | gas phase |
-| subscript ст | standard conditions |
-| $S_o$, $S_g$ | saturations (volume fractions); $S_o + S_g = 1$ |
-| $x_g$ | mass fraction of free gas |
-
-### PVT Properties
-
-| Symbol | Meaning |
-|---|---|
-| $R_s(p,T)$ | gas content, м³ст/м³ст oil |
-| $B_o(p)$ | oil formation volume factor |
-| $B_g(p)$ | gas formation volume factor |
-| $\rho_o$, $\rho_g$ | phase densities at reservoir conditions, kg/m³ |
-| $\mu_o$, $\mu_g$ | phase viscosities, Pa·s |
-| $c_{p,o}$, $c_{p,g}$ | specific heat capacities, J/(kg·K) |
-
-### Porous Medium
-
-| Symbol | Meaning |
-|---|---|
-| $\phi$ | porosity |
-| $k$ | absolute permeability, m² |
-| $k_{ro}$, $k_{rg}$ | relative phase permeabilities |
-| $\lambda_{\text{eff}}$ | effective thermal conductivity (fluid + rock), W/(m·K) |
-| $(\rho c_p)_s$ | volumetric heat capacity of the rock skeleton, J/(m³·K) |
-
-### Thermodynamics
-
-| Symbol | Meaning |
-|---|---|
-| $h_o$, $h_g$ | phase specific enthalpies, J/kg |
-| $h_{\text{mix}}$ | mixture specific enthalpy, J/kg |
-| $L$ | specific heat of degassing (vaporization), J/kg of gas |
-| $\mu_{\text{JT}}$ | Joule–Thomson coefficient, K/Pa |
-| $\alpha$ | thermal expansion coefficient, K⁻¹ |
-
-### Well and Reservoir Geometry
-
-| Symbol | Meaning |
-|---|---|
-| $r_w$ | well radius, m |
-| $r_e$ | outer reservoir boundary radius, m |
-| $h$ | oil layer thickness (in GORM), m |
-| $H$ | reservoir roof height, m |
-| $W$ | drainage area half-width, m |
-
-### Sign Convention (numerical_solver)
+## Sign Convention (numerical_solver)
 
 **The positive direction is away from the well, toward increasing radial coordinate r.**
 
@@ -134,25 +36,13 @@ Mass balance residual: $F_j = \text{accum} + G_{j+1} - G_j$.
 
 Details: `vault/knowledge/decisions/конвенции-знаков.md`, `vault/knowledge/decisions/словарь-код-физика.md`.
 
-## Physical Problem
+## Project references
 
-Processes modeled:
-1. **Oil filtration with dissolved gas** – Darcy's law, relative permeability and PVT properties (Black Oil).
-2. **Degassing** – gas evolves from oil when $P < P_{b}$; gas content $R_s(P,T)$ follows the Standing correlation.
-3. **Heat transfer** – convection, thermal conduction, Joule–Thomson effect and latent heat of degassing.
-4. **Gas cap dynamics** – material balance (0D) or Dupuit approximation (PDE).
+Read these files before the relevant work. Their instructions are part of the project rules:
 
-Model variants in `simplefied_approaches/cooling_models.tex`:
-- М.1: JT estimate (algebraic)
-- М.2: Degassing energy balance (algebraic)
-- М.3: Steady enthalpy balance (nonlinear equation)
-- М.4: Transient enthalpy balance (ODE system)
-- М.5: Spatial problem with prescribed pressure (one PDE for T)
-- М.6: GORM + degassing + temperature (2–3 PDEs)
-
-Additional approaches:
-- Unconfined filtration with trapped gas (GORM_2/)
-- Barenblatt integral relations method (method_of_moments_isotermal/)
+- `.agents/project/overview.md` – before work involving project structure, model variants, the method of moments or the listed literature.
+- `.agents/project/notation.md` – before creating, editing or checking mathematical formulas and notation.
+- `.agents/project/vault.md` – before registering a task or creating or modifying vault notes.
 
 ## Communication Style – Scientific Sparring Partner
 
@@ -166,7 +56,7 @@ Additional approaches:
 
 ## Role
 
-Act as an expert in high-performance computing for mathematical physics, applied mathematics, programming, numerical methods, physics and applied software development. Be skeptical, verify claims and require facts and evidence rather than accepting assertions on trust.
+Apply expertise in high-performance computing, mathematical physics, applied mathematics, numerical methods, physics and software development. Verify claims against evidence.
 
 ## Subagents Forbidden
 
@@ -239,37 +129,6 @@ For any continuous text and substantive chat replies, read the skill's formulati
 
 Method of moments implementation. Code in `method_of_moments/src/`, tests in `method_of_moments/tests/`.
 
-### src/ Structure
-
-```
-src/
-├── pvt/                # Black Oil PVT properties
-│   ├── correlations.py # Rs(p,T), Bo, Bg, μ – Standing and other correlations
-│   └── black_oil.py    # BlackOilFluid: all PVT + relative permeability in one class
-├── profiles/           # Parameterization of p(r), Sg(r), T(r) profiles
-│   ├── pressure.py     # Φ(η), dp/dr, γ(rb) – §4.2 moments_method.tex
-│   ├── saturation.py   # Sg(r) = Sg,w·(1−η)^β – §4.3
-│   └── temperature.py  # Ψ(ζ), ΔTw – §4.4
-├── integrals.py        # I_Φ^(n), I_Ψ^(n), I_S^(n) – §5.4, closed-form formulas
-├── coefficients.py     # A_ij, F_i – §5.1–5.4, ODE matrix and right-hand side
-├── ode_system.py       # Right-hand side for solve_ivp
-├── initial.py          # Initial asymptotics §6: rb(tε), Sg,w^eq
-├── solver.py           # Wrapper: parameters → solution (rb(t), Sg,w(t), ΔTw(t))
-└── main.py             # CLI: JSON config → solution → output
-```
-
-### Running
-
-```powershell
-cd d:\Lessons\Grants\2026\GPN\Oil_Gas\method_of_moments
-.venv\Scripts\python -m pytest tests/ -v          # tests
-.venv\Scripts\python src/main.py configs/baseline.json  # solver
-```
-
-### Dependencies
-
-`pyproject.toml` in `method_of_moments/`. Installation: `pip install -e ".[dev]"`.
-
 ### math vs numpy
 
 Always use `numpy`, never `math`. All code works with arrays (`solve_ivp`, PVT correlations on the grid), and `numpy` covers both scalars and arrays. Use `np.log`, `np.exp`, `np.sqrt`, etc. If `math.*` appears in code or a plan, replace it with `np.*`.
@@ -290,33 +149,9 @@ The correspondence table is maintained in `/plan-feature` plans (section «Св�
 
 ## numerical_solver (PDE Solver)
 
-New library: FVM on a logarithmic radial grid. Formulation: `numerical_solver/doc/problem_statement.tex`.
-
-Code: `numerical_solver/gpn_multiphase_solver/`. Package name: `gpn_multiphase_solver` (pip: `gpn-multiphase-solver`). Completely independent of `method_of_moments/`.
-
-Run from a config: `python -m gpn_multiphase_solver run <config.json>` (or `gpn-solver run …`); results go to `output/` next to the config (FEAT-030). For an Excel workbook use `run <книга.xlsx>`; its converted input is saved in `output/input/`, and the output directory is cleared before the calculation (FEAT-036).
-
-HTML documentation (FEAT-031): `python -m sphinx -W -b html doc/source doc/build/html` from `numerical_solver/`; the main file `doc/build/html/index.html` contains the README, technical description (package and subpackage docstrings) and public API. Public API inventory: `doc/source/api.rst`; `tests/test_docs.py` checks the docstring rule and a warning-free build. After editing `problem_statement.tex` and building the PDF, run `tools/eq_numbers.py` (label-to-number table for HTML). Development installation: `setup.bat`; acceptance of a copy in a fresh environment: `tools/acceptance.py <копия>` from the root (not delivered to the customer and not included in the snapshot); release with both deliverables: `tools/release.py X.Y.Z [--acceptance]` from the repository root (it calls `tools/handover.py` to build the development handover archive); run `tools/handover.py <метка выпуска>` separately for acceptance or to rebuild the archive for an existing tag.
-
-Architectural decisions, module contracts and sign conventions: `vault/knowledge/decisions/`.
-
-Key notes:
-- `архитектура библиотеки numerical_solver.md` – modules, patterns, ABCs
-- `словарь-код-физика.md` – correspondence between code variables and physics
-- `конвенции-знаков.md` – positive direction = away from well (increasing r)
-- `порядок-реализации-модулей.md` – 9 implementation phases
+FVM on a logarithmic radial grid. Formulation: `numerical_solver/doc/problem_statement.tex`. Package: `numerical_solver/gpn_multiphase_solver/`. Independent of `method_of_moments/`. Before running the solver, building its documentation, acceptance or release, read `.agents/project/overview.md` for commands and effects, including output deletion and release operations. After editing and building the formulation, run `tools/eq_numbers.py`. Public API: `numerical_solver/doc/source/api.rst`.
 
 ## Testing
-
-Test pyramid (pytest):
-
-| Level | What it tests | Example |
-|---|---|---|
-| Unit | One isolated module | `test_pvt.py`: Rs(p,T) at known p,T |
-| Boundary | Limiting cases | Sg=0, p=pb, T=T0 |
-| Consistency | Physical invariants | So+Sg=1, energy balance |
-| Integration | solve_ivp with the complete system | `test_solver.py`: rb grows, Sg∈[0,1] |
-| Validation | Comparison with a reference | VAL-001: Dupuit, VAL-002: vs PDE |
 
 Rules:
 - Write the test **before or alongside** the implementation.
@@ -403,52 +238,9 @@ These files are local only, not in git:
 - `*.aux`, `*.log`, `*.synctex.gz`, `*.fls`, `*.fdb_latexmk`
 - `*.pdf`, `*.djvu`, `*.doc`, `*.docx`
 
-## Literature
-
-Available sources in `Refs/`:
-- Каневская – mathematical modeling of reservoir systems
-- Баснеев – underground hydromechanics
-- Гиматудинов – physics of oil and gas reservoirs
-- Шарафутдинов, Канафин, Хабиров (2019) – numerical study of the temperature field in a well with a multilayer system during flow of gas-bearing oil (ПМТФ, vol. 60, no. 5)
-- Мирзаджанзаде – fundamentals of gas production technology
-- Мускат – flow of homogeneous fluids in porous media
-- OPM Flow Reference Manual 2025-10
-- Konieczek 1990 (SPE 20722) – Gas Coning, Critical Rate
-- Mjaavatten et al. 2008 (SPE 102390) – GORM for an oil rim
-
-When discussing physics and mathematics, cite specific sources.
-
 ## Vault (Obsidian)
 
-Structured project knowledge base.
-
-```
-vault/
-├── 00-home/
-│   └── index.md                    # Navigation hub – links to all sections
-├── knowledge/
-│   ├── literature/                 # ~70 notes: extended reviews + brief citation-context notes
-│   │   ├── index-literature.md     # Topic index (6 sections + extended reviews)
-│   │   ├── cited-references.md     # ~60 entries – alphabetical index of brief notes
-│   │   └── Автор Год – тема.md     # Notes (extended and brief)
-│   ├── science/                    # Physics, models, formulas
-│   ├── decisions/                  # Decisions with rationale
-│   ├── debugging/                  # Code bug investigations
-│   ├── validation/                 # Verification cases (VAL-* results)
-│   └── numerics/                   # Numerical notes (ODE stiffness, frozen PVT, ...)
-├── plans/                          # Detailed plans from /plan-* commands
-├── roadmap/                        # Task registries (BUG/DEBT/FEAT/VAL)
-│   ├── известные баги и технический долг.md
-│   ├── планируемые фичи.md         # FEAT-001..008 – implementation roadmap
-│   └── валидационные кейсы.md       # VAL-001..003
-├── inbox/                          # Unprocessed ideas
-├── ref_spe202436.md                # (legacy)
-└── ref_moments_method.md           # (legacy)
-```
-
-### Note Naming
-
-A title is an assertion, not a category: `эффект JT доминирует при разгазировании в ПЗП.md`, not `температура.md`.
+The vault registry is the source of truth for tasks. Read `.agents/project/vault.md` before registering tasks or working on vault notes. Note titles state an assertion, not a category.
 
 ### Commands
 
@@ -476,36 +268,6 @@ A title is an assertion, not a category: `эффект JT доминирует �
 | `/merge <ID>` | Merge upon «мерж»: push task branch → `--no-ff` into base → check result → remove worktree (branch remains) → «влит» in vault → push base → close issue |
 | `/run [config]` | Run solver, visualize and check physics |
 
-### Task Registries (vault/roadmap/)
-
-Each task is **first registered** in the local vault registry. The registry is the sole source of truth for the project task list. A GitHub issue is created later by `/issue` and links to the registry entry.
-
-**Three registry files** (separated by category):
-
-| File | Task types | ID pattern |
-|---|---|---|
-| `vault/roadmap/известные баги и технический долг.md` | BUG, DEBT | `BUG-NNN`, `DEBT-NNN` |
-| `vault/roadmap/планируемые фичи.md` | FEAT | `FEAT-NNN` |
-| `vault/roadmap/валидационные кейсы.md` | VAL | `VAL-NNN` |
-
-**How to register a task:**
-
-1. Determine the type: BUG (defect), DEBT (technical debt/refactoring), FEAT (new functionality), VAL (verification case).
-2. Open the corresponding registry file.
-3. Find the maximum existing entry number (grep `### <PREFIX>-`) and assign the next one.
-4. Add section `### <ID>: Краткое описание` using the template in the file header (section «Формат записи»).
-5. Set the new entry's status to `🔴 ОТКРЫТ`.
-
-**Required fields at registration** (minimum):
-- **BUG:** symptom, file, reproduction
-- **DEBT:** current state, motivation, affected modules
-- **FEAT:** description, formulas (references to equations in `.tex`), module
-- **VAL:** reference, scenario, metric
-
-Fields **GitHub:**, **Ветка:**, **План:** are filled later by the corresponding commands (`/issue`, `/plan-*`).
-
-Numbering is continuous within each prefix. BUG and DEBT share a file but are numbered independently.
-
 ### Task Workflow
 
 This sequence is mandatory. Do not skip steps or jump ahead.
@@ -523,16 +285,6 @@ When the user asks «что дальше», determine the step where the task st
 ### Current Implementation Plan
 
 The project moved from the method of moments (ODE) to a numerical solver (PDE on a radial grid). The current plan with blocks and schedule: `vault/plans/numerical-solver-plan.md`. Consult this plan when working on tasks.
-
-### Note Formats
-
-Two types of literature notes:
-- **Extended** (from PDF): frontmatter + Задача + Метод + Результаты + Замечания + Значение для проекта + Цитируется в + Ссылается на
-- **Brief** (from citation context): warning callout + 2–3 sentence abstract
-
-Categories of cited works: **A** (methodological), **B** (applied), **C** (review/reference).
-
-**Promoting a brief note to an extended note:** if `/review-paper` finds a brief note for the same work, replace it with the extended version, update `status`, and move it from `cited-references.md` to `index-literature.md`.
 
 ## When Unclear
 

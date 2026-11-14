@@ -79,6 +79,8 @@ def cmd_check_duplicate(args: argparse.Namespace) -> None:
         task_id,
         "--state",
         "all",
+        "--limit",
+        "1000",
         "--json",
         "number,title,url,state",
     ]
@@ -123,9 +125,8 @@ def cmd_check_duplicate(args: argparse.Namespace) -> None:
     except json.JSONDecodeError:
         issues = []
 
-    matching = [
-        iss for iss in issues if task_id in iss.get("title", "") or task_id in iss.get("url", "")
-    ]
+    title_id = re.compile(rf"^{re.escape(task_id)}(?=[:\s]|$)", re.IGNORECASE)
+    matching = [iss for iss in issues if title_id.match(iss.get("title", ""))]
 
     print(
         json.dumps(
@@ -174,8 +175,13 @@ def cmd_update_vault(args: argparse.Namespace) -> None:
         print(f"Ошибка: файл реестра не найден: {registry_file}", file=sys.stderr)
         sys.exit(1)
 
-    content = registry_file.read_text(encoding="utf-8")
-    lines = content.splitlines()
+    url_match = re.fullmatch(r"https://github\.com/ArturSalamatin/Oil_Gas/issues/([1-9]\d*)/?", args.issue_url)
+    if not url_match:
+        raise ValueError("URL должен ссылаться на issue репозитория ArturSalamatin/Oil_Gas")
+    with registry_file.open(encoding="utf-8", newline="") as stream:
+        content = stream.read()
+    newline = "\r\n" if "\r\n" in content else "\n"
+    lines = content.splitlines(keepends=True)
 
     section_start = -1
     section_end = len(lines)
@@ -198,13 +204,31 @@ def cmd_update_vault(args: argparse.Namespace) -> None:
 
     section_lines = lines[section_start:section_end]
 
-    num_match = re.search(r"/issues/(\d+)", args.issue_url)
-    issue_num = num_match.group(1) if num_match else "?"
+    issue_num = url_match.group(1)
     github_entry = f"- **GitHub:** [#{issue_num}]({args.issue_url})"
     branch_entry = f"- **Ветка:** `{args.branch}`"
 
-    has_github = any(line.strip().startswith("- **GitHub:**") for line in section_lines)
-    has_branch = any(line.strip().startswith("- **Ветка:**") for line in section_lines)
+    updates = {"GitHub": (github_entry, args.issue_url.rstrip("/")), "Ветка": (branch_entry, args.branch)}
+    missing = []
+    for field, (entry, expected) in updates.items():
+        indexes = [i for i, line in enumerate(section_lines) if line.strip().startswith(f"- **{field}:**")]
+        if len(indexes) > 1:
+            raise ValueError(f"Повтор поля {field} в {task_id}")
+        if not indexes:
+            missing.append(entry)
+            continue
+        index = indexes[0]
+        value = section_lines[index].strip().split("**", 2)[-1].strip()
+        if re.fullmatch(r"(?:[–—-]\s*(?:\([^\n]*\))?)?", value):
+            section_lines[index] = entry + (newline if section_lines[index].endswith(("\n", "\r")) else "")
+        elif field == "GitHub":
+            found = re.search(r"https://github\.com/[^\s)]+", value)
+            if not found or found.group(0).rstrip("/") != expected:
+                raise ValueError(f"Поле {field} уже содержит другое значение")
+        else:
+            found = re.match(r"`([^`]+)`|([^\s(]+)", value)
+            if not found or (found.group(1) or found.group(2)) != expected:
+                raise ValueError(f"Поле {field} уже содержит другое значение")
 
     insert_idx = len(section_lines)
     for idx, line in enumerate(section_lines):
@@ -212,18 +236,15 @@ def cmd_update_vault(args: argparse.Namespace) -> None:
             insert_idx = idx
             break
 
-    entries_to_add: list[str] = []
-    if not has_github:
-        entries_to_add.append(github_entry)
-    if not has_branch:
-        entries_to_add.append(branch_entry)
+    for entry in reversed(missing):
+        if insert_idx and not section_lines[insert_idx - 1].endswith(("\n", "\r")):
+            section_lines[insert_idx - 1] += newline
+        section_lines.insert(insert_idx, entry + newline)
 
-    if entries_to_add:
-        for entry in reversed(entries_to_add):
-            section_lines.insert(insert_idx, entry)
-
-        new_lines = lines[:section_start] + section_lines + lines[section_end:]
-        registry_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    new_content = "".join(lines[:section_start] + section_lines + lines[section_end:])
+    if new_content != content:
+        with registry_file.open("w", encoding="utf-8", newline="") as stream:
+            stream.write(new_content)
         print(f"Обновлен реестр: {registry_file.name} для {task_id}")
     else:
         print(f"Записи GitHub и Ветка уже присутствуют в {task_id}")
@@ -232,19 +253,28 @@ def cmd_update_vault(args: argparse.Namespace) -> None:
     for line in section_lines:
         m = re.search(r"-\s+\*\*(?:Подробности|План):\*\*\s+\[\[(.*?)\]\]", line)
         if m:
-            detail_match = m.group(1).strip()
+            detail_match = m.group(1).split("|", 1)[0].split("#", 1)[0].strip()
             break
 
     if detail_match:
-        for knowledge_dir in ["knowledge/debugging", "knowledge/decisions", "knowledge/science", "knowledge/validation"]:
-            candidate = repo_root / "vault" / knowledge_dir / f"{detail_match}.md"
-            if candidate.exists():
-                note_text = candidate.read_text(encoding="utf-8")
-                if "github.com" not in note_text:
-                    addition = f"\n**GitHub issue:** [#{issue_num}]({args.issue_url})\n"
-                    candidate.write_text(note_text + addition, encoding="utf-8")
-                    print(f"Обновлена заметка знаний: {candidate.name}")
-                break
+        vault = repo_root / "vault"
+        if "/" in detail_match or "\\" in detail_match:
+            relative = Path(detail_match)
+            if relative.parts[0] == "vault":
+                relative = Path(*relative.parts[1:])
+            candidate = (vault / relative).with_suffix(".md")
+            matches = [candidate] if candidate.resolve().is_relative_to(vault.resolve()) and candidate.is_file() else []
+        else:
+            matches = list(vault.rglob(f"{detail_match}.md"))
+        if len(matches) == 1:
+            candidate = matches[0]
+            note_text = candidate.read_text(encoding="utf-8")
+            if args.issue_url.rstrip("/") not in note_text:
+                addition = f"\n**GitHub issue:** [#{issue_num}]({args.issue_url})\n"
+                candidate.write_text(note_text + addition, encoding="utf-8")
+                print(f"Обновлена заметка знаний: {candidate.name}")
+        elif len(matches) > 1:
+            print(f"Неоднозначная ссылка на заметку: {detail_match}", file=sys.stderr)
 
 
 def main() -> None:

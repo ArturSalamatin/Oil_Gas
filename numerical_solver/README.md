@@ -360,9 +360,19 @@ XlsxWriter.
 
 Функции решателя вызываются прямо из папки с исходным кодом – пакеты
 решателя и прототипа не устанавливаются (`pip install` для них не
-выполняется). Папка `D:\gpn\solver` – пример: в ней лежат
-`gpn_multiphase_solver\`, `HydroSolverPrototype\`, `examples\` и этот
-README.
+выполняется). Папка `D:\gpn\solver` – пример полного распакованного архива
+поставки для разработки или полной копии каталога `numerical_solver` из
+репозитория. Помимо `gpn_multiphase_solver\`, `HydroSolverPrototype\`,
+`examples\` и README, для тестов нужны `pyproject.toml`, `tests\` и
+`doc\source\` и остальные файлы поставки.
+
+Путь `D:\gpn\solver` не создаётся автоматически при распаковке: архив
+создаёт папку `D:\gpn\gpn-multiphase-solver-X.Y.Z`. Можно использовать её
+как есть или скопировать всю папку в `D:\gpn\solver`. Во всех командах,
+переменной `PYTHONPATH` и тексте своего скрипта замените `D:\gpn\solver`
+фактическим путём к полной папке, а `D:\gpn` – своим рабочим каталогом.
+Пример 23 работает без Inkscape: об отсутствии EMF и отключении вывода SVG
+и EMF см. §1 «Inkscape».
 
 Python должен найти два пакета: решатель `gpn_multiphase_solver` – в корне
 папки, прототип `radial_blackoil` – в
@@ -372,9 +382,12 @@ Python должен найти два пакета: решатель `gpn_multip
 
 1. Окружение Python с зависимостями решателя и прототипа – numpy (≥ 1.24),
    scipy (≥ 1.10), matplotlib (≥ 3.7), XlsxWriter (≥ 3.2). Подойдёт и уже
-   существующее окружение, где они есть; новое:
+   существующее окружение, где они есть. XlsxWriter создаёт шаблон книги
+   командой `template`. Чтение книги выполняется стандартной библиотекой
+   Python. Для нового окружения сначала создайте рабочий каталог `D:\gpn`:
 
    ```powershell
+   New-Item -ItemType Directory -Force D:\gpn
    cd D:\gpn
    python -m venv D:\gpn\.venv
    D:\gpn\.venv\Scripts\python -m pip install numpy scipy matplotlib XlsxWriter
@@ -530,7 +543,9 @@ Python должен найти два пакета: решатель `gpn_multip
 [`radial_blackoil/__init__.py`](HydroSolverPrototype/Prototype_1.0.3/radial_blackoil/__init__.py)),
 и без прототипа `pip install .` завершится ошибкой «No matching
 distribution found for radial-blackoil». Команды ниже, кроме установки из
-выпуска, выполняются из каталога `numerical_solver`.
+выпуска, выполняются из каталога с этим README: в репозитории перейдите из
+его корня командой `cd numerical_solver`, а в распакованном архиве откройте
+саму папку `gpn-multiphase-solver-X.Y.Z`.
 
 **Для разработки, скриптом (Windows).** [setup.bat](setup.bat) находит
 Python 3.10 или новее (`py -3`, затем `python`), создаёт `.venv` рядом с
@@ -550,7 +565,6 @@ Python скрипт не устанавливает; нужен доступ к 
 **Для разработки, вручную** (изменения исходного кода действуют сразу, без переустановки):
 
 ```powershell
-cd numerical_solver
 python -m venv .venv
 .venv\Scripts\python -m pip install -e HydroSolverPrototype\Prototype_1.0.3 -e ".[dev]"
 ```
@@ -617,10 +631,11 @@ python -m venv .venv
 
 Обзор примеров и рекомендуемый порядок знакомства с ними – [examples/README.md](examples/README.md).
 Каждый пример запускается своим скриптом `main.py` или командой пакета
-с файлом конфигурации примера:
+с файлом конфигурации примера. Команды выполняются из каталога с этим README:
+в репозитории перейдите в `numerical_solver`, в распакованном архиве – в
+`gpn-multiphase-solver-X.Y.Z`:
 
 ```powershell
-cd numerical_solver
 .venv\Scripts\python examples\06_table_corey_rp\main.py
 .venv\Scripts\python -m gpn_multiphase_solver run examples\06_table_corey_rp\config.json
 
@@ -855,9 +870,10 @@ gpn-solver run путь\к\config.json          # то же при активи�
 
 Результаты – те же, что у расчёта по файлу конфигурации (3.5), по
 умолчанию в каталоге `output` рядом с книгой; заголовок рисунков – имя
-книги без расширения. В `output\input\` сохраняется вход расчёта: книга,
-переведённая в файл конфигурации `config.json` и таблицы CSV в единицах
-СИ. По нему расчёт повторяется без книги (команда – из папки книги):
+книги без расширения. В `output\input\` сохраняются переведённые из книги
+файл конфигурации `config.json` и таблицы `oil_pvt.csv`, `gas_pvt.csv`,
+`relperm.csv` в единицах СИ. Исходная книга в этот каталог не копируется.
+По сохранённым файлам расчёт повторяется без книги (команда – из папки книги):
 
 ```powershell
 .venv\Scripts\python -m gpn_multiphase_solver run output\input\config.json --output другой_каталог
@@ -1019,7 +1035,8 @@ PEP 440; правило номеров – [CHANGELOG.md](CHANGELOG.md)).
 
 ## 6. Тесты
 
-Из каталога `numerical_solver`:
+Из каталога с этим README: в репозитории это `numerical_solver`, а в
+распакованной поставке – `gpn-multiphase-solver-X.Y.Z`:
 
 ```powershell
 .venv\Scripts\python -m pytest tests/ -m "not slow" -q   # быстрый уровень, 1–2 мин

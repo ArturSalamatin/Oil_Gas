@@ -74,13 +74,29 @@ def shutin_case(unlimited):
     stages = []
     calls = []
     original_solve = sim._hydro.solve
+    original_clip = np.clip
+    clips = {"calls": 0, "clipped": 0, "nonfinite": 0, "max_ratio": 0.0}
+
+    def clip(*args, **kwargs):
+        caller = inspect.currentframe().f_back
+        if len(args) >= 3 and caller.f_code.co_name == "_newton_switching" and args[2] is caller.f_locals.get("lim_rs"):
+            values, lower, upper = map(np.asarray, args[:3])
+            clips["calls"] += 1
+            clips["clipped"] += int(np.count_nonzero((values < lower) | (values > upper)))
+            clips["nonfinite"] += int(np.count_nonzero(~np.isfinite(values) | ~np.isfinite(upper)))
+            clips["max_ratio"] = max(clips["max_ratio"], float(np.max(np.abs(values) / upper)))
+        return original_clip(*args, **kwargs)
 
     def newton(*args, **kwargs):
         bound = signature.bind(*args, **kwargs)
         bound.apply_defaults()
         bound.arguments["dr_rel"] = 1e30
         stages.append({"dt": bound.arguments["dt_s"], "dr_rel": bound.arguments["dr_rel"]})
-        return original_newton(*bound.args, **bound.kwargs)
+        try:
+            np.clip = clip
+            return original_newton(*bound.args, **bound.kwargs)
+        finally:
+            np.clip = original_clip
 
     def solve(state, dt, bc):
         shut = state.t >= 10 * DAY - 1e-6
@@ -106,7 +122,7 @@ def shutin_case(unlimited):
             result = {"error": str(exc)}
         accepted = [dt for dt, ok in calls if ok]
         result.update(calls=calls, accepted_sum=sum(accepted),
-                      accepted_min=min(accepted) if accepted else None, stages=stages)
+                      accepted_min=min(accepted) if accepted else None, stages=stages, clips=clips)
         return result
     finally:
         cls._newton_switching = original_newton

@@ -1,6 +1,6 @@
 # Instructions for AI assistants
 
-Use project skills for the named workflows. Do not assume a skill was executed without performing its steps. Subagents are forbidden in this project.
+Use project skills for the named workflows. Do not assume a skill was executed without performing its steps. Subagents are permitted only for the independent plan audit described below.
 
 # Oil_Gas Project Rules
 
@@ -64,9 +64,11 @@ Apply expertise in high-performance computing, mathematical physics, applied mat
 
 ## Subagents Forbidden
 
-Do not use Agent, Workflow or other forms of delegation. All work is performed in the main conversation.
+Do not use Agent, Workflow or other forms of delegation except for the independent plan audit described below. Other work is performed in the main conversation.
 
-Reason: for literature searches and research tasks Claude launches parallel agents, each of which rereads the context from scratch, consuming tokens without benefit. Work sequentially in one conversation.
+Reason: parallel delegation for literature searches and research tasks repeats context and consumes tokens. Perform those tasks sequentially in the main conversation.
+
+Exception – independent plan audit. After `/plan-*`, run `/audit-plan` rounds through a `plan-auditor` subagent in a clean context. Run rounds sequentially, one at a time, with at most three automatic rounds per planning invocation. Do not launch other or nested agents or parallel audit rounds. Adapt the agent launch to the available execution environment. The audit does not authorize `/implement`, commits or push.
 
 ## Token Economy
 

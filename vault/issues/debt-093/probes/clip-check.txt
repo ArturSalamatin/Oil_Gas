@@ -1,0 +1,135 @@
+Python 3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]
+NumPy 2.5.2 SciPy 1.18.1
+NumPy configuration:
+Build Dependencies:
+  blas:
+    detection method: pkgconfig
+    found: true
+    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-b2ht6fnl/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include
+    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-b2ht6fnl/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib
+    name: scipy-openblas
+    openblas configuration: OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY
+      SkylakeX MAX_THREADS=24
+    pc file directory: D:/a/numpy-release/numpy-release/.openblas
+    version: 0.3.34.0.0
+  lapack:
+    detection method: pkgconfig
+    found: true
+    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-b2ht6fnl/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/include
+    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-b2ht6fnl/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas64/lib
+    name: scipy-openblas
+    openblas configuration: OpenBLAS 0.3.34.0.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY
+      SkylakeX MAX_THREADS=24
+    pc file directory: D:/a/numpy-release/numpy-release/.openblas
+    version: 0.3.34.0.0
+Compilers:
+  c:
+    commands: cl
+    linker: link
+    name: msvc
+    version: 19.44.35228
+  c++:
+    commands: cl
+    linker: link
+    name: msvc
+    version: 19.44.35228
+  cython:
+    commands: cython
+    linker: cython
+    name: cython
+    version: 3.2.9
+Machine Information:
+  build:
+    cpu: x86_64
+    endian: little
+    family: x86_64
+    system: windows
+  host:
+    cpu: x86_64
+    endian: little
+    family: x86_64
+    system: windows
+Python Information:
+  path: C:\Users\runneradmin\AppData\Local\Temp\build-env-m8lsj2zx\Scripts\python.exe
+  version: '3.13'
+SIMD Extensions:
+  baseline:
+  - X86_V2
+  found:
+  - X86_V3
+
+SciPy configuration:
+Build Dependencies:
+  blas:
+    cython blas ilp64: false
+    detection method: pkgconfig
+    found: true
+    has ilp64: false
+    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-dm9fi0k5/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas32/include
+    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-dm9fi0k5/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas32/lib
+    name: scipy-openblas
+    openblas configuration: OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=24
+    pc file directory: D:/a/scipy-release/scipy-release/.openblas
+    version: 0.3.31.dev
+  lapack:
+    detection method: pkgconfig
+    found: true
+    has ilp64: false
+    include directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-dm9fi0k5/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas32/include
+    lib directory: C:/Users/runneradmin/AppData/Local/Temp/cibw-run-dm9fi0k5/cp313-win_amd64/build/venv/Lib/site-packages/scipy_openblas32/lib
+    name: scipy-openblas
+    openblas configuration: OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=24
+    pc file directory: D:/a/scipy-release/scipy-release/.openblas
+    version: 0.3.31.dev
+  pybind11:
+    detection method: config-tool
+    include directory: unknown
+    name: pybind11
+    version: 3.0.4
+Compilers:
+  c:
+    commands: C:\Strawberry\c\bin\ccache.exe, cc
+    linker: ld.bfd
+    name: gcc
+    version: 15.2.0
+  c++:
+    commands: C:\Strawberry\c\bin\ccache.exe, c++
+    linker: ld.bfd
+    name: gcc
+    version: 15.2.0
+  cython:
+    commands: cython
+    linker: cython
+    name: cython
+    version: 3.2.9
+  fortran:
+    commands: gfortran
+    linker: ld.bfd
+    name: gcc
+    version: 15.2.0
+  pythran:
+    include directory: C:/Users/runneradmin/AppData/Local/Temp/build-env-9ejn_n2c/Lib/site-packages/pythran
+    version: 0.19.0
+Machine Information:
+  build:
+    cpu: x86_64
+    endian: little
+    family: x86_64
+    system: windows
+  cross-compiled: false
+  host:
+    cpu: x86_64
+    endian: little
+    family: x86_64
+    system: windows
+Python Information:
+  path: C:/Users/runneradmin/AppData/Local/Temp/build-env-9ejn_n2c/Scripts/python.exe
+  version: '3.13'
+
+RESULTS
+cell True {"plain": {"report": {"converged": true, "iterations": 3, "exit_reason": "converged", "cell_measure": 2.5962007451177794e-08, "cell_floor": 6.420035053677937e-08}, "calls": []}, "observed": {"report": {"converged": true, "iterations": 3, "exit_reason": "converged", "cell_measure": 2.5962007451177794e-08, "cell_floor": 6.420035053677937e-08}, "calls": [{"result": false, "jacobian": true, "weights": true, "above": 306, "failed": [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 49, 50, 51, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 70, 71, 72, 75, 76, 79, 80, 81, 82, 83, 84, 88, 89, 90, 91, 92, 93, 94, 95, 97, 98, 99, 102, 103, 104, 105, 106, 113, 114, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 129, 130, 131, 132, 133, 134, 136, 137, 138, 140, 141, 142, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 161, 162, 164, 165, 166, 167, 168, 170, 171, 175, 177, 179, 180, 184, 185, 187, 188, 194, 196, 350, 351, 352, 353, 354, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 386, 387, 388, 389, 390, 392, 393, 394, 395, 396, 397, 399, 400, 401, 403, 404, 405, 406, 407, 408, 409, 410, 412, 413, 414, 415, 416, 420, 421, 422, 425, 426, 429, 430, 431, 432, 433, 434, 438, 439, 440, 441, 442, 443, 444, 445, 447, 448, 449, 452, 453, 454, 455, 456, 463, 464, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 479, 480, 481, 482, 483, 484, 486, 487, 488, 490, 491, 492, 494, 495, 496, 497, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 520, 521, 525, 527, 529, 530, 534, 535, 537, 538, 540, 542, 543, 544, 545, 546, 547, 548, 550, 551], "max_measure": 0.7523397929473735, "max_limit": 1.9645618969463493e-07}, {"result": false, "jacobian": true, "weights": true, "above": 40, "failed": [351, 352, 353, 354, 357, 358, 359, 360, 361, 363, 370, 371, 378, 379, 393], "max_measure": 2.9715798203419645e-07, "max_limit": 6.420035078723587e-08}, {"result": true, "jacobian": true, "weights": true, "above": 16, "failed": [], "max_measure": 2.5962007451177794e-08, "max_limit": 6.420035053677937e-08}]}}
+cell False {"plain": {"report": {"converged": false, "iterations": 4, "exit_reason": "line_search", "cell_measure": 2.5962007451177794e-08, "cell_floor": 6.420035053684339e-08}, "calls": []}, "observed": {"report": {"converged": false, "iterations": 4, "exit_reason": "line_search", "cell_measure": 2.5962007451177794e-08, "cell_floor": 6.420035053684339e-08}, "calls": [{"result": false, "jacobian": true, "weights": true, "above": 306, "failed": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 49, 50, 51, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 70, 71, 72, 75, 76, 79, 80, 81, 82, 83, 84, 88, 89, 90, 91, 92, 93, 94, 95, 97, 98, 99, 102, 103, 104, 105, 106, 113, 114, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 129, 130, 131, 132, 133, 134, 136, 137, 138, 140, 141, 142, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 161, 162, 164, 165, 166, 167, 168, 170, 171, 175, 177, 179, 180, 184, 185, 187, 188, 194, 196, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 392, 393, 394, 395, 396, 397, 399, 400, 401, 403, 404, 405, 406, 407, 408, 409, 410, 412, 413, 414, 415, 416, 420, 421, 422, 425, 426, 429, 430, 431, 432, 433, 434, 438, 439, 440, 441, 442, 443, 444, 445, 447, 448, 449, 452, 453, 454, 455, 456, 463, 464, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 479, 480, 481, 482, 483, 484, 486, 487, 488, 490, 491, 492, 494, 495, 496, 497, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 520, 521, 525, 527, 529, 530, 534, 535, 537, 538, 540, 542, 543, 544, 545, 546, 547, 548, 550, 551], "max_measure": 0.7523397929473735, "max_limit": 1.9645618969463493e-07}, {"result": false, "jacobian": true, "weights": true, "above": 40, "failed": [0, 1, 2, 3, 12, 13, 16, 17, 18, 19, 350, 351, 352, 353, 354, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 370, 371, 372, 373, 376, 378, 379, 382, 383, 384, 388, 389, 393], "max_measure": 2.9715798203419645e-07, "max_limit": 6.420035078723587e-08}, {"result": false, "jacobian": true, "weights": true, "above": 16, "failed": [0, 1, 13, 14, 15, 16, 17, 23, 350, 351, 363, 364, 365, 366, 367, 373], "max_measure": 2.5962007451177794e-08, "max_limit": 6.420035053677937e-08}]}}
+shutin False {"p_bar": 326.7378012857862, "T_K": 375.31242132364105, "finite": true, "calls": [[86400.0, false], [43200.0, false], [21600.0, true], [21600.0, true], [43200.0, true], [86400.0, true], [86400.0, false], [43200.0, true], [43200.0, true]], "accepted_sum": 259200.0, "accepted_min": 21600.0, "stages": [], "clips": {"calls": 0, "clipped": 0, "nonfinite": 0, "max_ratio": 0.0}}
+shutin True {"error": "HydroSolver не сошёлся при дроблении шага до dt/512 = 1.69e+02 с на подшаге с t = 10.0781 сут: двухфазных ячеек 183 из 350, max S_g = 0.199. Наименьший подшаг — time.dt_integration / 2**numerics.max_retries (сейчас max_retries = 9, допустимо до 20). Если отказ вызван величиной шага, поможет больший numerics.max_retries или меньший time.dt_integration; если шаг не сходится и при мелких подшагах, причина не в его величине. Последний отказ гидродинамики: advance не сошёлся: dt = 1.688e+02 с, t = 10.0781 сут, итераций 5, невязка 5.31e-06 (допуск 1.04e-11), мера ячеек 2.43e-01 (порог numerics.newton_cell_tol = 1e-08), предел округления 8.44e-11, выход: линейный поиск не принял ни одной точки — не выполнены оба условия сходимости; числа — Ньютона ступени 1; попытки ступеней: [1 — линейный поиск не принял ни одной точки (итераций 5, проходов 1, переключений 0, невязка 5.31e-06); 2 — линейный поиск не принял ни одной точки (итераций 5, проходов 1, переключений 0, невязка 5.31e-06); 3 — линейный поиск не принял ни одной точки (итераций 6, проходов 1, переключений 0, невязка 5.43e-06); 4 — исчерпан лимит итераций (итераций 40, проходов 1, переключений 292, невязка 1.69e-01)]", "calls": [[86400.0, false], [43200.0, false], [21600.0, false], [10800.0, false], [5400.0, false], [2700.0, true], [2700.0, true], [5400.0, false], [2700.0, false], [1350.0, true], [1350.0, false], [675.0, false], [337.5, false], [168.75, false]], "accepted_sum": 6750.0, "accepted_min": 1350.0, "stages": [{"dt": 86400.0, "dr_rel": 1e+30}, {"dt": 43200.0, "dr_rel": 1e+30}, {"dt": 21600.0, "dr_rel": 1e+30}, {"dt": 10800.0, "dr_rel": 1e+30}, {"dt": 5400.0, "dr_rel": 1e+30}, {"dt": 2700.0, "dr_rel": 1e+30}, {"dt": 2700.0, "dr_rel": 1e+30}, {"dt": 5400.0, "dr_rel": 1e+30}, {"dt": 2700.0, "dr_rel": 1e+30}, {"dt": 1350.0, "dr_rel": 1e+30}, {"dt": 1350.0, "dr_rel": 1e+30}, {"dt": 675.0, "dr_rel": 1e+30}, {"dt": 337.5, "dr_rel": 1e+30}, {"dt": 168.75, "dr_rel": 1e+30}], "clips": {"calls": 529, "clipped": 0, "nonfinite": 0, "max_ratio": 1.0980830125739302e-22}}
+
+STDERR

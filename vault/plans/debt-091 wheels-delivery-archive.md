@@ -1,6 +1,6 @@
 ---
 id: DEBT-091
-status: audit-pending
+status: implemented
 issue: https://github.com/ArturSalamatin/Oil_Gas/issues/147
 branch: refactor/debt-091/wheels-delivery-archive
 base: numerical_scheme/implementation
@@ -63,3 +63,7 @@ README сейчас описывает шесть файлов, распаков
 ## Как начать работу
 
 Прочитать issue #147, запись DEBT-091, результаты DEBT-092 и правила `/implement`; сверить базу и сохранность пользовательского журнала. Создание ветки и worktree – только при отдельном вызове `/implement DEBT-091`.
+
+## Результат реализации
+
+Реализовано в ветке `refactor/debt-091/wheels-delivery-archive`, коммит `fee286b`. Профильные проверки – 192 passed, 1 skipped. Быстрый прогон – 2404 passed, 1 skipped. Полный прогон – 2698 passed, 1 skipped. Архив расчётов собран и проверен с установкой в новом окружении и расчётом примера 06. Условия пробы и ограничение по архиву разработки – [[issues/debt-091/probes/результаты|протокол]]. Реализовано, не влито.

@@ -19,13 +19,13 @@ Black Oil, вода отсутствует) совместно с расчёто
 подставить; папка `D:\gpn` – пример. Нужны Python 3.10 или новее и доступ к
 PyPI или к его зеркалу.
 
-Выпуск содержит обе поставки, всего шесть файлов. После скачивания (§1,
-«Из выпуска») они лежат в папке `release-X.Y.Z`.
+Выпуск содержит обе поставки и отдельный README – всего три файла проекта.
+После скачивания (§1, «Из выпуска») они лежат в папке `release-X.Y.Z`.
 
 | Случай | Что получено | Для чего |
 |---|---|---|
 | поставка для разработки | архив `gpn-multiphase-solver-X.Y.Z.zip` из папки выпуска | изменение и развитие кода: исходный код решателя и прототипа, тесты, примеры, собранные HTML-документация и PDF постановки |
-| поставка для расчётов | остальные пять файлов папки выпуска: `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`, `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `examples-vX.Y.Z.zip`, `README.md` (этот файл), `docs-vX.Y.Z.zip` | расчёты без изменения кода |
+| поставка для расчётов | архив `gpn-multiphase-solver-wheels-X.Y.Z.zip`: два установочных файла в `wheels/`, примеры в `examples/`, документация в `docs/` и README | расчёты без изменения кода |
 | папка с кодом без установки | папка с исходным кодом решателя и прототипа: распакованный архив поставки для разработки или его копия | вызов функций решателя из своих скриптов и команда расчёта без установки пакетов решателя и прототипа; готовый пример – `examples\23_source_tree_run` |
 
 ### Поставка для разработки
@@ -189,10 +189,8 @@ PyPI или к его зеркалу.
 группы `[dev]` (pytest, Sphinx), с зависимостями numpy, scipy, matplotlib и
 XlsxWriter.
 
-1. Проверить файлы – шесть файлов: `docs-vX.Y.Z.zip`,
-   `examples-vX.Y.Z.zip`, `gpn-multiphase-solver-X.Y.Z.zip`,
-   `gpn_multiphase_solver-X.Y.Z-py3-none-any.whl`,
-   `radial_blackoil-1.0.3+gpn.N-py3-none-any.whl`, `README.md`. Архив
+1. Проверить три файла: `gpn-multiphase-solver-wheels-X.Y.Z.zip`,
+   `gpn-multiphase-solver-X.Y.Z.zip` и `README.md`. Архив
    `gpn-multiphase-solver-X.Y.Z.zip` – поставка для разработки, для
    расчётов он не нужен:
 
@@ -201,19 +199,20 @@ XlsxWriter.
    Get-ChildItem D:\gpn\release-X.Y.Z
    ```
 
-2. Распаковать примеры – появится папка `D:\gpn\release-X.Y.Z\examples`:
+2. Распаковать архив расчётов в папку выпуска. Ключ `-Force` заменяет
+   отдельный README его копией из архива. Появятся папки `examples`, `docs`
+   и `wheels`:
 
    ```powershell
    cd D:\gpn
-   Expand-Archive D:\gpn\release-X.Y.Z\examples-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z
+   Expand-Archive D:\gpn\release-X.Y.Z\gpn-multiphase-solver-wheels-X.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z -Force
    ```
 
-3. Распаковать и открыть HTML-документацию: этот README, техническое
+3. Открыть HTML-документацию: этот README, техническое
    описание, публичный интерфейс.
 
    ```powershell
    cd D:\gpn
-   Expand-Archive D:\gpn\release-X.Y.Z\docs-vX.Y.Z.zip -DestinationPath D:\gpn\release-X.Y.Z\docs
    start D:\gpn\release-X.Y.Z\docs\index.html
    ```
 
@@ -235,7 +234,7 @@ XlsxWriter.
 
    ```powershell
    cd D:\gpn
-   D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\*.whl).FullName
+   D:\gpn\.venv\Scripts\python -m pip install (Get-ChildItem D:\gpn\release-X.Y.Z\wheels\*.whl).FullName
    ```
 
 6. Проверить установку: первая команда печатает `gpn-multiphase-solver
@@ -580,7 +579,9 @@ python -m venv .venv
 
 **Из выпуска.** Выпуски публикуются в разделе Releases репозитория
 `ArturSalamatin/Oil_Gas`, и каждый выпуск содержит обе поставки. Состав
-выпуска – таблица раздела «Начало работы». В выпусках до 1.0.2 включительно нет
+выпуска – таблица раздела «Начало работы». В выпусках до появления архива
+`gpn-multiphase-solver-wheels-X.Y.Z.zip` колёса и архивы примеров и
+документации опубликованы отдельно. В выпусках до 1.0.2 включительно нет
 `README.md` и `docs-vX.Y.Z.zip`, а до 1.0.6 включительно – архива поставки
 для разработки `gpn-multiphase-solver-X.Y.Z.zip`. При доступе к репозиторию
 выпуск скачивается целиком GitHub CLI, авторизованным командой

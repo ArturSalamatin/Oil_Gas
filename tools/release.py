@@ -43,7 +43,8 @@ PyPI. Отказ приёмки откатывает выпуск, как люб
      примеров 18 и 23) → README.md решателя → HTML-документация (sphinx -W),
      архив docs-vX.Y.Z.zip → самопроверка tests/test_packaging.py дерева
      метки → pip wheel --no-deps: ровно два колеса с ожидаемыми номерами
-     в именах → передача: tools/handover.py vX.Y.Z [--acceptance] отдельным
+     в именах → единый архив расчётов с распакованными примерами и HTML →
+     передача: tools/handover.py vX.Y.Z [--acceptance] отдельным
      процессом собирает архив поставки для разработки
      dist/handover-X.Y.Z/gpn-multiphase-solver-X.Y.Z.zip (срез метки, PDF
      постановки со сверкой номеров уравнений, HTML-документация; с ключом –
@@ -53,9 +54,9 @@ PyPI. Отказ приёмки откатывает выпуск, как люб
      задаёт аргумент команды), пустой раздел «Не выпущено»; самопроверка
      рабочего каталога.
   5. Один push: ветка и метка вместе (--atomic).
-  6. Публикация: gh release create vX.Y.Z – шесть файлов: два колеса, архив
-     примеров, README.md решателя, архив HTML-документации и архив поставки
-     для разработки; заметки – раздел выпуска из журнала, строки каждого
+  6. Публикация: gh release create vX.Y.Z – три файла: архивы поставок
+     для расчётов и разработки и отдельный README.md; заметки – раздел
+     выпуска из журнала, строки каждого
      абзаца склеены в одну: перенос строки в описании выпуска GitHub
      показывает как <br> (DEBT-086).
 
@@ -115,8 +116,8 @@ EXCLUDED_EXAMPLES = ("18_prototype_input", "23_source_tree_run")
 # Хвост описания выпуска; {archive} – имя архива передачи этого номера
 NOTES_TAIL = ("Архив `{archive}` содержит поставку для разработки: исходный код "
               "решателя и прототипа, тесты, все примеры, собранные HTML-документацию "
-              "и PDF постановки. Остальные пять файлов составляют поставку для "
-              "расчётов. Порядок работы с обеими поставками описан в README, раздел "
+              "и PDF постановки. Архив `{wheels}` содержит поставку для расчётов. "
+              "Руководство README.md также опубликовано отдельно. Порядок работы описан в README, раздел "
               "«Начало работы». "
               "Архив примеров – без примеров 18 (`18_prototype_input`) и 23 "
               "(`23_source_tree_run`): примеру 18 нужны книги и эталон CMG IMEX "
@@ -268,7 +269,7 @@ def unwrap_paragraphs(text: str) -> str:
 def release_notes(text: str, version: str) -> str:
     """Описание выпуска: раздел «## X.Y.Z — …» журнала со склеенными строками и NOTES_TAIL."""
     notes = unwrap_paragraphs(section_body(text, f"## {version} — "))
-    return f"{notes}\n\n{NOTES_TAIL.format(archive=handover_archive(version).name)}\n"
+    return f"{notes}\n\n{NOTES_TAIL.format(archive=handover_archive(version).name, wheels=f'gpn-multiphase-solver-wheels-{version}.zip')}\n"
 
 
 # ── Шаг 1: проверки ──
@@ -428,6 +429,29 @@ def build_docs(tree: Path, out: Path, version: str) -> tuple[Path, int]:
     return target, n
 
 
+def zip_calculation_delivery(examples: Path, docs: Path, wheels: list[Path], readme: Path, target: Path) -> None:
+    """Упаковать снимки примеров, HTML, проверенные колёса и руководство."""
+    if len(wheels) != 2 or any(not p.is_file() for p in [examples, docs, readme, *wheels]):
+        raise ReleaseError("поставка для расчётов: отсутствуют входные файлы")
+    # Промежуточные архивы не вкладываются: их файлы получают новые пути.
+    with zipfile.ZipFile(examples) as ez, zipfile.ZipFile(docs) as dz:
+        entries = [(ez, n, n) for n in ez.namelist() if not n.endswith("/")]
+        entries += [(dz, n, f"docs/{n}") for n in dz.namelist() if not n.endswith("/")]
+        names = [name for _, _, name in entries] + [f"wheels/{p.name}" for p in wheels] + ["README.md"]
+        if "docs/index.html" not in names or len(names) != len(set(names)):
+            raise ReleaseError("поставка для расчётов: нет index.html или повторяются пути")
+        try:
+            with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+                for source, name, dest in entries:
+                    z.writestr(dest, source.read(name))
+                for p in wheels:
+                    z.write(p, f"wheels/{p.name}")
+                z.write(readme, "README.md")
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
+
+
 def selfcheck(tree: Path) -> str:
     """tests/test_packaging.py дерева tree: все прошли, пропусков нет; итоговая строка."""
     # Тесты сверяют номер прототипа с требованием решателя, раздел журнала с
@@ -497,11 +521,13 @@ def build(tag: str, out: Path, version: str, proto_version: str, acceptance: boo
     print(f"  самопроверка метки: {selfcheck(tree)}")
     wheels = build_wheels(tree, out / "wheels", version, proto_version)
     print("  колёса: " + ", ".join(p.name for p in wheels))
+    calculation = out / f"gpn-multiphase-solver-wheels-{version}.zip"
+    zip_calculation_delivery(examples_zip, docs_zip, wheels, readme, calculation)
     # Передача – последней: она дольше всех (с приёмкой – около 15 мин), и
     # отказ более быстрой сборки откатывает выпуск, не дожидаясь её
     print(f"  передача: tools/handover.py {tag}" + (" --acceptance" if acceptance else ""))
     archive = run_handover(tag, version, acceptance)
-    return wheels + [examples_zip, readme, docs_zip, archive]
+    return [archive, calculation, readme]
 
 
 # ── Откат ──

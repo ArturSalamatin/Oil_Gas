@@ -17,7 +17,7 @@
 | `Refs/` | Literature: Kanevskaya, Basniev, Sharafutdinov, Muskat, OPM Flow Manual and others |
 | `Refs/GORM/` | Papers on GORM (Konieczek 1990, Mjaavatten 2008) |
 | `black_oil_gas_mass.html` | Interactive note: mass of gas released in the Black Oil model |
-| `tools/release.py` | Solver release with both deliverables: version numbers, tag, two wheels, example and documentation archives, README and development handover archive in Releases (`tools/handover.py` in step 3, before push); acceptance only with `--acceptance`; sequence in the docstring (FEAT-038, DEBT-089) |
+| `tools/release.py` | Solver release with a calculation archive, a development archive and a separate README in Releases; builds both wheels and the documentation before packaging, then calls `tools/handover.py` before push; acceptance only with `--acceptance`; sequence in the docstring (FEAT-038, DEBT-089, DEBT-091) |
 | `tools/handover.py` | Development handover: snapshot from the release tag, formulation PDF, HTML documentation and archive; called by the release script, or separately for acceptance or rebuilding an existing tag; without a tag uses the latest release; acceptance in an unpacked copy only with `--acceptance`; does not change git (FEAT-031) |
 | `tools/acceptance.py` | Acceptance of a copy in a fresh environment; runs `handover.py --acceptance` separately or through `release.py --acceptance` (no acceptance by default); not delivered to the customer (decision 2026-10-19) |
 

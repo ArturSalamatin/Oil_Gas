@@ -1,6 +1,6 @@
 ---
 id: DEBT-091
-status: implemented
+status: merged
 issue: https://github.com/ArturSalamatin/Oil_Gas/issues/147
 branch: refactor/debt-091/wheels-delivery-archive
 base: numerical_scheme/implementation
@@ -66,4 +66,6 @@ README сейчас описывает шесть файлов, распаков
 
 ## Результат реализации
 
-Реализовано в ветке `refactor/debt-091/wheels-delivery-archive`, коммит `fee286b`. Профильные проверки – 192 passed, 1 skipped. Быстрый прогон – 2404 passed, 1 skipped. Полный прогон – 2698 passed, 1 skipped. Архив расчётов собран и проверен с установкой в новом окружении и расчётом примера 06. Условия пробы и ограничение по архиву разработки – [[issues/debt-091/probes/результаты|протокол]]. Реализовано, не влито.
+Реализовано в ветке `refactor/debt-091/wheels-delivery-archive`, коммит `fee286b`. Профильные проверки – 192 passed, 1 skipped. Быстрый прогон – 2404 passed, 1 skipped. Полный прогон – 2698 passed, 1 skipped. Архив расчётов собран и проверен с установкой в новом окружении и расчётом примера 06. Условия пробы и ограничение по архиву разработки – [[issues/debt-091/probes/результаты|протокол]].
+
+Влито 15.11.2026 коммитом `cde8939` поверх `c3ffcaa`. Автоматическое объединение журнала сохранило записи DEBT-091, DEBT-092 и DEBT-093. В отдельном worktree итогового коммита профильная проверка выпуска и документации – 192 passed, 1 skipped. Рабочие деревья задачи и проверки удалены, ветка задачи сохранена.
